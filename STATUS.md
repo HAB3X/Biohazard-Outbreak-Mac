@@ -32,9 +32,13 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
 ## Still to do
 
 - Capcom's own sound driver (DRIVE.DAT's unnamed module, on modhsyn/modmsin): sound effects.
-- USB keyboard (USBKB, server 0x80000073? and the chat), the network stack (AVETCP/SN modules, DEV9/SMAP) and DNAS (its
-  overlays decrypt themselves: they can't run as recompiled; DNAS has to be answered another way).
-- Sofdec movies (CRI SFD/M2V on the EE: the IPU).
+- USB keyboard (USBKB, server 0x80000073? and the chat), the network stack (AVETCP/SN modules, DEV9/SMAP) and DNAS. DNAS's
+  overlays decrypt blocks of themselves before running them: File 2's netdnas.bin calls its decryptor 0x6DB1A0 with
+  parameters kept inline after the call (e.g. 0x6B2274, its data at 0x6B229C) and keys from its own table at 0x6DC280, then
+  FlushCache. Nothing comes from outside, so the decrypted code should be the same every run: decrypt it ahead of time and
+  recompile that (each block an overlay variant the dispatcher picks by its words in memory), rather than interpret.
+- Sofdec movies: 21 .sfd files in NETBIO01.DAT's adxsnd.afs (PS2demo01.sfd, the endings, PS2continue.sfd); CRI SFD/M2V on
+  the EE decode through the IPU, which the runtime doesn't have yet.
 - PC controls, PC texts, the PC menus' game settings.
 - The native renderer.
 
