@@ -13,10 +13,17 @@ set(PS2_RUNTIME_DIR ${PS2_RUNTIME_DEFAULT} CACHE PATH "ps2-native-runtime's fold
 add_subdirectory(${PS2_RUNTIME_DIR} ps2-native-runtime)
 
 # Your own disc images (Japan), either or both: each game is its own program
-set(FILE1_DISC "" CACHE FILEPATH "Your Biohazard Outbreak (Japan, SLPM-65xxx) disc image")
+set(FILE1_DISC "" CACHE FILEPATH "Your Biohazard Outbreak (Japan, SLPM-65428) disc image")
 set(FILE2_DISC "" CACHE FILEPATH "Your Biohazard Outbreak File 2 (Japan, SLPM-65692) disc image")
 if(NOT FILE1_DISC AND NOT FILE2_DISC)
     message(FATAL_ERROR "Set FILE1_DISC and/or FILE2_DISC to your disc images: cmake -DFILE2_DISC=/path/to/game.iso ...")
+endif()
+
+if(FILE1_DISC)
+    ps2_recompile(file1_code CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/config/file1.toml DISC ${FILE1_DISC} EXECUTABLE SLPM_654.28
+                  FILES 64)
+    add_executable(biohazard-file1 src/file1.cpp)
+    target_link_libraries(biohazard-file1 PRIVATE file1_code ps2runtime)
 endif()
 
 if(FILE2_DISC)

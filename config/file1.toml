@@ -1,0 +1,69 @@
+# Biohazard Outbreak (Japan, SLPM-65428, disc version 1.04): the recompiler's settings
+[executable]
+sha1 = "0211217647e5ad47aec97073feb8b8f9265d361b"
+# The executable has no section table. Its code runs from the start of its first segment to the VU microcode (DMA packets of
+# VIF MPG codes, 0x1D9B00-0x1E9E80), then data (libcdvd's and libkernel's: "PsIIlibcdvd 2800" at 0x1E9E80); code again from
+# 0x1EC388 (libkernel's, to 0x1ED8A8: its kernel mode routines are the last; the words from 0x1ED8D0 on are their tables, then
+# the data). The same layout as File 2's.
+text = [["0x100000", "0x1d9b00"], ["0x1ec388", "0x1ed8d0"]]
+vutext = ["0x1d9b00", "0x1e9e80"]
+
+[functions]
+extra = []
+not = []
+
+[overrides]
+
+# The code overlays: PROG/*.BIN, each a 0x40 byte "MWo3" header (its number, load address, code size, data size, bss size)
+# then its code and data, loaded whole at its load address. The code runs from the header's end for the code size the header
+# gives. (File 1 has no insdnas.bin.)
+[[overlays]]
+name = "submain"
+file = "PROG/SUBMAIN.BIN"
+base = "0x340000"
+text = ["0x340040", "0x34f400"]
+
+[[overlays]]
+name = "demo"
+file = "PROG/DEMO.BIN"
+base = "0x540000"
+text = ["0x540040", "0x557c00"]
+
+[[overlays]]
+name = "game"
+file = "PROG/GAME.BIN"
+base = "0x540000"
+text = ["0x540040", "0x6d4d00"]
+
+[[overlays]]
+name = "netwk"
+file = "PROG/NETWK.BIN"
+base = "0x540000"
+text = ["0x540040", "0x5d6080"]
+
+# DNAS (Sony's network authentication): its code decrypts parts of itself as it runs, so it can't be recompiled as it is
+# on the disc; its encrypted words stop the game if they're ever reached
+[[overlays]]
+name = "netdnas"
+file = "PROG/NETDNAS.BIN"
+base = "0x6c0000"
+text = ["0x6c0040", "0x744100"]
+encrypted = true
+
+[[overlays]]
+name = "nethttp"
+file = "PROG/NETHTTP.BIN"
+base = "0x6c0000"
+text = ["0x6c0040", "0x714d00"]
+
+[[overlays]]
+name = "single"
+file = "PROG/SINGLE.BIN"
+base = "0x820000"
+text = ["0x820040", "0x838800"]
+
+[[overlays]]
+name = "netaq"
+file = "PROG/NETAQ.BIN"
+base = "0x820000"
+text = ["0x820040", "0x824580"]
