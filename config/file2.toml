@@ -1,0 +1,76 @@
+# Biohazard Outbreak File 2 (Japan, SLPM-65692, disc version 1.03): the recompiler's settings
+[executable]
+sha1 = "5c82ff5cabe85ddea2a92fbd4e70cbe630dcaa9e"
+# The executable has no section table. Its code runs from the start of its first segment to 0x1DDB70; then come the VU
+# microcode (DMA packets of VIF MPG codes, 0x1DDB80-0x1EDF00) and data (libcdvd's and libkernel's: "PsIIlibcdvd 2800"
+# at 0x1EDF00); code again from 0x1F0408 (libkernel's, to 0x1F1928: its kernel mode routines are the last; the words from
+# 0x1F1950 on are their tables, then the data)
+text = [["0x100000", "0x1ddb80"], ["0x1f0408", "0x1f1950"]]
+vutext = ["0x1ddb80", "0x1edf00"]
+
+[functions]
+extra = []
+not = []
+
+[overrides]
+
+# The code overlays: BIN/n.DAT, each a 0x40 byte "MWo3" header (its number, load address, code size, data size, bss size)
+# then its code and data, loaded whole at the address the executable's table at 0x217740 gives for its slot. The code runs
+# from the header's end for the code size the header gives.
+[[overlays]]
+name = "submain"
+file = "BIN/0.DAT"
+base = "0x343000"
+text = ["0x343040", "0x353200"]
+
+[[overlays]]
+name = "demo"
+file = "BIN/1.DAT"
+base = "0x543000"
+text = ["0x543040", "0x564480"]
+
+[[overlays]]
+name = "game"
+file = "BIN/2.DAT"
+base = "0x543000"
+text = ["0x543040", "0x715b80"]
+
+[[overlays]]
+name = "netwk"
+file = "BIN/3.DAT"
+base = "0x543000"
+text = ["0x543040", "0x5d4080"]
+
+# DNAS (Sony's network authentication): its code decrypts parts of itself as it runs, so it can't be recompiled as it is
+# on the disc; its encrypted words stop the game if they're ever reached
+[[overlays]]
+name = "netdnas"
+file = "BIN/4.DAT"
+base = "0x6af000"
+text = ["0x6af040", "0x71ff00"]
+encrypted = true
+
+[[overlays]]
+name = "nethttp"
+file = "BIN/5.DAT"
+base = "0x6af000"
+text = ["0x6af040", "0x703d00"]
+
+[[overlays]]
+name = "insdnas"
+file = "BIN/6.DAT"
+base = "0x6af000"
+text = ["0x6af040", "0x6d8c80"]
+encrypted = true
+
+[[overlays]]
+name = "single"
+file = "BIN/8.DAT"
+base = "0x7d2000"
+text = ["0x7d2040", "0x7ee200"]
+
+[[overlays]]
+name = "netaq"
+file = "BIN/9.DAT"
+base = "0x7d2000"
+text = ["0x7d2040", "0x7d6f00"]
