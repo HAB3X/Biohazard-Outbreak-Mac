@@ -18,16 +18,17 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
 
 - Both executables and their overlays recompile (File 2: 5,706 functions + 17,022 in nine overlays; File 1: 5,567 + 15,091 in
   eight) and build. The runtime gained code overlays, stripped executables, data kept in the text, encrypted (DNAS) overlays,
-  and the IOP version read from the reset image.
-- File 2 draws its NOW LOADING screen; both reset the IOP with `DNAS280.IMG`, load their modules from `DRIVE.DAT`, open
-  `NETBIO00.DAT`, then stop in CRI's sound initialisation (`ps2rna_init_psj`, File 2 0x13DF78), waiting on the CRI ADX
-  driver's IOP side (`RPC 90000200`, DTX).
+  the IOP version read from the reset image, CRI's ADX IOP driver (merged from `biohazard-sound`), and a DMAC fix (CHCR.TAG).
+- Both run at 30 frames a second to their first hardware checks, drawn by the game: File 2 says its DUALSHOCK 2 isn't
+  connected (press ○), File 1 that there's no memory card in slot 1 (start anyway? YES/NO). Both wait on libpad2/libmc2.
+- No sound heard in the game yet (CRI's path was checked with a test tone through the real mixer; the game starts no stream
+  before its checks).
 
 ## In progress
 
-- CRI ADX driver stand-in (DTX, SJX, RNA/PSM, ADX streams): runtime branch `biohazard-sound`, game branch `sound`.
 - DualShock and memory card (libpad2/libdbc/libmc2 with dbcman, ds2o_s1 / File 1's ds2u_s1, mc2_s1): runtime branch
   `biohazard-pads`, game branch `pads`.
+- The IPU (MPEG-2) for the Sofdec movies: runtime branch `biohazard-ipu`, game branch `ipu`.
 
 ## Still to do
 
