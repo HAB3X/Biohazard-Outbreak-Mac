@@ -15,23 +15,28 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
 4. Then a native Metal renderer replacing the GS path piece by piece, checked against the working picture
    (`docs/research/renderer.md` has what's known).
 
-## Where it is (2026-10-15)
+## Where it is (2026-10-16)
 
 - Both executables and their overlays recompile (File 2: 5,706 functions + 17,022 in nine overlays; File 1: 5,567 + 15,091 in
   eight) and build. The runtime gained code overlays, stripped executables, data kept in the text, encrypted (DNAS) overlays,
-  the IOP version read from the reset image, CRI's ADX IOP driver (merged from `biohazard-sound`), and a DMAC fix (CHCR.TAG).
-- File 2 runs its real start-up at 30 frames a second: the violence warning, the Sofdec/ADX and ACCESS logos, then goes black
-  at ~16 s where its demo movie plays (the IPU isn't done yet). Its DualShock 2 works (SDK 2.8's dbcman and ds2o_s1, merged from
-  `biohazard-pads`): a scripted press reaches the game's pad data. Its memory card is a .ps2 image (port0.ps2 in --memcards,
-  PCSX2's layout); the game's first card commands are answered, no save tried yet.
-- File 1 runs at 30 fps to "no memory card in slot 1, start anyway?": its mc2_s1 is version 2811, not done yet.
-- No sound heard in the game yet (CRI's path checked with a test tone; the logos play none).
+  the IOP version read from the reset image, CRI's ADX IOP driver (merged from `biohazard-sound`), a DMAC fix (CHCR.TAG), the
+  IPU (merged from `biohazard-ipu`: MPEG-2 decoding on the registers and DMA channels) and the pad and memory card modules.
+- File 2 runs its real start-up at 30 frames a second: the violence warning, the Sofdec/ADX and ACCESS logos, then **the
+  opening movie plays to its end** (Capcom Presents, the credits over the RPD scenes; `milestones/file2-opening-movie.png`),
+  every picture decoded by the IPU. The movie was black until the kernel's thread calls returned the thread's id: CRI's SVM
+  compares ResumeThread's result with the id to wake its level 6 thread, where Sofdec's decoder runs.
+  Its DualShock 2 works (SDK 2.8's dbcman and ds2o_s1, merged from `biohazard-pads`): a scripted press reaches the game's pad
+  data. Its memory card is a .ps2 image (port0.ps2 in --memcards, PCSX2's layout); the game's first card commands are
+  answered, no save tried yet.
+- File 1 runs at 30 fps to "no memory card in slot 1, start anyway?" (its mc2_s1 2811 is in; not re-run since).
+- No sound heard in the game yet (the audio dump is silent through the opening movie, whose soundtrack is ADX read from the
+  disc: the stream is read and consumed, the output stays silent).
 
 ## In progress
 
 - File 1's memory card (mc2_s1 2811): runtime branch `biohazard-pads`.
 - Capcom's sound driver (Tsnd, RPC sids 0 and 1): runtime branch `biohazard-sound`, game branch `sound`.
-- The IPU (MPEG-2) for the Sofdec movies: runtime branch `biohazard-ipu`, game branch `ipu`.
+- Sound: why the ADX stream's audio isn't reaching the output (CRI's SPU2 path, the movie's ADX through ADXT).
 
 ## Still to do
 
@@ -40,13 +45,18 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
   parameters kept inline after the call (e.g. 0x6B2274, its data at 0x6B229C) and keys from its own table at 0x6DC280, then
   FlushCache. Nothing comes from outside, so the decrypted code should be the same every run: decrypt it ahead of time and
   recompile that (each block an overlay variant the dispatcher picks by its words in memory), rather than interpret.
-- Sofdec movies: 21 .sfd files in NETBIO01.DAT's adxsnd.afs (PS2demo01.sfd, the endings, PS2continue.sfd); CRI SFD/M2V on
-  the EE decode through the IPU, which the runtime doesn't have yet.
+- Sofdec movies: the opening plays; check the other 20 .sfd files (NETBIO01.DAT's adxsnd.afs: PS2demo01.sfd, the endings,
+  PS2continue.sfd), and the title screen after the opening.
 - PC controls, PC texts, the PC menus' game settings.
 - The native renderer.
 
 ## Notes
 
 - `tools/xref.py`, `tools/callers.py`: where code builds an address; a library's entry points.
+- A trace build (the runtime's PS2_TRACE_ENTER; `cmake -S . -B build-trace -DCMAKE_C_FLAGS=-DPS2_TRACE_ENTER
+  -DCMAKE_CXX_FLAGS=-DPS2_TRACE_ENTER`): function entry counts to $PS2_TRACE_FILE at the end of a --run-seconds run,
+  $PS2_TRACE_ARGS (entries with their argument registers), $PS2_TRACE_FIND=LOW-HIGH (entries with an argument in a range),
+  $PS2_TRACE_WATCH=ADDR[:BYTES] (stores into a range, with the guest's call stack), $PS2_TRACE_POKE=S:ADDR=VALUE. It's how the
+  movie's missing decoder thread was found.
 - `work/` (ignored) holds files extracted from the discs for analysis.
 - REOF2 (no licence) is read-only reference; reo (MIT) may be used with credit; libthanatos and OBTool are GPL (read-only).
