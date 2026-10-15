@@ -8,8 +8,9 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
 
 1. Both games playable on the runtime's current graphics path (the game's own drawing, the GS drawn on the GPU), needing only
    the disc.
-2. Mouse and keyboard controls; the game's mentions of the PS2 (memory card, controller, button glyphs) said for a computer,
-   unless a controller is being used.
+2. Mouse and keyboard controls like the original PC releases of Resident Evil 4 and 5 (WASD-style movement, mouse aim and
+   look, the same action keys and prompts), with Esc opening the game's own native pause menu (what START does on the pad).
+   The game's mentions of the PS2 (memory card, controller, button glyphs) said for a computer, unless a controller is used.
 3. Online play on the revived servers (obsrv.org, which accept only the Japanese discs: these).
 4. Then a native Metal renderer replacing the GS path piece by piece, checked against the working picture
    (`docs/research/renderer.md` has what's known).
