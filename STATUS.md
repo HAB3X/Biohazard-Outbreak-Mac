@@ -19,20 +19,21 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
 - Both executables and their overlays recompile (File 2: 5,706 functions + 17,022 in nine overlays; File 1: 5,567 + 15,091 in
   eight) and build. The runtime gained code overlays, stripped executables, data kept in the text, encrypted (DNAS) overlays,
   the IOP version read from the reset image, CRI's ADX IOP driver (merged from `biohazard-sound`), and a DMAC fix (CHCR.TAG).
-- Both run at 30 frames a second to their first hardware checks, drawn by the game: File 2 says its DUALSHOCK 2 isn't
-  connected (press ○), File 1 that there's no memory card in slot 1 (start anyway? YES/NO). Both wait on libpad2/libmc2.
-- No sound heard in the game yet (CRI's path was checked with a test tone through the real mixer; the game starts no stream
-  before its checks).
+- File 2 runs its real start-up at 30 frames a second: the violence warning, the Sofdec/ADX and ACCESS logos, then goes black
+  at ~16 s where its demo movie plays (the IPU isn't done yet). Its DualShock 2 works (SDK 2.8's dbcman and ds2o_s1, merged from
+  `biohazard-pads`): a scripted press reaches the game's pad data. Its memory card is a .ps2 image (port0.ps2 in --memcards,
+  PCSX2's layout); the game's first card commands are answered, no save tried yet.
+- File 1 runs at 30 fps to "no memory card in slot 1, start anyway?": its mc2_s1 is version 2811, not done yet.
+- No sound heard in the game yet (CRI's path checked with a test tone; the logos play none).
 
 ## In progress
 
-- DualShock and memory card (libpad2/libdbc/libmc2 with dbcman, ds2o_s1 / File 1's ds2u_s1, mc2_s1): runtime branch
-  `biohazard-pads`, game branch `pads`.
+- File 1's memory card (mc2_s1 2811): runtime branch `biohazard-pads`.
+- Capcom's sound driver (Tsnd, RPC sids 0 and 1): runtime branch `biohazard-sound`, game branch `sound`.
 - The IPU (MPEG-2) for the Sofdec movies: runtime branch `biohazard-ipu`, game branch `ipu`.
 
 ## Still to do
 
-- Capcom's own sound driver (DRIVE.DAT's unnamed module, on modhsyn/modmsin): sound effects.
 - USB keyboard (USBKB, server 0x80000073? and the chat), the network stack (AVETCP/SN modules, DEV9/SMAP) and DNAS. DNAS's
   overlays decrypt blocks of themselves before running them: File 2's netdnas.bin calls its decryptor 0x6DB1A0 with
   parameters kept inline after the call (e.g. 0x6B2274, its data at 0x6B229C) and keys from its own table at 0x6DC280, then
