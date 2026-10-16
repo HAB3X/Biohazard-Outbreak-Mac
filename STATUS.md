@@ -31,8 +31,12 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
 - **File 2 plays**: START skips the opening movie; the title screen ("PRESS START BUTTON" over the title movie), the main menu
   (SINGLE PLAY, COLLECTION, CHARACTER LOG, OPTIONS; NETWORK PLAY is greyed), scenario, character and partner select work (○
   confirms, ✕ goes back, as the Japanese game has them), and the Training Ground scenario loads into the game: Kevin in the bar
-  with the HUD and the item menu (`milestones/file2-main-menu.png`, `file2-in-game.png`). Driven by `--press` only so far:
-  nothing plays by hand yet (the keyboard keys are the runtime's defaults, not the RE4/RE5 PC layout).
+  with the HUD and the item menu (`milestones/file2-main-menu.png`, `file2-in-game.png`). The keyboard and mouse (src/controls.h):
+  WASD to move, Left Shift run (and cross: back in menus), E or Return action/confirm (circle), Left Mouse attack (square),
+  Right Mouse ready the weapon (R1), Space command the partner (triangle), Q/R/F L1/R2/L2, arrows the D-pad, Left Ctrl walk;
+  Escape is START, the game's own pause menu (item, special and file screens: `file2-pause-file.png`). It's the RE4/RE5 PC
+  layout as far as the buttons' roles in this game allow; every control is rebindable in the PC menus. Mouse look (the right
+  stick) isn't bound: the game has no free camera to aim.
 - File 1 runs at 30 fps to "no memory card in slot 1, start anyway?" (its mc2_s1 2811 is in; not re-run since).
 - No sound heard in the game yet (the audio dump is silent through the opening movie, whose soundtrack is ADX read from the
   disc: the stream is read and consumed, the output stays silent).
@@ -52,7 +56,8 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
   recompile that (each block an overlay variant the dispatcher picks by its words in memory), rather than interpret.
 - Sofdec movies: the opening plays; check the other 20 .sfd files (NETBIO01.DAT's adxsnd.afs: PS2demo01.sfd, the endings,
   PS2continue.sfd), and the title screen after the opening.
-- PC controls, PC texts, the PC menus' game settings.
+- PC texts (the game's button glyphs and its Japanese menu text said for a computer), the PC menus' game settings; mouse aiming
+  if the game has a use for the right stick.
 - The native renderer.
 
 ## Notes
