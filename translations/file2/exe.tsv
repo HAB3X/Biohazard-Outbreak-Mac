@@ -1,0 +1,641 @@
+c4ea855bf1	-
+5512e504a2	-
+ac6e50716e	-
+0c23b61cc3	-
+448c248f59	-
+5b1561cb9e	<p1>This...
+04bf69d127	<p1>...Something is holding it down
+10c7266aab	<p1>The lock is open
+a699bccb62	<c7>Yes
+48c9e3ade5	<c7>No
+6e5f841380	Hide inside the locker?
+c4ec26bdd8	Hide under the bed?
+43ec8457bd	<c7>Left
+65e5747473	<c7>Right
+8db786235e	<c7>Cancel
+6441d0b5fd	<c7>Turn the dial?
+89f20ca71e	<p1>...It's too narrow to get in
+c882802a3f	-
+bbb7ef9931	<p1>You can't carry any more of this item
+c41b565d0f	<p1>Which floor?
+6e40f0e5c3	-
+0359c78d66	-
+a26e81cd0e	-
+80b3f36a8c	-
+582d69d0d2	-
+7e504359f5	<c7>Roof 
+8bbc416507	<p1>Heads.
+8b4d211eb7	<p1>Tails.
+e88ed2f7d0	<p1>I'll read it later...\n<c2><p1>[Contents recorded in File]
+6ccb9e8c4d	<p1>Read it?
+cf306619f5	-
+22f135b2cb	-
+a818c1c356	 is here
+f0a2e24359	<p1>Take it?
+3e617409e0	<c5><p1>[Got an SP item]
+d09e35d515	<p1>By the effect of "<c2>Daylight<c7>",
+b02b5a04ae	<p1>the virus in your body seems to be gone
+3d8ced6868	-
+e66663110c	<p1><c7>You can't carry any more SP items
+0af0fceb46	<p1>Save your current progress?
+c2751070f3	<p1>The typewriter has 
+08b2314cf4	<p1> uses left
+d92ae0cc27	<p1>The ink ribbon has run out...
+77f9f7fb7f	No need to use it now
+e8b57585d3	You can't put\nany more in this room
+5219c701a1	\n\n\nEquip the item
+5aee9d48b5	\n\n\nUse the item
+6570a36d79	\n\n\nLoad spare ammo into the weapon
+a72cd86bf0	\n\n\nCombine with another item
+6ecc05d403	\n\n\nExamine the item
+1f95a2f10f	\n\n\nHand over the item
+69b6277d71	\n\n\nUse it on whom?
+f3136d2e14	\n\n\nTake off the equipment
+e4e6cd00b0	\n\n\nChange equipment
+4c542f30b1	\n\nCombine them?
+4752ac8a8f	\n\nSwap them?
+ad7be42c64	 - take it?
+6912f1e97c	\nYour bag is full. Can't take it.
+12186816f6	Ammo
+d934dcb177	\n\n\nHanding the item over...
+e47bc854f4	\n\n\nReloading...
+fcae7db243	\n\nCombining...
+bfb367ef63	\n\n\nCombine with what?
+5732163dae	Uses left
+29fda49f96	Asked <P> for an item
+73baed9b9a	\n\nMixing...
+1fa34e145a	\n\n\nMix with what?
+c53f8a1d02	Asked <P> to use an item
+8e5ead6fce	I want "<c2><I><c7>"
+5b799aec60	Please use "<c2><I><c7>"
+145ccbca73	<P>'s request
+7bf9a3aa68	<P>'s order
+ed1ac04231	Got <c2><I><c7>
+e934953ce0	Equip
+3f7592b3e4	Use
+6d4119578e	Reload
+aa8523a577	Combine
+08e2be96e2	Check
+2c670f4858	Give
+ff75425e6e	Drop
+7fa050da3b	Swap
+c5598339a5	Treat
+95da77d114	Take out
+58fa7dfd54	Ask
+d6176080c1	Mix
+ee3300d64e	Trade
+6e0faab868	Order
+398ba28da0	Yes
+7e3865de42	No
+4da7e35d7b	Kevin
+2c2db69564	Mark
+adcee362d8	Jim
+58d5c70dff	George
+070abfe625	David
+d8eccd75e5	Alyssa
+e334f7303c	Yoko
+780d41e351	Cindy
+b42dd1681b	Scenario
+0c88b33fb0	???
+38d68cc972	Fleeing, you wander into a deserted zoo. But\n
+8d7a1f2619	no cheering crowds are left. A looming shadow\n
+7d4c47a2f2	shakes the earth: ruin is right behind you.\n
+c93990ce72	Countless killers surround the police station,\n
+82f535699e	closing in to crush the enforcers of justice.\n
+8a6359f9e3	Forward or back? Life or death rides on it.\n
+7f3ee5e4c3	Tense silence smothers the subway platform.\n
+e155a62b56	Eyes crawl through the dark, sealing every exit.\n
+d52926971f	They don't flinch. Mercilessly they choose prey.\n
+307e1cce7b	Deep in misty woods, a mad house of raw hatred.\n
+639eb8fdb9	Blood, poison, love, hate: the chilling truth\n
+719ddd08f6	hides in the scars. Shake off the evil. Escape!\n
+60a04e5153	A merciless countdown ticks toward total ruin.\n
+2d1c4c1dbb	A heartless tyrant's claws rend a city of chaos.\n
+207e267e94	Rise now: hope rests in your hands.\n
+2b6f0d64d7	               [EXTRA BATTLE A-1]\n
+dd3a202847	    Explore the map and wipe out every enemy!\n
+5aa3459821	  Quick thinking and sharp controls are a must!\n
+adf502e249	               [EXTRA BATTLE A-2]\n
+4e3b6db17a	               [EXTRA BATTLE A-3]\n
+9d32a369e1	               [EXTRA BATTLE B-1]\n
+c1dac39c9a	  Defeat the bosses that attack one after another!\n
+39f5c98c35	   Carrying items over is the key to success!\n
+3da66df4ad	               [EXTRA BATTLE B-2]\n
+86bd02ca39	               [EXTRA BATTLE B-3]\n
+35bd5c1f3d	                     [TRAINING]\n
+5ba2d0e466	   Welcome to Raccoon City, city of the dead.\n
+75bd2c2ef5	    Master the basics, and prepare to survive.\n
+060ba20612	Moving on to NPC selection
+77b7509fff	Finish PARTNER\nselection
+cfca2df832	-
+c1b0a21423	-
+5f6cd3e4ab	-
+4d399fc67d	MEMORY CARD slot 1
+bc4ae29ae5	-
+7221dbe22b	Which MEMORY CARD slot will you use?
+33d3608de8	MEMORY CARD slot %s
+fd74d67239	"PlayStation 2" Memory Card (8MB)
+8d67b0b10b	Loading main data...%t
+4403e6d07b	An error occurred.
+da9473bc27	It could not be loaded correctly.%r
+672bd899c1	MEMORY CARD slot %s:
+0edb9abc15	"PlayStation 2" Memory Card (8MB)
+753ccc4a44	is not inserted.%r
+86839ccb4e	"PlayStation 2" Memory Card (8MB)
+6cd2a4437c	is not formatted.%r
+c339ab7317	"PlayStation 2" Memory Card (8MB)
+fadf602d46	has no main data.%r
+a3eb792332	"PlayStation 2" Memory Card (8MB)
+3bd02f7cfb	is being accessed...%t
+fdef08a275	"PlayStation 2" Memory Card (8MB)
+ee5320c372	could not be accessed.%r
+55d9f15737	There is no main data.
+046bfb454a	Create it now?
+341711fb2b	Creating new main data...%t
+520d35942e	The main data is corrupted.
+6860d1e665	It could not be created.%r
+e6a26b56b2	It is not formatted.
+c89b1ce1f4	Format it?
+6adbe4ab11	"PlayStation 2" Memory Card (8MB)
+84de6ea6c2	Formatting...%t
+96600fecbb	It could not be formatted.%r
+19c51b8a54	Which file will you load?
+a60ce1fedd	Which file will you save to?
+b344688bed	Main data already exists.
+c8f98d47cc	Overwrite it?
+2043b0c05f	Saving main data...%t
+43dbc4f2ff	Save complete.%r
+d1d654f4da	The save failed.%r
+03ff4934eb	There is not enough free space.
+d7d34255a2	To save this game's main data,
+05b5dc3990	%a KB or more of free space is needed.%r
+82931f128d	-
+299e8aeaf8	  Continue the game with the following data?
+495ba5c189	-
+de6e83ea0c	MEMORY CARD slot %s
+ab09364f4e	Test-writing to the Memory Card (PS2)...
+279d825605	Main data loaded.
+e6e311ab70	No card in MEMORY CARD slot %s.
+6e383f1550	%a KB or more of free space is needed.
+8892bb7766	Start the game like this?
+2f7a1e838f	\nPress any button.
+d40b333bf1	Load complete.%r
+c8ca9243db	Save the main data?
+bf50f38f2d	Load the main data?
+f55aaa4e3e	Save complete.
+8cd9149a4b	Main data of the previous game "OUTBREAK"
+d1316ca0cb	is being loaded...%t
+9f2c7d7a7c	Loading failed.
+f6fe842748	No main data of the previous game "OUTBREAK".
+aa543c3ef4	MEMORY CARD slot %s: the card that holds the
+8c1a24b5d4	main data saved from the previous OUTBREAK
+022003a2ce	must be inserted.%r
+d9899e97ef	is not inserted.
+dfc8751c6d	The main data of the previous game "OUTBREAK"
+7e39a80399	is corrupted.
+b8898c7d01	Saving...%t
+76bc022206	The main data of the previous game "OUTBREAK"
+c751290403	already exists.
+2de828f9b2	Checking the game version
+727de84eac	Please wait a moment.
+c50a3941e5	Cancel the network connection and
+6729881fd3	return to the title screen?
+f8e3f70d9c	Main data was not found.
+76a3613310	Because the game version was updated,
+aea93b4b1f	online play is impossible without main data.
+9197a46999	was removed and reinserted.%r
+1b5e2d8a62	Without saving the main data,
+34fe590d16	are you sure you want to quit the game?
+e8218d1370	-
+471a75dd1f	Access failed.
+1c89c30d1c	Are you sure you want to quit?
+f02b11377c	-
+7f6025b621	Without loading the main data,
+d38bb87324	It could not be loaded correctly.
+f483007a5f	The following data exists.
+8cbb3a0b62	There is no scenario save data.%r
+d3809d6f5c	Difficulty    :
+15ba8d4d07	Mode 1        :
+b5676a5ef9	Mode 2        :
+e13c740d93	Scenario      :
+5f5e259ca0	Room          :
+ceda706add	Character     :
+9eea2a3b0c	Time          :
+8a38178583	Previous game "OUTBREAK":
+81c4186961	COLLECTION mode data
+1cf093de8e	was carried over to FILE 2.%r
+37cfe4d876	FILE 2's COLLECTION mode data
+e080732ca7	to the previous "OUTBREAK" data
+9e5d623bcd	was carried over.%r
+6ece9a4603	The card was removed or inserted.
+f41329728f	Data carry-over cancelled.%r
+cad5bf7200	Record (save) your progress so far?
+4a74066ce6	* Saving will overwrite your scenario
+414e02cda8	save data.
+e2bcac66f0	Do not remove the Memory Card (8MB) or
+0b24057386	controllers, and do not turn off the
+9ad426f785	console or reset it.
+457272a4a3	Completed
+b6a27d9df6	No hard disk drive is connected to the console.
+afa79d9719	The hard disk drive does not have enough
+f3bbf4fdc8	free space.
+af1867328e	Installing the data requires %a MB or
+9b95c8a951	more of free space.
+bda9ab15fd	Free up enough space, then
+ebef85be93	install again.
+88a4f821fd	The game data is not installed
+b85c89426d	on the hard disk drive.
+be4bb6f4c9	Follow the manual that came with the hard disk
+04b925a63f	drive to repair the hard disk drive.
+a562b3ad73	Please do so.
+6f21e26322	It is not installed correctly.
+2cb2928a12	Please reinstall.
+7df130d3ec	The game data is on the hard disk drive
+c3977bafff	and is already installed.
+61795c5e3f	Overwrite the installation?
+770e1b7c11	Installing the game data on the hard disk
+93fda50bf8	drive lets you play the game more
+f73e8941bf	comfortably.
+49ef830ca8	To install, the hard disk drive needs
+cf2d851dc1	%a MB or more of free space.
+cb2f53d368	Install now?
+66ac378a61	Press any button.
+af42682f94	 Yes
+38b79fb21c	Installing the game data...
+096e82cecc	Do not turn off or reset the "PlayStation 2"
+5b860102ff	console, or disconnect the hard disk drive
+c71cd4699e	from it.
+076b6fc243	Installation complete.
+4649220ad7	Installation failed.
+43a3e30fd8	Cancel the installation?
+43839a56f6	Installation cancelled.
+da374162cc	The hard disk drive is not initialized.
+339847b096	Follow the instructions to initialize it.
+f6ed96f21a	Reinstall?
+a759f11e25	Cancel install
+7d8122db7c	Move panel
+4d29c4fc3f	An error occurred during installation.
+ca9c36b9b4	Check the hard disk drive connection and
+08075f8c65	install again.
+d646b7346b	<c1>Hard disk drive-only room
+24bc175426	<c0>: entry was not possible.
+323fdca17b	<c1>Disc-only room
+e18a4110e7	<c1>Hard-disk-only room<c0>.
+f69d85c5a7	Use the data installed on the
+6ba40acac9	hard disk drive?
+f7550993fa	<c1>Disc-only room<c0>.
+2b632b5407	Use the data on the disc?
+4978e8c098	Left  
+a9c8bd9fe8	Now  
+a6d9e2c918	min
+19c027d882	sec
+9df1e5725b	McDowell
+b70a79aa44	Rodriguez
+bcf9eef2c1	Conrad
+28c93aba72	Hank
+0b5ceb9d38	Miguel
+f547974638	Luke
+409925d94a	Arnold
+981c4e4664	Matt
+fef6e14c1d	Billy
+709e5fb669	Hursh
+9fa897a58a	Peter
+88c20ce6e7	Marvin
+73dde2afc9	Fred
+9f382b8f4b	Andy
+37e2963766	Jean
+798b0f9b54	Tony
+d84a11cc3c	Patrick
+31be6a6bb7	Lloyd
+028f4fc76d	Austin
+0b648e8894	Clint
+515305d207	Bone
+07e700d5ba	Bob
+6a0850e8e5	Nathan
+06db06d876	Samuel
+95087332cc	Will
+4e4aaea823	Roger
+36722e5512	Carter
+f9154a81e0	Greg
+1b86d9e73c	Frost
+35549bb90a	Jake
+69d0e842ed	Gary
+5382715d83	Richard
+cc8bc9e5d2	Mickey
+dd73dec8a9	Al
+eedb01b5c4	Ben
+3a3d118241	Regan
+2947c9552c	Monica
+931c50e048	Linda
+2f65a5eee3	Rita
+3a950e05b4	Mary
+77ac93474e	Kate
+7b167a86ca	Danny
+dd77f012f5	Gill
+c5a0d908cd	Keith
+d0d1b3e544	Kurt
+8aae051434	Dorothy
+4c0d62d8b1	Raymond
+19681047c9	Arthur
+36751c5060	Aaron
+e0e68c0513	Dorian
+83faf98f37	Elliott
+79da705596	Eric
+205b0a8043	Harry
+1b8332108c	Karl
+48dd360881	Dustin
+320e589f9c	Derek
+f891ec1240	Len
+e419cb7604	Nicolas
+b99e3a3f05	Sean
+6f14c68bc4	Philip
+f28de3863b	Don
+a4995c0191	Matthew
+3646b6d823	Robert
+76bfbd0331	Chuck
+4dcafc83b7	Ginger
+7280d52f7d	Laura
+81a4023ddf	Amelia
+f17511881c	Ethan
+49a500708b	Howard
+74e71f0436	Isaac
+20257f8577	Kathy
+1ba09695e6	Elena
+78686379fe	Frank
+69ef0f4dae	Rodney
+3df85448bc	Red
+631e310cfa	Blue
+2aec8571d1	Green
+0dd7c53b79	Gold
+db686b3d8d	Black
+b87d8d1d75	White
+0b62f29a9a	Peach
+3e2587b984	Water
+7ec2616e87	Appeal Shift
+8b5286b0a3	Move/Select
+0509b4d5cb	Options
+94e060ecd0	Aim Forward
+3736e57281	Search Aim
+f8b55197d9	Map Screen
+3ad44d9c47	Appeal
+6d813912f0	Status
+0c36f1df5e	Ad-lib
+7811dea537	OK/Attack
+db1bf0019f	Dash
+f60dd499aa	Adjust the brightness until the colors at
+81ee28b677	the bottom of the bar can no longer be seen.
+5611a22649	Ad-lib VOLUME
+57c49d11c3	Read the game data from the DVD-ROM\n
+5d7d52bd07	and use it.
+e57fe751cc	Use the game data installed on the hard\n
+815ef2a62d	disk drive.
+d437b797a2	"Your network configuration file":
+e8601e0eaa	edit it?
+10de8b0f13	If you configure the network, all unsaved
+94b751ba55	main data will be lost.
+47a45407da	If there is unsaved main data,
+e4389bad9c	save it from OPTIONS on the title screen.
+c96ef3dcdc	Return to the lobby top?
+5f7121b888	Yes/No
+70c9788045	* This counts as a game over.
+742c970a6b	* If you start a new scenario and save,\n
+b203543c31	the save data of the current scenario\n
+8447dad53e	will be overwritten.
+820dcddc9e	Resume the game from the point of the\n
+0798a2394d	currently saved scenario.\n
+4e350d6634	: Ad-lib
+5cbeb17076	: Cancel/Dash
+4552599b1f	: Confirm/Attack
+fb769149c0	Quit Game
+5f461b4ee6	Record your progress so far?
+d24ee95922	Overwrite the following data?
+d6ecd055e1	Elements unlocked in FILE 2's COLLECTION mode
+3e84fba03c	will be carried over to the previous OUTBREAK.
+ba5f9fb850	Elements unlocked in the previous OUTBREAK's
+95d7b30141	COLLECTION mode will carry over to FILE 2.
+1b480f6c6f	No goals achieved
+6e9d6f7dc9	Obtained SP items
+6ae6b6fee4	No SP items obtained
+a0294a9ca2	Scenario completion
+ddc8d84625	Survivors
+5f675abe30	Completion
+cdbb04b0c3	Enemies defeated
+944d725a57	Infection gauge at end
+38bca03980	Healing items used
+06db8bee25	Dying allies rescued
+1013211b64	Times rescued from near death
+cccce5b135	Items given
+4295b58a22	Items received
+0d96184a27	Allies rescued from attack
+a01c4db9ee	No more can be registered
+cf21acb740	<a> more can be registered
+19d77ed7af	Not registered
+b3ed515505	Registered
+dbfaf561a8	Change HN
+f4faeaeca1	-
+ebe40bda6d	x
+f25e1e21e2	-
+62c1ff53c6	<c1>[Basic Data]<c0>
+093e594d95	<c2>-Play Time-<c0>
+3ee7248c3f	<c2>-Result Points-<c0>
+11b892e0c1	<c2>-Character Usage-<c0>
+aa70c65e35	<c2>-Distance Moved-<c0>
+604e415b9e	<c2>-Survival Rate-<c0>
+9a4554fe06	<c2>-Health-<c0>
+80871855a0	<c2>-Average Infection at End-<c0>
+df7503fc23	hr
+d99a936850	pts
+847c35b534	Other
+b0e5cb8abe	<c1>[Scenario Play Data]<c0>
+4d7543f521	<c2>-Scenario Clears/Plays-<c0>
+0eb1bdcdcb	<c2>-Clear Data by Character-<c0>
+c7b540304a	<c2>-Fastest Clear Time-<c0>
+2e12e43b97	<c2>-Best Result Points-<c0>
+6bbb2ed86a	<c2>-No-Weapon Clears-<c0>
+6213ae7412	<c2>-No-Damage Clears-<c0>
+352bd32c5e	<c1>[Combat & Co-op Data]<c0>
+7357ece173	<c2>-Healing Items Used-<c0>
+f651156eb9	<c2>-Usage by Weapon Type-<c0>
+bc728531ab	<c2>-Dying Allies Helped Up-<c0>
+ae4f3b199c	<c2>-Times Helped Up When Dying-<c0>
+15824e2f7b	<c2>-Item Exchange-<c0>
+7a6f377b39	<c2>-Allies Rescued from Attack-<c0>
+d17e0c0a31	Melee
+b5c71e7055	Firearms
+32657d86a0	Bare hands
+87a8115935	Other
+467da26b2b	Items given
+579b4e3cbf	Items received
+5ac2e35549	<c1>[Scenario Goals]<c0>
+0df895d694	<c1>[Obtained SP Item Data]<c0>
+0c2747e555	: Next page
+59b9344963	: Back
+7e6a7028e0	: Change difficulty
+95b0a553ca	: Scenario goals
+4e362fd7fd	: Obtained SP items
+9cdf1a0a4c	: Scenario play data
+7a3da37d4a	Basic
+6712202983	Combat & Co-op
+5ffea5948c	Rookie
+6c1ac7ae0a	Roar
+6c3129c5a8	Beyond
+aa834d35af	Memory
+74a1d7376b	Defend
+61b5403a8e	Breach
+03fa25e470	Purge 1
+8ac5e7d067	Purge 2
+f4a690d992	Purge 3
+bad2874b22	Clash 1
+7f286e2d97	Clash 2
+250e090675	Clash 3
+79dc32fd88	This game contains violent scenes and
+27f2c21b26	grotesque content.
+7a348b055b	-
+0935ae733c	-
+19598a142e	-
+e80d53ba64	-
+d2f4ca6294	-
+0a2589094d	-
+ee43dfee2a	-
+7349bd1b36	-
+348f0f8d68	-
+0aac8262c2	-
+0f855173cd	-
+dabbc03c86	-
+2c738bea23	-
+002b8b9b2a	-
+a6e458e3ab	-
+0d1f9636ca	-
+0dfccd8c36	-
+603780cd07	-
+6b1f63c45a	-
+0fbd1b33dd	-
+00e164356c	-
+e56db2cb0c	-
+8574562ec8	-
+26e81b25c6	-
+414cadb43b	-
+3d62afe651	-
+5a0fd8909b	-
+0069a86ac8	-
+c4296aaea4	-
+2bb0b366c9	-
+16ee25d1ac	-
+8113c7d6fc	-
+63a658b4d4	-
+81965255e1	-
+047b0b8122	-
+d6e8d80b80	-
+ec33aee557	-
+adc64c2418	-
+f0a87619d2	-
+3510d0b9ec	-
+6728ef8d84	-
+f42d44af9b	-
+00f686f5dd	-
+ccf43c5190	-
+82824260c1	-
+cfc7920f61	-
+1ca54585d4	-
+7e2cf95e6b	-
+a26b9a2383	-
+1f30da34c4	-
+f7f5216534	-
+c61ec14b7f	-
+6c6c4c55e0	-
+067deca91d	-
+f9da54eee3	-
+050414c5dd	-
+550ad49bd9	-
+0b68e4bd56	-
+050fcdd3b4	-
+c3be7dd0a1	-
+84e61ad584	-
+494e1e0b74	-
+fe42f48667	-
+4539936d13	-
+1beb98f08f	-
+ec26b9cf76	-
+8777605cab	-
+628cb1f32f	-
+04f2d3844e	-
+49f66da484	-
+a73d951c4b	-
+a223df5b86	-
+054b728748	-
+1b14e001e4	-
+8af0c6a639	-
+dc9b8a6179	-
+fbf4be5949	-
+2f2add9566	-
+132f6c3996	-
+8bba8ceb19	-
+fc6ef926fb	-
+4f64d79c21	-
+b9bb3bea4a	-
+9c3b84a7db	-
+016a8944fe	-
+1741ac0ad6	-
+2563b995a9	-
+10650c9eba	-
+354ebb7959	-
+e1c5a65d4e	-
+1c9feae254	-
+7e809f0123	-
+815d5c3a8d	-
+1c633a67da	 used
+f62ec11efc	 used to cure poison
+f134ef48f5	 used to stop bleeding
+cd45f5968c	Other NPC
+acfd70f13d	 lent a shoulder
+814c36ab2a	NPC
+258cb7db0b	 borrowed a shoulder
+5207e562b2	Other NPC attacked by enemies:
+4b86513212	Attacked by enemies:
+988e32d18d	-
+0de062bab9	 rescued
+23a731b8e7	Attacked by enemies:
+6d89cbaff7	 helped
+d69e51eeba	Other NPC in near-death state:
+ed43fd3107	In near-death state:
+af3e51ffe4	Retired midway
+067d3d4947	 gave to
+b2fe19966b	 received from
+479e74dd26	 died
+6cee545a01	In near-death state:
+9b982afb15	Hid in a bed
+b3cef306ef	Hid in a locker
+1f716d581d	Hid in a locker, then an enemy
+4ccaef88f5	dragged them out
+36b1ad7642	Picked a door lock
+d05657545d	 used to make a healing agent
+f181cf382d	 used to make an antidote
+0e8cba7612	Made a hemostatic from Red Herb
+721d977a4e	Combined wooden sticks
+c7bb61035e	to make a long staff
+5751d8c089	With mixed herbs
+eeaf1d9558	made an anti-virus agent
+5d3119a2ea	With an iron pipe and a battery
+188c2437de	made a stun rod
+673e4db94e	With newspaper, a bottle and a lighter
+143ab603e5	made a firebomb
+bb9e49a20a	With a wooden stick and a kitchen knife
+f202d5b3d4	made a spear
+7ac06297e9	With insecticide spray and a lighter
+69d6876507	made a flame spray
+3021cbc518	With an iron pipe and a concrete chunk
+6c41053f49	made a hammer
+dd81e707a6	With junk parts
+7dc53b158c	repaired the handgun
+fa3d0592eb	repaired the shotgun
+7fc0444cc7	 given first aid
+05497e0000	Picked up
+e7d2929f7a	Infection hit 50%
+182a165a79	Infection hit 70%
+ec1d2c97d1	Infection hit 90%
+af1b35b643	Infection hit 100%
+d0af7760f6	Turned into a zombie
+0318ce47f0	 was attacked by
+0013754ecc	Died
+bd9d6a8e1a	With junk parts and a battery
+cd5756bc90	made a time bomb

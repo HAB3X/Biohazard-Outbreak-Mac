@@ -1,0 +1,11 @@
+# Where the games' text is (docs/translation.md has the evidence). Offsets are in the executable file unless said otherwise.
+[file2]
+executable = "SLPM_656.92"
+# The executable's pool of Shift-JIS strings reached through pointer tables: file offsets (first, last+1), and the address
+# of a file offset's byte (its only segment: address = offset + base)
+pool = [0x13E060, 0x143110]
+base = 0xFFE00
+# Message files in the stage archives (the NETBIO00.DAT members r0NN.afs): rNNN.bin (the rooms' messages), dmNNN.bin (the
+# demos' subtitles), spmNNNNNN.bin (the characters' speech)
+message_archives = "/NETBIO00.DAT/r0*.afs"
+message_files = '^(r\d{3}|dm\d{3}|spm\d{6})\.bin$'

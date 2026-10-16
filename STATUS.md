@@ -46,6 +46,15 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
   music and the menu's confirm sounds (a burst at each START/CROSS press); no clipping. File 1 boots with the driver and is
   audible too. Not yet judged by ear: the waveform and levels are sane but the mix against the real console isn't compared.
 
+## English patch (branch `translate`, runtime `biohazard-translate`)
+
+`./run.sh file2 --english` builds `build/english-file2.patch` from your disc and `translations/file2/*.tsv` (my own English,
+keyed by unit ids) and plays with it (runtime `--patch`). Translated so far: the executable's menu/dialog/memory-card/HDD
+texts, scenario blurbs, collection labels, the Training Ground room messages (seen: CHECK!, controller settings, scenario
+select), and 1,400 of 19,205 strings (the most used speech lines first). Not yet: item names, FILE documents and SP items
+(glyph-index text, format not decoded), textures with baked Japanese (button hints, titles), the other ~17,800 stage
+lines, network screens, File 1. Details and checklist: docs/translation.md.
+
 ## In progress
 
 - Speed (2026-10-17): zoo 6 to 15 fps, Training Ground 24-26, loads 3 to 14+; fixes in the runtime (EFU in the VU1 translation, pixel-overlap batching); details in docs/TEST_REPORT.md. 30 in the 3D scenes still needs fewer destination copies (Metal renderer).
