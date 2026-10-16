@@ -66,7 +66,7 @@ class SlotTable:
             if text.unit_id(raw) in new:
                 english = new[text.unit_id(raw)]
                 if len(english) + 1 > room:
-                    raise text.DoesNotFit(f"pit slot at {start:#x}: {len(english) + 1} bytes, the slot has {room}")
+                    raise text.DoesNotFit(f"pit slot at {start:#x} (unit {text.unit_id(raw)}, {english[:30]!r}): {len(english) + 1} bytes, the slot has {room}")
                 out[start:start + room] = invert(english) + b"\xff" * (room - len(english))
         return bytes(out)
 
