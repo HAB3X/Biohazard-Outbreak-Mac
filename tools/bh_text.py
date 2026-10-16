@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""The Biohazard Outbreak games' text: the string encodings, and the two containers the strings live in (docs/translation.md
+describes the formats and their evidence).
+
+Strings are Shift-JIS (cp932) with ASCII control tags (<p1>, <c2>, <I>, <P>, %t...) and \\n in the byte stream. A translation
+unit is a string; its id is the first 10 hex digits of the SHA-1 of its original bytes (so the same line in many files is one
+unit, and the id never needs the Japanese to be kept).
+
+  ExePool(elf, region, base, images)   the executable's string pool: strings reached through tables of pointers
+  MsgBin(data)                          a stage's message file (rNNN.bin, dmNNN.bin, spmNNNNNN.bin)
+Both give `texts()` ({unit id: original bytes}) and `rebuilt(new)` (the new bytes, given {unit id: English bytes}); what
+doesn't fit is a DoesNotFit error that says where.
+"""
+import hashlib
+import re
+import struct
+
+TAG = re.compile(rb"<[A-Za-z][0-9A-Za-z]*>|%[a-z]")
+
+
+def unit_id(raw):
+    return hashlib.sha1(raw).hexdigest()[:10]
+
+
+def has_japanese(raw):
+    return any(b >= 0x80 for b in raw)
+
+
+def tags(raw):
+    return sorted(TAG.findall(raw))
+
+
+class DoesNotFit(Exception):
+    pass
+
+
+def english_bytes(text, original):
+    """The bytes of an English line: plain ASCII, with the control tags of the Japanese it replaces."""
+    raw = text.replace("\\n", "\n").encode("ascii")
+    if tags(raw) != tags(original):
+        raise ValueError(f"control tags {tags(raw)} differ from the original's {tags(original)}")
+    return raw
+
+
+class ExePool:
+    """The executable's pool of strings. The game reaches every string there through a pointer in a table (890 of the 903
+    strings in File 2's pool have pointers in the data, no code builds their addresses), so the strings can be packed again
+    anywhere in the pool's free room with every pointer to them rewritten.
+
+    elf: the executable's bytes; region: (first, last+1) file offsets of the pool; base: address - file offset; images:
+    {name: (bytes, address of its first byte, [(first, last+1) data ranges as addresses])}, where pointers are looked for."""
+
+    def __init__(self, elf, region, base, images):
+        self.elf, self.region, self.base = elf, region, base
+        self.starts = []
+        pos = region[0]
+        while pos < region[1]:
+            if elf[pos] == 0:
+                pos += 1
+                continue
+            self.starts.append(pos)
+            pos = elf.index(b"\0", pos) + 1
+        self.raw = [elf[s:elf.index(b"\0", s)] for s in self.starts]
+        at = {s + base: i for i, s in enumerate(self.starts)}
+        self.refs = [[] for _ in self.starts]  # (image name, offset of the u32) of every pointer to each string
+        for name, (data, first_byte, ranges) in images.items():
+            for lo, hi in ranges:
+                for addr in range(lo, hi, 4):
+                    i = at.get(struct.unpack_from("<I", data, addr - first_byte)[0])
+                    if i is not None:
+                        self.refs[i].append((name, addr - first_byte))
+
+    def slot_end(self, i):
+        """Where string i's slot ends: the next string's start (the NULs between are its padding)."""
+        return self.starts[i + 1] if i + 1 < len(self.starts) else self.region[1]
+
+    def translatable(self):
+        return [i for i, raw in enumerate(self.raw) if has_japanese(raw) and self.refs[i]]
+
+    def texts(self):
+        return {unit_id(self.raw[i]): self.raw[i] for i in self.translatable()}
+
+    def rebuilt(self, new):
+        """{image name: [(offset, bytes)]}, the executable's under "elf": the changes for the strings in `new`. Their old
+        slots become free runs, and the new strings are packed into them longest first, each into the run with most room;
+        every pointer to a moved string is rewritten."""
+        changed = [i for i in self.translatable() if unit_id(self.raw[i]) in new]
+        runs = []
+        for i in changed:
+            lo, hi = self.starts[i], self.slot_end(i)
+            if runs and runs[-1][1] == lo:
+                runs[-1][1] = hi
+            else:
+                runs.append([lo, hi])
+        free = [list(r) for r in runs]
+        out = {"elf": [(lo, bytes(hi - lo)) for lo, hi in runs]}
+        for i in sorted(changed, key=lambda i: -len(new[unit_id(self.raw[i])])):
+            raw = new[unit_id(self.raw[i])] + b"\0"
+            room = max(free, key=lambda r: r[1] - r[0])
+            if room[1] - room[0] < len(raw):
+                raise DoesNotFit(f"pool string at {self.starts[i]:#x}: {len(raw)} bytes with its NUL, "
+                                 f"the largest free run has {room[1] - room[0]}")
+            out["elf"].append((room[0], raw))
+            for name, off in self.refs[i]:
+                out.setdefault(name, []).append((off, struct.pack("<I", room[0] + self.base)))
+            room[0] += len(raw)
+        return out
+
+
+class MsgBin:
+    """A stage's message file: u32 end of the strings, u32 start of the pointer arrays; from offset 8 the records (u32 line
+    count, u32 offset of that record's line pointers; one record is one message, the game asks for it by its number); the
+    line pointers, then the strings: the text, CR LF, a NUL, padded with NULs to an even length; then 0xFF to the file's
+    end. The last record is a stop: its slot reads as an empty line's bytes (CR LF NUL NUL) right before the first string."""
+
+    def __init__(self, data):
+        self.data = data
+        self.end, arrays = struct.unpack_from("<II", data, 0)
+        records = [struct.unpack_from("<II", data, 8 + 8 * i) for i in range((arrays - 8) // 8)]
+        self.strings, self.slots = [], []
+        if not records:  # some stages' speech files are empty (a header and nothing else)
+            return
+        # The line pointers are one list, the records windows on it (a pointer may be in no window: a message's next line is
+        # the next pointer). The list ends where the first string begins, and no pointer points into the list
+        pos, lowest = min(off for _, off in records), len(data)
+        while pos < lowest:
+            value = struct.unpack_from("<I", data, pos)[0]
+            if pos < value < self.end and value % 2 == 0:  # strings start at even offsets: the stop slot's CR LF is odd
+                self.slots.append(pos)
+                lowest = min(lowest, value)
+            pos += 4
+        self.first_string = lowest
+        for start in sorted({self._ptr(s) for s in self.slots}):
+            self.strings.append((start, data[start:data.index(b"\r\n\0", start)]))
+
+    def _ptr(self, at):
+        return struct.unpack_from("<I", self.data, at)[0]
+
+    def texts(self):
+        return {unit_id(raw): raw for _, raw in self.strings if has_japanese(raw)}
+
+    def rebuilt(self, new):
+        if not self.strings:
+            return self.data
+        body = bytearray()
+        address = {}
+        for start, raw in self.strings:
+            address[start] = self.first_string + len(body)
+            body += new.get(unit_id(raw), raw) + b"\r\n\0"
+            body += b"\0" * (len(body) % 2)
+        end = self.first_string + len(body)
+        if end > len(self.data):
+            raise DoesNotFit(f"the strings end at {end:#x}, the file is {len(self.data):#x} bytes")
+        out = bytearray(self.data)
+        for s in self.slots:
+            struct.pack_into("<I", out, s, address[self._ptr(s)])
+        out[self.first_string:end] = body
+        out[end:self.end] = b"\xff" * (self.end - end)
+        struct.pack_into("<I", out, 0, end)
+        return bytes(out)
