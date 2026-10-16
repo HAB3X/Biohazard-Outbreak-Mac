@@ -369,8 +369,8 @@ eebcc5cf2a	<p1>No need to move it anymore
 15e2f6690a	<p1>This seems to be the cause of the leak
 607b426d05	<p1>Smoke has filled the room...
 3dcb6a6e9d	<p1>It's dangerous unless I leave here!
-695bd75ff6	<p1>It seems I need to match all points' current to <c2>10<c7>
-683e380ebb	<p1>all points to <c2>10<c7>
+695bd75ff6	<p1>I must set all points' current to <c2>10<c7>
+683e380ebb	<p1>That seems to be necessary
 e1fc9dff3b	<p1>"Water leak in progress on the premises
 4826d3232b	<p1>Operation prohibited for safety"
 cea7acdf26	<p1>The train will depart shortly
