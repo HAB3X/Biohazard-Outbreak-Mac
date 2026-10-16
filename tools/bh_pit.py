@@ -76,8 +76,10 @@ class DocChain:
     (the title, then each page), then the texts: the title, then the pages, each ending in a newline; every record ends on
     a four byte boundary, padded with zero bytes (0xFF once inverted). The last record's next is the end of the data."""
 
-    def __init__(self, entry):
+    def __init__(self, entry, room=None):
         self.entry = entry
+        self.room = room or len(entry)  # the entry may grow into the padding before the next entry (the container's size
+        # field is then raised: bh_build_patch.py)
         self.count = struct.unpack_from("<I", entry, 0)[0]
         self.records = []  # (position, kind, [Shift-JIS bytes of the title and the pages without the padding])
         pos = 4
@@ -110,6 +112,6 @@ class DocChain:
                 out += invert(b)
             out += bytes(at - len(out))
         out += self.tail
-        if len(out) > len(self.entry):
-            raise text.DoesNotFit(f"the documents take {len(out)} bytes, the entry has {len(self.entry)}")
-        return bytes(out) + bytes(len(self.entry) - len(out))
+        if len(out) > self.room:
+            raise text.DoesNotFit(f"the documents take {len(out)} bytes, there is room for {self.room}")
+        return bytes(out) + bytes(max(0, len(self.entry) - len(out)))

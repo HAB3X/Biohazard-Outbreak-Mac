@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 import bh_archive as archive
+import bh_pit as pit
 import bh_sources as sources
 import bh_text as text
 
@@ -89,8 +90,12 @@ def main(argv):
         for name, node, offset, table in pits:
             mine = {u: new[u] for u in table.texts() if u in new}
             if mine:
-                old = table.entry
-                patches += [(node.offset + offset + off, data) for off, data in changed_runs(old, table.rebuilt(mine))]
+                old, new_entry = table.entry, table.rebuilt(mine)
+                if len(new_entry) > len(old):  # a document entry grew: the container's size field says so
+                    index = [o for o, _ in pit.momo(node.read())].index(offset)
+                    patches.append((node.offset + 8 + 8 * index + 4, struct.pack("<I", len(new_entry))))
+                    old = old + bytes(len(new_entry) - len(old))
+                patches += [(node.offset + offset + off, data) for off, data in changed_runs(old, new_entry)]
     except text.DoesNotFit as e:
         raise SystemExit(f"does not fit: {e}")
     patches.sort(key=lambda p: p[0])

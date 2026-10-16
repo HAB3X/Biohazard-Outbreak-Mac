@@ -56,7 +56,7 @@ def message_files(arc, game):
 
 
 def pit_entries(arc, game):
-    """[(name, Node, entry offset, SlotTable or DocChain)] of the text entries of the game's pit files."""
+    """[(name, Node, entry offset, SlotTable or DocChain)] (a document entry may grow into the room before the next entry) of the text entries of the game's pit files."""
     out = []
     members = [("pit_comn.dat", node) for name, node in arc.open("/NETBIO00.DAT/romdata.afs").members() if name == "pit_comn.dat"]
     for name, stage in arc.open("/NETBIO00.DAT").members():
@@ -69,5 +69,7 @@ def pit_entries(arc, game):
             offset, size = entries[index]
             if size:
                 entry = data[offset:offset + size]
-                out.append((name, node, offset, pit.DocChain(entry) if kind == "docs" else pit.SlotTable(entry, limit)))
+                later = [o for o, _ in entries if o > offset]
+                room = (min(later) if later else len(data)) - offset
+                out.append((name, node, offset, pit.DocChain(entry, room) if kind == "docs" else pit.SlotTable(entry, limit)))
     return out
