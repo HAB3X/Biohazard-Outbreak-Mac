@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Functions a game calls only through pointers: the recompiler starts functions at calls, jumps and the config's extra
 starts, so a handler reached only through a table of function pointers is part of the function before it, and the run stops at
-the first call of one ("call to ...: not a function start"). A data word pointing at a prologue (addiu sp,sp,-N) in the text
+the first call of one ("call to ...: not a function start"). A data word pointing at a prologue (addiu sp,sp,-N), or at code right after a JR RA and its delay slot, in the text
 is such a start. This finds them in the executable's data and the overlays' (a pointer may be in either, to either) and
 prints (or with --write puts into the config) the `extra` lists. Code after zero padding that follows a JR RA is taken as a start as well.
 
@@ -79,7 +79,7 @@ def main():
         have = starts.get(name, set())
         for _a, w in sources:
             if w % 4 == 0 and any(lo <= w < hi for lo, hi in (text[:1] if name == "f" else text)) and w not in have \
-                    and prologue(img.get(w, 0)):
+                    and (prologue(img.get(w, 0)) or img.get(w - 8) == 0x03E00008):
                 found.setdefault(name, set()).add(w)
     # A prologue after zero padding is a start whether or not anything points at it
     for name, (text, img) in regions.items():
