@@ -61,3 +61,14 @@ than ten minutes), and any of the online play.
 1. File 2 gameplay at 20 fps: profile the render and VU1 side (PS2_VU1_PROFILE, the GS draw), and whether windowed differs.
 2. Mouse look and aiming: no use found for the right stick yet.
 3. The game's own button glyphs and Japanese menu text remain as the PS2 has them.
+
+## Stage 2 follow-up (live play, same day)
+
+Played File 2 with the runtime's `--control` channel (tools/live/): the Training Ground (read one file; the other two weren't
+found by a sweep of the room) and Wild Things (the zoo: cutscene, then control, camera cuts as the character walks).
+
+- **Two more missing function starts** surfaced by play (the game overlay's state-handler tables: 0x64d5c0, 0x676410). Both are in
+  the config now; `tools/pointer_functions.py` also takes pointer targets that follow a JR RA.
+- **Speed in the zoo (Wild Things) is 6 frames a second**, idle and with nothing taking pictures; the Training Ground is 20, menus
+  and movies 30. So 3D gameplay is the slow part, and it varies a lot by scene. This is the first thing to profile.
+- Not reached: a door or loading transition inside a scenario, game over, loading a save back, the other movies.
