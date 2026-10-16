@@ -78,17 +78,22 @@ def main():
     for name, (text, img) in regions.items():
         have = starts.get(name, set())
         for _a, w in sources:
-            if w % 4 == 0 and any(lo <= w < hi for lo, hi in text) and w not in have and prologue(img.get(w, 0)):
+            if w % 4 == 0 and any(lo <= w < hi for lo, hi in (text[:1] if name == "f" else text)) and w not in have \
+                    and prologue(img.get(w, 0)):
                 found.setdefault(name, set()).add(w)
     # A prologue after zero padding is a start whether or not anything points at it
     for name, (text, img) in regions.items():
         have = starts.get(name, set())
-        for lo, hi in text:
+        # the executable's later ranges are libkernel's kernel mode code: no starts of its own are wanted there
+        for lo, hi in (text[:1] if name == "f" else text):
             for a in range(lo + 4, hi, 4):
                 if a in have or img.get(a, 0) == 0 or img.get(a - 4, 1) != 0:
                     continue
-                # a prologue, or (a leaf function) any code after a JR RA's delay slot and its zero padding
-                if prologue(img[a]) or any(img.get(a - k, 0) == 0x03E00008 for k in (8, 12, 16)):
+                # a prologue, or (a leaf function) any code after the zero padding that follows a JR RA and its delay slot
+                b = a - 4
+                while img.get(b, 1) == 0 and a - b < 64:
+                    b -= 4
+                if prologue(img[a]) or 0x03E00008 in (img.get(b), img.get(b - 4)):
                     found.setdefault(name, set()).add(a)
     for name, addrs in found.items():
         print(f"{name}: {len(addrs)} starts")
