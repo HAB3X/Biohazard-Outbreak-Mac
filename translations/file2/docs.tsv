@@ -185,7 +185,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 224c428834	Issue 560, Raccoon Zoo News\n\nNice to meet you... I'm Melty.\nI'm the new Rafflesia that bloomed in the\nJungle Dome. Please be kind to me.\n
 226ca5217d	About AIPCs
 22bcec050b	1997\n          Feb   $1800\n          Mar   $4000\n          Apr  $10000\n          Aug   $8000\n          Sep  $12000\n
-22d1094a68	Behavior programs are entered at a control\nterminal via a dedicated <c1>MO disc<c0>.\nTo keep strict secrecy, programs are\nscrambled with a security code.\nTransfer directly from the computer room.\n
+22d1094a68	Behavior programs are entered at a control\nterminal via a dedicated <c1>MO disc<c0>. For strict\nsecrecy they are scrambled with a security\ncode. Transfer from the computer room.\n
 22f52f80ae	Staff Area Key
 22fde39cec	B2F Key
 232aba0253	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>4425<c0>"\n
@@ -327,7 +327,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 4ea3412e24	-
 4ef1dfcaa1	A tag reads "Examination Room"
 4f37d10274	Occult Cases
-4f7e39f9dc	Experiment Control File
+4f7e39f9dc	Control File
 50332909bd	Service Passage 2
 520c295e5d	  /  \nDorothy,\nDorothy,\nwhy are you crying?\nDoes something hurt? I'm here.\n  N-no need to worry.\n
 521deb0291	Suspect Confirmation Room
@@ -382,7 +382,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 604df11c10	Even when apart from the PC, an AIPC finds\nand uses items somewhere. When you meet\nthe AIPC again, check its items on the\nstatus screen. It might hold something\nimportant...\n
 60e6c6e1b0	Subject: Dorothy Lester\nAge: 34\n\nClinical start: 1993/5/20\nPhysician: Alan Eldert\n
 60f5b9fc82	Basement 2F
-615474bf20	Case 3\nScene:\n  Lindley house, NW Arklay Mtns\nSituation:\n  Elderly couple died of blood loss.\n  Both had throats torn out.\n
+615474bf20	Case 3\nScene:\n  Lindley house, NW Arklay\nSituation:\n  Elderly couple died of blood loss.\n  Both had throats torn out.\n
 616fe63911	The big feature of Single Play is the CPU-\ncontrolled PC (<c1>AIPC<c0>). How you deal with the\nAIPC will greatly change how you play\nand enjoy the game.\n
 617b567f86	Underground Parking Ramp
 629a7b88b1	\n  Wonderful Life, Sept.\n\nLife info for Raccoon citizens!\n
@@ -427,7 +427,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 6efa9add42	Gas Neutralizer
 6f397a1575	<c1>[About Asking for Items]<c0>\nSelect another PC's item on the status screen\nand "Ask" to say you want that item.\n
 6f879b25c8	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>3516<c0>"\n
-6fad6cdbd7	Opening/closing is done from the control\nroom for now. In a blackout the security\nlock engages itself; restart the system at\nthe <c1>distribution room<c0> to free it.\n
+6fad6cdbd7	Opening/closing is by the control room for\nnow. In a blackout the security lock\nengages itself; restart the system at the\n<c1>distribution room<c0> to free it.\n
 6fd98fd809	Emergency B
 7051a558ec	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>0764<c0>"\n
 707cb5742c	-
@@ -543,7 +543,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 91580f3b91	Great Suspension Bridge
 9168d93f24	Male Staff Restroom
 9195a1d8b9	Forest 4
-929c9664e0	Notice: repairs done, general check\nA prospect of finishing repairs on the park's\npower trouble has appeared. At the 9:30\nmeeting tomorrow, power checks will be done\nat the repaired spots.\n
+929c9664e0	Notice: repairs done, general check\nA prospect of finishing repairs on the park's\npower trouble has appeared. At 9:30 tomorrow\nmorning, repaired spots get a power check.\n
 92d5663afd	Guard Room
 9304fea141	Reloading continues until the magazine is\nfull or all your rounds are loaded. You\ncan't move from the spot unless you cancel\nwith X or the reload ends.\n
 932f779574	Emergency Storage Space
@@ -558,7 +558,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 961397e2bb	During the check, special cleaning gas will be\nused, so the public may not enter the sewers.\nWe apologize to residents for the trouble\nand ask for your cooperation.\n
 9616ee1b3a	Sewage Treatment Plant
 9646225db7	Notebook
-9680611771	Case 2\nScene:\n  Boat mooring, Mendez River branch\nSituation:\n  Attendant (male, 39) brutally killed.\n  Most of the body is gone.\n
+9680611771	Case 2\nScene:\n  Boat mooring, Mendez River\nSituation:\n  Attendant (male, 39) mauled.\n  Most of the body is gone.\n
 9685f0e8e0	Item Handover
 96cf191240	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>9408<c0>"\n
 9760d6d772	\n  The <c1>nap room<c0> gear is old, too.\n\n  I want a steady <c1>DESK<c0>.\n
@@ -571,7 +571,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 98915e1c40	Or the <c1>goddess statue in the hall<c0>. It was\nonce the central exhibit room and the\nstatue's pedestal held the main display.\nSome mechanism may well remain. It seems\nworth checking.\n
 98a0d08103	An Ordinary Padlock Key
 98a1b038f0	\n  Someone brings private stuff into the <c1>nap\n  room<c0>. Why not ditch that <c1>JUNK<c0>.\n
-98ab43890c	As explained before: stay <c1>within 2 m<c0> of the\ntarget and <c1>hold the button for over 2\nseconds<c0>. Output boost is at its limit at\nthat size. It's a special radio wave, so\nit's not like a TV remote.\n
+98ab43890c	As explained: stay <c1>within 2 m<c0> of the target\nand <c1>hold the button over 2 seconds<c0>. Boost\nis at its limit at that size. It's a special\nwave, so not like a TV remote.\n
 98e111528c	<c1>[Special Action: Spanner Throw]<c0>\n(Press the X button while holding R1)\nThrow a spanner to attack. The number is\nlimited, so use it at the key moment.\n
 99e0c43181	-
 9a23acc10a	Lion Key
@@ -584,7 +584,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 9d791a9f0f	B1F West Passage
 9e08d9d442	\n                Hearty appetite\n                Hearty appetite\n                Hearty appetite\n                Hearty appetite\n                Hearty appetite\n
 9e3cd37e10	Laser Irradiation Room
-9e874fe3f3	Advisory
+9e874fe3f3	Notice
 9e9d14ef74	<c1>[About the Map 2]<c0>\n  Green room ... a room you've been in\n  Red room ... the room you're in\n  Yellow door ... a door not yet examined\n  Blue door ... an open door\n  Red door ... a door that won't open\n
 9fc49430b6	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>5835<c0>"\n
 9fd07ac732	Founder's Emblem (Elder)
@@ -621,7 +621,7 @@ a87744f7cf	[About Crawling 2]\nWhile crawling, the virus gauge rises faster\ntha
 a911abedbf	West Entrance
 a94c98c90b	  September 12\nI don't like night shifts. I hate the dark.\nJim says it's underground, so day or night\nis irrelevant, but it's a feeling thing.\n
 aa1c23703f	Park Path, North
-aab9ba772d	The authorities are working to settle the\nmatter, but for faster response we advise\nresidents to evacuate the district for now.\n
+aab9ba772d	The authorities are working to settle this,\nbut for faster response we advise residents\nto evacuate the district for now.\n
 ab5716cb78	Is that botanical garden a dream house\ntempting kids' sense of adventure, or a\ngreedy old man's vile safe? This paper will\nkeep investigating and reveal the truth.\n       Alyssa Ashcroft\n
 abe043a118	To all station staff:\nGiven rising violent crime and worse public\norder, station security is strengthened\nfurther. This should help protect\ncitizens' safety, too.\n
 ac1276b8fc	Basement 1F
@@ -674,7 +674,7 @@ ba7cb889e4	-
 bb2b582de2	1996\n          Apr   $2200\n          Sep   $5000\n          Oct   $4000\n          Nov   $1500\n          Dec   $8000\n
 bb37fb92fa	-
 bb75b08c6f	East Men's Restroom
-bbbe7b2590	Why not add herb essence to your family\npie? Nourishing, tonic and fatigue-curing,\nit brings you happiness in many ways!\n
+bbbe7b2590	Why not add herb essence to your family\npie? Nourishing, tonic and fatigue-curing,\nit brings you many kinds of happiness!\n
 bc17ea5157	Service Passage 1
 bc3a883e82	Amethyst Plate
 bcc7316eaf	-
@@ -696,5 +696,186 @@ c1e335ab60	Storeroom
 c2327bed2c	Cindy Lennox\n\nJob: Waitress\nThe star of the bar "J's BAR". A popular\nwoman who always smiles. Her service spirit\nmakes her think of others before herself.\n
 c28d18453c	A small metal handle\nThe tip is square
 c291531d42	<c1>[About AIPC Items]<c0>\n
-c2dc463ead	A tip from a park employee says wild\noriginal orchids, whose trade the Washington\nConvention tightly controls, are being grown\nin the new botanical garden. If true, many\nguess where the embezzled funds went.\n
+c2dc463ead	A park employee tipped us that wild original\norchids, whose trade the Washington Convention\nstrictly controls, are grown in the new\nbotanical garden. If true, many guess where the\nembezzled funds went.\n
 c2e4dde5ee	<c1>[About Poison]<c0>\nEnemy attacks may poison you. While poisoned\nyour health drops little by little over time.\n<c1>POISON<c0> shows on the ECG while poisoned.\n
+c341465669	A key marked "B2F"
+c376959a88	FILE 2 Additions
+c40e2ed2ec	Ingredients (serves 2)\nBread flour 250g   Sugar 160g\nCake flour  250g   Milk 600ml\nButter 50g         Cream\nSalt 1 tsp         300ml\n8 egg yolks\n
+c421569955	Torn Message
+c470ca9342	  * <c1>Caution!<c0> *\n[About the Status Screen]\nOther PCs and enemies keep acting while this\nscreen is open. If an enemy hits you, you\nreturn to the normal screen.\n
+c484232598	  /  \n\nThat bug bastard! Bit me again!\nI'll kill you!\n\nKill you, and...\n
+c4cdf1fd2a	<c1>[Personal Item:\n                  Medical Set]<c0>\nWith the item command <c1>"Mix"<c0>, combine various\nherbs to make medicines with various effects.\n
+c561735524	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>9AAA<c0>.\nA bother, I know, but it can't be helped.\n              The Director\n
+c603835838	ID Card Lv2
+c63f0a74e2	Valve Handle
+c6b0ed0825	If we can catch them in the act or bring back\nevidence, they can't talk their way out. To\ncounter their cunning, organized methods we\ncan't play only by the clean rules.\n
+c6f3848b5b	A Key with a Crocodile
+c7a3f74c07	Delivery Path
+c803a668d2	Room 202
+c81a4e6177	Blood Pack
+c84e18bd33	\n  I'm the one who broke the <c1>nap room<c0> mirror.\n\n  A minor <c1>MISS<c0>.\n
+c8b3ccb5b3	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>7312<c0>"\n
+c92af50518	From now on, to be thorough, if a car stops\nfrom a track fault, power is to be cut. Only\nafter the situation is surely recovered,\nraise emergency power and restore supply.\n
+c95c4bad6e	Camera film\nThe label reads "Mayor's daughter"
+c9aaf0e489	<c1>[About Movement 1]<c0>\nThe directional keys or left stick move the\nplayer (PC) you control.\n
+c9c0965935	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>2236<c0>"\n
+ca69d8e437	\n         Spare Handle Work\n               6 -> 4\n          Maintenance Room\n
+cac40cc05d	Seems a key used in the hospital\nIt's rusted and blackened
+cacc6d6f1b	\n    Good for mental and physical fatigue!\n    How to Make Special Herb Pie\n
+caeaa65ceb	Staff Room Key
+cb1b0ff79e	AT is effective only on individuals before\nonset. It cannot erase the virus itself;\nit only "suppresses".\n
+cb337dfb7a	September 11, 1998\n  A UMA in the Arklay Mountains?\nTestimony is gathering of an insect with\nhuge fangs and a length of 2m sighted in\nthe western Arklay highlands.\n
+cb4c8df249	<c1>[Extra Item: Stun Gun]<c0>\nEquip and use as a weapon. A self-defense\ntool with a high-voltage spark, effective\nat close range. Recharge by combining\nit with a battery.\n
+cbd25208d1	Old Waterway Connector
+cc2badae75	Taking Herbs Out of the Case:\nSelect a herb or mixed herb in the case and\nchoose the item command <c1>"Take Out"<c0>. Pick\nthe slot in the item column and press circle.\n
+cc76d793b1	Subway B1F
+cd319fd551	-
+cd496d42d2	Worn-Out Key
+cd680c75b4	U-Shaped Corridor
+cd89024497	Storeroom
+cdecbfb098	<c1>[Special Action 2:\n                  Shove]<c0>\n(R1 button + circle with nothing equipped)\nShoves the enemy ahead. You can charge\nit by holding the button, or follow up\nwith an escape.\n
+ce036f6d54	-
+ce513edb95	\n\n\n\n\n<The envelope is firmly sealed...>\n
+cf1e9ccb22	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>5TF3<c0>.\nA bother, I know, but it can't be helped.\n              The Director\n
+cfc1124ca9	West Women's Restroom
+cff8343cb1	-
+d0896d8a68	Onyx Plate
+d0cbf3de9f	Subway B3F
+d0f0a85dd5	-
+d0f86b4681	\n\n      SECRET\n
+d0fd88e25b	He's a friendly old man, and a big chess\nfan. He even made the keys he uses at work\nin the shape of chess pieces, so he's\nserious about it.\n
+d103b39af5	Annex 3F
+d1a74f9f4a	Lion Emblem (Blue)
+d1dbc69b6a	<c1>[Picking Up Items While Crawling]<c0>\nEven while crawling, you can pick up items\non the floor (at the same height as the player\ncharacter). Go near the item and press the\ncircle button.\n
+d2162c20fd	Control Room
+d240e41cdb	June 1, 1998\n  Zoo vice director suspected of orchid trade\nA surprising suspicion about the motive has\nsurfaced in the embezzlement of funds by Raccoon\nZoo vice director Elliott Martin (67).\n
+d24b666e32	  /  \nOne at noon, another at dusk.\nThe second had a shotgun and I took\na few shots. But I feel no pain at all.\n
+d27fd680e3	Parade BGM is recorded\nCan be played with a player
+d2d03f3748	A bit simple-minded, but surely no one will\nthink the answer is written on the key\nitself. The problem is whether I'll forget\nthe idea itself. I don't want to get old.\n
+d2f146ac8f	Subway Car Interior
+d31c0af322	A small metal handle\nThe tip is hexagonal
+d39c6c95ae	Back Alley
+d3ae586a78	Pieces of flesh thought to be wild birds and\nrabbits lay scattered nearby. Several\nsuspects with bloodlike stains on their\nclothes were seen near the scene.\n
+d3e1453f94	Repair sites are these five:\n  1 Elephant stage gate opener\n  2 Jungle Dome panels\n  3 Main gate shutter opener\n  4 Show stage lighting\n  5 Animal house crane\n
+d4b8495ef8	Pipe
+d4c802b349	About Training
+d51c563210	Startup procedure:\nKeep the cradle (dedicated cold-storage\ncapsule) at set temperature and pressure\nand send the startup program to "T". That\nprogram enables set behavior control of "T".\n
+d554128494	The injury of a reporter drew the attention\nof the media, so the hospital was closed at\nlast, but the truth never came out. Evidence\nwas collected and our mouths were shut\nwith money.\n
+d56698d204	<c1>[Shortcut Reload]<c0>\nHold the L1 button with a weapon equipped\nto reload without opening the status screen.\nRounds are loaded one at a time for as long\nas you hold L1.\n
+d57f701a2e	<c1>[About Use Orders]<c0>\nPut the cursor on an item the AIPC holds and\npress circle for the command list. Then press\ncircle on the <c1>"Order"<c0> command to order it\nto use the specified item.\n
+d624141be8	Inside the Heli
+d6550f22b8	Safety Sensor Settings:\n  Object sensor     OFF\n  Heat sensor       OFF\n  EM shutter        ON\n      <c1>Auto-restore after a set time<c0>\n                        -> NEXT\n
+d68431e74e	-
+d6a58a908d	Transformer Room
+d6ab642f7c	About David
+d73f268d31	Director's Diary 2
+d7d3264cdc	Press the circle button near a crawling ally\nto lend a shoulder and help them up.\nThe virus gauge rises faster while crawling,\nso help them up early.\n
+d8bc1c5607	Subject: Doug Frost\nAge: 68\n\nClinical start: 1993/3/14\nPhysician: Alan Eldert\n
+d98898eb46	-
+d998367095	Illegal dumping of industrial waste has been\ncontinuing in the Ames River, and a link to\nthis case is suspected.\n       Alyssa Ashcroft\n
+d9fe4d7736	A Key Marked with an Ace
+da66c2992c	T-Shaped Corridor
+dab194fc8e	<c1>[About Lending a Shoulder]<c0>\nApproach a damaged PC and press circle to\nlend a shoulder; press X to stop. You can\nalso pull up a crawling PC and lend a\nshoulder.\n
+db15924da5	A Key with a Lion Drawn on It
+dbdcc678ab	\n  The <c1>nap room<c0> is being renovated.\n\n  What <c1>PLAN<c0>? I should ask.\n
+dcb8e12947	Crawling
+dcfd83d847	  /  \nA week has passed. Dorothy has grown and\ncrawls even out of the basement. Bulb-like\nmasses appear from the underground ward\nfloor and like to eat the wild dogs and\nbirds I catch.\n
+dd024619b4	<c1>[Traits]<c0>\nSturdy build, the most health of the 8, but\nbad at running. Use her toughness against\nsmall hits to charge enemy lines or serve\nas an ally's shield.\n
+dd2c0fc779	Case 1\nScene:\n  West mountain path, Arklay\nSituation:\n  Camping family of 3 attacked;\n  all dead.\n
+dd37380546	Examination Room Key
+dd4857ab05	Parade BGM Tape
+dd9c5adc86	<c1>[About Crawling 1]<c0>\nWhen damage drains your health, the player\nenters a crawling state. Room changes and\nattacks are limited while crawling.\n
+ddeb8a76f1	Main Settings:\n  Max output    70000 kw/cm2\n  Irradiation   180 sec\n  Irradiation area  radius 120 cm\n  Operation time control  auto\n                              -> NEXT\n
+ddff59553f	B5F B-Area Passage
+deea6041f6	We promised to play chess together tomorrow\nnight. I wonder how good he is. Only, he kept\nscratching himself as if he had a rash. I\nhope he doesn't get sick.\n
+dfc98145cb	A shield-shaped emblem\nA red lion is carved on it
+dfd00168c4	Personnel:\n  2\nNote:\n  Tell citizens ignoring the advisory\n  their safety isn't guaranteed.\n
+e06db17c7c	You can freely exchange items with an AIPC.\nTo get an item an AIPC holds, try <c1>"Ask"<c0>.\nTo give an item to an AIPC, try <c1>"Give"<c0>.\n
+e0ab4611b8	  September 2\nAccidents of specimens breaking their culture\ncases have been frequent this past month.\nYesterday a colleague at the scene was badly\nhurt, needing 30 stitches. We must act soon.\n
+e0fb9bc7c1	[About the Map 2]\n  Green room ... a room you've been in\n  Red room ... the room you're in\n  Yellow door ... a door not yet examined\n  Blue door ... an open door\n  Red door ... a door that isn't open\n
+e179a341f4	Crowbar
+e2e0690381	About Mark
+e330cab655	-
+e4050dda18	The ivy crawling on the wall has <c1>knob-like\nswellings<c0>. Their surface is fairly soft and\nI could inject a drug with a syringe. So it\nworked after all. Used well, it may let me\nescape.\n
+e43dc6809d	Back of the Office
+e49a22a45e	Distribution Room
+e52bca2f2a	Central Passage 3
+e5ac7ae8a6	Lock Number System for Fire Walls\n\nFire walls drop automatically by sensor in\nan emergency like fire. To release, enter the\n<c1>3-digit passcode<c0> on each panel.\n
+e6433b004b	Police Station Plan
+e67c562391	3F-Roof Stairs
+e681dcafe1	In this <c1>"FILE 2"<c0>, a few basic actions and\ncontrols not found in the previous game\nhave been added.\n
+e7013e31d2	Director's Office
+e70ac79cea	[About Bleeding]\nEnemy attacks may make you bleed. While\nbleeding you move slowly and lose health\nwith every move. BLEED shows on the ECG\nwhile you bleed.\n
+e725559086	The reagents they sent were all outrageous\nthings. I later learned the data was fed\nback into bioweapon development.\n
+e7f12b5f11	-
+e910c36951	<c1>[About Appeal]<c0>\nWith the right stick you can convey your\nintent to other PCs (Appeal). Use it to ask\nfor cooperation or call for help.\n
+e94227248b	Owner's Private Room
+e9c17c5efc	  /  \nI've come to think of this plant as my\nwife reborn. If I can grant her wish, my\nsorrow might ease.\n
+e9fcf44484	It is deeply regrettable that such measures\nare needed. Keep up firm management and\nwork sincerely.\n                  Station Master\n
+eb247fb5f7	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>6249<c0>"\n
+eb27d3c009	<c1>[Special Action 1:\n                      Backstep]<c0>\n(Press the X button while holding R1)\nQuickly pull back and dodge an attack.\n
+eb4759015a	<c1>[Added Appeal: SORRY]<c0>\nPress the square button while holding L2 to\nsay a message meaning "I'm sorry". Use it\nafter an unexpected mistake.\n
+eb5d58450d	Apple Inn, Front Lobby
+ec0dee3f0d	Joseph's Notebook
+ec15446049	5/24\n  08:30 Hearty appetite\n  17:00 Hearty appetite\n5/25\n  08:30 Hearty appetite\n  17:00 Hearty appetite\n
+ec31c96750	\n    Control Room\n               Drawer\n
+eca2720842	Apartment 1F
+ecf1abda37	Film A
+ed67a44f2b	Archive Room
+edd6e81aa0	  September  /  \nAh, it's so dark. Was it always this dark\nunderground? Maybe the fluorescent lights\nare old.\n
+ede58134d6	Film D
+ee5bd896be	To Carter,\nThe remote you wanted is done. Many special\ndevices here made EM countermeasures hard.\n
+ee65b3bdeb	Details of inpatient deaths are never made\npublic, and reagent suppliers hide their\nroutes through layers of dummies. There's no\ndoubt the "Drug Dealer" who is effectively\nthis city's king is involved.\n
+eec4b0ca69	I'll spend until the end of October with\nthose girls! It'll be a fun time every day!\nCome see our dates, everyone!\n
+ef881b3970	  /  \nNothing today.\nI want to hear more of your happy voice.\n
+f004a6df1b	Underground Emergency Passage
+f04cb62a86	To Citizens\nAn important notice from the Raccoon police.\nRiots and looting are occurring all over the\ncity and the situation is very dangerous.\n
+f10a8384d4	Office Key
+f1be8f4f04	A very sturdy board\nSeems useful for blocking doors
+f1f3b7f514	<c1>[About the Map 1]<c0>\nOpen the map screen with the triangle button\nto see rooms you've already visited. With a\nmap in hand you can see all rooms' info.\n
+f21e2e1e64	  Seized ammo 2000 and customer file 4\n  Sept 11 -> AMB\n                  XXXXXX\n(The erased part reads "B. IRONS")\n
+f22c23db3d	Jean's Memo
+f2e63ea46a	<c1>[Special Action 1:\n                    Play Dead]<c0>\n(Keep pressing R1 and X)\nCollapse on the spot and enemies won't\nnotice you. The virus spreads faster during\nit, so don't overdo it.\n
+f2edf38caa	-
+f31b5d616d	The district will soon become a sealed zone\nand civilian entry will be restricted.\nPlease understand, follow instructions and\nact quickly.\n   Raccoon Police Acting Chief\n       Raymond Douglas\n
+f320879590	If no weapon is equipped, press the circle\nbutton in the attack stance to tackle.\nAlso press circle while holding down on the\ndirectional keys (left stick) to do a low kick.\n
+f32727757b	Reception
+f393da7cd2	\n  The <c1>nap room<c0> chairs are too cheap.\n\n  At least a <c1>SOFA<c0>, please.\n
+f39e2bdda7	August 30, 1996\n  Another prison break attempt at Douglas Prison\nEarly today, the 4th break attempt this year\noccurred at Douglas Prison, long noted for\nits outdated security and aging buildings.\n
+f3edf718e5	-
+f42bc96460	  /  \nLet me lay out the plan from here.\nFirst, collect evidence. That hospital must\nbe running illegal clinical experiments with\nunapproved reagents.\n
+f42e8022e6	The big feature of Single Play is the\ncomputer-controlled PC (AIPC). How you deal\nwith the AIPC will greatly change how you\nplay and enjoy the game.\n
+f43394d22b	It never happened before...\nMaybe I should have a vet look at it soon.\n
+f4950f5fe1	Shipwrecks have been frequent lately in the\nnorthwest Arklay Mountains. From autumn to\nwinter dense fog is also expected across\nthe forests, so danger will increase.\n
+f4ab987de9	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>SW4D<c0>.\nA bother, I know, but it can't be helped.\n              The Director\n
+f4b571bf7b	-
+f4bd0b37de	Raccoon police, notified, found the suspects\na few dozen minutes later and arrested them\non suspicion of trespass and robbery. They\ngave their names as Samuel Kirk (37) and\nNathan Donnelly (33).\n
+f503c9896e	  /  \nIn a room that seems to be the <c1>drug\nstorage<c0> I found a tank of chemicals. The ivy\naround it withered, so it seems to weaken\nplants.\n
+f54a6bc414	Lion Emblem (Red)
+f56c25288a	<c1>[About Herbs 2]<c0>\nHerbs can be combined.\n  e.g. Green + Red = mixed herb (green-red)\n\nThere are other combinations, making herbs\nof various effects.\n
+f5afff2b3a	An emblem depicting Aurel K,\nfounder of the railway company
+f6c08803a1	Central Passage 4
+f733ab88c8	An AIPC can be ordered to use items or hand\nthem over.\n
+f73b800a19	About Lending a Shoulder
+f86a098b1f	Healing agent: restores health.\nAntidote: removes poison.\nHemostatic: stops bleeding.\nAnti-virus agent: halts the virus gauge's\nadvance for a while.\n
+f8bc09e503	  September 8\nI fitted a titanium protective frame to the\ninner wall of the culture capsule. In case\nit's broken, I set it to lock the room door\nin tandem.\n
+f974adc1dc	Unauthorized borrowing and loss of facility\nequipment keep happening. To tighten\nstoreroom entry control, an electronic lock\nis on trial.\n
+fa3c0fd01c	-
+fa9efe98be	<c1>[Extra Item:\n                  Handgun Magazine]<c0>\nA magazine for handgun-type weapons, including\n<c1>"Mark's Own Handgun"<c0>. Allows fast reloading.\n
+faac5140f8	An ordinary economic newspaper\n(Read the contents in "File")
+fb05f789a1	Mark Wilkins\n\nJob: Security guard\nWorks for a city security firm. Served in\nVietnam and boasts a toughness beyond his age.\nHe thinks of family and wishes a quiet life.\n
+fb23070e37	April 2, 1998\n  High toxins found in sewers\nA citizens' environmental survey team ran\nits own water tests and said toxins far\nabove limits were found in the city's main\nrivers and sewers.\n
+fb33755ba8	<c1>[Traits]<c0>\nA character of average physical ability, not\nreally suited to fighting. But with her drug\nmixing and surprisingly evasive special\nactions she can explore for a long time.\n
+fb94b810f7	Rusty Key
+fbcb5d6aef	Once you get a key, stand the player before\nthe door to open, press START to open the\nstatus screen, put the cursor on the key and\npress circle to show the command list.\n
+fbefddb1dc	3/14\n  22:00 Subject given T-JCCC 203\n  08:30 Change found in cancer cells\n3/15\n  17:00 Cancer cells vanished\n
+fc039e30d7	Cargo No.  CBL-090092\nContents: organic specimen\nStorage period: 48 hours\nStorage conditions: temp -15 to +45C\n          humidity 5-85% RH\n          pressure 86-106 kPa\n
+fc3cf1b3d1	Removing it needs specialist skill, but if\nunavoidable, strike it from afar and set it\noff beforehand. Be very careful not to enter\nthe blast range.\n
+fccf009a49	New Tape
+fd16b9a707	To Mr. Tommy Nielsen,\nYou know that the specimen was taken from the\ncargo dock under your control. Naturally,\nwe must absolutely avoid a situation where it\ncomes to light.\n
+fd26b1d906	Rating Sheet
+fda09d790e	Elephant Keeper's Diary
+fe569ef0c9	Mascot Medal
+ff4819b96d	-
+ff926d4ffa	<c1>[On AIPC Behavior and Orders]<c0>\n
+ffee741ad3	Kennel
