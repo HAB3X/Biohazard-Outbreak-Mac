@@ -48,6 +48,8 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
 
 ## In progress
 
+- Speed (2026-10-17): zoo 6 to 15 fps, Training Ground 24-26, loads 3 to 14+; fixes in the runtime (EFU in the VU1 translation, pixel-overlap batching); details in docs/TEST_REPORT.md. 30 in the 3D scenes still needs fewer destination copies (Metal renderer).
+
 - Sound in play (SEs, BGM past the title and menus) unchecked by ear; the mix and reverb against a console aren't compared.
 
 ## Still to do

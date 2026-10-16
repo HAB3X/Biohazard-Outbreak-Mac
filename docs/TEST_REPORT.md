@@ -58,7 +58,7 @@ than ten minutes), and any of the online play.
 
 ## Findings worth following
 
-1. File 2 gameplay at 20 fps: profile the render and VU1 side (PS2_VU1_PROFILE, the GS draw), and whether windowed differs.
+1. File 2 gameplay speed: see "Speed work, 2026-10-17" below (zoo 6 to 15, Training Ground 20 to 24-26); still short of 30; windowed not measured.
 2. Mouse look and aiming: no use found for the right stick yet.
 3. The game's own button glyphs and Japanese menu text remain as the PS2 has them.
 
@@ -72,3 +72,27 @@ found by a sweep of the room) and Wild Things (the zoo: cutscene, then control, 
 - **Speed in the zoo (Wild Things) is 6 frames a second**, idle and with nothing taking pictures; the Training Ground is 20, menus
   and movies 30. So 3D gameplay is the slow part, and it varies a lot by scene. This is the first thing to profile.
 - Not reached: a door or loading transition inside a scenario, game over, loading a save back, the other movies.
+
+## Speed work, 2026-10-17 (headless `--fps`, same machine; other games were running on it at times, so GPU-bound numbers vary)
+
+Profile (`sample`, `PS2_VU1_PROFILE`, `--gs-record` + `--gs-replay`): two causes.
+1. **VU1 programs 12 and 14 (the 3D vertex programs) ran interpreted**: the translator stopped each block at ERSQRT, ERLENG, MFP
+   and WAITP, so the rest of their loops was interpreted (6.1 billion interpreted instructions in a 13 minute load). The EFU is
+   translated now (runtime 4f067ee): 4.1 billion instructions, all translated, 1.8 million runs checked by `PS2_VU1=verify`, 0 differences.
+2. **The GPU path**: the game masks one bit of red (FBMSK 1) on every 3D draw, which the renderer blends in the shader on a copy
+   of the destination, and each triangle's batch broke on bounding rectangles that touch. Batches now break only on real
+   pixel overlap (runtime af6eade): replay of the Training Ground 4.7x faster, the loading screen 5.6x, identical picture hashes in all 740 vblanks.
+
+| Scene | before | after |
+|---|---|---|
+| Loading screens | 0-6 (3 typical) | 14-25 |
+| File 2 Training Ground (idle in the bar) | about 20 (played); 6-7 measured under load with the old build | 24-26 (machine busy) |
+| File 2 Wild Things, zoo gate | 6 | 15 (quiet machine, steady) |
+| File 2 partner select menu | not measured | 9-15 (text glyph + shadow sprites overlap: one copy each) |
+| File 2 other menus, movies | 30 | 30 (not re-run in full) |
+| File 1 intro CG and its first cutscene | 30 | 30 (its bar gameplay not reached by the script) |
+
+Still slow, best theory: overlapping alpha geometry (foliage, text shadows) needs the destination per primitive, 100 copies and
+render-pass changes a picture in the zoo, and OpenGL on Metal submits a command buffer for each; the zoo's replay is 75% waiting
+on the GPU. A native Metal renderer (programmable blending) is the real fix; a copy shared by non-overlapping draws of different
+state would save about a quarter. Not tried: a real window's speed. Tools: `ctl.py r "record 300 FILE"` / `r stop`.
