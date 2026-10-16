@@ -29,14 +29,16 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
   data. Its memory card is a .ps2 image (port0.ps2 in --memcards, PCSX2's layout); the game's first card commands are
   answered, no save tried yet.
 - File 1 runs at 30 fps to "no memory card in slot 1, start anyway?" (its mc2_s1 2811 is in; not re-run since).
-- No sound heard in the game yet (the audio dump is silent through the opening movie, whose soundtrack is ADX read from the
-  disc: the stream is read and consumed, the output stays silent).
+- **Sound is heard** (branch `sound`, runtime `biohazard-sound`): Capcom's own IOP sound driver (DRIVE.DAT's unnamed module 10,
+  `src/tsnd.cpp`, docs/capcom_sound.md in the runtime) is stood in natively on the runtime's modhsyn/modmsin synthesizer and libsd, so
+  the SPU2's cores are enabled and set up as the module does. The File 2 dump has the opening movie's soundtrack, the title's
+  music and the menu's confirm sounds (a burst at each START/CROSS press); no clipping. File 1 boots with the driver and is
+  audible too. Not yet judged by ear: the waveform and levels are sane but the mix against the real console isn't compared.
 
 ## In progress
 
 - File 1's memory card (mc2_s1 2811): runtime branch `biohazard-pads`.
-- Capcom's sound driver (Tsnd, RPC sids 0 and 1): runtime branch `biohazard-sound`, game branch `sound`.
-- Sound: why the ADX stream's audio isn't reaching the output (CRI's SPU2 path, the movie's ADX through ADXT).
+- Sound branches `biohazard-sound` (runtime) and `sound` (game) to merge; in-game SEs/BGM (past the menus) unchecked.
 
 ## Still to do
 
