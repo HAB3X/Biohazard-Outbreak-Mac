@@ -66,16 +66,16 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 01b360f782	<c1>[Traits]<c0>\nQuick on her feet and, though a woman,\nsurprisingly strong: an all-rounder.\nThe pick tool widens her range. For\nthose who want to fight and explore.\n
 01ce9c6023	Reloading needs spare ammo that matches\nthe weapon.\nThere are also items that greatly cut the\nreload time.\n
 01e385fc4c	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>1587<c0>"\n
-0203bdb51d	Strange plants cover the walls of the\nunderground ward. My wife's voice\nsuddenly crosses my mind. A phantom\nvoice? No... it's hers...\n
+0203bdb51d	Strange plants cover the underground\nward walls. My wife's voice crosses my\nmind. A phantom voice? No... hers...\n
 02227aae68	However, depending on each AIPC's\ncompatibility with the player character,\nit may not accept your request.\n
 02355f4c68	Permit
 0252570cee	August 1, 1998\n  Critic Clarence to run for council\nJoel Clarence (48), whose book "The Flip\nSide of the Coin" is a bestseller, hinted\non a debate show he'll run in the next\ncouncil election.\n
-027d9dd0a0	I doubt anyone will read this,\nbut I couldn't help writing it.\n...Whatever happens, I've had enough.\nAll I want now is to be released, fast.\n\n                         Alan\n
+027d9dd0a0	I doubt anyone will read this, but I\ncouldn't help writing it. Whatever\nhappens, I've had enough. I just want to\nbe released fast.\n\n                         Alan\n
 029afeb8af	He didn't know the way, so I guided him.\nTo the right path, truly right for them.\n
 02a204a430	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>6SR2<c0>.\nA bother, I know, but it can't be helped.\n                      The Director\n
 03009c1203	-
 040ce3acc1	You can give an AIPC <c1>orders<c0> with <c1>Appeal\n(right stick)<c0>. But each AIPC has its own\nmind, so it doesn't always obey.\n
-0444ee2190	5/22\n  17:30 Good condition, has appetite\n5/23\n  08:30 Hearty appetite\n  13:20 Periodic brain-wave anomaly\n  19:00 Stable condition holds\n
+0444ee2190	5/22\n  17:30 Good, has appetite\n5/23\n  08:30 Hearty appetite\n  13:20 Periodic EEG anomaly\n  19:00 Stable condition holds\n
 04a0c5ed12	Mountain Path
 04c4a76db9	3F
 04eabe7025	Forest 2
@@ -145,6 +145,116 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 19480f60de	Playing Manual: Controls
 1963fae994	Circular
 19d28a86cb	    Western Raccoon City\n    72 Euston St.\n\n        Lucy Mallet\n\n  Born June 2, 1994  Type A\n
-1ab0cdb478	<c1>[About Movement 2]<c0>\nThe directional keys follow the PC's facing;\nthe left stick follows the screen.\n
+1ab0cdb478	<c1>[About Movement 2]<c0>\nThe directional keys follow the PC's facing,\nthe left stick follows the screen.\n
 1add687261	Item command <c1>"Treat"<c0>:\nApproach an injured player and select the\nherb item command <c1>"Treat"<c0>.\nYou can use the herb directly on them\nthere and heal them.\n<c1>"Treat"<c0> also works while lending a shoulder.\n
 1b2316922d	Other works such as sculptures and\npaintings went to museums and private\ncollectors, but nothing was known of\nthis taxidermy. The police told the\nauction manager to list and submit the\nitems sold at once.\n
+1b30db8d12	Jungle Dome
+1b9c462118	Annex 1F Corridor
+1ba013a2f0	Staff Area
+1c5b62d4ad	Grenade Dummy
+1d5edca698	  /  \nI couldn't forget her, so I returned\nto that hospital. The case was buried,\nbut for me nothing was settled.\n
+1d7214dc41	Staff Room Key
+1dcf64dec2	Mother
+1de802beea	-
+1df967354f	[About Suspending]\nExamine a <c1>typewriter<c0> placed in a scenario\nto suspend the game.\nNote that the previous data is erased\nwhen you resume.\n
+1e12d77038	Diary 1
+1e8ec25ead	Service Passage 3
+1ea594997c	Newscomet
+1ea5cd6492	-
+1ebc96a1cd	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>FM54<c0>.\nA bother, I know, but it can't be helped.\n                      The Director\n
+1f72f80e12	  Old path closed autumn-winter\n\n  Period: Sept - Dec\n
+1fb411534f	Annex Roof
+1fb8a20a97	Memo to Carter
+1fc466d474	Syringe (Special Solvent)
+1fcfa08aed	-
+2016ef27f6	Matter thought to be each other's flesh\nwas also found in their stomachs. Whether\nit's later tampering or another cause\nis still unknown.\n
+201e69409d	Umbrella Research Facility
+2078fdf8b0	Report on equipment moved by the station\nreshuffle. Those concerned, please check.\n
+209cb047df	Herb Pie Recipe
+209ce91dc5	-
+20aae9218e	-
+20ba16aaed	Nurse Center
+20f79a65d4	-
+2107e70bf4	3/16\n  08:30 Good, has appetite\n  17:00 Hearty appetite\n3/17\n  23:00 Sudden change\n
+2196f9f1fb	  /  \nHospital in the hills... shady,\nthe deeper I dig.\n
+21a31e6c27	About Reloading
+21cf713be1	  /  \nSince I began feeding her "prey", she\ngrows much faster.\nNow she covers the entire building.\nHer appetite only grows...\n
+21d494e5f1	Annex 2F Corridor
+2239dc0e4c	<c1>[Personal Item:\n                  Lock-Picking Tool]<c0>\nLets you pry open locked doors.\n(* Some doors open only with a key)\n
+223fab966e	Playing Manual: Knowledge (Vol. 1)
+224c428834	Issue 560, Raccoon Zoo News\n\nNice to meet you... I'm Melty.\nI'm the new Rafflesia that bloomed in the\nJungle Dome. Please be kind to me.\n
+226ca5217d	About AIPCs
+22bcec050b	1997\n          Feb   $1800\n          Mar   $4000\n          Apr  $10000\n          Aug   $8000\n          Sep  $12000\n
+22d1094a68	Behavior programs are entered at a control\nterminal via a dedicated <c1>MO disc<c0>.\nTo keep strict secrecy, programs are\nscrambled with a security code.\nTransfer directly from the computer room.\n
+22f52f80ae	Staff Area Key
+22fde39cec	B2F Key
+232aba0253	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>4425<c0>"\n
+23a0eb8279	Room 201
+23b4a8681b	About Kevin
+23c07777e3	Office
+2430273f21	Settings Screen
+25885fa1c3	Culture Room
+25c4a3cb0b	About Jim
+262e696cb5	Old Pamphlet
+268f0e4047	You can reread any file you've obtained\nas many times as you like.\nUse it to recheck information.\n
+26c12ba475	<c1>[Other Trait: Item Search]<c0>\nEven in a room you visit for the first time,\nopen the map screen and items are shown\nby <c1>"?"<c0> marks.\n* The item type can't be known until you\ncheck it.\n
+278c396f43	And yet... if I had trusted the S.T.A.R.S.\nguys, maybe... No, complaining won't help.\nAnyway, I'll try every chance, however thin.\nI can't die here.\n
+27bbd1d670	<c1>[Personal Item: Herb Case]<c0>\nCarries a case that stores up to 3 of each\nherb. Inside it herbs can be combined\ndirectly.\n(* Mixed herbs can't be stocked multiply)\n
+282bdd57d6	Personnel:\n  6\nNote 1:\n  Life-saving is the priority; if the target\n  ignores calls, lethal fire is permitted.\n
+2844665537	-
+286a6c3869	* Copy of the fax, invoice\n  -> Embezzling public funds?\n* Recheck personal asset flows\n* Can it be taken out of the station?\n
+2878a48d03	Padlock Key
+28a75a76e7	A metal plate\nSet with a gem (amethyst)
+2909f18cec	The ringleader is Captain Rodriguez of\nUSS Second Squad. As of 0:00 today he is\na traitor stripped of all authority.\nRetake the cargo and eliminate him.\nFailure is not permitted.\n
+291f19fcb3	<c1>[About Files]<c0>\nVarious information gained in game is\nrecorded as files. Open the status screen\nwith the START button, choose the\n<c1>"FILE"<c0> item with R1/L1, then pick a file.\n
+2a04e9f634	North Waterway
+2a49efbc95	Riverbank
+2a5987f42d	  Evacuation Order\nContents:\n  Guide citizens out of sealed zone\nTime:\n  Today, 7 p.m.\n
+2aa609ed58	<c1>[About Special Actions]<c0>\nThe PC has ways to move beyond walking,\nlike climbing ledges and ladders. Press\nthe circle button before one to do it.\n
+2b24a68c91	Examining a door may give a hint to the key\nyou need.\nFirst, explore various places to find the\n<c1>"key"<c0> that fits the door.\n
+2b41a527c1	This is for emergencies only. Never carry\nthe emblems off or move them from\ntheir set places.\n
+2c5caf170d	-
+2c76fe7711	Before me there's only despair now.\nAh, Dorothy... why did you leave me behind...\n
+2cb35f6f68	That dome will close next month, too.\nWell, with such a stain on it, keeping it\nisn't a great idea. A waste, though.\n
+2cd325a353	Doors may be locked. Using the "key" that\nfits the door unlocks it.\n
+2d0c01116c	A metal plate\nSet with a gem (ruby)
+2d7f2def8d	This group updates survey data twice a\nyear; water quality has worsened very\nsharply over the past year. It told the\ncity conservation office to disclose\nthe cause.\n
+2f21747dd9	Delivery Route
+2f5ac2302c	        * ATTENTION!! *\nThe game keeps running without a break\nwhile the status or file screens are shown.\nBe careful checking files in dangerous\nplaces, such as near enemies.\n
+2fb5196f7e	Dead over half a year, identity unknown.\nLarge amounts of steroids and an unknown\ndrug were found in the skin tissue; police\nopened an investigation HQ.\n
+2fccce1421	<c1>[Personal Item: Coin]<c0>\nA coin always kept in a wallet.\nFlip it and either "heads" or "tails" shows.\nWhat effect would the result bring...?\n
+2fdfa65728	We're moving part of the animal area\n(giraffes, baboons, orangutans) and the shop\nto build a botanical park imitating jungle\nand prairie: the "Jungle Dome"! 750 kinds of\nplants invite you to a hot tropical paradise.\n
+3023f890e9	<c1>[Special Action 2: Aimed Shot]<c0>\n(Keep R1 pressed, then press circle once the\nstance changes)\nA special move with handgun-type weapons.\nA single aimed hit deals heavy damage\n(* not possible with some weapons).\n
+30356ff650	<c1>[About Crawling 2]<c0>\nWhile crawling, the virus gauge rises faster\nthan usual.\nTo recover from crawling, use a healing item\nor be helped by another PC.\n
+307d967f5a	However, some items may refuse orders.\n
+3097d5bd88	Pharmacist's Memo
+309db024d2	-
+3183e3c2e8	To Lloyd,\nThe front shutter lock now works in a\nbothersome new way. Since that case,\ncitizen groups demand tighter security.\nWe must show we acted. Please bear with it.\n
+3290cf2421	<c1>[Traits]<c0>\nWeak body, lowest health of the 8.\nThe virus spreads slowly, a saving grace.\nBest avoid combat and explore, using her\nitem-carrying skill? Master her and you\nmay graduate from beginner.\n
+32ef5e3328	The reagent refining method follows.\nUnless specially permitted, this file may\nnot leave the facility.\n                  Michael Jenkins\n
+3327992130	-
+3339e374b2	The remodeling plan reportedly had the word\nof current chief Brian Irons. The many linked\ncontraptions in the station were his idea.\nOfficially for crime prevention, but everyone\nrumors it grew from his obsessive taste in art.\n
+333a04d265	To friends who come, I'll give a special\nmascot medal. Collect lots and you can get\na free zoo pass or nice presents.\nDo your best to collect them!\nWell then, I'll be waiting in the dome!\n
+3370c17940	Place on the room floor to use\nNeutralizes the nerve gas effect
+33fe99a163	A small medical syringe\nIt's empty
+3436d7b6ab	B6F Security Center
+345c100bfe	Subway B2F
+3585f3c0b1	  September 18\nChecking the tunnel, a huge bug bit my neck.\nLeft alone it swelled and the itching won't\nstop. Damn annoying.\n
+367abf5aae	-
+36a6e3cc00	Raccoon Zoo
+37a58cb26e	Pendant
+37b6718ac7	\n  I eat and drink in the <c1>nap room<c0>.\n\n  I really must <c1>DIET<c0>...\n
+37dff5897d	\n  The <c1>nap room<c0> secret drink rocks.\n\n  After night shift it's <c1>WINE<c0>.\n
+38808e2ecf	Syringe (Empty)
+38becd1205	Cane
+38d6d45dc8	<c1>[Extra Item: Lucky Coin]<c0>\nA lucky item believed to have some effect\njust by carrying it.\nWhat benefit might it have...?\n
+38e3db8ca5	-
+391d79c96f	A display piece, no launcher\nWeight near the real thing
+39bd89f64f	        * ATTENTION!! *\nThe button names in each explanation assume\nthe default settings.\nIf you changed the button settings, read\nthem accordingly.\n
+3a8bb9e0b8	Removing the coupler cover on the car's side\nreleases the coupler too. To remove the\ncover, use the <c1>two emblems<c0> for car decoration\nas keys: align the joints behind and twist\nthem in.\n
+3aa801c695	It was the whole hospital's crime, but the\ndirector's motive may have differed. His\nwife was also an inpatient with an incurable\ndisease. Illegal drugs or anything: he had\nto try.\n
+3b8c432d69	The underground line laid by the Kite brothers\nbegan as a small 2-mile run linking only 3\nstations. With economic growth from Umbrella\nridership rose; it now spans 8 stations and\n8.5 miles.\n
+3ba735ab8b	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>B37B<c0>.\nA bother, I know, but it can't be helped.\n                      The Director\n
+3bcdffbf42	[About the Map 3]\nIf you hold the <c1>triangle button<c0> while opening\nthe map screen, you can move the PC while\nthe map is shown.\n
+3c5e4ce768	\n  * ERROR *\n  Changing settings needs\n  administrator permission\n\n               -> OK\n
+3cc5b8a383	[About Crawling 1]\nWhen damaged and out of health, the PC goes\ninto <c1>a crawling state<c0>.\nRoom changes and attacks are restricted\nwhile crawling.\n
