@@ -28,6 +28,11 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
   Its DualShock 2 works (SDK 2.8's dbcman and ds2o_s1, merged from `biohazard-pads`): a scripted press reaches the game's pad
   data. Its memory card is a .ps2 image (port0.ps2 in --memcards, PCSX2's layout); the game's first card commands are
   answered, no save tried yet.
+- **File 2 plays**: START skips the opening movie; the title screen ("PRESS START BUTTON" over the title movie), the main menu
+  (SINGLE PLAY, COLLECTION, CHARACTER LOG, OPTIONS; NETWORK PLAY is greyed), scenario, character and partner select work (○
+  confirms, ✕ goes back, as the Japanese game has them), and the Training Ground scenario loads into the game: Kevin in the bar
+  with the HUD and the item menu (`milestones/file2-main-menu.png`, `file2-in-game.png`). Driven by `--press` only so far:
+  nothing plays by hand yet (the keyboard keys are the runtime's defaults, not the RE4/RE5 PC layout).
 - File 1 runs at 30 fps to "no memory card in slot 1, start anyway?" (its mc2_s1 2811 is in; not re-run since).
 - No sound heard in the game yet (the audio dump is silent through the opening movie, whose soundtrack is ADX read from the
   disc: the stream is read and consumed, the output stays silent).

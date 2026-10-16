@@ -34,6 +34,8 @@ name = "game"
 file = "BIN/2.DAT"
 base = "0x543000"
 text = ["0x543040", "0x715b80"]
+# Called through pointers the analysis doesn't see (found by running)
+extra = ["0x640870"]
 
 [[overlays]]
 name = "netwk"
