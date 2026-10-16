@@ -15,6 +15,7 @@ import hashlib
 import re
 import struct
 
+LINE_MARKERS = (b"\x81\xa5", b"\x81\x40")  # ▼ and the ideographic space, as Shift-JIS
 TAG = re.compile(rb"<[A-Za-z][0-9A-Za-z]*>|%[a-z]")
 
 
@@ -34,11 +35,23 @@ class DoesNotFit(Exception):
     pass
 
 
+def cells(raw):
+    """Columns a line takes in the game's fixed-pitch font: a full-width character is two, a half-width one, one; the control
+    tags none."""
+    return sum(2 if ord(c) > 0xFF else 1 for c in TAG.sub(b"", raw).decode("cp932"))
+
+
 def english_bytes(text, original):
-    """The bytes of an English line: plain ASCII, with the control tags of the Japanese it replaces."""
+    """The bytes of an English line: plain ASCII, with the control tags and the end marker of the Japanese it replaces. A Japanese line that
+    ends in spaces (a field's width: the choices' place, a column) keeps its width: the English is padded to it."""
     raw = text.replace("\\n", "\n").encode("ascii")
     if tags(raw) != tags(original):
         raise ValueError(f"control tags {tags(raw)} differ from the original's {tags(original)}")
+    for marker in LINE_MARKERS:  # ▼ (wait for a button) or a full-width space ends a line: kept, so the English leaves it out
+        if original.endswith(marker):
+            raw += marker
+    if original.endswith(b" ") and not raw.endswith(b" "):
+        raw += b" " * max(0, cells(original) - cells(raw))
     return raw
 
 

@@ -27,6 +27,8 @@ def load_translations(folder, units):
                 continue
             uid, _, rest = line.partition("\t")
             english = rest.split("\t")[0]
+            if english == "-":  # kept Japanese on purpose
+                continue
             if uid not in units:
                 raise SystemExit(f"{tsv.name}:{n}: unit {uid} is not in this disc's text")
             if uid in out:
