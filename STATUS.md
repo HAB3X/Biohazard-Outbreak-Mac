@@ -37,7 +37,9 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
   Escape is START, the game's own pause menu (item, special and file screens: `file2-pause-file.png`). It's the RE4/RE5 PC
   layout as far as the buttons' roles in this game allow; every control is rebindable in the PC menus. Mouse look (the right
   stick) isn't bound: the game has no free camera to aim.
-- File 1 runs at 30 fps to "no memory card in slot 1, start anyway?" (its mc2_s1 2811 is in; not re-run since).
+- **File 1 plays too**: its memory card module (mc2_s1 2811) is in, and with the same menus (scenario, difficulty, character
+  select) it loads the "Outbreak" scenario into the game with its three characters (`milestones/file1-in-game.png`). Same
+  controls (src/controls.h).
 - No sound heard in the game yet (the audio dump is silent through the opening movie, whose soundtrack is ADX read from the
   disc: the stream is read and consumed, the output stays silent).
 
@@ -63,6 +65,10 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
 ## Notes
 
 - `tools/xref.py`, `tools/callers.py`: where code builds an address; a library's entry points.
+- `tools/pointer_functions.py`: functions reached only through tables of pointers (the game's state handlers): the
+  recompiler starts functions at calls, so the run stops with "not a function start". It finds data words that point at a
+  prologue and code after zero padding that follows a JR RA, and writes them into the config's `extra` lists (`--write`).
+  Run it, rebuild, run again until no start is missing.
 - A trace build (the runtime's PS2_TRACE_ENTER; `cmake -S . -B build-trace -DCMAKE_C_FLAGS=-DPS2_TRACE_ENTER
   -DCMAKE_CXX_FLAGS=-DPS2_TRACE_ENTER`): function entry counts to $PS2_TRACE_FILE at the end of a --run-seconds run,
   $PS2_TRACE_ARGS (entries with their argument registers), $PS2_TRACE_FIND=LOW-HIGH (entries with an argument in a range),
