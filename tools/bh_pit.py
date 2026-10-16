@@ -67,7 +67,7 @@ class SlotTable:
                 english = new[text.unit_id(raw)]
                 if len(english) + 1 > room:
                     raise text.DoesNotFit(f"pit slot at {start:#x} (unit {text.unit_id(raw)}, {english[:30]!r}): {len(english) + 1} bytes, the slot has {room}")
-                out[start:start + room] = invert(english) + b"\xff" * (room - len(english))
+                out[start:start + room] = invert(english) + bytes(room - len(english))  # the terminator: 0xFF once inverted
         return bytes(out)
 
 
@@ -76,10 +76,8 @@ class DocChain:
     (the title, then each page), then the texts: the title, then the pages, each ending in a newline; every record ends on
     a four byte boundary, padded with zero bytes (0xFF once inverted). The last record's next is the end of the data."""
 
-    def __init__(self, entry, room=None):
+    def __init__(self, entry):
         self.entry = entry
-        self.room = room or len(entry)  # the entry may grow into the padding before the next entry (the container's size
-        # field is then raised: bh_build_patch.py)
         self.count = struct.unpack_from("<I", entry, 0)[0]
         self.records = []  # (position, kind, [Shift-JIS bytes of the title and the pages without the padding])
         pos = 4
@@ -91,27 +89,25 @@ class DocChain:
                 raise ValueError(f"document record at {pos:#x} is not in the format")
             self.records.append((pos, kind, [sjis[offs[i]:offs[i + 1]].rstrip(b"\xff") for i in range(pages + 1)]))
             pos = nxt
-        self.tail = entry[pos:].rstrip(b"\0")  # a few stage files keep something (12 bytes) after the records
 
     def texts(self):
         return {text.unit_id(raw): raw for _, _, segs in self.records for raw in segs if text.has_japanese(raw)}
 
     def rebuilt(self, new):
-        out = bytearray(struct.pack("<I", self.count))
-        for pos, kind, segs in self.records:
+        """Every record keeps its place and its next link (the game or another table may refer to the offsets: moving the
+        records made the Training Ground's load crash), so a record's text must fit the record's own room."""
+        out = bytearray(self.entry)
+        for index, (pos, kind, segs) in enumerate(self.records):
+            end = struct.unpack_from("<I", self.entry, pos)[0]
             body = [new.get(text.unit_id(raw), raw) for raw in segs]
             body = [b + b"\n" if raw.endswith(b"\n") and not b.endswith(b"\n") else b for b, raw in zip(body, segs)]
             head = 8 + 4 * len(body)
-            offs, at = [], len(out) + head
+            at, offs = pos + head, []
             for b in body:
                 offs.append(at)
                 at += len(b)
-            at += -at % 4
-            out += struct.pack("<IHH", at, len(segs) - 1, kind) + struct.pack("<%dI" % len(offs), *offs)
-            for b in body:
-                out += invert(b)
-            out += bytes(at - len(out))
-        out += self.tail
-        if len(out) > self.room:
-            raise text.DoesNotFit(f"the documents take {len(out)} bytes, there is room for {self.room}")
-        return bytes(out) + bytes(max(0, len(self.entry) - len(out)))
+            if at > end:
+                raise text.DoesNotFit(f"document record {index} at {pos:#x} needs {at - pos} bytes, it has {end - pos}")
+            out[pos + 8:pos + head] = struct.pack("<%dI" % len(offs), *offs)
+            out[pos + head:end] = invert(b"".join(body)) + bytes(end - at)
+        return bytes(out)
