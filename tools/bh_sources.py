@@ -4,6 +4,7 @@ import re
 import tomllib
 
 import bh_archive as archive
+import bh_pit as pit
 import bh_text as text
 
 CONFIG = archive.REPO / "config" / "translate.toml"
@@ -51,4 +52,22 @@ def message_files(arc, game):
             for j, (member, node) in enumerate(stage.members()):
                 if wanted.match(member):
                     out.append((f"/NETBIO00.DAT/@{i}({name})/@{j}({member})", node))
+    return out
+
+
+def pit_entries(arc, game):
+    """[(name, Node, entry offset, SlotTable or DocChain)] of the text entries of the game's pit files."""
+    out = []
+    members = [("pit_comn.dat", node) for name, node in arc.open("/NETBIO00.DAT/romdata.afs").members() if name == "pit_comn.dat"]
+    for name, stage in arc.open("/NETBIO00.DAT").members():
+        if re.fullmatch(r"r\d{3}\.afs", name):
+            members += [(m, node) for m, node in stage.members() if m.lower().startswith("pit_s")]
+    for name, node in members:
+        data = node.read()
+        entries = pit.momo(data)
+        for index, (kind, limit) in pit.kinds_of(name).items():
+            offset, size = entries[index]
+            if size:
+                entry = data[offset:offset + size]
+                out.append((name, node, offset, pit.DocChain(entry) if kind == "docs" else pit.SlotTable(entry, limit)))
     return out

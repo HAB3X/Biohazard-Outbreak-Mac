@@ -70,6 +70,9 @@ def main(argv):
         msg = text.MsgBin(node.read())
         units.update(msg.texts())
         messages.append((path, node, msg))
+    pits = sources.pit_entries(arc, game)
+    for _, _, _, table in pits:
+        units.update(table.texts())
     new = load_translations(folder, units)
     patches = []  # (disc offset, bytes)
     try:
@@ -83,6 +86,11 @@ def main(argv):
             mine = {u: new[u] for u in msg.texts() if u in new}
             if mine:
                 patches += [(node.offset + off, data) for off, data in changed_runs(node.read(), msg.rebuilt(mine))]
+        for name, node, offset, table in pits:
+            mine = {u: new[u] for u in table.texts() if u in new}
+            if mine:
+                old = table.entry
+                patches += [(node.offset + offset + off, data) for off, data in changed_runs(old, table.rebuilt(mine))]
     except text.DoesNotFit as e:
         raise SystemExit(f"does not fit: {e}")
     patches.sort(key=lambda p: p[0])
