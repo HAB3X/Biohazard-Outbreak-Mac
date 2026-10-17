@@ -1,0 +1,67 @@
+58f1ef5683	<p1><c1>CHECK!<c7>
+79327f9c0e	<p1><c1>CHECK!<c7>
+3ba1dd53fa	<p1>Pick up 3 <c2>Files<c7> and
+b242c2429b	<p1>go to the door
+d1ddc525b3	<p1>go to the door
+c02ceb6811	<p1>Task complete
+31b8b77f68	<p1>Task complete
+ca6ea024d4	<p1>Pick up the <c2>Staff Room Key<c7> and
+254a307b32	<p1>use it at the door
+0f5463b373	<p1>use it at the door
+44fdd5b8d7	<p1>This room's tasks are done
+0f2be52c32	<p1>Move on to the next room
+31a9913b48	<p1>Move on to the next room
+4e46a6162f	<p1>A crawling AIPC:
+d29874e515	<p1>Please <c2>lend a shoulder<c7>
+47a7008c02	<p1>Please <c2>lend a shoulder<c7>
+842d2853bc	<p1>For the AIPC's <c2>First Aid Spray<c7>,
+2018ff629e	<p1>use the <c2>Order<c7> command
+f1ffffd4f0	<p1>use the <c2>Order<c7> command
+1d6ce81bee	<p1><c2>Ask<c7> the AIPC for an <c2>Iron Pipe<c7>,
+c00c6d6cd1	<p1>then take the item
+438d15fd3c	<p1>then take the item
+c8258d29ce	<p1><c2>Give<c7> the <c2>Iron Pipe<c7>
+4c87148daa	<p1>to the AIPC
+de1f74cf6b	<p1>to the AIPC
+d3cca73a87	<p1><c2>Attack<c7> the <c2>door<c7> to
+6622ecef2a	<p1>break the lock
+b5e01b5aef	<p1>break the lock
+557a627f90	<p1>The tasks here are done
+c48f519a29	<p1>Take <c2>items<c7> from the
+bc30967e2f	<p1>corpse
+e68e30cdaa	<p1>corpse
+58bfcc01d0	<p1>Pick up <c2>ammo<c7> beside the corpse,
+7e2b226f22	<p1>then <c2>reload<c7> your gun
+e416dede81	<p1>then <c2>reload<c7> your gun
+d151aedf23	<p1>While crawling,
+3dfba8c891	<p1><c2>pick up<c7> an item
+c826712c05	<p1><c2>pick up<c7> an item
+2d344ecf75	<p1><c2>Use<c7> a healing item
+edcd55ba22	<p1>and stand up
+cb5eb3a70b	<p1>and stand up
+c8a80ef291	<p1>Pick up a weapon and
+f6a3123927	<p1><c2>equip<c7> it
+853f6e1ffd	<p1><c2>equip<c7> it
+63be8b10ed	<p1>If you go further,
+9d155ead16	<p1>you will fight enemies
+19d8578fbd	<p1>you will fight enemies
+24ec50c74d	<p1>If no weapon is equipped,
+4896c0554f	<p1><c2>equip<c7> one before going on
+f283473e15	<p1><c2>equip<c7> one before going on
+a2cf3cefbf	<p1>Defeat the enemy
+a16704540a	<p1>Defeat the enemy
+ec927b1a96	<p1>Enemy defeated
+bde70565a7	<p1>Enemy defeated
+138018b420	<p1>That completes all of the training
+e826185390	<p1>That completes all of the training
+bbccbe26dc	<p1>Please enjoy the main game
+2c5bcbd4a6	<p1>Please enjoy the main game
+7706229240	<p1>"Staff Room"
+5e6607ef5f	<p1>The door is locked
+03137e61ca	<p1>[The lock looks brittle]
+f735256756	<p1>Do everything specified and
+64e26f1ef1	<p1>the door will be unlocked
+533407827d	<p1>the shutter will open
+0965f8edd8	<p1>A file is lying here
+43cf784b67	<p1>You already checked this file
+5c39ca34ff	<p1>No need to read it here

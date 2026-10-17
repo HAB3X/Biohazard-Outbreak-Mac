@@ -7,4 +7,10 @@ VAR=$(echo "$GAME" | tr a-z A-Z)_DISC
 DISC="$(eval echo \"\$$VAR\")"
 [ -n "$DISC" ] || DISC="$(python3 -c "import json;print(json.load(open('$(dirname "$0")/local.json'))['$GAME'])" 2>/dev/null)"
 APP="$(dirname "$0")/build/biohazard-$GAME"
+# English: ./run.sh file2 --english builds build/english-file2.patch from your disc and the translations, then plays with it
+case " $* " in *" --english "*)
+  set -- $(echo "$@" | sed 's/--english//')
+  python3 "$(dirname "$0")/tools/bh_build_patch.py" "$GAME" "$(dirname "$0")/build/english-$GAME.patch" || exit 1
+  exec "$APP" --disc "$DISC" --patch "$(dirname "$0")/build/english-$GAME.patch" "$@" ;;
+esac
 exec "$APP" --disc "$DISC" "$@"
