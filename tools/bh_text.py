@@ -214,9 +214,10 @@ class MsgBin:
 class HtmlPage:
     """A page of the network screens' browser (File 2's rfff.afs *.HTM): Shift-JIS HTML. A unit is the text between two
     tags, without its leading and trailing white space; a line break (<br>) belongs to the text, so the English breaks its
-    own lines. Tags and comments (the browser reads settings from one: <GAME-STYLE>) stay as they are. The page keeps its
-    size: the archive's table and the sectors after it are left alone, so a shorter English is made up with spaces at the
-    end, and a longer one does not fit."""
+    own lines. Tags and the browser's own comments (ASCII keywords it reads: <GAME-STYLE>, INPUT-SFIELD, CHG-IMG-BUTTON) stay
+    as they are; a comment with Japanese in it is a note of the page's authors, dropped in the English page to give the text
+    room. The page keeps its size: the archive's table and the sectors after it are left alone, so a shorter page is made up
+    with spaces at the end, and a longer one does not fit."""
 
     SPLIT = re.compile(rb"<!--.*?-->|<(?!br>)[^<>]*>", re.S | re.I)
 
@@ -241,6 +242,7 @@ class HtmlPage:
             out += self.entry[pos:lo] + new.get(unit_id(self.entry[lo:hi]), self.entry[lo:hi])
             pos = hi
         out += self.entry[pos:]
+        out = re.sub(rb"<!--(?:(?!-->).)*[\x80-\xff](?:(?!-->).)*-->", b"", bytes(out), flags=re.S)
         if len(out) > len(self.entry):
             raise DoesNotFit(f"the page needs {len(out)} bytes, it has {len(self.entry)}")
         return bytes(out + b" " * (len(self.entry) - len(out)))

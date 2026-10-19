@@ -1,0 +1,196 @@
+96cefc438c	<BODY><SIZE=3><COLOR=6>See the list of rooms.<END>
+4544f1e064	<BODY><SIZE=3><COLOR=6>Find opponents automatically and start a game.<END>
+26d511b3d0	<BODY><SIZE=3><COLOR=6>Not available now.<END>
+bfceb19587	<BODY><SIZE=3><COLOR=6>Send messages and read the ones you received.<END>
+041bc77645	<BODY><SIZE=3><COLOR=6>See your registered friends' info.<END>
+553293e37f	<BODY><SIZE=3><COLOR=6>Block a given person's chat messages.<END>
+9492b04726	<BODY><SIZE=3><COLOR=6>Search where other users are.<END>
+1aee1350d6	<BODY><SIZE=3><COLOR=6>See your personal records.<END>
+c9eb9c756a	<BODY><SIZE=3><COLOR=6>See the terms of use and national rankings.<END>
+80bbe503c2	<BODY><SIZE=3><COLOR=6>Wait until an opponent is found.<END>
+53d97a7712	<BODY><SIZE=3><COLOR=6>Cancel QUICK START.<END>
+83a3a6e119	Friend list
+bb380adbfe	Speaker display
+cb23a227ea	Hello...
+3a7f9a0e76	Let's play!
+e3c739c6f5	Thanks
+014fb4ed4c	Hi, I'm new
+97fa0a89da	Anyone...
+822b14c797	Roger      
+edf3dbcf15	Sorry...
+c6e973a4a7	Time to go
+b8cdb522ed	Good game
+b17e0174d3	Password..
+5ff8a32c25	I'll join
+e27a1031c2	New room...
+355450ff46	All welcome
+76abafa6e6	Speed run
+013302fd16	Rookies OK
+56c0069f5b	Mid-lvl OK
+edbdc2d497	Experts OK
+138968fab1	SP hunt    
+c3a68af824	Laid-back..
+893a988efa	First play
+8fa41fda55	<html><head><title>Error</title></head><body text="#000000" bgcolor="#ffffff"><br><center><table BORDER="3" WIDTH="540" BGCOLOR="#FF6600" ><tr><td><center><font color="#FFFFFF" size="5"><b>Game start failed</b></font></center></td></tr></table></center><br><br><center><table cellspacing="5" cellpadding="5" WIDTH="560" ><tr><td>
+43261c36c0	<br><br></td></tr></table></center><center><A HREF="mmbb://BACK_TO_MENU">Back</A></center></body></html>
+feea0866ad	<br><br>Error code:
+ca9359fc64	<html><head><title>Repost error</title></head><body><h2>This page can't be shown without sending its data again.</h2><hr>Go back and enter the data again.</body></html>
+99a2267cb8	<html><head><title>Error</title></head><body><h2>An error occurred.</h2><hr>The page can't be shown because of an error.</body></html>
+3ae06873ab	<html><head><title>Network error</title></head><body><h2>An error occurred in communication.</h2><hr>An error occurred while talking to the server.<br>The server may have a problem, or the network settings may be wrong.<br>Check the settings and try again later.</body></html>
+5124737cf2	<html><head><title>Timeout error</title></head><body><h2>The connection timed out.</h2><hr>Communication with the server timed out.<br>The server may have a problem, or the network settings may be wrong.<br>Check the settings and try again later.</body></html>
+e137214e80	<html><head><title>Name lookup error</title></head><body><h2>The server name could not be resolved.</h2><hr>The server name could not be resolved.<br>The DNS server may have a problem, or the network settings may be wrong.<br>Check the DNS server settings and try again.</body></html>
+aee3b6d5e8	<html><head><title>SSL error</title></head><body><h2>An error occurred in SSL communication.</h2><hr>An error occurred in SSL communication with the server.<br>The server may have a problem.<br>Try again later.</body></html>
+29aea97aae	<html><head><title>Cancelled</title></head><body><h2>Cancelled by the user.</h2><hr></body></html>
+3d13821020	<html><head><title>Proxy server error</title></head><body><h2>An error occurred talking to the proxy.</h2><hr>The proxy server may have a problem, or the network settings may be wrong.<br>Check the proxy settings and try again.</body></html>
+38033c12b4	<html><head><title>Transfer error</title></head><body><h2>A data transfer error occurred.</h2><hr>The data received from the server is invalid.<br>Try again later.</body></html>
+72381c33ef	 Reload
+1d9bb15a2b	 Quit net
+2c4413aaa6	  EXIT
+ae7f41778f	Address
+df62913794	Could not connect.
+b38fb554a8	The service is very busy right now. Sorry for the trouble; please try again after a while.
+2185ddc60e	There was no reply from the server.
+26c24c8daf	Could not connect.<br>Please try again in about 5 minutes.
+7da3fddca4	You are over the spending limit of your "Game Value Plan Limit" or "Overuse Alert Plan".
+ba929a243f	The lobby server information is invalid.
+3d15869ab5	Register with these details?
+97c2d4b583	 Some items are left blank
+8e8b5590f9	Do you agree to the latest\n  online terms of use?
+32251ea108	If you don't agree to the\n  latest online terms of use,\n you can't play online.\n   Is that all right?
+b150ef24d5	  A network error occurred.\nPlease connect again.\n
+7cd6599820	Could not connect to the server.\n      Reconnect?\n
+c83e2abb31	Server name
+71402949ec	Mode
+9210138c21	Max players
+6188d85b3d	10000
+4c156bfa2b	Players now
+1f21d68b56	Text window line 1
+4123b2db12	Text window line 2
+343a558191	Text window line 3
+2ed6667e74	%4d
+4612c98094	Select AREA
+138dfd6865	Your phone number
+ba249792d0	Name
+3760104ebd	Age
+1ee90000cf	Postcode
+dd7edd1e3e	Address
+beb897992c	must be filled in
+f7dc1e3ddb	Register with these details?
+6be13da970	Yes
+163d264394	Download now?
+256c6266fd	ID:
+eba612b5c8	HN:
+c2be53c85c	is already registered
+e88b8b9aee	Downloading...
+5dfe3865f6	Connection failed
+1ad36e7ee0	Could not connect
+573e989c5b	Check that the modular cable
+2a88ad6117	is plugged into the modem
+de244abdfd	and the modem's settings are right
+b386dcf22d	If the settings are right
+d2db4b6d05	and there's still no response,
+22c4b667ad	please contact the Capcom
+5bdcab0896	user support center
+3890f87a59	The download failed
+993400bd73	Line busy
+bd9caeff37	Please wait a while
+1e31742f40	Check that the modem's
+14de86d294	settings are right
+264f9eee64	Choose the MEMORY CARD slot
+61c8199f23	to save the game data to
+f2dfd54c9c	Your online records are on
+00413d695a	the status screen
+4b94bea662	X button = Cancel
+ad47b48529	MEMORY CARD slot 1
+c9a241268b	MEMORY CARD slot 2
+306bf40117	Looking for an opponent
+2aaca46b1b	Please wait
+09b44f0d3b	The download is complete
+415310e632	Your match was declined
+65f1f02b84	Connected over a KDDI line
+a5edaf664d	Don't switch off the power while playing
+3a3d42e300	Cut off: the line is unstable
+1ae035029b	No handle name was entered
+d8e3ab13e7	Register this handle name (HN)?
+642a01a56a	is registered
+41ad2f4e78	could not be registered
+a3577532ba	No more IDs can be registered
+f91ccac1a7	Please edit an ID
+ab4ce19d6a	Registration complete
+16a6b526fd	Your Capcom ID is
+c47e76f7a0	.
+df9075381a	Connecting to the server
+64bdf4b326	Hold START for 1 second or more
+d0f43982f3	to cancel
+6f99715876	Do you agree to the latest
+5eb6c46c0b	terms of use?
+620f6a2af1	is not connected to the
+94e1eed9b2	game server, or is playing a game
+406be8a370	Connecting costs a call charge
+1a43c9f7c0	While connected to the Multi Matching
+f96889983f	server it costs 10 yen per 3 min
+1ce7efbac7	In a match
+7a8bbc9432	it costs 13 yen per minute
+f46d1ee246	Connect to the Multi
+f426a99b0a	Matching server?
+4222135243	MEMORY CARD slot %s: checking the
+750818e294	"PlayStation 2" Memory Card (8MB)
+0f88d92f21	Don't switch off the power or remove
+79df472608	the "PlayStation 2" Memory Card (8MB)
+8bfcf2b1d0	Could not load properly
+543e5c8c5e	Controls
+f8538dad53	D-pad       : Move
+b44f829cbb	Circle      : OK
+459e3189e9	X           : Cancel
+41c0992c4e	Triangle    : Software keyboard
+11ea3f96a7	Square      : Chat log
+19e80033f8	On the member data screen
+ebd23ebe2d	L1          : Change member
+3439b34214	R1          : Change member
+edbf3ace1c	L2          : Turn page
+04857c1469	R2          : Turn page
+eb63aedb9e	START       : Close 
+f163830f71	Register this ID?
+eff21a632c	Returning to the title screen
+7bca6ea30e	Disconnect the line?
+f3f5daf520	Saving the system file to
+1bd62de9bd	the Memory Card (8MB)
+ced82658fd	Saving the NET file to
+4db3efc6c5	Could not save properly
+4fccbb6f84	Press the circle button
+e7444e830a	Talking to the Capcom server
+7d87367233	No modem was found
+1511a8f16c	Check that the modem is attached
+37805a433f	If you don't agree to the terms
+62391c3d0b	of use you can't play online.
+d70268ab55	Is that all right?
+a7ffc21184	Check that the phone line is
+5a1ec59fef	connected to the modem
+f5221b5244	Do you have permission from the
+be78c68ac9	phone line's owner (your family)?
+f7114df483	To play online, you
+d1c9be7322	must agree to the
+4f36790d25	online terms of use
+575028f8f2	Have you read the online terms of use?
+d6dc55f66d	I agree
+6a47b99422	I disagree
+5d309726c3	Finding modem
+c9c8699251	Could not connect to the server
+fd87a699aa	The server may be down
+ef28a9c450	for maintenance
+5b569f7c40	There was no input for a while,
+6297b9e8cf	so the line was cut
+d5e0223dd4	A connection fault occurred
+e6358d89a4	Ending the match; back to the lobby
+a8a1c51031	MEMORY CARD slot %s has no "PlayStation 2"
+c9ae64d89e	Memory Card (8MB) inserted
+ac1476dedc	Insert the card with your NET file,
+e858eb9e00	into MEMORY CARD slot %s
+efd0f014d4	Circle = Don't save
+d518dd9a87	Insert into MEMORY CARD slot %s a
+3b73b23ee9	"PlayStation 2" Memory Card (8MB)
+6a70f3f031	with 123 KB or more free
+72a0bb9259	Change the registered details?
+0842cbd20d	A NET file can be shared by
+cfb3ad1bfe	the games that support it
+1006646858	No supported connection device (modem)

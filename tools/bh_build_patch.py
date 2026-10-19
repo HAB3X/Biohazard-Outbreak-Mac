@@ -131,8 +131,11 @@ def main(argv):
         for name, node, offset, table in pits:
             mine = {u: new[u] for u in table.texts() if u in new}
             if mine:
-                patches += [(node.offset + offset + off, data)
-                            for off, data in changed_runs(table.entry, table.rebuilt(mine))]
+                try:
+                    rebuilt = table.rebuilt(mine)
+                except text.DoesNotFit as e:
+                    raise text.DoesNotFit(f"{name}: {e}")
+                patches += [(node.offset + offset + off, data) for off, data in changed_runs(table.entry, rebuilt)]
     except text.DoesNotFit as e:
         raise SystemExit(f"does not fit: {e}")
     patches.sort(key=lambda p: p[0])
