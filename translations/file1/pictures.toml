@@ -144,3 +144,40 @@ edit = [
     { box = [0, 80, 90, 96], text = "CANCEL", font = "din", size = 15, color = "auto", outline = "auto" },
     { box = [0, 96, 90, 112], text = "SELECT MAP", font = "din", size = 15, color = "auto", outline = "auto" },
 ]
+
+[[picture]]
+file = "romdata.afs/demo_com.tex"
+tim = 4
+note = "the violence warning at start-up"
+edit = [{ box = [30, 150, 500, 212], erase = "inpaint", threshold = 190 },
+        { box = [36, 150, 500, 212], erase = "keep", text = "This game contains scenes of violence\nand grotesque imagery.", font = "helvetica", size = 22, color = "#FFFFFF", outline = "#101010" }]
+
+[[picture]]
+file = "romdata.afs/demo_com.tex"
+tim = 6
+note = "the character log's tabs"
+edit = [
+    { box = [423, 385, 512, 407], text = "SPECIAL", font = "arial", size = 17, color = "auto", outline = "" },
+    { box = [421, 409, 512, 432], text = "COMBAT & TEAM", font = "arialnarrow", size = 17, color = "auto", outline = "" },
+    { box = [256, 435, 331, 457], text = "SCENARIO", font = "arialnarrow", size = 17, color = "auto", outline = "" },
+    { box = [332, 435, 373, 457], text = "BASIC", font = "arialnarrow", size = 17, color = "auto", outline = "" },
+    { box = [413, 435, 473, 457], text = "ITEM", font = "arial", size = 17, color = "auto", outline = "" },
+]
+
+[[picture]]
+file = "romdata.afs/Error.tm2"
+tim = 0
+note = "the network error screen"
+edit = [{ box = [58, 186, 470, 266], erase = "inpaint", threshold = 170 },
+        { box = [64, 190, 470, 212], erase = "keep", text = "Communication error", font = "helvetica", size = 20, color = "#F0F0F0", outline = "#101010" },
+        { box = [64, 236, 500, 262], erase = "keep", text = "The connection was unstable and has been cut.", font = "helvetica", size = 20, color = "#F0F0F0", outline = "#101010" }]
+
+[[picture]]
+file = "romdata.afs/demo_com.tex"
+tim = 1
+note = "the ACCESS licence notice"
+edit = [
+    { box = [70, 309, 440, 342], erase = "#FFFFFF", text = "The Internet (network) functions of this product use\nAVE-TCP® by ACCESS Co., Ltd.", font = "arial", size = 10, color = "#101010", outline = "" },
+    { box = [70, 342, 440, 357], erase = "#FFFFFF", text = "AVE-TCP® is a registered trademark of ACCESS Co., Ltd. in Japan.", font = "arial", size = 10, color = "#101010", outline = "" },
+    { box = [70, 386, 440, 400], erase = "#FFFFFF", text = "Kana-kanji conversion in this product is by ACCESS Co., Ltd.", font = "arial", size = 10, color = "#101010", outline = "" },
+]

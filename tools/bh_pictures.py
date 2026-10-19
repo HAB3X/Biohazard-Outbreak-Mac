@@ -48,6 +48,7 @@ FONTS = {
     "arial": "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
     "avenir": ("/System/Library/Fonts/Avenir Next.ttc", 2),  # Demi Bold
     "avenircond": ("/System/Library/Fonts/Avenir Next Condensed.ttc", 2),
+    "helvetica": ("/System/Library/Fonts/HelveticaNeue.ttc", 0),
     "fredoka": "ps2-runtime:runtime/fonts/Fredoka-SemiBold.ttf",
     "luckiest": "ps2-runtime:runtime/fonts/LuckiestGuy-Regular.ttf",
     "unicode": "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",  # the arrows
