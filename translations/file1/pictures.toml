@@ -181,3 +181,110 @@ edit = [
     { box = [70, 342, 440, 357], erase = "#FFFFFF", text = "AVE-TCP® is a registered trademark of ACCESS Co., Ltd. in Japan.", font = "arial", size = 10, color = "#101010", outline = "" },
     { box = [70, 386, 440, 400], erase = "#FFFFFF", text = "Kana-kanji conversion in this product is by ACCESS Co., Ltd.", font = "arial", size = 10, color = "#101010", outline = "" },
 ]
+
+# The network lobby (rfff.afs): its button hints, labels and messages
+[[picture]]
+file = "rfff.afs/lobby_03.tm2"
+tim = 0
+note = "the lobby's button hints"
+edit = [
+    { box = [0, 3, 59, 21], key = "start" },
+    { box = [60, 2, 168, 22], erase = "#000000", text = "Sub-window", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [2, 26, 23, 46], key = "triangle" },
+    { box = [24, 26, 168, 46], erase = "#000000", text = "Soft keyboard", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [2, 50, 23, 70], key = "square" },
+    { box = [24, 50, 168, 70], erase = "#000000", text = "Chat log", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [2, 74, 23, 94], key = "triangle" },
+    { box = [24, 74, 168, 94], erase = "#000000", text = "Scenario info", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [0, 99, 23, 119], key = "l1" },
+    { box = [24, 99, 48, 119], key = "r1" },
+    { box = [49, 98, 168, 120], erase = "#000000", text = "Member list", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [0, 122, 23, 142], key = "l1" },
+    { box = [24, 122, 48, 142], key = "r1" },
+    { box = [49, 122, 168, 143], erase = "#000000", text = "Rules", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [0, 146, 23, 165], key = "l1" },
+    { box = [24, 146, 48, 165], key = "r1" },
+    { box = [49, 145, 168, 166], erase = "#000000", text = "Switch member", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [0, 170, 23, 189], key = "l2" },
+    { box = [24, 170, 48, 189], key = "r2" },
+    { box = [49, 169, 150, 190], erase = "#000000", text = "Next page", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [152, 171, 211, 188], key = "start" },
+    { box = [212, 169, 256, 190], erase = "#000000", text = "Close", font = "arialnarrow", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [0, 194, 48, 213], key = "leftright" },
+    { box = [48, 193, 150, 214], erase = "#000000", text = "Registration", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [162, 194, 183, 213], key = "cross" },
+    { box = [184, 193, 256, 214], erase = "#000000", text = "Quit", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [2, 218, 23, 237], key = "cross" },
+    { box = [24, 217, 100, 238], erase = "#000000", text = "Back", font = "arial", size = 16, color = "#FFFFFF", outline = "#50207C" },
+    { box = [162, 218, 183, 237], key = "circle" },
+]
+
+[[picture]]
+file = "rfff.afs/lobby_05.tm2"
+tim = 0
+note = "the lobby's menu labels"
+edit = [
+    { box = [0, 121, 200, 145], erase = "#000000", text = "SEND MESSAGE", font = "din", size = 26, color = "#FFFFFF", outline = "#3020C0" },
+    { box = [0, 145, 200, 168], erase = "#000000", text = "FIND A PLAYER", font = "din", size = 26, color = "#FFFFFF", outline = "#3020C0" },
+    { box = [0, 168, 200, 192], erase = "#000000", text = "SELECT ID", font = "din", size = 26, color = "#FFFFFF", outline = "#3020C0" },
+    { box = [0, 192, 200, 216], erase = "#000000", text = "SPEAKERS", font = "din", size = 26, color = "#FFFFFF", outline = "#3020C0" },
+]
+
+[[picture]]
+file = "rfff.afs/lobby_01.tm2"
+tim = 0
+note = "the server and Capcom ID select titles"
+edit = [
+    { box = [0, 705, 256, 732], erase = "#000000", text = "SELECT SERVER", font = "arial", size = 20, color = "#FFFFFF", outline = "#3A1890" },
+    { box = [0, 732, 256, 766], erase = "#000000", text = "SELECT CAPCOM ID", font = "arial", size = 20, color = "#FFFFFF", outline = "#3A1890" },
+]
+
+[[picture]]
+file = "rfff.afs/lobby_00.tm2"
+tim = 0
+note = "the lobby's scenario thumbnails' caption"
+edit = [
+    { box = [46, 86, 216, 108], erase = "inpaint", threshold = 180 }, { box = [46, 86, 216, 108], erase = "keep", text = "FILE WINDOW SCENARIO", font = "din", size = 16, color = "#F0F0F0", outline = "#101418", align = "center" },
+    { box = [46, 278, 216, 300], erase = "inpaint", threshold = 180 }, { box = [46, 278, 216, 300], erase = "keep", text = "FILE WINDOW SCENARIO", font = "din", size = 16, color = "#F0F0F0", outline = "#101418", align = "center" },
+    { box = [46, 470, 216, 492], erase = "inpaint", threshold = 180 }, { box = [46, 470, 216, 492], erase = "keep", text = "FILE WINDOW SCENARIO", font = "din", size = 16, color = "#F0F0F0", outline = "#101418", align = "center" },
+    { box = [46, 662, 216, 684], erase = "inpaint", threshold = 180 }, { box = [46, 662, 216, 684], erase = "keep", text = "FILE WINDOW SCENARIO", font = "din", size = 16, color = "#F0F0F0", outline = "#101418", align = "center" },
+    { box = [46, 854, 216, 876], erase = "inpaint", threshold = 180 }, { box = [46, 854, 216, 876], erase = "keep", text = "FILE WINDOW SCENARIO", font = "din", size = 16, color = "#F0F0F0", outline = "#101418", align = "center" },
+]
+
+[[picture]]
+file = "rfff.afs/player_00.tm2"
+tim = 0
+note = "the lobby's start message"
+edit = [{ box = [0, 386, 230, 414], text = "Starting the game.", font = "arial", size = 20, color = "#FFFFFF", outline = "#1830B0" }]
+
+[[picture]]
+file = "rfff.afs/player_01.tm2"
+tim = 0
+note = "the lobby's start message"
+edit = [{ box = [0, 386, 230, 414], text = "Starting the game.", font = "arial", size = 20, color = "#FFFFFF", outline = "#1830B0" }]
+
+[[picture]]
+file = "rfff.afs/prize01.tm2"
+tim = 0
+note = "the collection's Available label"
+edit = [{ box = [165, 62, 249, 81], erase = "bg", text = "AVAILABLE", font = "din", size = 16, color = "#E8E8E8", outline = "", align = "center" }]
+
+[[picture]]
+file = "rfff.afs/Softkey.tm2"
+tim = 0
+note = "the soft keyboard's function keys (its kana stay: they're what they type)"
+edit = [
+    { box = [128, 112, 160, 128], text = "OK", font = "arial", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [208, 112, 240, 128], text = "Enter", font = "arialnarrow", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [224, 144, 240, 160], text = "#", font = "arial", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [160, 192, 192, 208], text = "Back", font = "arialnarrow", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [192, 192, 224, 208], text = "Conv", font = "arialnarrow", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [16, 208, 48, 224], text = "BkSp", font = "arialnarrow", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [48, 208, 80, 224], text = "Space", font = "arialnarrow", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [160, 208, 208, 224], text = "abc", font = "arial", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [208, 208, 256, 224], text = "ABC", font = "arial", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [160, 224, 192, 240], text = "Phrase", font = "arialnarrow", size = 12, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [208, 224, 256, 240], text = "Auto", font = "arial", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [192, 240, 224, 256], text = "Full", font = "arial", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+    { box = [224, 240, 256, 256], text = "Half", font = "arial", size = 13, color = "#FFFFFF", outline = "", align = "center" },
+]

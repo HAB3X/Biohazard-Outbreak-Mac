@@ -13,7 +13,7 @@ which). TIM is the index of the TIM2 file in the stream (tm2.files).
 pictures.toml: [[picture]] with file, entry (MOMO only), tim, pic (default 0), note, and [[picture.edit]] entries:
   box = [x0, y0, x1, y1]     the area, x1/y1 excluded
   erase = "clear" (transparent), "inpaint" (the text's bright pixels filled from around them: text on a photo; threshold and
-          blue tune which pixels: see inpaint()), "#RRGGBB" or
+          blue tune which pixels: see inpaint()), "bg" (the box's most common colour), "#RRGGBB" or
           "#RRGGBBAA" (a fill), "keep" (draw over); default "clear"
   text = "..."               drawn in the box (\\n for lines); font, size (pixels; default: what fits), color, outline
                              ("#RRGGBB"; "auto": sampled from the box before it's erased; "" none), stroke (the outline's
@@ -107,6 +107,9 @@ def key_names(game):
         mode = "play" if mode == "play" else "menus" if mode == "menus" else "title"
         if keys and (mode, button) not in out:
             out[(mode, button)] = KEY_LABELS.get(keys[0], keys[0])
+    for (mode, button), label in list(out.items()):  # a button the menus have no key of (L2, R2): play's key for it
+        if mode == "play" and ("menus", button) not in out:
+            out[("menus", button)] = label
     for mode in ("play", "menus"):  # the D-pad's pairs and the whole of it, as their keys together
         out[(mode, "updown")] = out[(mode, "up")] + out[(mode, "down")]
         out[(mode, "leftright")] = out[(mode, "left")] + out[(mode, "right")]
@@ -250,10 +253,14 @@ def apply_edits(image, edits, variant, keys):
             image.paste((0, 0, 0, 0), box)
         elif erase == "inpaint":
             image = inpaint(image, box, e.get("threshold"), e.get("blue"))
+        elif erase == "bg":
+            px = np.asarray(image.crop(box)).reshape(-1, 4)
+            vals, counts = np.unique(px, axis=0, return_counts=True)
+            image.paste(tuple(int(c) for c in vals[counts.argmax()]), box)
         elif erase.startswith("#"):
             image.paste(_color(erase), box)
         elif erase != "keep":
-            raise ValueError(f"erase {erase!r}: clear, inpaint, keep or a colour")
+            raise ValueError(f"erase {erase!r}: clear, inpaint, bg, keep or a colour")
         if e.get("text"):
             image = draw_text(image, box, e["text"], e.get("font", "din"), e.get("size"), color, outline,
                               e.get("align", "left"), e.get("stroke", 1))
