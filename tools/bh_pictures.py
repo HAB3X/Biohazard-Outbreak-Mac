@@ -324,6 +324,8 @@ def build(arc, game, only=None):
                 new[pic.img_at:pic.img_at + pic.img_size] = pic.encoded(image, mask)
                 images.append((f"{Path(path).name}_{entry}_{p['tim']}_{p.get('pic', 0)}_v{variant}", image))
             data = sld.pack(bytes(new)) if packed else bytes(new)
+            if packed and len(data) > len(raw):
+                data = sld.pack_smallest(bytes(new))
             if len(data) > len(raw):
                 raise DoesNotFit(f"{path} entry {entry} variant {variant}: compressed to {len(data)} bytes, the original has "
                                  f"{len(raw)}")
