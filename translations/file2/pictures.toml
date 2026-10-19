@@ -212,3 +212,39 @@ edit = [
     { box = [79, 232, 118, 256], text = "CANCEL", font = "din", size = 18, color = "auto", outline = "", align = "center" },
     { box = [121, 232, 166, 256], text = "STANDBY", font = "din", size = 18, color = "auto", outline = "", align = "center" },
 ]
+
+[[picture]]
+file = "rfff.afs/BS_SKIN.TM2"
+tim = 0
+note = "the network browser's button icons"
+edit = [
+    { box = [129, 1, 159, 31], key = "circle" },
+    { box = [161, 1, 191, 31], key = "cross" },
+    { box = [193, 1, 223, 31], key = "triangle" },
+    { box = [225, 1, 255, 31], key = "square" },
+    { box = [129, 37, 159, 59], key = "l1" },
+    { box = [161, 37, 191, 59], key = "r1" },
+    { box = [193, 37, 223, 59], key = "l2" },
+    { box = [225, 37, 255, 59], key = "r2" },
+]
+
+[[picture]]
+file = "rfff.afs/netwk.tex"
+entry = 3
+tim = 0
+note = "the network menus' circle and cross"
+edit = [{ box = [193, 97, 223, 127], key = "circle" }, { box = [227, 97, 256, 127], key = "cross" }]
+
+[[picture]]
+file = "rfff.afs/netwk.tex"
+entry = 7
+tim = 0
+note = "the network menus' small button icons"
+edit = [
+    { box = [1, 129, 21, 149], key = "circle" },
+    { box = [23, 129, 43, 149], key = "cross" },
+    { box = [45, 129, 65, 149], key = "triangle" },
+    { box = [67, 129, 87, 149], key = "square" },
+    { box = [1, 155, 29, 167], key = "l1" },
+    { box = [31, 155, 59, 167], key = "r1" },
+]
