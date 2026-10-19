@@ -1,0 +1,56 @@
+cfcd4f926b	%2d:%02d Used %s
+5000e28e5e	      (%s)
+3323aa7ffd	%2d:%02d Cured poison with %s
+605b25d7e3	%2d:%02d Stopped bleeding: %s
+e459ce6bdc	%2d:%02d Supported another NPC
+ddafbc3186	%2d:%02d Supported %s
+6c3ebeb8a2	%2d:%02d Leaned on another NPC
+61d370e0d0	%2d:%02d Leaned on %s
+610cad7c5c	%2d:%02d Another NPC under enemy attack
+a5fb23bed1	%2d:%02d %s, under attack,
+36e9d7656a	      was saved
+b533643970	%2d:%02d Under enemy attack,
+a4e14ece6d	      saved by another NPC
+62a156cf11	      saved by %s
+42fc9e6bce	%2d:%02d Another dying NPC
+e16a3d5b22	%2d:%02d Dying %s
+6912169537	%2d:%02d %s:
+cc06851a8c	      given to another NPC
+d7060a9e6b	      given to %s
+44deee34ae	      got from another NPC
+e55b76eddd	      got from %s
+8b641e19c8	%2d:%02d While dying,
+fa57155d92	%2d:%02d Hid under a bed
+b286d30e98	%2d:%02d Hid in a locker
+893e591c64	%2d:%02d Hiding in a locker, an enemy
+abf57253e4	      dragged me out
+709abbede7	%2d:%02d Opened a door with a key pick
+28c84af3d8	%2d:%02d Made Healing Agent: %s
+e831d3f52b	%2d:%02d Made Antidote with Green Herb
+e731facc9d	%2d:%02d Made Hemostatic with Red Herb
+c64624eb07	%2d:%02d With mixed herbs,
+9348b9177e	      made Healing Agent (L)
+5106df5901	      made Anti-Virus Agent
+4f57a3d274	      made Anti-Virus Agent (L)
+cdb2b4c906	%2d:%02d Newspaper+bottle and lighter:
+02f584b30c	      made a Molotov Cocktail
+542429204f	%2d:%02d Wooden pole and knife:
+972b1ab63b	      made a Spear
+70b3583ab9	%2d:%02d Bug spray and lighter:
+6287616a7b	      made a Flame Spray
+47e73fece4	%2d:%02d Iron pipe and concrete chunk:
+3e7cf420dd	      made a Hammer
+59a46246ad	%2d:%02d With junk parts,
+c4fee369db	      repaired a handgun
+1ccc28c878	      repaired a shotgun
+67e7c7439a	%2d:%02d Treated another NPC
+f71e50fb17	%2d:%02d Treated %s
+368c396a13	      picked up
+8304210190	%2d:%02d Infection hit 50%%
+cc1b7873bc	%2d:%02d Infection hit 70%%
+3f01bf58c5	%2d:%02d Infection hit 90%%
+667ab2c42a	%2d:%02d Infection hit 100%%
+8f38d58ba5	      turned zombie
+55db80d8f2	%2d:%02d Another NPC attacked
+e721d64272	%2d:%02d Attacked by %s
+cb3e180e6e	%2d:%02d Died
