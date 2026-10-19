@@ -356,3 +356,14 @@ edit = [
     { box = [1, 155, 29, 167], key = "l1" },
     { box = [31, 155, 59, 167], key = "r1" },
 ]
+
+[[picture]]
+file = "romdata.afs/demo_com.tex"
+tim = 5
+note = "the options' button icons (the controller picture and its labels stay: they show the gamepad)"
+edit = [
+    { box = [298, 450, 312, 464], key = "square" },
+    { box = [314, 450, 328, 464], key = "circle" },
+    { box = [298, 466, 312, 480], key = "cross" },
+    { box = [314, 466, 328, 480], key = "triangle" },
+]
