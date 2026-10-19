@@ -799,3 +799,175 @@ ef92833399	Registering as a user lets you take part
 458af97216	If you need a number like "0" or "9"
 b79809f1b9	before the area code when you call,
 591ea9ac7f	enter that number.
+09eacd4f5b	Network
+b1f249e923	Broadband
+173eb097c5	Starting the connection device.
+b1a4f0ce8b	Hold Start for 1 second or more
+8f9d41e4e7	to cancel.
+2b478f3575	A keyboard can be used
+75b200f451	to type.
+dbf8106efc	You'll play and talk with strangers.
+3900378144	Mind your manners and etiquette.
+d981b2422a	Many people can see the chat.
+689b8ea567	Never give out your address or phone number.
+c75e1e0763	Don't say anything indecent
+83bad7dc78	or anything against the law.
+ce78b025ee	While playing online, don't quit the game
+cae92adabc	or turn off the power.
+e366b41a46	Matches cost 13 yen a minute,
+e33daa85f8	everything else 10 yen per 3 minutes.
+52e1ce9e85	There's a phone charge;
+eef90775cc	don't stay connected too long.
+9250ec9eaf	The "DNAS" server can't take requests right now.
+ca0d59097d	Please wait a while and reconnect.
+b9ddc62fc7	The title's "DNAS" service hasn't begun.
+ac74952acf	The title's "DNAS" service period has ended.
+1cb2d0f656	All "DNAS" services have ended.
+80c5a2bcc9	The connection to the "DNAS" server timed out.
+d4f66c4396	The server is not working properly.
+fe42b893d1	A "DNAS" error occurred.
+b4ea1e3e41	"DNAS" server error.
+63ab49ac3e	Download error.
+f9916d1679	Device info error.
+005e597064	Network error.
+85ee928564	Unique ID error.
+ce56e1c48b	"DNAS" authentication cancelled.
+bd182833af	Main data of game version %v
+0c3bb35763	was found.
+6bb778595c	The game version was updated to %v.
+7da2b1d022	(updated)
+204b0a4c7d	To play online,
+807a73e126	save the main data of game version %v.
+18601b52d2	Please save it.
+0d71f03ead	Save it to the save data?
+059291e48f	Checking.
+3db0c9e7ea	was removed.
+44bbeff980	Saving the main data...
+3ec6fde215	The main data was saved.
+a88c46a5d9	The main data
+cabe907549	could not be saved.
+e17dab71e9	Press Confirm.
+7f56e9842d	Loading the NET file...
+c643593193	The NET file was loaded.
+7047373288	The NET file could not be loaded.
+b27e17614e	Choose where to save
+c0ac9134ea	the NET file.
+3b69334906	Not enough free space.
+2b584a7f26	To create a new NET file,
+7dd2632177	%y KB or more of free space is needed.
+e45dcc0329	A NET file already exists.
+09bf0f4ef0	Overwrite it?
+24c1ac666c	Formatting...
+6df5d0abaa	Register your online pilot name
+0aa365005d	as this: all right?
+834e42769d	Saving the main data.
+e660d1124f	Choose where to save.
+35544b80a1	Back to the network menu without saving.
+5a61e92d8a	Back to the network menu without saving?
+9e751a9b64	It could not be formatted.
+25478da3cd	Create a new one?
+33d19eb79f	To save the main data,
+d32d748b6e	%y KB or more of free space is needed.
+c5847388cd	Stop saving the main data?
+907c6388ad	The main data could not be saved.
+f04f11967b	Save the current state (and pilot name)?
+31a5853343	Could not access it.
+de3ef2e203	No pilot name was entered.
+dff5274551	A pilot name for online play
+5bf47a82c8	must be entered.
+e47aaadfc7	"          " and "DNAS" are
+c2feaf92d9	trademarks of Sony Computer Entertainment Inc.
+44e7f7819f	Autoloading the main data...
+2ced018617	The main data was autoloaded.
+ba34f890fb	Until the version update ends,
+4359ca42a9	Slot %s: the main data
+57aa477743	is missing.
+e8a91d390f	Choose where to load
+6f7ca60a28	was replaced.
+9e04f55745	Formatted.
+459b6e205e	Enter line prefix
+21ac41eea4	The NET file could not be saved.
+63d71ad318	Load it?
+976252643c	The NET file is corrupted.
+ec357ca448	The save data is corrupted.
+dfc1992a33	The check failed.
+c3bfb62df0	Dial-up
+041f88b6bb	Same as last time
+d7b7d72e3d	Change pilot name
+f1a1ddb44d	Network connection
+3ff489a4fe	Erase login ID
+2002c883ee	New connection
+ff465a4bff	Online terms of use
+6001fcd8ed	Register/change user
+d8eff84a74	Line prefix setting
+89248ff639	Next
+aabe16efa5	Erase
+e7dced4e03	Don't erase
+e80b7e0727	Re-enter
+ea1117915e	Read the online terms of use
+747ca21482	Save slot 1
+74ae9e26a9	Save slot 2
+208f51b103	restart the game and 
+527f63a46d	Check the connection provider settings'
+a119cdc6b1	PPPoE user ID 
+f43828f43b	From the main menu
+4dda34b0d8	Getting ready to return to the game
+c9c88aa595	Please wait.
+83883eaabb	Scenario items
+8baf097800	-
+94054d2b41	-
+a161f4e388	Getting ready to hang up
+8934156999	Scenario played
+3d34666604	%4dh %2dm %2ds
+011abfb85a	%10d pts
+19915b7a45	%s=%3d%%
+5ce4403f04	%s   %3d%%
+bad4f37bf1	%s%4d/%4d
+716c703e0b	%4dx
+22bfd701a3	%s  %3d%%
+e55393b167	%s %4dx
+ff06fbba0d	%s%2dh %2dm %2ds
+cc52029daf	Advanced
+65c4d96490	Settings list
+1ac57907c3	Stop
+bf9912398a	Network settings menu
+5471a147dc	Check/change settings
+07ef0228f0	Delete settings
+9940445211	Test connection
+2535699b37	Connection device
+6654d74a29	Use PPPoE?
+bf7ad6a477	Enter user ID
+27e1c69815	Set IP address automatically
+7c970568ff	Enter IP address
+c11a33940a	Set DNS server automatically
+64dc96790a	Enter DNS server address
+dfce881f44	DHCP advanced settings
+4cfcb78f68	Settings name
+04d6ff67ca	Choose settings
+97e4e0bd68	Start connection test
+46428b15b2	Proxy settings
+3478dd5f94	Device advanced settings
+a65165991f	* Edit network settings
+a16529d631	* Proxy settings
+da65a6c959	First, choose where to save
+7721314124	the connection provider settings.
+8a28e7f952	Choose the connection provider settings
+154103cab6	to load.
+2f1b9371d8	Choose the connection provider settings
+52d74aa92e	Choose the connection provider settings
+d1e14234d5	Choose a connection device.
+0ff9eb8598	Needed
+81a894d771	Not needed
+d6fa4a7a6d	Does your connection provider need
+667619e5d7	a user ID and password?
+64bc870421	(uses PPPoE)
+280f132cf0	User ID
+722f0445dd	Enter your connection provider's
+0a0729aa22	user ID and password.
+7dd0ff981a	Automatic
+2f637970dc	Manual
+cceaafe078	Set the IP address automatically?
+0cff641ec8	(uses DHCP)
+42fa764748	Usually, choose automatic.
+e08fab7f27	IP address
+fe3e43de53	Netmask
