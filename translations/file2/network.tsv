@@ -412,3 +412,219 @@ d043342bda	               : switched.
 ca0bc3a782	Install room
 4b694e2140	Install setting
 6ef85d0669	: switched.
+274f2fede5	The room where this player is
+fde0b17dd3	To enter this room,
+8b937e4305	leave the network once,
+67ffdf6413	.
+fd4f610ca6	is an install room.
+c7a42df046	Choose this room from the room list,
+24fc34c57b	switch to the install setting
+e811cadfc8	and enter.
+da31a46560	* Install-only room.
+e93e54723c	Switch to the install setting and
+b450c2a64d	enter.
+92a8cdaab8	is a disc room.
+257b8465df	switch to the disc setting
+9b9147e8c7	In the room where this player is,
+03ab99364e	your character is already taken.
+736bb5b37c	Pick a free character and enter
+f9b5d0fbe8	: moved to this player's area.
+d69a3b6ea4	           .
+133aec6aae	Use the data installed
+68d33b4227	on the drive?
+cdfa2dd91b	               .
+dec2aadeba	Use the data on the disc?
+20de19b98b	Game data
+e7639ac199	            is
+e182188dfb	Pick from friend list
+3113458cf4	Enter an ID
+4fb5aae13d	: go to where they are?
+3a7758da55	Install area        
+aa5c938662	             so
+e25c26c0c3	Disc area        
+92a020984b	                 so
+58a4b964da	           : switched.
+f4770bf357	Your entries have run out,
+5e3f4cb254	so you can't join more events.
+6fe9e59294	Install area      
+38f568c632	             .
+f657fe9971	Disc area      
+2558b3bb2e	                 .
+5620d172b5	The game has started, so
+32fb315db8	No character can be picked, so
+96ed100ebf	This ID
+2d64912345	: use it?
+654f457d10	HN
+7a0a45a55d	*Needed
+be95d7a0f5	: in use
+05dab54ad5	Enter a handle name (HN)
+2092e38702	* This must be filled in
+80a962264d	Would you like direct mail?
+c44376761c	This room has a password.
+d05b580dbe	Enter the password
+964d21f814	Register with this handle name (HN)
+fba5e4e293	Enter with this password?
+d1c3ce4d72	Password: 
+5c363853d0	Enter a handle name (HN)
+7ea1ccbb68	Use
+6f9f30681e	Change HN
+a289bd0912	Character
+0f06a80b58	Enter
+540d5d500b	Title
+bfab5a53d2	Password
+ebe769e21d	Done
+88845b98c8	Block
+3c01e18959	Reply
+ff5eaa01e4	Save ID
+0ce619a5e0	Wait
+4cc723db8f	Leave
+6522bd7957	Member data
+9534449701	Start
+7e40e97108	ID list
+d67953e9b1	ID
+650c35a4fe	New message
+7eb8ca8d29	Search
+e7351cb013	Find user
+22f9553058	Send
+37278fd94e	Write message
+f7fc436d4c	Back
+9b096b3a16	Move
+c2a3fe5b0b	Register
+0cebd1de99	Don't
+d18b143bca	Chat
+c35f993581	Plays
+790534d1d0	Status
+4e840957fe	Members
+83129847e0	Results
+3b80f0bdd2	Playing
+13ad4b2756	Choose a room area.
+e8dfe1637a	No
+ac522832c3	Open
+c0bddf67b5	Setup
+f5978871ee	Joining
+c14aee0f4b	Full
+b7991e17a6	In game
+004e011f21	Free
+6ba76b4560	Unfit
+6131356917	Dup num
+a818ec5c5c	To make a new room, choose "Open".
+34514e359e	Talker 
+b988b4de56	    You can
+5d9622f7b8	add more.
+9e868981b8	Switch
+df27d5defa	Registered
+ee27ee9656	 HN
+6b0c586aab	Back    
+0a46b70764	No members
+4c6aa0e298	Yes
+bd9fb01ffb	None
+c0aac2d3e8	Show chat
+284743f603	When OFF, chat lines aren't shown
+569a1c4498	ON
+92754495aa	OFF
+a2b7e18b08	To top menu
+48f124253e	Talkers
+e71c218bf3	Find someone
+c8f870849c	Open messages
+2e4893c503	Quit net
+a948c013c5	EXIT
+8ee17f6e96	Rules
+76a0125a9a	Members
+a3c5152aa6	To servers
+dd156b91e5	News
+bd085e90bb	Test
+722d5b8d65	Go to the top menu
+0fa5832e87	Show the users who have spoken
+91f7eaf099	Send messages and
+56491bfdb6	search for other users
+5e2b709ffa	Show messages
+c2e7a3017f	Explain the controls
+2debaa010f	Hang up and
+52f0415ec5	leave the network
+5b18216cd7	Back to the last screen
+fa1ed4d948	Show the room's rules
+4a2cd6d94d	Show the room's members
+39d20bf74f	Explain the keyboard controls
+8991038dbb	Back to the server menu
+05e033f3e4	Show the "news"
+9c676ce8b7	Various tests
+b6488d6677	<BODY>Choose this when you play online for the first time.<BR><BODY>* If your phone number changed (when you move, etc.),<BR><BODY>choose this and register too.<END>
+865f295fad	<BODY>If you've registered before, connect here.<END>
+2281168757	<BODY>The terms of use for online play.<BR><BODY>Please read them.<END>
+7f96d6c349	<BODY>Change your registered details,<BR><BODY>e.g. when you move house.<END>
+5a71496bab	<BODY>(Required)<BR><BODY>Enter the phone number of the line<BR><BODY>your modem is connected to.<END>
+02d8f4e268	<BODY>(Required)<BR><BODY>Enter your name.<END>
+3752dcfa8a	<BODY>(Required)<BR><BODY>Enter your age.<END>
+5b3a415866	<BODY>(Required)<BR><BODY>Enter your postcode.<END>
+9b302e146a	<BODY>(Required)<BR><BODY>Enter your address.<END>
+3e17567196	<BODY>Go to the next page.<END>
+031d14ac72	<BODY>Enter your occupation.<END>
+8aca64633c	<BODY>Enter your e-mail address.<END>
+ac0da3eca4	<BODY>Enter a phone number we can reach.<END>
+20d1498b9e	<BODY>If you'd like direct mail,<BR><BODY>choose "Yes, please".<END>
+e5c3c96c47	<BODY>Back to the previous page.<END>
+706d090a7a	<BODY>Register these details.<END>
+4ed667c59e	<BODY><SIZE=3>Choose the ID to play with.<BR><BODY>Choose "Empty" to get a new ID.<BR><BODY>* You can have up to 3 IDs.<END>
+6b0e595853	<BODY><SIZE=4>Start scenario mode from the beginning.<BR><COLOR=c>* Characters that already have scenario<BR>clear data will have it overwritten.<END>
+55d76e5da5	<BODY><SIZE=4>Resume from where you last quit.<END>
+92a7a38f58	<BODY><SIZE=4>See your personal information.<END>
+b3cae19278	<BODY><SIZE=4>See updates and national rankings.<BR>See the terms of use and other info.<END>
+0232577b9c	<BODY><SIZE=3>See the list of rooms.<END>
+92444fbbb5	<BODY><SIZE=3>See updates and national rankings.<END>
+c6c6ed56a2	<BODY><SIZE=3>See your personal information.<END>
+c4726cde77	<BODY>To make a race, choose "(Open)".<END>
+5952d67dac	<BODY>Set the rules.<END>
+689017f28e	<BODY>To make a club, choose "(Open)".<END>
+cbb5f1767e	<BODY><SIZE=3><COLOR=6>Start the scenario.<END>
+64fa72baa6	<BODY><SIZE=3><COLOR=6>Wait for the scenario to start.<END>
+fa1d4b1b11	<BODY><SIZE=3><COLOR=6>Back to the room list.<END>
+b8307d7531	<BODY><SIZE=3><COLOR=6>Back to the chat screen.<END>
+c3eccc4fb7	<BODY><SIZE=3><COLOR=6>See the data of the players taking part.<END>
+b0fa43bb49	<BODY>Chat log: Up/Down to scroll; Ad-lib to close.<END>
+d61ba415f3	<BODY><SIZE=3><COLOR=6>Wait.<END>
+df7fc03252	<BODY><SIZE=3><COLOR=6>Leave the room.<END>
+527d3851e0	Registered
+c10c636a2b	Nobody has spoken
+427c505a67	Left/Right: switch entry; Back: finish
+1d885ac0b7	Talkers     
+1ee126d12e	    more can be added
+27be5f70b5	The NET file is full
+7b1269b70e	Players     
+7ec1ce69cf	Can't set
+5ca3f8d0e9	Done
+f4eaee3381	Nobody registered
+17b3042ad6	From here on it costs 13 yen a minute
+9b5ba71584	of
+6b0415011c	Invalid
+bb11dcce8f	NO DATA
+28ed82f9e5	You can't enter now.
+eb8b0b6297	No messages
+8ea74d3849	
+9f81b0729b	ID
+cdd6317732	Start: Close
+6ac203b58d	ID:
+da17342409	HN:
+d0ef4f7a88	[Basic Data (All)]
+76f96895d1	-Play Time-
+084cee268f	-Result Points-
+78faab743d	-Character Use-
+fdde96e21b	-Distance Moved-
+2d46b3d667	[Combat & Co-op Data (All)]
+dd9ac3c234	-Healing Items Used-
+ae3617d867	-Weapon Type Use-
+d8a9aeec45	-Dying Allies Helped Up-
+ac71b17158	-Times Helped When Dying-
+fa7746be80	-Item Trades-
+5ca0508276	Items given
+d50a79cfd1	Items received
+98ea4cdb59	-Allies Saved From Attack-
+308bc83aca	Blunt
+ab8200d72d	Guns
+258259904e	Bare
+155121059b	[Scenario Play Data]
+6fba834c84	-Clears by Scenario-
+78995c2b7c	[Special Data]
+277b07bf67	-Scenarios Cleared Without Weapons-
+b37267ed4a	-Scenarios Cleared Without Damage-
+4e4613d577	-Fastest Clear Time-
+b2e52eb38c	????????
