@@ -1,1 +1,416 @@
 aa70c65e35	<c2>-Distance-<c0>
+d84c22e51f	Height:182cm  Weight: 89kg
+faa1dc0529	Height:185cm  Weight:101kg
+4e053325a3	Height:176cm  Weight: 70kg
+48f37050e0	Height:179cm  Weight: 79kg
+b0b9b6cbc2	Height:185cm  Weight: 92kg
+25be4445e4	Height:176cm  Weight: 62kg
+13e8f0539c	Height:163cm  Weight: 58kg
+a11cc2a1cd	Height:175cm  Weight: 64kg
+1f262e15c3	Height: ?     Weight: ?   
+5379c27613	\nR001 J's Bar
+8500abb541	\nR035 Freezing Lab
+cd96e46808	\nR028 Blood-Hunting Foe
+165db85463	\nR002 Youth Inn
+cc6a0f26d3	\nR041 Vaccine
+4a47508625	("No" also deletes the suspended data)
+5f58473d17	/No
+74dd3f355d	Yes/
+ce31900556	   No goals achieved
+75d75309cd	%3d%%
+6abf8ef14e	David
+51607ead62	PARTNER SELECT
+8ee0820e09	: Partner select
+527d741a97	: Difficulty
+765ebe38ce	To difficulty
+a6fc4c1671	 (Here, press
+2ff4c83261	)
+44eea607de	L/R: Item  Up/Down: Value  Left/Right: PL\n
+c044fbd9f9	X: Back
+b6f6c6f62d	DIFFICULTY
+d25d206f6e	Difficulty:
+db31aeb82f	Up/Down: Item  L/R: Value\n
+523c9fbcde	O: Start  X: Back\n
+7ba0a9775f	: Next page
+70d99387fa	: Back
+3c136b0c44	: EXIT
+261af394e7	-
+e16d6fd0f2	Left %dm%2ds
+f5e9cb567c	Now %3d%%
+dcca7b2581	<c1>[Basic Data (Total)]<c0>
+ae723cc05d	%4dh %2dm
+282a4950c8	%7d pts
+1978528ee3	KEVIN =%3d%%        MARK  =%3d%%        JIM   =%3d%%
+5791c408a7	GEORGE=%3d%%        DAVID =%3d%%        ALYSSA=%3d%%
+a66ad59bf0	YOKO  =%3d%%        CINDY =%3d%%        OTHERS=%3d%%
+1c1ad44770	FINE     %3d%%
+0ab3552e49	CAUTION  %3d%%
+344ebaec9b	DANGER   %3d%%
+d97dd73790	POISON   %3d%%
+45d2beaf7f	BLEED    %3d%%
+23a99ab25b	<c2>-Clears per Scenario-<c0>
+31e91b6f57	%s %s %4d/%4d
+a93e727701	<c2>-Scenario Clears by Character-<c0>
+cf8c2076ee	KEVIN =%4d         MARK  =%4d         JIM   =%4d
+b9b1bc4b4e	GEORGE=%4d         DAVID =%4d         ALYSSA=%4d
+43cceb7c74	YOKO  =%4d         CINDY =%4d         OTHERS=%4d
+58cf71fbcc	<c2>-Scenario Goals-<c0>
+553207c442	<c1>[Combat & Teamwork (Total)]<c0>
+716c703e0b	%4dx
+3cd518f8ef	Melee   %3d%%
+64e2fb1ed8	Guns    %3d%%
+602f7e6342	Unarmed %3d%%
+c5deffd500	Other   %3d%%
+b0f0587f93	Items given       %4d
+f07abfd5f4	Items received    %4d
+387ee2c5a6	<c2>-Grabbed Allies Rescued-<c0>
+c3115a8d5e	<c1>[Special Data]<c0>
+5fe9aca316	<c2>-Scenarios Cleared, No Weapons-<c0>
+724fdb5b7a	<c2>-Scenarios Cleared, No Damage-<c0>
+5e6bffa379	<c2>-Fastest Clear (EASY)-<c0>
+4ecc94d29f	%s %s  %4dh%2dm%2ds
+fb9631f00b	<c2>-Fastest Clear (NORMAL)-<c0>
+cb515649cf	<c2>-Fastest Clear (HARD)-<c0>
+d97fd6feee	<c2>-Fastest Clear (VERY HARD)-<c0>
+128a3c5608	<c2>-Best Result Points (EASY)-<c0>
+b4549beeca	%s %s  %7d pts
+c54fa9d764	<c2>-Best Result Points (NORMAL)-<c0>
+8b8df3719e	<c2>-Best Result Points (HARD)-<c0>
+5a944ddcda	<c2>-Best Result Points (VERY HARD)-<c0>
+471640c6b4	<c1>[Special Item Data]<c0>
+4e9537837b	<c2>-SP Items per Scenario-<c0>
+7ca6712700	<c2>-SP Items per Character-<c0>
+a342313ee2	<c2>-Fastest (Free Mode: EASY)-<c0>
+30abc12868	<c2>-Fastest Clear (Free Mode: NORMAL)-<c0>
+39d1977a27	<c2>-Fastest (Free Mode: HARD)-<c0>
+b9653e2911	<c2>-Fastest Clear (Free Mode: VERY HARD)-<c0>
+e04ee32909	<c2>-Fastest Clear (Scenario Mode: EASY)-<c0>
+027b1357d0	<c2>-Fastest Clear (Scenario Mode: NORMAL)-<c0>
+95013a3c89	<c2>-Fastest Clear (Scenario Mode: HARD)-<c0>
+9c49c6ad5f	<c2>-Fastest Clear (Scenario Mode: VERY HARD)-<c0>
+49f5370f16	<c2>-Best Points (Free Mode: EASY)-<c0>
+0a480a792a	<c2>-Best Points (Free Mode: NORMAL)-<c0>
+6be746a8b0	<c2>-Best Points (Free Mode: HARD)-<c0>
+ac125d77c8	<c2>-Best Points (Free Mode: VERY HARD)-<c0>
+2938236ec9	<c2>-Best Points (Scenario Mode: EASY)-<c0>
+e55234fbde	<c2>-Best Points (Scenario Mode: NORMAL)-<c0>
+f39d3490b2	<c2>-Best Points (Scenario Mode: HARD)-<c0>
+719127217e	<c2>-Best Points (Scenario Mode: VERY HARD)-<c0>
+88b25ef917	NO.001
+fc92cc0c83	Opening Movie
+4cb7ccaf0f	Kevin New Costume
+52b6b39ab9	NO.002
+8077254cb1	Mark New Costume
+81a3409392	NO.003
+5482a8ea18	Jim New Costume
+7a3369dc49	NO.004
+273ee456a0	George New Costume
+27e6420f5f	NO.005
+9c39370084	David New Costume
+a93557d7ae	NO.006
+047fd2530d	Alyssa New Costume
+ab0c3dd53d	NO.007
+7ece5beaf6	Yoko New Costume
+ab596c862f	NO.008
+61ce142f7a	Cindy New Costume
+4e67ebdcb5	NO.009
+411e1c2665	NO.010
+39ce2ed862	NO.011
+c6f06ef610	Character CG Image
+30e24b31a5	Character Illustration
+6c6a07c24b	NO.012
+be6199a4b0	NO.013
+d48b756333	NO.014
+fd30da32a6	NO.015
+84cfe8298c	NO.016
+84bce15d13	NO.017
+2807237f00	NO.018
+c9af85285f	NO.019
+b2bb6f8eb9	NO.020
+66b4e72ff5	NO.021
+d4a3230b29	NO.022
+4788097c44	NO.023
+6b2d5347ba	NO.024
+b2341d8353	NO.025
+5aa65e99aa	NO.026
+f12b3bba9c	Character Early Design
+315f9eb4d3	NO.027
+6c78e17f56	NO.028
+de82e1339d	Creature CG Image
+21570c1baa	NO.029
+4f9c412ec8	NO.030
+fbf4c09432	NO.031
+2c4833f5de	NO.032
+797ad056f6	NO.033
+48ba8b62b9	NO.034
+c4dfcb6e8f	NO.035
+83d791548c	NO.036
+41edf3f361	NO.037
+d49d1d9a63	NO.038
+abb4ce8070	Creature Early Design
+f5e7e67d17	NO.039
+351066e517	NO.040
+e143aa7193	NO.041
+4541673d7c	NO.042
+b3ebd8e877	NO.043
+56f52ee4e7	"Outbreak" Concept Art
+115bee5a8e	NO.044
+6f20e0ab0f	NO.045
+fdfa36c928	NO.046
+69b904319a	NO.047
+ef75946216	"Below Freezing Point" Concept Art
+70c78aa7d0	NO.048
+fef28d95be	NO.049
+539088aaed	NO.050
+a61028e301	NO.051
+f9f878801b	"The Hive" Concept Art
+7ea5797939	NO.052
+99f64b48a2	NO.053
+dd6353730d	NO.054
+85fdf96af5	NO.055
+5520d121a8	"Hellfire" Concept Art
+60ee684b90	NO.056
+8749893964	NO.057
+36f8bf2f8e	NO.058
+8e237e9cb7	NO.059
+3b252ff41d	"Decisions, Decisions" Concept Art
+5eaa5be9dc	NO.060
+bdf365fcd8	NO.061
+41467f6928	NO.062
+947109421c	NPCs of "Outbreak"
+8c48a41b05	NPCs of "Below Freezing Point"
+b67310277d	NPCs of "The Hive"
+d3862cd8a4	NPCs of "Hellfire"
+fe7af12d82	NPCs of "Decisions, Decisions"
+f4c807396c	Raccoon City Citizens
+addbd8f548	"Outbreak" Kevin
+f82b154f21	Opening/Ending Movie
+edd93211a6	"Outbreak" Mark
+4a1507107a	"Outbreak" Jim
+e5c3e4640e	"Outbreak" George
+e4df92064d	"Outbreak" David
+3efa5a2c97	"Outbreak" Alyssa
+7884ad7fb4	"Outbreak" Yoko
+2baf276abe	"Outbreak" Cindy
+815ea994d7	"Outbreak" Scene 01 Movie
+318ecc845d	"Outbreak" Scene 02 Movie
+ab8275d3ef	"Below Freezing Point" Opening Movie
+ffd477d213	"Below Freezing Point" Scene 01 Movie
+8255bbb858	"Below Freezing Point" Scene 02 Movie
+cd7e398e9f	"Below Freezing Point" Scene 03 Movie
+4e6a717d7c	"Below Freezing Point" Scene 04 Movie
+3580f2ad09	"Below Freezing Point" Kevin
+3e6ddd12dd	Ending Movie
+d318a2a904	"Below Freezing Point" Mark
+022be15060	"Below Freezing Point" Jim
+b4e0f22aff	"Below Freezing Point" George
+935445037b	"Below Freezing Point" David
+74375b2965	"Below Freezing Point" Alyssa
+d11fc5aea5	"Below Freezing Point" Yoko
+a4a40217a8	"Below Freezing Point" Cindy
+c1a03d3f78	"The Hive" Opening Movie
+4ced4ee9ed	"The Hive" Scene 01 Movie
+b2f2123ee2	"The Hive" Scene 02 Movie
+370981f5d0	"The Hive" Scene 03 Movie
+73d0516e03	"The Hive" Kevin
+18e05d84e9	"The Hive" Mark
+66d588cb3b	"The Hive" Jim
+d81bd462cf	"The Hive" George
+d9c3320b1b	"The Hive" David
+28bc5eaae8	"The Hive" Alyssa
+e781bf19f6	"The Hive" Yoko
+7c5003b5e9	"The Hive" Cindy
+11a386c65f	"Hellfire" Scene 01 Movie
+a03c4043e2	"Hellfire" Scene 02 Movie
+08858f0bac	"Hellfire" Scene 03 Movie
+9e6b8e1650	"Hellfire" Kevin
+b181cfaab3	"Hellfire" Mark
+7630c3a748	"Hellfire" Jim
+312e8504ed	"Hellfire" George
+0347637316	"Hellfire" David
+9f2cf12f41	"Hellfire" Alyssa
+2a63603ffe	"Hellfire" Yoko
+4444c542fc	"Hellfire" Cindy
+dd17bbc8e9	"Decisions, Decisions" Scene 02 Movie
+b32d959bff	"Decisions, Decisions" Scene 03 Movie
+0712deae68	"Decisions, Decisions" Ending Movie
+4b9444d71f	"Decisions, Decisions" Kevin
+71f913bfd0	"Decisions, Decisions" Mark
+02d9e48b21	"Decisions, Decisions" Jim
+7b0e2061fd	"Decisions, Decisions" George
+adacf0188b	"Decisions, Decisions" David
+4d56b86320	"Decisions, Decisions" Alyssa
+a50bffbee7	"Decisions, Decisions" Yoko
+4911a436bc	"Decisions, Decisions" Cindy
+5861756545	Epilogue Movie
+716a819983	Opening Movie BGM
+c936ea62e5	"Outbreak" BGM
+588d90a78a	"Below Freezing Point" BGM
+028978e7fe	"The Hive" BGM
+9ac124c308	"Hellfire" BGM
+99c15c7361	"Decisions, Decisions" BGM
+2ec07bcca9	Battle BGM
+a50b6822c0	ETC BGM
+8940c1fd7d	Kevin VOICE
+717335da75	Mark VOICE
+fa9f09e478	Jim VOICE
+e0d88c6fd3	George VOICE
+aca6a681ed	David VOICE
+a55f38d533	Alyssa VOICE
+344b5caa08	Yoko VOICE
+ad785316f0	Cindy VOICE
+df086b7bb4	ETC VOICE
+14e6dd96fe	In "SINGLE",
+bc51cd5414	"HARD" selectable
+a38ec65ba2	"VERY HARD" selectable
+b05169442b	"EXTRA SCENARIO" playable
+8bc0f55bc6	In all scenarios,
+6bc3c05c59	"PARTNER SELECT" selectable
+6d3e718a54	"NO PARTNER" selectable
+e5e21774ae	"INFINITY" selectable
+b5cd4b5c88	"Decisions, Decisions" Scene 01 Movie
+8e4c8c44e3	KEVIN:B (KEVIN type)
+00bccf1d27	Lucky Cowboy
+fdfa6d67d5	MARK:B (MARK type)
+64017aa824	Sunday's Father
+a78acd6803	JIM:B (JIM type)
+f8ac1b116b	Basketball Star
+e35d2d85c6	GEORGE:B (GEORGE type)
+18ec7ff0a7	True Tenderness
+257932c2f7	DAVID:B (DAVID type)
+29dafa780b	Urban's Irony
+4278cd17df	ALYSSA:B (ALYSSA type)
+2e67379cdd	Smart Raider
+daa7c7aa83	YOKO:B (YOKO type)
+d6bb8a1c5e	Spring Flower
+a6e5e6ad37	CINDY:B (CINDY type)
+3509955952	Relax Holiday
+9405b00c3f	ALYSSA:C (ALYSSA type)
+fe51cbb479	Midnight Call
+73d9bf0527	YOKO:C (YOKO type)
+ebc7b5d7d1	Memorial Cheers
+6d2cb0a296	CINDY:C (CINDY type)
+d59afa4397	Funny & Bunny
+c16444dd54	BOB (MARK type)
+674adfdb57	-Mark's friend-
+b82b9b5d80	WILL (JIM type)
+d8697de5b4	-J's BAR staff-
+506351470b	RAYMOND (KEVIN type)
+b6c2addeda	ARTHUR (GEORGE type)
+782e302e85	AARON (MARK type)
+b15897422c	DORIAN (GEORGE type)
+aefa9b30bb	ELLIOTT (MARK type)
+cea876cbc2	ERIC (DAVID type)
+385e5bd03c	HARRY (GEORGE type)
+94094808f0	-Raccoon PD-
+22f2555276	YOKO:D (YOKO type)
+c36b839614	-J's BAR, in disguise-
+1384e9b589	MONICA (ALYSSA type)
+f63b391617	-Umbrella researcher-
+9bb47e8426	SCHOLAR1 (GEORGE type)
+9998c13126	SCHOLAR2 (GEORGE type)
+005d2a9a6b	HURSH (GEORGE type)
+8d95e8d21b	-Raccoon Hospital doctor-
+46c7f3c85e	DOCTOR1 (GEORGE type)
+0ccf34b590	DOCTOR2 (GEORGE type)
+969ba20ea2	DOCTOR3 (GEORGE type)
+4fdf1f24e1	NURSE1 (CINDY type)
+9cc8096c11	NURSE2 (ALYSSA type)
+3201ea80e5	-Raccoon Hospital nurse-
+81021522f9	DANNY (KEVIN type)
+afa04d6066	DANNY:B (KEVIN type)
+615db24450	-Raccoon fire fighter-
+3beea650cf	GILL (MARK type)
+a4c70a10cd	GILL:B (MARK type)
+768d401e13	FIREMAN (GEORGE type)
+a8b14c612c	PETER (JIM type)
+e94f933f01	-George's friend-
+bb0a297e05	GREG (GEORGE type)
+4a0dcbb414	-Ex-Umbrella researcher-
+b572ef09ce	FRANK (GEORGE type)
+47dc3122c8	-Raccoon Univ. lecturer-
+22203a8701	UBCS1 (KEVIN type)
+b6086a8162	UBCS2 (KEVIN type)
+58e46863d8	-UBCS member-
+8336224e9f	U.S.S.1 (KEVIN type)
+f531bd6d01	-U.S.S. special forces-
+750f6ed051	MAN1 (GEORGE type)
+842d897163	MAN2 (GEORGE type)
+40710da79d	MAN3 (DAVID type)
+579bc10d0b	MAN4 (MARK type)
+cebce8b3e8	MAN5 (KEVIN type)
+6098af401f	Mr.RED (KEVIN type)
+fdc30ad0af	Mr.BLUE (GEORGE type)
+4c487901b5	Mr.GREEN (JIM type)
+21d7e5adf6	Mr.GOLD (MARK type)
+ddf6ddec5d	Mr.BLACK (DAVID type)
+55fce9ef00	In all modes,
+13b3ceb15b	selectable
+ccac8532a7	"NETWORK Free Mode"
+8ee17e5933	: selectable
+5d157d18eb	<c4>-Note-
+efeb6e988b	<c4>Characters of one type
+9c6efc8c65	<c4>can't play together
+d67bda78db	<p1>Opening
+4fd95984c1	<p1>Outbreak
+78ca22031c	<p1>Below Freezing Point
+bc96182315	<p1>The Hive
+0ddc3f9686	<p1>Hellfire
+17e13ec773	<p1>Decisions, Decisions
+db3d44b443	<p1>Epilogue
+fafd53928a	<p1>Kevin   Opening
+fe4494f7b5	<p1>Kevin   Ending
+d343682be1	<p1>Mark    Opening
+3cf092f9ba	<p1>Mark    Ending
+32b2faeccb	<p1>Jim     Opening
+9689f745d2	<p1>Jim     Ending
+348462aedf	<p1>George  Opening
+48c679c134	<p1>George  Ending
+bff7869418	<p1>David   Opening
+c77b115e7b	<p1>David   Ending
+efb95443dd	<p1>Alyssa  Opening
+74b9604d29	<p1>Alyssa  Ending
+0565b597cf	<p1>Yoko    Opening
+0b498a72e1	<p1>Yoko    Ending
+6951d76ba7	<p1>Cindy   Opening
+8454889054	<p1>Cindy   Ending
+9888994c9d	<p1>Scene 01
+fe7d5c7ffe	<p1>Scene 02
+126f5d7be3	<p1>Scene 03
+081b1bf633	<p1>Scene 04
+91a1ff7ea7	<p1>SP Ending 01
+ff3e060dbe	<p1>SP Ending 02
+4e556742cf	<p1>SP Ending 03
+5a1bf502ee	<p1>SP Ending 04
+474cb33793	Opening
+ba200ff0c7	  Outbreak
+a21de2bf86	  Below Freezing
+c5c562c900	  The Hive
+7a9446e757	  Hellfire
+f52e9397cb	  Decisions
+94a46d163f	  Battle
+2356fbece6	 ETC BGM
+82ff4c09df	 Kevin    VOICE
+d349eeef48	 Mark     VOICE
+3707466b2f	 Jim      VOICE
+8f51472809	George    VOICE
+2eb5f07304	David     VOICE
+b29bfcdba4	Alyssa    VOICE
+311fea41cd	 Yoko     VOICE
+7e33fbfec8	Cindy     VOICE
+717406f083	 ETC      VOICE
+089b218ae8	Not enough points
+cd3240faf2	<p1>Return to the top menu?
+8db0ccf9a0	<c1>(Owned)
+4af6086262	<p1>Get it?
+0159b65aea	: Play
+c993a376f6	: Hide window
+9c295a89c8	Playing
+0bf0b180b2	 to STOP
+63577b6131	: OK
+2d69dfad87	: Previous item
+41fde2435d	 Pts
+81ea665675	Switch item
+6f231ef54d	OK
+9d37226027	Back
+3515d3b51c	BGM playing
