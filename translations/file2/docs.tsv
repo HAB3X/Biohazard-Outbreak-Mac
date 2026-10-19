@@ -232,7 +232,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 3183e3c2e8	To Lloyd,\nThe front shutter lock now works in a\nbothersome new way. Since that case,\ncitizen groups demand tighter security.\nWe must show we acted. Please bear with it.\n
 3290cf2421	<c1>[Traits]<c0>\nWeak body, lowest health of the 8.\nThe virus spreads slowly, a saving grace.\nBest avoid combat and explore, using her\nitem-carrying skill? Master her and you\nmay graduate from beginner.\n
 32ef5e3328	The reagent refining method follows.\nUnless specially permitted, this file may\nnot leave the facility.\n                  Michael Jenkins\n
-3327992130	-
+3327992130	  Mon   Day\n a str  ge sound.\n    my head    bug's,\n\n      round   by\n
 3339e374b2	The remodeling plan reportedly had the word\nof current chief Brian Irons. The many linked\ncontraptions in the station were his idea.\nOfficially for crime prevention, but everyone\nrumors it grew from his obsessive taste in art.\n
 333a04d265	To friends who come, I'll give a special\nmascot medal. Collect lots and you can get\na free zoo pass or nice presents.\nDo your best to collect them!\nWell then, I'll be waiting in the dome!\n
 3370c17940	Place on the room floor to use\nNeutralizes the nerve gas effect
@@ -500,7 +500,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 857a7495f3	\n  <Several pages of technical chemical\n   formulas follow>\n
 85be60d9e0	Collecting Items from Corpses
 86b3a21c87	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>44V7<c0>.\nA bother, I know, but it can't be helped.\n              The Director\n
-86fd9cbe65	-
+86fd9cbe65	#####ncoise A#dine##\n## Matt Do#oha#\n # Frede#ick Masset\n#  ##    #      #\n # ## #  #\n###### #     #  End\n
 873578c514	West Passage
 8742e92efd	<c1>[Added Ad-lib: Map Ad-lib]<c0>\nPress Ad-lib while the map screen (Map in\ngame) is open to say the "room name" at the\nmap's center. Useful for telling partners\nlocations.\n
 87f95924ba	<c1>[Extra Item: Lighter]<c0>\nCombine with other items to make weapons.\nIt may also help in various events in the\ngame...?\n
@@ -516,7 +516,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 8b131ff739	-
 8b1f55ef03	<c1>[Traits]<c0>\nBasic stats a bit below average, poor for\nfighting. But she starts with several herbs,\nso she has many chances to escape a pinch.\nSupport like <c1>"Treat"<c0> shines for allies.\n
 8b7350b7d7	East Passage 3
-8bf6ad1dab	-
+8bf6ad1dab	     May    $2500\n     Aug   $15000\n     Sep\n
 8c19eb7ae2	It has been 20 years since the main line\nopened as Raccoon City's first subway in 1969.\nThanks to the patronage of citizens and\nothers, this was possible.\n
 8c304d0d7c	The two are now being questioned by the\nRaccoon police. They admit the crime but\ngive many uncertain statements about\norigin and address; identities are not\nconfirmed.\n       Alyssa Ashcroft\n
 8c3801c5f3	A metal plate\nSet with a gem (emerald)
@@ -524,7 +524,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 8c9734890c	-
 8d210b7e7c	  /  \nThree today.\nYoungsters back from camping. Arrogant\nand cocky, convinced for no reason that\nthey have more promise than anyone.\n
 8d23358704	CTS (Claymore Tracker) Overview\n\nThis device detects claymores (directional\nmines) and warns of them with an alarm\n(warning sound).\n
-8d8d8dc7ee	-
+8d8d8dc7ee	 # #hamad A#dul#\n####ko Suzuki    #\n  #Dai#ke Midori#awa\n#  Paek Chenhwa\n  ###ra Diaz\n     ##\n
 8d99e0d75c	Park Path, East
 8da35e4086	Kurt's Notebook
 8da92d9957	Still... he's strong at chess, but his\nappetite is strong too. Even mid-game he\nkept grumbling "I'm hungry" and wolfed\ndown beef sandwiches he brought. Despite\nhis words he looked awfully pale; is he all\nright?\n
@@ -672,12 +672,12 @@ b96d33a23d	Ruby Plate
 b9867b2deb	A thick rubber leisure sheet\nHighly insulating
 ba7cb889e4	-
 bb2b582de2	1996\n          Apr   $2200\n          Sep   $5000\n          Oct   $4000\n          Nov   $1500\n          Dec   $8000\n
-bb37fb92fa	-
+bb37fb92fa	#  Wo#f Petersen\n ## Rio Grado#\n   #ichael Go#dsmith\n   Elliot Sley\n  ##m Yong-ju\n#\n
 bb75b08c6f	East Men's Restroom
 bbbe7b2590	Why not add herb essence to your family\npie? Nourishing, tonic and fatigue-curing,\nit brings you many kinds of happiness!\n
 bc17ea5157	Service Passage 1
 bc3a883e82	Amethyst Plate
-bcc7316eaf	-
+bcc7316eaf	  T-vi#us dosed spe#imen list\n   1#96.05.14\n\nVirus dosing tests under limited condi#ions\nare run on the spe#imens below.\n
 bcd6629163	September 23\nThe old man was quite good. I thought I was\nstrong at chess but I'm no match at all.\nHe's earned his boasts.\n
 bd142861ca	-
 bdc31a445a	A key with a blue tag\n"Annex" is written on it
@@ -836,7 +836,7 @@ f1f3b7f514	<c1>[About the Map 1]<c0>\nOpen the map screen with Map to see rooms\
 f21e2e1e64	  Seized ammo 2000 and customer file 4\n  Sept 11 -> AMB\n                  XXXXXX\n(The erased part reads "B. IRONS")\n
 f22c23db3d	Jean's Memo
 f2e63ea46a	<c1>[Special Action 1:\n                    Play Dead]<c0>\n(Keep holding Ready and Cancel)\nCollapse on the spot and enemies won't\nnotice you. The virus spreads faster during\nit, so don't overdo it.\n
-f2edf38caa	-
+f2edf38caa	    Nov   $10000\n    Dec   $10000\n1998\n     Jan    $5000\n     Feb    $2800\n     Mar    $3300\n
 f31b5d616d	The district will soon become a sealed zone\nand civilian entry will be restricted.\nPlease understand, follow instructions and\nact quickly.\n   Raccoon Police Acting Chief\n       Raymond Douglas\n
 f320879590	If no weapon is equipped, press Action in\nthe attack stance to tackle. Also press\nAction while moving down in the stance to\ndo a low kick.\n
 f32727757b	Reception
