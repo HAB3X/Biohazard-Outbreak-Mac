@@ -38,7 +38,7 @@ def main(argv):
         for _, raw in msg.strings:
             if text.has_japanese(raw):
                 add(raw, path.rsplit("/", 1)[1].split("(")[1].rstrip(")"))
-    for name, _, _, table in sources.pit_entries(arc, game):
+    for name, _, _, table in sources.table_entries(arc, game):
         for raw in table.texts().values():
             add(raw, name)
     out.mkdir(parents=True, exist_ok=True)

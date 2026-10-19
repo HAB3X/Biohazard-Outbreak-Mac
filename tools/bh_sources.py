@@ -1,5 +1,5 @@
-"""Where a game's translatable text is on the disc: the executable's string pool and the stage message files (config/
-translate.toml). Used by bh_extract.py and bh_build_patch.py, so what one finds the other rewrites."""
+"""Where a game's translatable text is on the disc: the programs' string pools, the stage message files, the pit files, the
+programs' inverted lines and the network browser's pages (config/translate.toml). Used by bh_extract.py and bh_build_patch.py, so what one finds the other rewrites."""
 import re
 import struct
 import tomllib
@@ -89,3 +89,29 @@ def pit_entries(arc, game):
                 entry = data[offset:offset + size]
                 out.append((name, node, offset, pit.DocChain(entry) if kind == "docs" else pit.SlotTable(entry, limit)))
     return out
+
+
+def program_inverted(arc, game):
+    """[(file name, Node, offset, SlotTable)] of the programs' inverted Shift-JIS lines (as in the pit files; config
+    `inverted`)."""
+    out = []
+    for item in settings(game).get("inverted", []):
+        node = arc.open("/" + item["file"])
+        lo, hi = item["region"]
+        out.append((item["file"].rsplit("/", 1)[-1], node, lo, pit.SlotTable(node.read(lo, hi - lo), None)))
+    return out
+
+
+def html_pages(arc, game):
+    """[(page name, Node, 0, HtmlPage)] of the network browser's pages with Japanese in them (config `html`: their archive)."""
+    path = settings(game).get("html")
+    if not path:
+        return []
+    pages = [(name, node, 0, text.HtmlPage(node.read())) for name, node in arc.open(path).members()
+             if name.upper().endswith(".HTM")]
+    return [p for p in pages if p[3].units]
+
+
+def table_entries(arc, game):
+    """Every container rebuilt in its own bytes: the pit files' entries, the programs' inverted lines, the browser's pages."""
+    return pit_entries(arc, game) + program_inverted(arc, game) + html_pages(arc, game)
