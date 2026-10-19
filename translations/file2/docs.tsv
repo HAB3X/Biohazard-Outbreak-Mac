@@ -422,7 +422,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 6c5c44aaba	\n  The <c1>nap room<c0> gets me down.\n\n  I'd like some <c1>GOLF<c0> now and then.\n
 6d8f6bd443	Platform
 6e4c17f92f	You can freely exchange items with an AIPC.\nTo get an item an AIPC holds, try "<c1>Ask<c0>".\nTo give an item to an AIPC, try "<c1>Give<c0>".\n
-6e6ba65195	In this <c1>[Rookie]<c0> scenario, you learn the\nplayer's basic controls. Go from the 1st\nfloor to the roof while taking on tasks.\nClear the final task on the roof and the\n<c1>[Rookie]<c0> scenario ends.\n
+6e6ba65195	In this <c1>[Training]<c0> scenario, you learn the\nplayer's basic controls. Go from the 1st\nfloor to the roof while taking on tasks.\nClear the final task on the roof and the\n<c1>[Training]<c0> scenario ends.\n
 6e8c2321f9	* Caution! *\n<c1>[About the Status Screen]<c0>\nOther PCs and enemies keep acting while this\nscreen is open. If an enemy hits you, you\nreturn to the normal screen.\n
 6efa9add42	Gas Neutralizer
 6f397a1575	<c1>[About Asking for Items]<c0>\nSelect another PC's item on the status screen\nand "Ask" to say you want that item.\n

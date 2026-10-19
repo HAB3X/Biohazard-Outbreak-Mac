@@ -198,8 +198,8 @@ b8898c7d01	Saving...%t
 c751290403	already exists.
 2de828f9b2	Checking the game version
 727de84eac	Please wait a moment.
-c50a3941e5	Cancel the network connection and
-6729881fd3	return to the title screen?
+c50a3941e5	Stop connecting to the network.
+6729881fd3	Return to the title screen?
 f8e3f70d9c	Main data was not found.
 76a3613310	Because the game version was updated,
 aea93b4b1f	online play is impossible without main data.
@@ -476,18 +476,18 @@ b5c71e7055	Firearms
 9cdf1a0a4c	: Scenario play data
 7a3da37d4a	Basic
 6712202983	Combat & Co-op
-5ffea5948c	Rookie
-6c1ac7ae0a	Roar
-6c3129c5a8	Beyond
-aa834d35af	Memory
-74a1d7376b	Defend
-61b5403a8e	Breach
-03fa25e470	Purge 1
-8ac5e7d067	Purge 2
-f4a690d992	Purge 3
-bad2874b22	Clash 1
-7f286e2d97	Clash 2
-250e090675	Clash 3
+5ffea5948c	Training
+6c1ac7ae0a	Wild Things
+6c3129c5a8	Underbelly
+aa834d35af	Flashback
+74a1d7376b	Desperate Times
+61b5403a8e	End of the Road
+03fa25e470	Elimination 1
+8ac5e7d067	Elimination 2
+f4a690d992	Elimination 3
+bad2874b22	Showdown 1
+7f286e2d97	Showdown 2
+250e090675	Showdown 3
 79dc32fd88	This game contains violent scenes and
 27f2c21b26	grotesque content.
 7a348b055b	-
