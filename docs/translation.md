@@ -31,8 +31,11 @@ your disc image (local.json) plus `translations/<game>/*.tsv` (unit id, TAB, my 
   (the archive's table is left alone), padded with spaces. The browser reads settings from a comment (`<GAME-STYLE>`), kept.
 - Baked in textures: button hints, scenario-select titles, error pictures (another agent's work; `tools/tm2.py`).
 - Nothing else: the stage archives' and romdata.afs's other members hold no Shift-JIS text (scanned: models, textures, motion).
-- Font: fixed pitch; a full-width character is two cells, a half-width Latin one cell (about 9.7 px at 640 wide). English
-  lines should stay within the cell count of the Japanese window (about 48-50 cells in the scenario blurb box).
+- Font: fixed pitch; a full-width character is two cells, a half-width Latin one cell. Measured in play (pictures of the
+  English patch): the FILE document window holds 36 cells a line and 7 lines (the Japanese uses up to 6); the item window 35
+  cells, and no more lines than the Japanese; room messages and cutscene subtitles are centred lines on the screen's bottom,
+  about 12 px a cell at 640 wide, so about 53 cells edge to edge: the English keeps within 50 (the Japanese's longest is 38 for
+  rooms and speech, 46 for subtitles). Speech uses the same message line (not seen in play: see below).
 - Tags checked to be kept: `<p1>`-style codes, markup with attributes (`<SIZE=3>`, `<font color=...>`), printf codes
   (`%s %2d %1`). `<br>` is layout and free. A unit is one Japanese string wherever it occurs: its English must fit every place.
 
@@ -47,11 +50,25 @@ your disc image (local.json) plus `translations/<game>/*.tsv` (unit id, TAB, my 
 ## Coverage (File 2, units translated / total, from bh_build_patch.py)
 | kind | 2026-10-20 start | now |
 |---|---|---|
-| exe pool | 523 / 641 (118 kept) | 523 / 641 (118 kept) |
+| exe pool | 523 / 641 (118 kept) | 523 / 641 (118 kept: the handle-name word filter) |
 | rooms | 1213 / 1391 | 1391 / 1391 |
 | subtitles | 1302 / 1302 | 1302 / 1302 |
-| speech | 1279 / 15871 | 1279 / 15871 |
-| pit (items, files, places) | 1561 / 1619 (58 kept) | 1561 / 1619 (58 kept) |
-| programs' other strings (elf, BIN/1, BIN/2) | not extracted | 0 / 54 |
-| network overlay BIN/3.DAT | not extracted | 0 / 1182 |
-| browser pages (html) | not extracted | 0 / 146 |
+| speech | 1279 / 15871 | 15871 / 15871 |
+| pit (items, files, places) | 1561 / 1619 (58 kept) | 1568 / 1619 (51 kept: puzzle letter grids, data fragments, "Dummy" slots) |
+| programs' other strings (elf, BIN/1, BIN/2) | not extracted | 48 / 54 (6 kept: percent formats with the full-width ％) |
+| network overlay BIN/3.DAT | not extracted | 1177 / 1182 (5 kept: the name entry's kana and digit tables) |
+| browser pages (html) | not extracted | 146 / 146 |
+| total | 20825 units extracted | 22026 / 22206 (180 kept on purpose, none left untranslated) |
+
+Kept Japanese on purpose (`-` in the TSVs) is counted apart; everything else has English.
+
+## Checked in play (headless pictures of the English patch)
+Title and single play menus, scenario select blurbs (Training, Wild Things), character and partner select (bios), the Wild
+Things opening subtitle, the Training Ground (CHECK!, the task line, the FILE "About Training" document), the item window. The
+FILE and item windows' widths were measured there and every document and description rewrapped to them.
+
+## Not checked in play
+- Speech lines (spm): the partners' lines did not come up in the scripted sessions; they use the bottom message line whose
+  width was measured on room messages and subtitles.
+- The network screens and browser pages (the network doesn't run here), the endings (the epilogue lines fit their slots by
+  the builder's check).

@@ -58,11 +58,12 @@ Training Ground (menus 30 fps, the room 30 once loaded, the load ~21); File 1 to
 ## English patch (branch `translate`, runtime `biohazard-translate`)
 
 `./run.sh file2 --english` builds `build/english-file2.patch` from your disc and `translations/file2/*.tsv` (my own English,
-keyed by unit ids) and plays with it (runtime `--patch`). Translated so far: the executable's menu/dialog/memory-card/HDD
-texts, scenario blurbs, collection labels, the Training Ground room messages (seen: CHECK!, controller settings, scenario
-select), and 1,400 of 19,205 strings (the most used speech lines first). Not yet: item names, FILE documents and SP items
-(glyph-index text, format not decoded), textures with baked Japanese (button hints, titles), the other ~17,800 stage
-lines, network screens, File 1. Details and checklist: docs/translation.md.
+keyed by unit ids) and plays with it (runtime `--patch`). File 2's text is all in English: menus, dialogs, item names and
+descriptions, FILE documents, place names, room messages, subtitles, all 15,871 speech lines, the epilogue, the network
+screens and the browser's pages (22,026 of 22,206 units; the other 180 are kept Japanese on purpose: the handle-name word
+filter, the name entry's kana tables, puzzle letter grids). Wording is device-neutral (save data, Confirm/Back). Not yet:
+textures with baked Japanese (another branch), File 1 (branch translate-file1). Details, window widths and what was checked
+in play: docs/translation.md.
 
 ## In progress
 
