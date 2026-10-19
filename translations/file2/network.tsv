@@ -628,3 +628,174 @@ ab8200d72d	Guns
 b37267ed4a	-Scenarios Cleared Without Damage-
 4e4613d577	-Fastest Clear Time-
 b2e52eb38c	????????
+83f99dbfd8	Scenario starting soon
+83ca40f40b	Left    m   s
+7780e2375b	Continue with which character?
+e15b4eb05a	Disc
+9ad284e09d	Install
+d6a9118a16	Unread    
+4f676ec242	* This is
+bdd60d8794	's data.
+9c0aa52e5e	-Survival-
+239440b9fa	-Condition-
+855d5e1d0d	-Avg. Final Infection-
+f627b192e2	Put the cursor on one and
+ab39cfc41d	press it to remove them from your friends.
+6ee5fdd76c	Put the cursor on a person and
+9fe1f2b3ff	press it to go there.
+d4663fc758	Which character will you use?
+9509e915cf	<SIZE=3>Message sent
+c6d28b4c4f	Entries left
+cc1ebf83b9	Put the cursor on a recipient
+7fad6bad87	and press it to remove them.
+df3c0a08c4	  Getting
+57a5053aea	  Online
+627fd39d24	  Offline
+9832fbbd26	In game
+ce49c17c33	Failed
+e2875da759	Meant as the latest terms
+2b49dfcedd	but no DOD, so none
+01512a4762	Hello!
+9912658fef	Anyone up for a scenario?
+dfed2ee5d4	Roger
+531d9e2cd3	Sorry
+ae2dbfb98b	I'll log off soon
+fff808d7e3	Good game, everyone!
+43fcb6bb7c	Password is
+d07b122a72	I'll join!
+ae0e9123d5	Making a room!
+2a6576534e	All welcome
+37e92dff5f	SP hunt
+6bf2576973	Easy-going play
+c0543c0bd6	First time
+1c1de23fa5	-
+2c29381d4c	-
+86b209259f	Your Multi Matching BB login ID and password
+5b979da4ad	can be kept in your NET file.
+8dd01f782e	If kept, they are filled in automatically
+8416f58f52	when you connect from then on.
+3a0f94abe9	Keep the login ID and password
+dfcc12b072	Keep the login ID only
+64c383f0e5	Don't keep them
+21f4f37a6f	If you keep your login ID and
+889fdb8cee	password in your save data,
+68f73f7554	please take care of it.
+3516c17e9c	Your NET file says
+22032902a3	you have registered
+604bd3e7bc	before.
+63190b2753	Register?
+e44890ae7c	Yes
+c3dd097495	Erase the Multi Matching BB
+3740b1f7d0	login ID and password
+77808bf705	kept in your NET file?
+9d2b2e3a64	Erase?
+309dc53fb5	If erased, they won't be filled in
+f208f220ca	automatically when you connect. Take care.
+a21d913901	Erase the login ID and password
+24008e2934	Don't erase them
+be18781b4b	while the save data is in use
+c96d9d3699	Saving the save data
+c6a7bde58b	Erasing
+8d8ac6b3b6	Save complete
+3d45178af8	Press Confirm
+ccbd34f514	Erased
+2d866df23e	Stopped because of an error
+473814294d	No save data, or
+e19d4c81b3	There is no NET file
+51b1fdbc3a	User ID
+e71693f2bd	A valid MMBB login ID
+0c695a06f5	Error: %d
+8b7e2e16a5	If you go online, unsaved main data
+b3a94e27ab	may be lost.
+639f9fa760	Looking for the NET file...
+74dba876ae	Slot %1:
+ace2def4fe	must not be removed.
+a520d0073e	The NET file was found.
+96f8f4950c	Slot %1:
+18624fcc13	is missing.
+8e28d98a2d	The NET file was not found.
+79510d2fcc	Without the file, other players'
+d711bb3f29	info and so on can't be saved.
+8db0104498	Create a new NET file?
+d43067406c	From now on, while online, this NET file
+1c9b398417	is saved automatically.
+bc1d2075f9	Don't turn off the power
+d23f04e5db	or quit the game.
+dfc07c07db	Checking...
+31dc28e1cd	or quit the game.
+5136c3c0dd	Saving the NET file...
+6d734b3f33	The NET file was saved.
+8d14e067f7	The NET file could not be saved.
+3db0f91577	Use slot %s.
+4d7765c8a6	There is no NET file.
+c2dbf75bbd	Connecting by broadband.
+bf58d18dab	A broadband connection can't be made now.
+539d40b50d	To connect by broadband,
+5397ace832	restart the game
+3bef9d7015	and try again.
+776d0e45c0	Starting the network connection by broadband.
+974d4f394c	To connect by broadband,
+4707ff14e7	on the BIOHAZARD OUTBREAK FILE 2 TOP screen
+2140e3bb44	                              and
+5c836014c3	on the BIOHAZARD OUTBREAK FILE 2 MENU screen
+afd75b2cc6	                              ,
+bb81345c81	you must agree to them.
+32f57b2f79	You'll play and talk with strangers; don't
+6782f1254f	do anything other users would find unpleasant.
+38be69d5b5	Mind your manners
+6f757f76a7	Next
+62a024de5d	"Multi Matching BB Terms of Use" 
+8ecaa8226c	"Capcom Online Game Terms of Use" 
+3ec4973d38	Erase the Multi Matching BB login ID?
+4095f2befd	* A stored password is erased with it.
+7162af4508	Login ID
+1732d0c76e	The login ID was erased.
+37343483b3	"DNAS" authentication...
+fe54e2758a	Connecting by dial-up.
+2f1cf30e0a	A dial-up connection can't be made now.
+1ca601bf6f	To connect by dial-up,
+030055d3c8	No phone number has been entered.
+d96723c009	Be sure to enter the phone number of the
+bf214eced6	line your modem is connected to.
+503c1732fa	Outside line prefix  (    )
+3466b1c679	connected to the modem.
+c6a6697ee6	agree to the online terms of use.
+47f73c1964	Enter the phone number of the line
+50ac0e8d63	your modem is connected to.
+1a33277804	-Your phone number-                     
+4263fbcccd	Connecting costs a call charge.
+f44b01af28	When playing online
+5316b984ae	it costs 10 yen per 3 minutes.
+bbc5c8772e	it costs 13 yen per minute.
+41dcf533cc	Finding the connection device
+80600203b9	needed for dial-up.
+3fd2530cdf	The connection device was found.
+194aa693d8	plug or unplug it.
+b800e8e853	From now on broadband can't be used.
+7d8fd53f7a	To connect by broadband,
+9672a716ae	No connection device was found.
+61e3eb4405	Use the modem listed
+22aa6a60e9	in the manual.
+990c3d728d	Line prefix
+4dcc836318	With a supported network adapter and broadband,
+aab8a2a1db	you can play online.
+b195523482	With a supported modem and a phone line,
+109b13fd24	you can play online.
+1a3880786c	Connecting as last time.
+6a8fdae2f5	Change the pilot name
+772a65d9cf	used in online matches.
+18760a86eb	Connect to the Multi Matching BB server
+61f6a3f80a	and play online.
+60759d29ed	Erase the Multi Matching BB
+4a75da55fb	login ID and password
+8b329ea2f1	from the NET file.
+8bea60d23b	If you've connected before, connect from
+e4e210592e	here.
+61b96b6719	The terms of use for playing online.
+d582f503dd	Please read them.
+ef92833399	Registering as a user lets you take part
+40394b9970	in online events and more.
+17a7a27e53	 * Choose this to change your details too.
+458af97216	If you need a number like "0" or "9"
+b79809f1b9	before the area code when you call,
+591ea9ac7f	enter that number.
