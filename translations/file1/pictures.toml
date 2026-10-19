@@ -30,3 +30,117 @@ edit = [
     { box = [2, 492, 18, 510], key = "circle" },
     { box = [19, 492, 60, 510], text = "OK", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
 ]
+
+# The scenario cards of the scenario select: the Japanese name (and the small English one under it) over the picture,
+# inpainted away, and the English name in its place
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 0
+note = "The Hive's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 100, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "THE HIVE", font = "avenir", size = 26, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 1
+note = "Decisions, Decisions' card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 236, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "DECISIONS,\nDECISIONS", font = "avenir", size = 22, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 2
+note = "Outbreak's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 100, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "OUTBREAK", font = "avenir", size = 26, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 3
+note = "Hellfire's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 100, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "HELLFIRE", font = "avenir", size = 26, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 4
+note = "Below Freezing Point's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 240, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "BELOW\nFREEZING POINT", font = "avenir", size = 22, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/result.tex"
+tim = 0
+note = "the results' scenario names, labels and button hints"
+edit = [
+    { box = [0, 1, 228, 25], text = "OUTBREAK", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 26, 228, 50], text = "BELOW FREEZING POINT", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 50, 228, 73], text = "THE HIVE", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 73, 228, 97], text = "HELLFIRE", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 97, 228, 120], text = "DECISIONS, DECISIONS", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 145, 150, 166], text = "EVENTS DONE", font = "arial", color = "auto", outline = "auto", stroke = 2 },
+    { box = [0, 168, 16, 184], key = "triangle" },
+    { box = [16, 168, 180, 185], text = "Show scenario goals", font = "arial", size = 13, color = "auto", outline = "auto" },
+    { box = [0, 184, 16, 201], key = "circle" },
+    { box = [16, 185, 62, 202], text = "OK", font = "arial", size = 13, color = "auto", outline = "auto" },
+    { box = [141, 185, 157, 200], key = "triangle" },
+    { box = [158, 185, 256, 201], text = "Results", font = "arial", size = 13, color = "auto", outline = "auto" },
+    { box = [141, 201, 157, 216], key = "triangle" },
+    { box = [158, 201, 256, 217], text = "Details", font = "arial", size = 13, color = "auto", outline = "auto" },
+]
+
+[[picture]]
+file = "romdata.afs/result.tex"
+tim = 2
+note = "the results' row labels"
+edit = [
+    { box = [0, 96, 80, 113], text = "HEALTH", font = "din", size = 17, color = "auto", outline = "auto" },
+    { box = [0, 127, 80, 143], text = "TEAMWORK", font = "din", size = 17, color = "auto", outline = "auto" },
+    { box = [0, 143, 80, 159], text = "COMBAT", font = "din", size = 17, color = "auto", outline = "auto" },
+]
+
+[[picture]]
+file = "romdata.afs/result.tex"
+tim = 4
+note = "the ATTENTION screen's EXIT button"
+edit = [{ box = [0, 32, 13, 45], key = "circle" }]
+
+[[picture]]
+file = "romdata.afs/cockpit.tex"
+tim = 0
+note = "the status screen's button glyphs"
+edit = [
+    { box = [80, 211, 97, 222], key = "leftright" },
+    { box = [99, 207, 110, 225], key = "updown" },
+    { box = [112, 209, 128, 224], key = "triangle" },
+    { box = [82, 225, 97, 240], key = "square" },
+    { box = [98, 225, 113, 240], key = "circle" },
+    { box = [113, 225, 128, 240], key = "cross" },
+]
+
+[[picture]]
+file = "romdata.afs/cockpit.tex"
+tim = 1
+note = "the map's R1 L1"
+edit = [{ box = [152, 204, 166, 216], key = "r1" }, { box = [167, 204, 182, 216], key = "l1" }]
+
+[[picture]]
+file = "romdata.afs/cockpit.tex"
+tim = 3
+note = "the status screen's item categories and the map's controls"
+edit = [
+    { box = [0, 0, 45, 16], text = "MISC", font = "din", size = 15, color = "auto", outline = "auto" },
+    { box = [45, 0, 100, 16], text = "UNKNOWN", font = "din", size = 15, color = "auto", outline = "auto" },
+    { box = [0, 16, 110, 32], text = "RECOVERY ITEM", font = "din", size = 15, color = "auto", outline = "auto" },
+    { box = [0, 32, 43, 48], text = "WEAPONS", font = "din", size = 14, color = "auto", outline = "auto" },
+    { box = [42, 32, 90, 48], text = "AMMO", font = "din", size = 15, color = "auto", outline = "auto" },
+    { box = [0, 48, 116, 64], text = "ZOOM IN/OUT", font = "din", size = 15, color = "auto", outline = "auto" },
+    { box = [0, 64, 100, 80], text = "SCROLL MAP", font = "din", size = 15, color = "auto", outline = "auto" },
+    { box = [0, 80, 90, 96], text = "CANCEL", font = "din", size = 15, color = "auto", outline = "auto" },
+    { box = [0, 96, 90, 112], text = "SELECT MAP", font = "din", size = 15, color = "auto", outline = "auto" },
+]

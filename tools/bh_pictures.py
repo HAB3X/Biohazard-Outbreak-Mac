@@ -12,7 +12,8 @@ which). TIM is the index of the TIM2 file in the stream (tm2.files).
 
 pictures.toml: [[picture]] with file, entry (MOMO only), tim, pic (default 0), note, and [[picture.edit]] entries:
   box = [x0, y0, x1, y1]     the area, x1/y1 excluded
-  erase = "clear" (transparent), "inpaint" (the text's bright pixels filled from around them: text on a photo), "#RRGGBB" or
+  erase = "clear" (transparent), "inpaint" (the text's bright pixels filled from around them: text on a photo; threshold and
+          blue tune which pixels: see inpaint()), "#RRGGBB" or
           "#RRGGBBAA" (a fill), "keep" (draw over); default "clear"
   text = "..."               drawn in the box (\\n for lines); font, size (pixels; default: what fits), color, outline
                              ("#RRGGBB"; "auto": sampled from the box before it's erased; "" none), stroke (the outline's
@@ -147,10 +148,11 @@ def sampled_colors(image, box):
     return bright, (dark if contrast > 150 else None)
 
 
-def inpaint(image, box, threshold=None):
+def inpaint(image, box, threshold=None, blue=None):
     """Fills the bright (text) pixels in the box from their surroundings: the mask is the pixels brighter than the box's
-    threshold (default: halfway between its median and its brightest), grown by two pixels; each masked pixel becomes the
-    mean of its unmasked neighbours, repeatedly from the edges in."""
+    threshold (default: halfway between its median and its brightest), and with `blue` those whose blue exceeds their red and
+    green by that much (a blue glow around the text), grown by two pixels; each masked pixel becomes the mean of its unmasked
+    neighbours, repeatedly from the edges in."""
     x0, y0, x1, y1 = box
     a = np.asarray(image, dtype=np.float32).copy()
     region = (a[y0:y1, x0:x1, :3] * np.array([0.299, 0.587, 0.114], np.float32)).sum(2)
@@ -158,6 +160,9 @@ def inpaint(image, box, threshold=None):
         threshold = (np.median(region) + region.max()) / 2
     mask = np.zeros(a.shape[:2], bool)
     mask[y0:y1, x0:x1] = region > threshold
+    if blue is not None:
+        rgb = a[y0:y1, x0:x1, :3]
+        mask[y0:y1, x0:x1] |= rgb[..., 2] - np.maximum(rgb[..., 0], rgb[..., 1]) > blue
     m = Image.fromarray(mask.astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(5))
     mask = np.asarray(m) > 0
     known = ~mask
@@ -243,7 +248,7 @@ def apply_edits(image, edits, variant, keys):
         if erase == "clear":
             image.paste((0, 0, 0, 0), box)
         elif erase == "inpaint":
-            image = inpaint(image, box, e.get("threshold"))
+            image = inpaint(image, box, e.get("threshold"), e.get("blue"))
         elif erase.startswith("#"):
             image.paste(_color(erase), box)
         elif erase != "keep":
