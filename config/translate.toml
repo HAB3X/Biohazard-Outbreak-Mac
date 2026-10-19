@@ -42,4 +42,7 @@ overlay_pools = [
     { file = "PROG/NETWK.BIN", region = [0xB4D28, 0xB4D38], in_place = true },
     { file = "PROG/NETWK.BIN", region = [0xB5240, 0xBE0E8], in_place = true },    # network: connection, terms, dialogs
     { file = "PROG/NETWK.BIN", region = [0xBE7B0, 0xBEAB0], in_place = true },    # network: character bios
+    # The executable's strings outside its pool ("elf"): the scenarios' short names, the network browser's buttons
+    { file = "elf", region = [0x131E48, 0x131E70], in_place = true },
+    { file = "elf", region = [0x13B7B8, 0x13B808], in_place = true },
 ]
