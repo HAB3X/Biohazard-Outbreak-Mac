@@ -81,7 +81,7 @@ def main(argv):
         msg = text.MsgBin(node.read())
         units.update(msg.texts())
         messages.append((path, node, msg))
-    pits = sources.pit_entries(arc, game)
+    pits = sources.pit_entries(arc, game) + sources.item_msg_entries(arc, game)
     for _, _, _, table in pits:
         units.update(table.texts())
     fallback = sources.settings(game).get("fallback")

@@ -19,6 +19,8 @@ base = 0xFFE00
 message_files = '^(r\d{3}|dm\d{3}|spm\d{6})\.bin$'
 # The same Japanese line in both games is one unit: File 2's English is used for it unless File 1's translations have it
 fallback = "file2"
+# The item and message files (tools/bh_itemmsg.py)
+item_msg = true
 # The overlays' own pools (file offsets in the overlay; each region runs from its first string to the next data that isn't
 # a string, found by listing the strings of the overlay's data). Many of their strings are reached by code, not pointers:
 # those are translated in place

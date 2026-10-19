@@ -5,6 +5,7 @@ import struct
 import tomllib
 
 import bh_archive as archive
+import bh_itemmsg as itemmsg
 import bh_pit as pit
 import bh_text as text
 
@@ -88,4 +89,22 @@ def pit_entries(arc, game):
             if size:
                 entry = data[offset:offset + size]
                 out.append((name, node, offset, pit.DocChain(entry) if kind == "docs" else pit.SlotTable(entry, limit)))
+    return out
+
+
+def item_msg_entries(arc, game):
+    """[(name, Node, entry offset, SlotTable or DocChain)] of the text of File 1's item and message files (bh_itemmsg), in
+    romdata.afs and in the stage archives; [] for a game whose config doesn't ask for them."""
+    if not settings(game).get("item_msg"):
+        return []
+    members = list(arc.open("/NETBIO00.DAT/romdata.afs").members())
+    for name, stage in arc.open("/NETBIO00.DAT").members():
+        if re.fullmatch(r"r\d{3}\.afs", name):
+            members += stage.members()
+    out = []
+    for name, node in members:
+        if not name.lower().endswith(".dat") or node.size > 0x80000:
+            continue
+        for offset, table in itemmsg.tables(name, node.read()):
+            out.append((name, node, offset, table))
     return out
