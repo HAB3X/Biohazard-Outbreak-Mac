@@ -1,0 +1,214 @@
+# File 2's pictures with Japanese, redrawn in English at build time (tools/bh_pictures.py says how to read this; the
+# pictures both discs have alike are in ../pictures-shared.toml). File 2's .tex files are MOMO containers: entry says which
+# picture stream
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 0
+tim = 0
+note = "the select screens' button hints (laid out as File 1's)"
+edit = [
+    { box = [2, 3, 18, 21], key = "triangle" },
+    { box = [20, 2, 120, 22], text = "Switch item", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [3, 123, 188, 142], text = "Scenario goals", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 299, 18, 317], key = "triangle" },
+    { box = [20, 299, 158, 317], text = "Close window", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 320, 15, 345], key = "updown" },
+    { box = [19, 320, 99, 345], text = "Scroll", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [0, 348, 26, 366], key = "leftright" },
+    { box = [27, 348, 153, 366], text = "Character select", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 371, 18, 390], key = "triangle" },
+    { box = [19, 371, 128, 390], text = "Info window", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 396, 18, 414], key = "cross" },
+    { box = [19, 396, 128, 414], text = "Back to title", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [0, 420, 26, 438], key = "leftright" },
+    { box = [27, 420, 122, 438], text = "Scenario select", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 440, 15, 465], key = "updown" },
+    { box = [19, 440, 100, 465], text = "Type select", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 468, 18, 486], key = "cross" },
+    { box = [19, 468, 58, 486], text = "Back", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 492, 18, 510], key = "circle" },
+    { box = [19, 492, 60, 510], text = "OK", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+]
+
+# The scenario cards: the Japanese name and the small English one under it inpainted away, the official English name
+# in their place
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 23
+tim = 0
+note = "Desperate Times's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 192, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "DESPERATE TIMES", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 24
+tim = 0
+note = "End Of The Road's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 178, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "END OF THE ROAD", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 25
+tim = 0
+note = "Wild Things's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 140, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "WILD THINGS", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 26
+tim = 0
+note = "Flashback's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 132, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "FLASHBACK", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 27
+tim = 0
+note = "Underbelly's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 132, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "UNDERBELLY", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 28
+tim = 0
+note = "Elimination 1's card"
+edit = [{ box = [8, 124, 140, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 150, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "ELIMINATION 1", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 29
+tim = 0
+note = "Elimination 2's card"
+edit = [{ box = [8, 124, 140, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 150, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "ELIMINATION 2", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 30
+tim = 0
+note = "Elimination 3's card"
+edit = [{ box = [8, 124, 140, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 150, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "ELIMINATION 3", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 31
+tim = 0
+note = "Showdown 1's card"
+edit = [{ box = [8, 124, 140, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 140, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "SHOWDOWN 1", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 32
+tim = 0
+note = "Showdown 2's card"
+edit = [{ box = [8, 124, 140, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 140, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "SHOWDOWN 2", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 33
+tim = 0
+note = "Showdown 3's card"
+edit = [{ box = [8, 124, 140, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 140, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "SHOWDOWN 3", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+entry = 34
+tim = 0
+note = "Training Ground's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 194, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "TRAINING GROUND", font = "avenir", size = 24, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/result.tex"
+entry = 0
+tim = 0
+note = "the results' label and button hints"
+edit = [
+    { box = [0, 145, 150, 166], text = "COMPLETION", font = "arial", color = "auto", outline = "auto", stroke = 2 },
+    { box = [0, 168, 16, 184], key = "triangle" },
+    { box = [16, 168, 180, 185], text = "Show scenario goals", font = "arial", size = 13, color = "auto", outline = "auto" },
+    { box = [0, 184, 16, 201], key = "circle" },
+    { box = [16, 185, 62, 202], text = "OK", font = "arial", size = 13, color = "auto", outline = "auto" },
+    { box = [89, 185, 105, 200], key = "triangle" },
+    { box = [105, 185, 205, 201], text = "Results", font = "arial", size = 13, color = "auto", outline = "auto" },
+    { box = [89, 201, 105, 216], key = "triangle" },
+    { box = [105, 201, 205, 217], text = "Details", font = "arial", size = 13, color = "auto", outline = "auto" },
+]
+
+[[picture]]
+file = "romdata.afs/result.tex"
+entry = 2
+tim = 0
+note = "the results' row labels"
+edit = [
+    { box = [0, 96, 80, 113], text = "HEALTH", font = "din", size = 17, color = "auto", outline = "auto" },
+    { box = [0, 127, 80, 143], text = "TEAMWORK", font = "din", size = 17, color = "auto", outline = "auto" },
+    { box = [0, 143, 80, 159], text = "COMBAT", font = "din", size = 17, color = "auto", outline = "auto" },
+]
+
+[[picture]]
+file = "romdata.afs/result.tex"
+entry = 4
+tim = 0
+note = "the ATTENTION screen's EXIT button"
+edit = [{ box = [0, 32, 13, 45], key = "circle" }]
+
+[[picture]]
+file = "romdata.afs/init.tex"
+entry = 1
+tim = 0
+note = "the ACCESS licence notice"
+edit = [
+    { box = [70, 309, 440, 342], erase = "#FFFFFF", text = "The Internet (network) functions of this product use\nAVE-TCP® by ACCESS Co., Ltd.", font = "arial", size = 10, color = "#101010", outline = "" },
+    { box = [70, 342, 440, 357], erase = "#FFFFFF", text = "AVE-TCP® is a registered trademark of ACCESS Co., Ltd. in Japan.", font = "arial", size = 10, color = "#101010", outline = "" },
+    { box = [70, 386, 440, 400], erase = "#FFFFFF", text = "Kana-kanji conversion in this product is by ACCESS Co., Ltd.", font = "arial", size = 10, color = "#101010", outline = "" },
+]
+
+# The network lobby (rfff.afs)
+[[picture]]
+file = "rfff.afs/lobby_01.tm2"
+tim = 0
+note = "the server and Capcom ID select titles"
+edit = [
+    { box = [0, 705, 256, 732], erase = "#000000", text = "SELECT SERVER", font = "arial", size = 20, color = "#FFFFFF", outline = "#3A1890" },
+    { box = [0, 732, 256, 766], erase = "#000000", text = "SELECT CAPCOM ID", font = "arial", size = 20, color = "#FFFFFF", outline = "#3A1890" },
+]
+
+[[picture]]
+file = "rfff.afs/prize.tex"
+entry = 0
+tim = 0
+note = "the collection's Available label"
+edit = [{ box = [165, 62, 249, 81], erase = "bg", text = "AVAILABLE", font = "din", size = 16, color = "#E8E8E8", outline = "", align = "center" }]
+
+[[picture]]
+file = "rfff.afs/lobby_15.tm2"
+tim = 0
+note = "the lobby's standby buttons"
+edit = [
+    { box = [79, 232, 118, 256], text = "CANCEL", font = "din", size = 18, color = "auto", outline = "", align = "center" },
+    { box = [121, 232, 166, 256], text = "STANDBY", font = "din", size = 18, color = "auto", outline = "", align = "center" },
+]

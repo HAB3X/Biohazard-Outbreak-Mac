@@ -1,0 +1,1181 @@
+96cefc438c	<BODY><SIZE=3><COLOR=6>See the list of rooms.<END>
+4544f1e064	<BODY><SIZE=3><COLOR=6>Find opponents automatically and start a game.<END>
+26d511b3d0	<BODY><SIZE=3><COLOR=6>Not available now.<END>
+bfceb19587	<BODY><SIZE=3><COLOR=6>Send messages and read the ones you received.<END>
+041bc77645	<BODY><SIZE=3><COLOR=6>See your registered friends' info.<END>
+553293e37f	<BODY><SIZE=3><COLOR=6>Block a given person's chat messages.<END>
+9492b04726	<BODY><SIZE=3><COLOR=6>Search where other users are.<END>
+1aee1350d6	<BODY><SIZE=3><COLOR=6>See your personal records.<END>
+c9eb9c756a	<BODY><SIZE=3><COLOR=6>See the terms of use and national rankings.<END>
+80bbe503c2	<BODY><SIZE=3><COLOR=6>Wait until an opponent is found.<END>
+53d97a7712	<BODY><SIZE=3><COLOR=6>Cancel QUICK START.<END>
+83a3a6e119	Friend list
+bb380adbfe	Speaker display
+cb23a227ea	Hello...
+3a7f9a0e76	Let's play!
+e3c739c6f5	Thanks
+014fb4ed4c	Hi, I'm new
+97fa0a89da	Anyone...
+822b14c797	Roger      
+edf3dbcf15	Sorry...
+c6e973a4a7	Time to go
+b8cdb522ed	Good game
+b17e0174d3	Password..
+5ff8a32c25	I'll join
+e27a1031c2	New room...
+355450ff46	All welcome
+76abafa6e6	Speed run
+013302fd16	Rookies OK
+56c0069f5b	Mid-lvl OK
+edbdc2d497	Experts OK
+138968fab1	SP hunt    
+c3a68af824	Laid-back..
+893a988efa	First play
+8fa41fda55	<html><head><title>Error</title></head><body text="#000000" bgcolor="#ffffff"><br><center><table BORDER="3" WIDTH="540" BGCOLOR="#FF6600" ><tr><td><center><font color="#FFFFFF" size="5"><b>Game start failed</b></font></center></td></tr></table></center><br><br><center><table cellspacing="5" cellpadding="5" WIDTH="560" ><tr><td>
+43261c36c0	<br><br></td></tr></table></center><center><A HREF="mmbb://BACK_TO_MENU">Back</A></center></body></html>
+feea0866ad	<br><br>Error code:
+ca9359fc64	<html><head><title>Repost error</title></head><body><h2>This page can't be shown without sending its data again.</h2><hr>Go back and enter the data again.</body></html>
+99a2267cb8	<html><head><title>Error</title></head><body><h2>An error occurred.</h2><hr>The page can't be shown because of an error.</body></html>
+3ae06873ab	<html><head><title>Network error</title></head><body><h2>An error occurred in communication.</h2><hr>An error occurred while talking to the server.<br>The server may have a problem, or the network settings may be wrong.<br>Check the settings and try again later.</body></html>
+5124737cf2	<html><head><title>Timeout error</title></head><body><h2>The connection timed out.</h2><hr>Communication with the server timed out.<br>The server may have a problem, or the network settings may be wrong.<br>Check the settings and try again later.</body></html>
+e137214e80	<html><head><title>Name lookup error</title></head><body><h2>The server name could not be resolved.</h2><hr>The server name could not be resolved.<br>The DNS server may have a problem, or the network settings may be wrong.<br>Check the DNS server settings and try again.</body></html>
+aee3b6d5e8	<html><head><title>SSL error</title></head><body><h2>An error occurred in SSL communication.</h2><hr>An error occurred in SSL communication with the server.<br>The server may have a problem.<br>Try again later.</body></html>
+29aea97aae	<html><head><title>Cancelled</title></head><body><h2>Cancelled by the user.</h2><hr></body></html>
+3d13821020	<html><head><title>Proxy server error</title></head><body><h2>An error occurred talking to the proxy.</h2><hr>The proxy server may have a problem, or the network settings may be wrong.<br>Check the proxy settings and try again.</body></html>
+38033c12b4	<html><head><title>Transfer error</title></head><body><h2>A data transfer error occurred.</h2><hr>The data received from the server is invalid.<br>Try again later.</body></html>
+72381c33ef	 Reload
+1d9bb15a2b	 Quit net
+2c4413aaa6	  EXIT
+ae7f41778f	Address
+df62913794	Could not connect.
+b38fb554a8	The service is very busy right now. Sorry for the trouble; please try again after a while.
+2185ddc60e	There was no reply from the server.
+26c24c8daf	Could not connect.<br>Please try again in about 5 minutes.
+7da3fddca4	You are over the spending limit of your "Game Value Plan Limit" or "Overuse Alert Plan".
+ba929a243f	The lobby server information is invalid.
+3d15869ab5	Register with these details?
+97c2d4b583	 Some items are left blank
+8e8b5590f9	Do you agree to the latest\n  online terms of use?
+32251ea108	If you don't agree to the\n  latest online terms of use,\n you can't play online.\n   Is that all right?
+b150ef24d5	  A network error occurred.\nPlease connect again.\n
+7cd6599820	Could not connect to the server.\n      Reconnect?\n
+c83e2abb31	Server name
+71402949ec	Mode
+9210138c21	Max players
+6188d85b3d	10000
+4c156bfa2b	Players now
+1f21d68b56	Text window line 1
+4123b2db12	Text window line 2
+343a558191	Text window line 3
+2ed6667e74	%4d
+4612c98094	Select AREA
+138dfd6865	Your phone number
+ba249792d0	Name
+3760104ebd	Age
+1ee90000cf	Postcode
+dd7edd1e3e	Address
+beb897992c	must be filled in
+f7dc1e3ddb	Register with these details?
+6be13da970	Yes
+163d264394	Download now?
+256c6266fd	ID:
+eba612b5c8	HN:
+c2be53c85c	is already registered
+e88b8b9aee	Downloading...
+5dfe3865f6	Connection failed
+1ad36e7ee0	Could not connect
+573e989c5b	Check that the modular cable
+2a88ad6117	is plugged into the modem
+de244abdfd	and the modem's settings are right
+b386dcf22d	If the settings are right
+d2db4b6d05	and there's still no response,
+22c4b667ad	please contact the Capcom
+5bdcab0896	user support center
+3890f87a59	The download failed
+993400bd73	Line busy
+bd9caeff37	Please wait a while
+1e31742f40	Check that the modem's
+14de86d294	settings are right
+264f9eee64	Choose where to save
+61c8199f23	the game data
+f2dfd54c9c	Your online records are on
+00413d695a	the status screen
+4b94bea662	Back = Cancel
+ad47b48529	Save slot 1
+c9a241268b	Save slot 2
+306bf40117	Looking for an opponent
+2aaca46b1b	Please wait
+09b44f0d3b	The download is complete
+415310e632	Your match was declined
+65f1f02b84	Connected over a KDDI line
+a5edaf664d	Don't switch off the power while playing
+3a3d42e300	Cut off: the line is unstable
+1ae035029b	No handle name was entered
+d8e3ab13e7	Register this handle name (HN)?
+642a01a56a	is registered
+41ad2f4e78	could not be registered
+a3577532ba	No more IDs can be registered
+f91ccac1a7	Please edit an ID
+ab4ce19d6a	Registration complete
+16a6b526fd	Your Capcom ID is
+c47e76f7a0	.
+df9075381a	Connecting to the server
+64bdf4b326	Hold Start for 1 second or more
+d0f43982f3	to cancel
+6f99715876	Do you agree to the latest
+5eb6c46c0b	terms of use?
+620f6a2af1	is not connected to the
+94e1eed9b2	game server, or is playing a game
+406be8a370	Connecting costs a call charge
+1a43c9f7c0	While connected to the Multi Matching
+f96889983f	server it costs 10 yen per 3 min
+1ce7efbac7	In a match
+7a8bbc9432	it costs 13 yen per minute
+f46d1ee246	Connect to the Multi
+f426a99b0a	Matching server?
+4222135243	Slot %s: checking
+750818e294	the save data
+0f88d92f21	Don't quit or switch off the power
+79df472608	while the save data is in use
+8bfcf2b1d0	Could not load properly
+543e5c8c5e	Controls
+f8538dad53	D-pad       : Move
+b44f829cbb	Circle      : OK
+459e3189e9	X           : Cancel
+41c0992c4e	Triangle    : Software keyboard
+11ea3f96a7	Square      : Chat log
+19e80033f8	On the member data screen
+ebd23ebe2d	L1          : Change member
+3439b34214	R1          : Change member
+edbf3ace1c	L2          : Turn page
+04857c1469	R2          : Turn page
+eb63aedb9e	START       : Close 
+f163830f71	Register this ID?
+eff21a632c	Returning to the title screen
+7bca6ea30e	Disconnect the line?
+f3f5daf520	System file:
+1bd62de9bd	Saving...
+ced82658fd	NET file:
+4db3efc6c5	Could not save properly
+4fccbb6f84	Press Confirm
+e7444e830a	Talking to the Capcom server
+7d87367233	No modem was found
+1511a8f16c	Check that the modem is attached
+37805a433f	If you don't agree to the terms
+62391c3d0b	of use you can't play online.
+d70268ab55	Is that all right?
+a7ffc21184	Check that the phone line is
+5a1ec59fef	connected to the modem
+f5221b5244	Do you have permission from the
+be78c68ac9	phone line's owner (your family)?
+f7114df483	To play online, you
+d1c9be7322	must agree to the
+4f36790d25	online terms of use
+575028f8f2	Have you read the online terms of use?
+d6dc55f66d	I agree
+6a47b99422	I disagree
+5d309726c3	Finding modem
+c9c8699251	Could not connect to the server
+fd87a699aa	The server may be down
+ef28a9c450	for maintenance
+5b569f7c40	There was no input for a while,
+6297b9e8cf	so the line was cut
+d5e0223dd4	A connection fault occurred
+e6358d89a4	Ending the match; back to the lobby
+a8a1c51031	Slot %s:
+c9ae64d89e	No save data
+ac1476dedc	Your NET file must be in the
+e858eb9e00	(slot %s)
+efd0f014d4	Confirm = Don't save
+d518dd9a87	Slot %s needs save space
+3b73b23ee9	with 123 KB or more free
+6a70f3f031	for the save data
+72a0bb9259	Change the registered details?
+0842cbd20d	A NET file can be shared by
+cfb3ad1bfe	the games that support it
+1006646858	No supported connection device (modem)
+c4bf68805e	was found
+189c1de98d	Use the modem listed
+756d11d2e5	in the manual
+f401836b63	To use another modem,
+9ce3c0e631	restart the game, then
+89d6f6176e	choose "Network"
+425217f9b8	Saved
+7f4ab857b8	Loaded
+bad9610392	Moving
+6267bcc0e5	Asking for a match
+e2a56ddceb	Connection stopped
+830f406d62	Loading the NET file
+8ce215a453	If you don't load the file,
+fea633ad8a	your modem settings, other players' IDs
+0df77e57fa	and so on can't be saved. Take care.
+c27be264f6	Load the NET file?
+0faede6ae5	Until you leave "Network" mode,
+8d705e848b	the save data
+fbae3ac4e6	must not be removed
+c0e9c9c30d	Leave the network?
+a01cc01305	In port A-1,
+7e649b768a	with 9 or more blocks free,
+83e35d596d	put the save data
+f742767b11	was found
+71d610c92d	Online play is possible
+d2e2caabc0	From now on, do not
+dbae009719	plug or unplug the modem
+501b439325	: delete this ID?
+9ee54d129e	Your ID, your partners' IDs
+565c02219a	and all registered info in the save data
+caad3492b0	will be erased. Are you sure?
+22541fd394	Restore the original save data;
+32f73e3f2b	it won't save correctly
+92982d9e23	Can't go on
+94363d1cae	The original save data is missing,
+723f7923ef	Can't connect
+ef159e6481	Leave this mode?
+f5aef8ad69	Not registered
+9f7d4dc0af	is busy
+9977bc813b	Please wait a while
+6da9739a6d	and try again
+90448b9b8a	No reply from the modem
+5ec4fc301a	Loading data
+90d654f413	Put the save data in the
+0f2cfc37b5	expansion socket
+ad21625301	                      A-1
+1ec6645331	                      A-1 or 2
+68fc8df2c7	NET file          =
+e69179cc90	System file       =
+a940f2d077	When you're ready,
+c49d5e7e46	press Start
+16355cf7b3	Data loaded
+2813f689de	: data was set
+d8b26b11a5	You don't meet the entry terms
+1108acd832	This match room is full
+ea9436e039	The server may be busy
+9a4164bd3d	Check the modem's settings
+be772de6e6	and call again
+437be09795	There is no system file
+50dd211cf6	A-1 or 2
+2bf420d74d	          put the save data
+40a45ec51b	with the system file
+333773d29b	The modem settings may be wrong
+4d3976448f	or the line is very busy
+e6350e3ee2	The call can't go through
+5becaa3e76	Reconnect?
+1627dfb6a5	No reply from the other side
+f65863a503	Could not connect for some reason
+5df0bb8215	The server
+31130acc2b	may be busy
+0179b4929b	The line is busy
+038e35aa11	Call again with the next number?
+bf5f258d34	No phone number is registered
+e3f4ff380d	Save the replay data of the
+2fb77d4a52	last battle to a file?
+f270e98b5e	Stop saving?
+90b489e456	Overwrite?
+a336f7fd1d	Save as new?
+bb4723384d	Creating new
+cb0371b12f	Is that all right?
+129e988c1f	is not in this match room now
+ff67dc8d6f	received a message
+453b874d3c	Sending message
+b5f64c679f	: block messages from now on?
+012c761d13	: messages blocked from now on
+75834cdfa7	: block matches from now on?
+7f3e9e047d	: matches blocked from now on
+11eaa4c958	Starting the scenario
+12fee0f8fc	Too many blocked players
+89707052a4	No more players can be blocked
+bde6a06c67	Search
+928bf1da3f	is in
+eaea9ef4ef	The save data
+1f271c4c0c	is not formatted
+989718413e	Format it?
+268b146ece	Formatting the save data
+c2222dcf09	The save data 
+9f6aec99e7	could not be formatted
+57226755a5	Saving the game data
+a2da034263	Slot %s:
+2d3932ba92	the save data
+0cd9450d60	is short of free space
+6dcb9f80d5	To save the game data,
+fb768d8f14	123 KB or more is needed
+f34ada1579	To the save data
+fa33f8a247	the game data was saved
+fa608dc503	The NET file
+62d3b6cebf	was not found
+8fab40b127	If you don't make a file,
+b9d1bfd63d	The save data
+7dc8a92019	has no game data
+2dd16ded14	Create a new one?
+c14349e07b	Game data already exists
+eee3f69920	To the drive,
+2664db7ba3	the NET file
+6c298d86dd	There is no NET file
+2a2cf90ff4	Message sent
+59bc8ecf21	Record your opponents' IDs
+7975a3f3d2	in the NET file?
+7b29fe19f2	Registered
+d53c039203	Getting information
+176bd8019c	Please wait
+2de4b21386	offers to be your partner
+c5a653bdb6	: accept as your partner?
+5c690241a5	Updating the NET file
+cdedec2a24	has left
+4085a99539	This room can't be used
+1cfbc4ac16	Choose another room
+effd07c3dc	This room is full
+f61faf02a6	The room is now full
+a6fb9fead2	is BUSY
+19be13011b	Wait a while and
+f7e33c62d8	check again
+ce5d7c36c5	Your settings differ from the room's
+812e411eb4	Can't enter
+e80c0579e8	: ID deleted
+9f54335793	Fill in every item
+1e748a319e	Fill in the required items
+f11e6912b1	Send the message?
+28fd514e4b	The other player's game title differs,
+80fc12f35a	Remove from the recipients?
+27136520ad	The room's creator closed the room
+8e8f4b8c20	Keyboard controls
+c5e161ec47	Cursor keys  : Move
+e0c2cf492d	Enter        : OK
+3f751d82ea	ESC          : Cancel
+f7b6976599	SPACE        : Software keyboard
+bd015934d4	F1           : Subwindow
+1f3347f11d	F2           : Chat log
+45d9433161	PageUp       : Change member
+8d691244ec	PageDown     : Change member
+f02fb129b6	Home         : Turn page
+f742837a1b	End          : Turn page
+7d96c8cf5e	The area you're going to is an event area.
+a67e0a6c44	You have no event entries left, so you
+3ffb6499fb	can't enter.
+4d2a76d0f8	Install area
+8820609a77	The area you're going to is             
+2506636e54	Entry is restricted, so you
+7def0802a2	could not move.
+a819cd6d2b	Disc area
+e7dde2da67	The area you're going to is                 .
+fe479c21f6	Can't move there.
+061ee943de	Change the setting on the area screen
+1371635ba6	and move again.
+486c0a0da8	The area you're going to is             .
+7234028d38	Recording the results of
+c744a7128d	the auto dial
+7e0f2e7ec5	No "news"
+8f9546b29a	Exchanging data
+1c400ca5ad	An error occurred
+e4f07967c2	Check that a supported connection
+96be76c88a	device is connected 
+100fd42200	to the system correctly
+e010b778c8	If this error keeps appearing,
+68d8e245c3	restart the game and 
+45574d5f59	try again
+1e58287e0d	The call server does not answer
+de988fc996	Check the connection and
+0963e0c83e	connect again after a while
+46fc1c2e81	Check the outside line prefix
+dfceb84167	If nothing improves,
+36fd04822e	Check the phone line is connected
+7509e4b717	Check the Ethernet cable is
+f50b1f359e	connected to the device
+45fae1b281	Getting an IP
+936f5473eb	address by DHCP failed
+2eff365a7a	Check the provider settings'
+bbead308f0	DHCP settings
+efe5fa384a	PPPoE authentication failed 
+3e3d4f975e	In your network configuration file,
+a2eb0c30ac	check the PPPoE user ID 
+1423822061	and password
+a6763faf78	Choose another server
+1ebd9afa7c	There may be a network error
+2c3c5de7f3	From the title screen
+ffa91826d4	connect again
+8854076975	Getting ready to return to the title
+9f2a81f459	Hanging up
+186593d4e6	Starting the network
+2c12bc4d7a	Go on to the next scenario?
+3e9975db21	This room is
+c23e955bd2	a room.
+468f19d369	To enter this room,
+510df52d13	leave the network once,
+15a779ce46	then connect again and enter.
+ea3511547a	, and
+93746a1264	Install room
+fe1a91dab9	so you
+c2cba2dbc4	could not enter.
+348f69b0be	Disc room
+45e7b35877	so you
+d620adac43	Disc room
+1523c0c05a	Disc setting
+d043342bda	               : switched.
+ca0bc3a782	Install room
+4b694e2140	Install setting
+6ef85d0669	: switched.
+274f2fede5	The room where this player is
+fde0b17dd3	To enter this room,
+8b937e4305	leave the network once,
+67ffdf6413	.
+fd4f610ca6	is an install room.
+c7a42df046	Choose this room from the room list,
+24fc34c57b	switch to the install setting
+e811cadfc8	and enter.
+da31a46560	* Install-only room.
+e93e54723c	Switch to the install setting and
+b450c2a64d	enter.
+92a8cdaab8	is a disc room.
+257b8465df	switch to the disc setting
+9b9147e8c7	In the room where this player is,
+03ab99364e	your character is already taken.
+736bb5b37c	Pick a free character and enter
+f9b5d0fbe8	: moved to this player's area.
+d69a3b6ea4	           .
+133aec6aae	Use the data installed
+68d33b4227	on the drive?
+cdfa2dd91b	               .
+dec2aadeba	Use the data on the disc?
+20de19b98b	Game data
+e7639ac199	            is
+e182188dfb	Pick from friend list
+3113458cf4	Enter an ID
+4fb5aae13d	: go to where they are?
+3a7758da55	Install area        
+aa5c938662	             so
+e25c26c0c3	Disc area        
+92a020984b	                 so
+58a4b964da	           : switched.
+f4770bf357	Your entries have run out,
+5e3f4cb254	so you can't join more events.
+6fe9e59294	Install area      
+38f568c632	             .
+f657fe9971	Disc area      
+2558b3bb2e	                 .
+5620d172b5	The game has started, so
+32fb315db8	No character can be picked, so
+96ed100ebf	This ID
+2d64912345	: use it?
+654f457d10	HN
+7a0a45a55d	*Needed
+be95d7a0f5	: in use
+05dab54ad5	Enter a handle name (HN)
+2092e38702	* This must be filled in
+80a962264d	Would you like direct mail?
+c44376761c	This room has a password.
+d05b580dbe	Enter the password
+964d21f814	Register with this handle name (HN)
+fba5e4e293	Enter with this password?
+d1c3ce4d72	Password: 
+5c363853d0	Enter a handle name (HN)
+7ea1ccbb68	Use
+6f9f30681e	Change HN
+a289bd0912	Character
+0f06a80b58	Enter
+540d5d500b	Title
+bfab5a53d2	Password
+ebe769e21d	Done
+88845b98c8	Block
+3c01e18959	Reply
+ff5eaa01e4	Save ID
+0ce619a5e0	Wait
+4cc723db8f	Leave
+6522bd7957	Member data
+9534449701	Start
+7e40e97108	ID list
+d67953e9b1	ID
+650c35a4fe	New message
+7eb8ca8d29	Search
+e7351cb013	Find user
+22f9553058	Send
+37278fd94e	Write message
+f7fc436d4c	Back
+9b096b3a16	Move
+c2a3fe5b0b	Register
+0cebd1de99	Don't
+d18b143bca	Chat
+c35f993581	Plays
+790534d1d0	Status
+4e840957fe	Members
+83129847e0	Results
+3b80f0bdd2	Playing
+13ad4b2756	Choose a room area.
+e8dfe1637a	No
+ac522832c3	Open
+c0bddf67b5	Setup
+f5978871ee	Joining
+c14aee0f4b	Full
+b7991e17a6	In game
+004e011f21	Free
+6ba76b4560	Unfit
+6131356917	Dup num
+a818ec5c5c	To make a new room, choose "Open".
+34514e359e	Talker 
+b988b4de56	    You can
+5d9622f7b8	add more.
+9e868981b8	Switch
+df27d5defa	Registered
+ee27ee9656	 HN
+6b0c586aab	Back    
+0a46b70764	No members
+4c6aa0e298	Yes
+bd9fb01ffb	None
+c0aac2d3e8	Show chat
+284743f603	When OFF, chat lines aren't shown
+569a1c4498	ON
+92754495aa	OFF
+a2b7e18b08	To top menu
+48f124253e	Talkers
+e71c218bf3	Find someone
+c8f870849c	Open messages
+2e4893c503	Quit net
+a948c013c5	EXIT
+8ee17f6e96	Rules
+76a0125a9a	Members
+a3c5152aa6	To servers
+dd156b91e5	News
+bd085e90bb	Test
+722d5b8d65	Go to the top menu
+0fa5832e87	Show the users who have spoken
+91f7eaf099	Send messages and
+56491bfdb6	search for other users
+5e2b709ffa	Show messages
+c2e7a3017f	Explain the controls
+2debaa010f	Hang up and
+52f0415ec5	leave the network
+5b18216cd7	Back to the last screen
+fa1ed4d948	Show the room's rules
+4a2cd6d94d	Show the room's members
+39d20bf74f	Explain the keyboard controls
+8991038dbb	Back to the server menu
+05e033f3e4	Show the "news"
+9c676ce8b7	Various tests
+b6488d6677	<BODY>Choose this when you play online for the first time.<BR><BODY>* If your phone number changed (when you move, etc.),<BR><BODY>choose this and register too.<END>
+865f295fad	<BODY>If you've registered before, connect here.<END>
+2281168757	<BODY>The terms of use for online play.<BR><BODY>Please read them.<END>
+7f96d6c349	<BODY>Change your registered details,<BR><BODY>e.g. when you move house.<END>
+5a71496bab	<BODY>(Required)<BR><BODY>Enter the phone number of the line<BR><BODY>your modem is connected to.<END>
+02d8f4e268	<BODY>(Required)<BR><BODY>Enter your name.<END>
+3752dcfa8a	<BODY>(Required)<BR><BODY>Enter your age.<END>
+5b3a415866	<BODY>(Required)<BR><BODY>Enter your postcode.<END>
+9b302e146a	<BODY>(Required)<BR><BODY>Enter your address.<END>
+3e17567196	<BODY>Go to the next page.<END>
+031d14ac72	<BODY>Enter your occupation.<END>
+8aca64633c	<BODY>Enter your e-mail address.<END>
+ac0da3eca4	<BODY>Enter a phone number we can reach.<END>
+20d1498b9e	<BODY>If you'd like direct mail,<BR><BODY>choose "Yes, please".<END>
+e5c3c96c47	<BODY>Back to the previous page.<END>
+706d090a7a	<BODY>Register these details.<END>
+4ed667c59e	<BODY><SIZE=3>Choose the ID to play with.<BR><BODY>Choose "Empty" to get a new ID.<BR><BODY>* You can have up to 3 IDs.<END>
+6b0e595853	<BODY><SIZE=4>Start scenario mode from the beginning.<BR><COLOR=c>* Characters that already have scenario<BR>clear data will have it overwritten.<END>
+55d76e5da5	<BODY><SIZE=4>Resume from where you last quit.<END>
+92a7a38f58	<BODY><SIZE=4>See your personal information.<END>
+b3cae19278	<BODY><SIZE=4>See updates and national rankings.<BR>See the terms of use and other info.<END>
+0232577b9c	<BODY><SIZE=3>See the list of rooms.<END>
+92444fbbb5	<BODY><SIZE=3>See updates and national rankings.<END>
+c6c6ed56a2	<BODY><SIZE=3>See your personal information.<END>
+c4726cde77	<BODY>To make a race, choose "(Open)".<END>
+5952d67dac	<BODY>Set the rules.<END>
+689017f28e	<BODY>To make a club, choose "(Open)".<END>
+cbb5f1767e	<BODY><SIZE=3><COLOR=6>Start the scenario.<END>
+64fa72baa6	<BODY><SIZE=3><COLOR=6>Wait for the scenario to start.<END>
+fa1d4b1b11	<BODY><SIZE=3><COLOR=6>Back to the room list.<END>
+b8307d7531	<BODY><SIZE=3><COLOR=6>Back to the chat screen.<END>
+c3eccc4fb7	<BODY><SIZE=3><COLOR=6>See the data of the players taking part.<END>
+b0fa43bb49	<BODY>Chat log: Up/Down to scroll; Ad-lib to close.<END>
+d61ba415f3	<BODY><SIZE=3><COLOR=6>Wait.<END>
+df7fc03252	<BODY><SIZE=3><COLOR=6>Leave the room.<END>
+527d3851e0	Registered
+c10c636a2b	Nobody has spoken
+427c505a67	Left/Right: switch entry; Back: finish
+1d885ac0b7	Talkers     
+1ee126d12e	    more can be added
+27be5f70b5	The NET file is full
+7b1269b70e	Players     
+7ec1ce69cf	Can't set
+5ca3f8d0e9	Done
+f4eaee3381	Nobody registered
+17b3042ad6	From here on it costs 13 yen a minute
+9b5ba71584	of
+6b0415011c	Invalid
+bb11dcce8f	NO DATA
+28ed82f9e5	You can't enter now.
+eb8b0b6297	No messages
+8ea74d3849	
+9f81b0729b	ID
+cdd6317732	Start: Close
+6ac203b58d	ID:
+da17342409	HN:
+d0ef4f7a88	[Basic Data (All)]
+76f96895d1	-Play Time-
+084cee268f	-Result Points-
+78faab743d	-Character Use-
+fdde96e21b	-Distance Moved-
+2d46b3d667	[Combat & Co-op Data (All)]
+dd9ac3c234	-Healing Items Used-
+ae3617d867	-Weapon Type Use-
+d8a9aeec45	-Dying Allies Helped Up-
+ac71b17158	-Times Helped When Dying-
+fa7746be80	-Item Trades-
+5ca0508276	Items given
+d50a79cfd1	Items received
+98ea4cdb59	-Allies Saved From Attack-
+308bc83aca	Blunt
+ab8200d72d	Guns
+258259904e	Bare
+155121059b	[Scenario Play Data]
+6fba834c84	-Clears by Scenario-
+78995c2b7c	[Special Data]
+277b07bf67	-Scenarios Cleared Without Weapons-
+b37267ed4a	-Scenarios Cleared Without Damage-
+4e4613d577	-Fastest Clear Time-
+b2e52eb38c	????????
+83f99dbfd8	Scenario starting soon
+83ca40f40b	Left    m   s
+7780e2375b	Continue with which character?
+e15b4eb05a	Disc
+9ad284e09d	Install
+d6a9118a16	Unread    
+4f676ec242	* This is
+bdd60d8794	's data.
+9c0aa52e5e	-Survival-
+239440b9fa	-Condition-
+855d5e1d0d	-Avg. Final Infection-
+f627b192e2	Put the cursor on one and
+ab39cfc41d	press it to remove them from your friends.
+6ee5fdd76c	Put the cursor on a person and
+9fe1f2b3ff	press it to go there.
+d4663fc758	Which character will you use?
+9509e915cf	<SIZE=3>Message sent
+c6d28b4c4f	Entries left
+cc1ebf83b9	Put the cursor on a recipient
+7fad6bad87	and press it to remove them.
+df3c0a08c4	  Getting
+57a5053aea	  Online
+627fd39d24	  Offline
+9832fbbd26	In game
+ce49c17c33	Failed
+e2875da759	Meant as the latest terms
+2b49dfcedd	but no DOD, so none
+01512a4762	Hello!
+9912658fef	Anyone up for a scenario?
+dfed2ee5d4	Roger
+531d9e2cd3	Sorry
+ae2dbfb98b	I'll log off soon
+fff808d7e3	Good game, everyone!
+43fcb6bb7c	Password is
+d07b122a72	I'll join!
+ae0e9123d5	Making a room!
+2a6576534e	All welcome
+37e92dff5f	SP hunt
+6bf2576973	Easy-going play
+c0543c0bd6	First time
+1c1de23fa5	-
+2c29381d4c	-
+86b209259f	Your Multi Matching BB login ID and password
+5b979da4ad	can be kept in your NET file.
+8dd01f782e	If kept, they are filled in automatically
+8416f58f52	when you connect from then on.
+3a0f94abe9	Keep the login ID and password
+dfcc12b072	Keep the login ID only
+64c383f0e5	Don't keep them
+21f4f37a6f	If you keep your login ID and
+889fdb8cee	password in your save data,
+68f73f7554	please take care of it.
+3516c17e9c	Your NET file says
+22032902a3	you have registered
+604bd3e7bc	before.
+63190b2753	Register?
+e44890ae7c	Yes
+c3dd097495	Erase the Multi Matching BB
+3740b1f7d0	login ID and password
+77808bf705	kept in your NET file?
+9d2b2e3a64	Erase?
+309dc53fb5	If erased, they won't be filled in
+f208f220ca	automatically when you connect. Take care.
+a21d913901	Erase the login ID and password
+24008e2934	Don't erase them
+be18781b4b	while the save data is in use
+c96d9d3699	Saving the save data
+c6a7bde58b	Erasing
+8d8ac6b3b6	Save complete
+3d45178af8	Press Confirm
+ccbd34f514	Erased
+2d866df23e	Stopped because of an error
+473814294d	No save data, or
+e19d4c81b3	There is no NET file
+51b1fdbc3a	User ID
+e71693f2bd	A valid MMBB login ID
+0c695a06f5	Error: %d
+8b7e2e16a5	If you go online, unsaved main data
+b3a94e27ab	may be lost.
+639f9fa760	Looking for the NET file...
+74dba876ae	Slot %1:
+ace2def4fe	must not be removed.
+a520d0073e	The NET file was found.
+96f8f4950c	Slot %1:
+18624fcc13	is missing.
+8e28d98a2d	The NET file was not found.
+79510d2fcc	Without the file, other players'
+d711bb3f29	info and so on can't be saved.
+8db0104498	Create a new NET file?
+d43067406c	From now on, while online, this NET file
+1c9b398417	is saved automatically.
+bc1d2075f9	Don't turn off the power
+d23f04e5db	or quit the game.
+dfc07c07db	Checking...
+31dc28e1cd	or quit the game.
+5136c3c0dd	Saving the NET file...
+6d734b3f33	The NET file was saved.
+8d14e067f7	The NET file could not be saved.
+3db0f91577	Use slot %s.
+4d7765c8a6	There is no NET file.
+c2dbf75bbd	Connecting by broadband.
+bf58d18dab	A broadband connection can't be made now.
+539d40b50d	To connect by broadband,
+5397ace832	restart the game
+3bef9d7015	and try again.
+776d0e45c0	Starting the network connection by broadband.
+974d4f394c	To connect by broadband,
+4707ff14e7	on the BIOHAZARD OUTBREAK FILE 2 TOP screen
+2140e3bb44	                              and
+5c836014c3	on the BIOHAZARD OUTBREAK FILE 2 MENU screen
+afd75b2cc6	                              ,
+bb81345c81	you must agree to them.
+32f57b2f79	You'll play and talk with strangers; don't
+6782f1254f	do anything other users would find unpleasant.
+38be69d5b5	Mind your manners
+6f757f76a7	Next
+62a024de5d	"Multi Matching BB Terms of Use" 
+8ecaa8226c	"Capcom Online Game Terms of Use" 
+3ec4973d38	Erase the Multi Matching BB login ID?
+4095f2befd	* A stored password is erased with it.
+7162af4508	Login ID
+1732d0c76e	The login ID was erased.
+37343483b3	"DNAS" authentication...
+fe54e2758a	Connecting by dial-up.
+2f1cf30e0a	A dial-up connection can't be made now.
+1ca601bf6f	To connect by dial-up,
+030055d3c8	No phone number has been entered.
+d96723c009	Be sure to enter the phone number of the
+bf214eced6	line your modem is connected to.
+503c1732fa	Outside line prefix  (    )
+3466b1c679	connected to the modem.
+c6a6697ee6	agree to the online terms of use.
+47f73c1964	Enter the phone number of the line
+50ac0e8d63	your modem is connected to.
+1a33277804	-Your phone number-                     
+4263fbcccd	Connecting costs a call charge.
+f44b01af28	When playing online
+5316b984ae	it costs 10 yen per 3 minutes.
+bbc5c8772e	it costs 13 yen per minute.
+41dcf533cc	Finding the connection device
+80600203b9	needed for dial-up.
+3fd2530cdf	The connection device was found.
+194aa693d8	plug or unplug it.
+b800e8e853	From now on broadband can't be used.
+7d8fd53f7a	To connect by broadband,
+9672a716ae	No connection device was found.
+61e3eb4405	Use the modem listed
+22aa6a60e9	in the manual.
+990c3d728d	Line prefix
+4dcc836318	With a supported network adapter and broadband,
+aab8a2a1db	you can play online.
+b195523482	With a supported modem and a phone line,
+109b13fd24	you can play online.
+1a3880786c	Connecting as last time.
+6a8fdae2f5	Change the pilot name
+772a65d9cf	used in online matches.
+18760a86eb	Connect to the Multi Matching BB server
+61f6a3f80a	and play online.
+60759d29ed	Erase the Multi Matching BB
+4a75da55fb	login ID and password
+8b329ea2f1	from the NET file.
+8bea60d23b	If you've connected before, connect from
+e4e210592e	here.
+61b96b6719	The terms of use for playing online.
+d582f503dd	Please read them.
+ef92833399	Registering as a user lets you take part
+40394b9970	in online events and more.
+17a7a27e53	 * Choose this to change your details too.
+458af97216	If you need a number like "0" or "9"
+b79809f1b9	before the area code when you call,
+591ea9ac7f	enter that number.
+09eacd4f5b	Network
+b1f249e923	Broadband
+173eb097c5	Starting the connection device.
+b1a4f0ce8b	Hold Start for 1 second or more
+8f9d41e4e7	to cancel.
+2b478f3575	A keyboard can be used
+75b200f451	to type.
+dbf8106efc	You'll play and talk with strangers.
+3900378144	Mind your manners and etiquette.
+d981b2422a	Many people can see the chat.
+689b8ea567	Never give out your address or phone number.
+c75e1e0763	Don't say anything indecent
+83bad7dc78	or anything against the law.
+ce78b025ee	While playing online, don't quit the game
+cae92adabc	or turn off the power.
+e366b41a46	Matches cost 13 yen a minute,
+e33daa85f8	everything else 10 yen per 3 minutes.
+52e1ce9e85	There's a phone charge;
+eef90775cc	don't stay connected too long.
+9250ec9eaf	The "DNAS" server can't take requests right now.
+ca0d59097d	Please wait a while and reconnect.
+b9ddc62fc7	The title's "DNAS" service hasn't begun.
+ac74952acf	The title's "DNAS" service period has ended.
+1cb2d0f656	All "DNAS" services have ended.
+80c5a2bcc9	The connection to the "DNAS" server timed out.
+d4f66c4396	The server is not working properly.
+fe42b893d1	A "DNAS" error occurred.
+b4ea1e3e41	"DNAS" server error.
+63ab49ac3e	Download error.
+f9916d1679	Device info error.
+005e597064	Network error.
+85ee928564	Unique ID error.
+ce56e1c48b	"DNAS" authentication cancelled.
+bd182833af	Main data of game version %v
+0c3bb35763	was found.
+6bb778595c	The game version was updated to %v.
+7da2b1d022	(updated)
+204b0a4c7d	To play online,
+807a73e126	save the main data of game version %v.
+18601b52d2	Please save it.
+0d71f03ead	Save it to the save data?
+059291e48f	Checking.
+3db0c9e7ea	was removed.
+44bbeff980	Saving the main data...
+3ec6fde215	The main data was saved.
+a88c46a5d9	The main data
+cabe907549	could not be saved.
+e17dab71e9	Press Confirm.
+7f56e9842d	Loading the NET file...
+c643593193	The NET file was loaded.
+7047373288	The NET file could not be loaded.
+b27e17614e	Choose where to save
+c0ac9134ea	the NET file.
+3b69334906	Not enough free space.
+2b584a7f26	To create a new NET file,
+7dd2632177	%y KB or more of free space is needed.
+e45dcc0329	A NET file already exists.
+09bf0f4ef0	Overwrite it?
+24c1ac666c	Formatting...
+6df5d0abaa	Register your online pilot name
+0aa365005d	as this: all right?
+834e42769d	Saving the main data.
+e660d1124f	Choose where to save.
+35544b80a1	Back to the network menu without saving.
+5a61e92d8a	Back to the network menu without saving?
+9e751a9b64	It could not be formatted.
+25478da3cd	Create a new one?
+33d19eb79f	To save the main data,
+d32d748b6e	%y KB or more of free space is needed.
+c5847388cd	Stop saving the main data?
+907c6388ad	The main data could not be saved.
+f04f11967b	Save the current state (and pilot name)?
+31a5853343	Could not access it.
+de3ef2e203	No pilot name was entered.
+dff5274551	A pilot name for online play
+5bf47a82c8	must be entered.
+e47aaadfc7	"          " and "DNAS" are
+c2feaf92d9	trademarks of Sony Computer Entertainment Inc.
+44e7f7819f	Autoloading the main data...
+2ced018617	The main data was autoloaded.
+ba34f890fb	Until the version update ends,
+4359ca42a9	Slot %s: the main data
+57aa477743	is missing.
+e8a91d390f	Choose where to load
+6f7ca60a28	was replaced.
+9e04f55745	Formatted.
+459b6e205e	Enter line prefix
+21ac41eea4	The NET file could not be saved.
+63d71ad318	Load it?
+976252643c	The NET file is corrupted.
+ec357ca448	The save data is corrupted.
+dfc1992a33	The check failed.
+c3bfb62df0	Dial-up
+041f88b6bb	Same as last time
+d7b7d72e3d	Change pilot name
+f1a1ddb44d	Network connection
+3ff489a4fe	Erase login ID
+2002c883ee	New connection
+ff465a4bff	Online terms of use
+6001fcd8ed	Register/change user
+d8eff84a74	Line prefix setting
+89248ff639	Next
+aabe16efa5	Erase
+e7dced4e03	Don't erase
+e80b7e0727	Re-enter
+ea1117915e	Read the online terms of use
+747ca21482	Save slot 1
+74ae9e26a9	Save slot 2
+208f51b103	restart the game and 
+527f63a46d	Check the connection provider settings'
+a119cdc6b1	PPPoE user ID 
+f43828f43b	From the main menu
+4dda34b0d8	Getting ready to return to the game
+c9c88aa595	Please wait.
+83883eaabb	Scenario items
+8baf097800	-
+94054d2b41	-
+a161f4e388	Getting ready to hang up
+8934156999	Scenario played
+3d34666604	%4dh %2dm %2ds
+011abfb85a	%10d pts
+19915b7a45	%s=%3d%%
+5ce4403f04	%s   %3d%%
+bad4f37bf1	%s%4d/%4d
+716c703e0b	%4dx
+22bfd701a3	%s  %3d%%
+e55393b167	%s %4dx
+ff06fbba0d	%s%2dh %2dm %2ds
+cc52029daf	Advanced
+65c4d96490	Settings list
+1ac57907c3	Stop
+bf9912398a	Network settings menu
+5471a147dc	Check/change settings
+07ef0228f0	Delete settings
+9940445211	Test connection
+2535699b37	Connection device
+6654d74a29	Use PPPoE?
+bf7ad6a477	Enter user ID
+27e1c69815	Set IP address automatically
+7c970568ff	Enter IP address
+c11a33940a	Set DNS server automatically
+64dc96790a	Enter DNS server address
+dfce881f44	DHCP advanced settings
+4cfcb78f68	Settings name
+04d6ff67ca	Choose settings
+97e4e0bd68	Start connection test
+46428b15b2	Proxy settings
+3478dd5f94	Device advanced settings
+a65165991f	* Edit network settings
+a16529d631	* Proxy settings
+da65a6c959	First, choose where to save
+7721314124	the connection provider settings.
+8a28e7f952	Choose the connection provider settings
+154103cab6	to load.
+2f1b9371d8	Choose the connection provider settings
+52d74aa92e	Choose the connection provider settings
+d1e14234d5	Choose a connection device.
+0ff9eb8598	Needed
+81a894d771	Not needed
+d6fa4a7a6d	Does your connection provider need
+667619e5d7	a user ID and password?
+64bc870421	(uses PPPoE)
+280f132cf0	User ID
+722f0445dd	Enter your connection provider's
+0a0729aa22	user ID and password.
+7dd0ff981a	Automatic
+2f637970dc	Manual
+cceaafe078	Set the IP address automatically?
+0cff641ec8	(uses DHCP)
+42fa764748	Usually, choose automatic.
+e08fab7f27	IP address
+fe3e43de53	Netmask
+3d9a598826	Default router
+cfefd7469a	Fill in the items below.
+49e6d8f3c8	Auto
+fd3da67ee5	Manual
+15095f3648	Set the DNS server automatically?
+07aff68089	Primary DNS
+5e715eb7d5	Secondary DNS
+64b1abd86c	Enter the DNS server addresses.
+e7918f5131	DHCP host name
+e24885172e	Enter the DHCP host name.
+a4690d5d13	Name
+80d3b1a54d	Give the connection provider settings
+53b1d949ea	you made a name.
+327e061796	Choose the connection provider settings
+b44f50187b	to check or change.
+ca99037128	Choose the provider settings to delete
+0287010dc5	Choose the provider settings to test
+bcdc745cbc	First, the proxy settings:
+77ed27ad71	Does your connection provider need
+07b46ddef5	proxy settings?
+1a2ef7085b	Proxy address
+43fc178c5a	Port
+9db2d24197	Security proxy
+4496554a69	Enter a security proxy
+b787d5e985	only if it is needed.
+e8dd7d9b96	Choose the Ethernet mode.
+2d7c0d6c3c	Stop and go back to the network settings menu.
+ed52bb8587	Setting up the connection provider.
+ed294edfac	You'll need your connection provider's
+29e5e825e3	user ID, password and other network details.
+4c71be75cc	 
+bb2b893cb4	Have your connection provider's
+348e6c8f89	papers ready.
+e882250ca3	Switching to the setup guide to set the provider.
+a274474b03	All right?
+68c9d29d2b	Unless you save at the end of the setup guide,
+18c2937c5f	the changes won't take effect.
+d740547d8e	Delete these connection provider settings?
+bfd0fd8f6f	There is no device for a broadband connection,
+ba72f89304	or there are no provider settings.
+0e8e36f454	Check the connection device and
+b23fd09350	provider settings.
+ee7719c5a5	There is no save data.
+965611f406	The save data was changed.
+2cdb685552	Back to the network settings menu.
+90e2c1dcc4	Not enough space to save. Saving
+d427176342	needs 94 KB or more of free space.
+016eaf94ef	Delete some other save data,
+9887d78b3f	then try again.
+e22a403f57	The save data is not formatted.
+63b0f65a22	Format it?
+2913356737	Formatting.
+8af2d073fa	Don't quit the game.
+5d579d617c	The save data was formatted
+ac35c56c21	.
+316783a199	The save data could not be formatted.
+bb84b5850c	Choose where to save again.
+48d8072956	With 4 provider settings, no more can
+4a6a635c96	be made.
+5146a55a09	Delete one with "Delete settings".
+77d18eb9fe	The save data has no valid "Your
+bc10a9fa17	network configuration file".
+7b663841ad	The connection test was stopped.
+f66b774aa6	Save the settings?
+74b2156496	The network connection failed.
+5e564efac4	The connection test succeeded.
+bcc1ac5a6d	Saved.
+9911cc0fbe	Could not save the settings.
+d33f8fdbf8	Deleted.
+43037b1959	Could not delete the settings.
+5e4d7578d4	Setting up the proxy.
+0424b40184	Keep your connection provider's papers
+17457e80ce	at hand.
+ed8f455c16	Proxy setup finished.
+6a57b9f018	Register these settings?
+0b17c2dcd3	Details
+af3ceafba6	Quit?
+99417117c7	While it finishes, don't quit the game
+3054cec259	or turn off the power.
+9e7392d250	This device and provider setting
+8b665547f0	combination can't connect.
+21d18ec2ff	"Your network configuration file" in the
+f36b14a7b8	save data could not be read.
+cb024b9c46	The "Your network configuration file"
+6f5de77d6d	in the save data
+b96288c342	was made on another system
+953a3f2a40	and can't be used.
+45ae20c151	AOL settings can't be edited or deleted.
+01ff79b857	needs 112 KB or more of free space.
+07ee429f9e	Saving the save data.
+3ae01d034c	Don't quit the game.
+b8a355aaf7	Deleting the settings from the save data.
+68849ebeda	There is no save data.
+c75428373a	Please add it.
+0e92ba8151	Starting the connection test.
+2a97d8114e	Press Confirm.
+0daef6f5ec	Start the connection test
+a6fa51eac6	Testing the connection.
+6b09271c64	Connecting...
+0cffce9be7	Check that a supported device is
+f5d7437d90	connected correctly.
+a81c52650a	If this error keeps appearing,
+d3fe76647b	restart the game and try again.
+782aa2ac6e	Save the network settings?
+cd0c6feca2	An error occurred. Check that the
+0daeb12fe2	Ethernet cable is connected to
+4ad80ff0c9	the network adapter correctly.
+4f2bb0db89	Getting an IP address by DHCP
+5ba2efd9f2	failed. Check the DHCP settings
+a9a000ecd9	of the network settings.
+89c6023140	PPPoE authentication failed.
+ccbd490461	Check the PPPoE user ID and password
+9dee68fda5	of the network settings.
+7d3f4c604e	was not found. Check that it is connected.
+7badd4a012	Cancelling...
+cc5b8d902b	Could not connect.
+76935a4b76	The network settings may
+b65d3a4b22	have been changed.
+5bb2b79d0d	Check the settings again.
+1f46c38c74	The save data has no valid "NET file"
+b21b76c71f	.
+39ff3554ed	The device settings are full; no more
+102c9b6fd2	can be made.
+8e831022d2	Delete existing provider settings,
+1709463a9e	then try again.
+498b07f0c3	Not enough free space to delete. Deleting
+b25f18c594	With 6 combinations, no more can
+200cec0bf9	An unlinked combination file
+26c9cd420f	was found.
+bdb820a118	Delete it?
+5f3d106921	An unlinked connection device file
+cd0be60497	Registration complete.
+e736901dd6	No provider settings or connection
+6d9810836e	device are set, so they couldn't be loaded.
+12c8385fc2	"Your network configuration file" was
+1b714553e5	loaded from the save data.
+fe20cda6d7	An unlinked connection provider settings
+012f1a8617	file was found.
+584da3aa31	A combination, device or
+6a80fcce29	provider settings file
+70804e7f47	is not linked, so it can't be deleted.
+8f25fb3a7c	Set up the network?
+c150be0884	(Setting up the network loses all
+25d0cd39d7	unsaved data)
+272c37f92c	Loading the network settings
+37a7130a05	from the save data.
+573fa48f6a	Don't quit the game.
+4c0f568c54	To play online,
+bfcf1cf769	you need network settings.
+8de644ce89	To play online, proxy settings are
+c0610c256f	needed. If you haven't set them,
+c22e911f66	set the proxy.
+f504364f95	Choose the settings to connect to the network.
+7acafce3fc	Make new provider settings.
+d44e6a7bfd	When setting up for the first time, start here.
+e588f4efe2	Check or change provider settings.
+0a242d6351	Delete provider settings.
+12cf369a45	Test the connection with provider settings.
+200ccac9a6	Until the setup is finished,
+2fce5ea527	If your provider needs no ID, or you use a router
+9f53b01f16	(with the ID and password already set in
+febbb4759f	the router), choose "Not needed".
+7d3fd98dc0	Some providers call the user ID an access ID
+514396d873	or login ID, or by another name.
+c4e67fe3c7	The password you enter shows as '*'.
+bcef29e61c	To set a DHCP host name,
+e83f28487c	use the advanced settings.
+7ab5c9d93b	To set the IP address by hand,
+2988988d95	choose this.
+dabb369ee1	Enter the IP address.
+bbe425a243	Enter the netmask.
+7337ad3143	Enter the default router.
+bf23b377ac	If no DNS server address is given,
+4d0c4b777c	To set the DNS server address by hand,
+7d74f5c797	Enter the primary DNS.
+ce90125930	Enter the secondary DNS.
+ce7123982a	If your provider has no such setting,
+e17da4d14f	you don't need to enter it.
+d64474a1d9	Press Right to go back.
+0ad386d8de	A name like the provider's name,
+e4995995c8	one that tells what the setting is, is best.
+7769480559	If your provider has no proxy settings,
+18011ae2a5	choose "Not needed".
+701510efb5	Enter the proxy server address (HTTP).
+871aedc496	Enter the port number.
+d406c7025b	Enter the security proxy (S-HTTP).
+e3c6929ed9	Some providers call it HTTPS, Secure
+32f9e7e51d	or another name.
+01d8177ae0	If you don't need to choose a device,
+d545aaced2	(the device is detected automatically)
+2aad08fae4	Not usable
+cb614ff9f3	Device: not usable
+c9e82d5d84	Device: %s/%s
+02032e0002	Not set
+82d842115b	          Device  %s/%s
+c714124a3c	        Not usable
+f736e9e31a	  Device details  %s
+1b3563747a	         User ID  %s
+14abe902c5	       Host name  %s
+da9c404196	      IP address  %s
+8b2a7e6547	         Netmask  %s
+eb1f5bbc48	  Default router  %s
+85d51c3012	     Primary DNS  %s
+626e1b1217	   Secondary DNS  %s
+010cc1efb7	[ID:%s HN:%s]
+51a69a1d02	[ID:%s]
+f68b30f44f	[ID:%s HN:%s]<BR>
+8d891308cc	[ID:%s]<BR>

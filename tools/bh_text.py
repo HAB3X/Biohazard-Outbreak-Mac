@@ -8,7 +8,8 @@ unit, and the id never needs the Japanese to be kept).
 
   ExePool(elf, region, base, images)   the executable's string pool: strings reached through tables of pointers
   MsgBin(data)                          a stage's message file (rNNN.bin, dmNNN.bin, spmNNNNNN.bin)
-Both give `texts()` ({unit id: original bytes}) and `rebuilt(new)` (the new bytes, given {unit id: English bytes}); what
+  HtmlPage(data)                        a page of the network screens' browser
+All give `texts()` ({unit id: original bytes}) and `rebuilt(new)` (the new bytes, given {unit id: English bytes}); what
 doesn't fit is a DoesNotFit error that says where.
 """
 import hashlib
@@ -16,7 +17,11 @@ import re
 import struct
 
 LINE_MARKERS = (b"\x81\xa5", b"\x81\x40")  # ▼ and the ideographic space, as Shift-JIS
-TAG = re.compile(rb"<[A-Za-z][0-9A-Za-z]*>|%[a-z]")
+# Control tags and format codes: the stage text's <p1> <c2> <I>, the network screens' markup (<BODY><SIZE=3>, HTML) and
+# printf codes (%s %2d, the network's %1 %v); <words in brackets> without an attribute's = are text. A line break in markup (<br>) is layout: the English sets its own.
+TAG = re.compile(rb"</?[A-Za-z][0-9A-Za-z-]*(?:=[^<>\s\x80-\xff]*|\s[^<>\x80-\xff]*=[^<>\x80-\xff]*)?>"
+                 rb"|%[-0-9.]*[A-Za-z]|%[0-9]")
+LAYOUT_TAG = re.compile(rb"<br>", re.I)
 
 
 def unit_id(raw):
@@ -28,11 +33,27 @@ def has_japanese(raw):
 
 
 def tags(raw):
-    return sorted(TAG.findall(raw))
+    return sorted(t for t in TAG.findall(raw) if not LAYOUT_TAG.fullmatch(t))
 
 
 class DoesNotFit(Exception):
     pass
+
+
+def looks_like_text(raw, at):
+    """Whether bytes between NULs in a data section are a string (not a pointer or number that happens to decode): Shift-JIS
+    with a full-width character, no control characters but newlines, no half-width katakana (which the games' text doesn't
+    use and the address words that decode do: an address's high bytes read as ASCII after one), and not a word-aligned run of
+    three bytes or fewer (an address with its zero top byte)."""
+    if at % 4 == 0 and len(raw) <= 3:
+        return False
+    try:
+        chars = raw.decode("cp932")
+    except UnicodeDecodeError:
+        return False
+    if any((ord(c) < 0x20 and c not in "\r\n") or 0xFF61 <= ord(c) <= 0xFF9F for c in chars):
+        return False
+    return any(ord(c) > 0xFF for c in chars)
 
 
 def cells(raw):
@@ -41,10 +62,17 @@ def cells(raw):
     return sum(2 if ord(c) > 0xFF else 1 for c in TAG.sub(b"", raw).decode("cp932"))
 
 
+# The PS2 buttons the English may name as the font's own symbols (Shift-JIS ○ × △ □), which show the keyboard's keys when the
+# keyboard is used (bh_font.py): written {circle} {cross} {triangle} {square} in the translations
+BUTTON_GLYPHS = {"{circle}": b"\x81\x9b", "{cross}": b"\x81\x7e", "{triangle}": b"\x81\xa2", "{square}": b"\x81\xa0"}
+
+
 def english_bytes(text, original):
-    """The bytes of an English line: plain ASCII, with the control tags and the end marker of the Japanese it replaces. A Japanese line that
-    ends in spaces (a field's width: the choices' place, a column) keeps its width: the English is padded to it."""
-    raw = text.replace("\\n", "\n").encode("ascii")
+    """The bytes of an English line: plain ASCII (and the button symbols of BUTTON_GLYPHS), with the control tags and the end
+    marker of the Japanese it replaces. A Japanese line that ends in spaces (a field's width: the choices' place, a column)
+    keeps its width: the English is padded to it."""
+    parts = re.split(r"(\{(?:circle|cross|triangle|square)\})", text.replace("\\n", "\n"))
+    raw = b"".join(BUTTON_GLYPHS[p] if p in BUTTON_GLYPHS else p.encode("ascii") for p in parts)
     if tags(raw) != tags(original):
         raise ValueError(f"control tags {tags(raw)} differ from the original's {tags(original)}")
     for marker in LINE_MARKERS:  # ▼ (wait for a button) or a full-width space ends a line: kept, so the English leaves it out
@@ -60,11 +88,16 @@ class ExePool:
     strings in File 2's pool have pointers in the data, no code builds their addresses), so the strings can be packed again
     anywhere in the pool's free room with every pointer to them rewritten.
 
-    elf: the executable's bytes; region: (first, last+1) file offsets of the pool; base: address - file offset; images:
-    {name: (bytes, address of its first byte, [(first, last+1) data ranges as addresses])}, where pointers are looked for."""
+    An overlay's pool (File 1's PROG/*.BIN) is the same, with the overlay as `elf` and `own` its name; there many strings are
+    reached by code (an address built in registers, no pointer in the data). With `in_place`, those are translated too, each
+    in its own slot (they can't move): the English must fit where the Japanese was.
 
-    def __init__(self, elf, region, base, images):
-        self.elf, self.region, self.base = elf, region, base
+    elf: the image's bytes; region: (first, last+1) file offsets of the pool; base: address - file offset; images:
+    {name: (bytes, address of its first byte, [(first, last+1) data ranges as addresses])}, where pointers are looked for;
+    own: the name the changes to `elf` are given under."""
+
+    def __init__(self, elf, region, base, images, own="elf", in_place=False):
+        self.elf, self.region, self.base, self.own, self.in_place = elf, region, base, own, in_place
         self.starts = []
         pos = region[0]
         while pos < region[1]:
@@ -88,16 +121,28 @@ class ExePool:
         return self.starts[i + 1] if i + 1 < len(self.starts) else self.region[1]
 
     def translatable(self):
-        return [i for i, raw in enumerate(self.raw) if has_japanese(raw) and self.refs[i]]
+        return [i for i, raw in enumerate(self.raw) if has_japanese(raw) and (self.refs[i] or self.fixed(i))]
+
+    def fixed(self, i):
+        """String i is reached by code only and is text (see looks_like_text): translated in its own slot."""
+        return self.in_place and not self.refs[i] and looks_like_text(self.raw[i], self.starts[i])
 
     def texts(self):
         return {unit_id(self.raw[i]): self.raw[i] for i in self.translatable()}
 
     def rebuilt(self, new):
-        """{image name: [(offset, bytes)]}, the executable's under "elf": the changes for the strings in `new`. Their old
-        slots become free runs, and the new strings are packed into them longest first, each into the run with most room;
+        """{image name: [(offset, bytes)]}, the pool's own image's under `own`: the changes for the strings in `new`. Strings
+        in their own slots (fixed) are written there. The others' old slots become free runs, and the new strings are packed into them longest first, each into the run with most room;
         every pointer to a moved string is rewritten."""
         changed = [i for i in self.translatable() if unit_id(self.raw[i]) in new]
+        out = {self.own: []}
+        for i in [i for i in changed if self.fixed(i)]:
+            raw, room = new[unit_id(self.raw[i])] + b"\0", self.slot_end(i) - self.starts[i]
+            if len(raw) > room:
+                raise DoesNotFit(f"{self.own} string at {self.starts[i]:#x} ({raw[:30]!r}) stays in its place: {len(raw)} "
+                                 f"bytes with its NUL, the slot has {room}")
+            out[self.own].append((self.starts[i], raw + bytes(room - len(raw))))
+        changed = [i for i in changed if not self.fixed(i)]
         runs = []
         for i in changed:
             lo, hi = self.starts[i], self.slot_end(i)
@@ -106,14 +151,14 @@ class ExePool:
             else:
                 runs.append([lo, hi])
         free = [list(r) for r in runs]
-        out = {"elf": [(lo, bytes(hi - lo)) for lo, hi in runs]}
+        out[self.own] += [(lo, bytes(hi - lo)) for lo, hi in runs]
         for i in sorted(changed, key=lambda i: -len(new[unit_id(self.raw[i])])):
             raw = new[unit_id(self.raw[i])] + b"\0"
             room = max(free, key=lambda r: r[1] - r[0])
             if room[1] - room[0] < len(raw):
                 raise DoesNotFit(f"pool string at {self.starts[i]:#x}: {len(raw)} bytes with its NUL, "
                                  f"the largest free run has {room[1] - room[0]}")
-            out["elf"].append((room[0], raw))
+            out[self.own].append((room[0], raw))
             for name, off in self.refs[i]:
                 out.setdefault(name, []).append((off, struct.pack("<I", room[0] + self.base)))
             room[0] += len(raw)
@@ -171,3 +216,40 @@ class MsgBin:
         out[end:self.end] = b"\xff" * (self.end - end)
         struct.pack_into("<I", out, 0, end)
         return bytes(out)
+
+
+class HtmlPage:
+    """A page of the network screens' browser (File 2's rfff.afs *.HTM): Shift-JIS HTML. A unit is the text between two
+    tags, without its leading and trailing white space; a line break (<br>) belongs to the text, so the English breaks its
+    own lines. Tags and the browser's own comments (ASCII keywords it reads: <GAME-STYLE>, INPUT-SFIELD, CHG-IMG-BUTTON) stay
+    as they are; a comment with Japanese in it is a note of the page's authors, dropped in the English page to give the text
+    room. The page keeps its size: the archive's table and the sectors after it are left alone, so a shorter page is made up
+    with spaces at the end, and a longer one does not fit."""
+
+    SPLIT = re.compile(rb"<!--.*?-->|<(?!br>)[^<>]*>", re.S | re.I)
+
+    def __init__(self, data):
+        self.entry = data
+        self.units = []  # (first, last+1) offsets of the units' bytes
+        pos = 0
+        for m in [*self.SPLIT.finditer(data), None]:
+            lo, hi = pos, (m.start() if m else len(data))
+            seg = data[lo:hi]
+            lo, hi = lo + len(seg) - len(seg.lstrip()), hi - len(seg) + len(seg.rstrip())
+            if lo < hi and has_japanese(data[lo:hi]):
+                self.units.append((lo, hi))
+            pos = m.end() if m else len(data)
+
+    def texts(self):
+        return {unit_id(self.entry[lo:hi]): self.entry[lo:hi] for lo, hi in self.units}
+
+    def rebuilt(self, new):
+        out, pos = bytearray(), 0
+        for lo, hi in self.units:
+            out += self.entry[pos:lo] + new.get(unit_id(self.entry[lo:hi]), self.entry[lo:hi])
+            pos = hi
+        out += self.entry[pos:]
+        out = re.sub(rb"<!--(?:(?!-->).)*[\x80-\xff](?:(?!-->).)*-->", b"", bytes(out), flags=re.S)
+        if len(out) > len(self.entry):
+            raise DoesNotFit(f"the page needs {len(out)} bytes, it has {len(self.entry)}")
+        return bytes(out + b" " * (len(self.entry) - len(out)))

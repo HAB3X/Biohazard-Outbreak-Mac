@@ -4,12 +4,14 @@
     tm2.py decode FILE.tm2 OUT.png [PICTURE]     picture n (0) of the file as RGBA
     tm2.py info FILE.tm2                          the pictures' sizes and formats
 
-As a library: pictures(data) -> [Picture]; Picture.image() -> PIL RGBA image; encode_like(picture, image) -> new bytes of the
-picture, re-quantised to the picture's own palette size (palette and 16/32-bit pictures only; the layout is kept).
+As a library: pictures(data) -> [Picture]; files(data) -> the TIM2 files one after another in a .tex's data; Picture.image()
+-> PIL RGBA image; Picture.encoded(image, mask) -> the picture's new pixel bytes from an RGBA image, its own palette kept (each
+changed pixel takes the nearest of the palette's colours; pixels outside the mask keep their index).
 """
 import struct
 import sys
 
+import numpy as np
 from PIL import Image
 
 
@@ -51,6 +53,62 @@ class Picture:
         img = Image.new("RGBA", (w, h))
         img.putdata(px)
         return img
+
+
+    def encoded(self, image, mask=None):
+        """The picture's pixel bytes (img_size of them) for an RGBA image of its size. mask: a boolean array (height, width) of
+        the pixels to change, the rest keep their bytes exactly (all of them if None)."""
+        w, h, raw = self.width, self.height, self.data[self.img_at:self.img_at + self.img_size]
+        if image.size != (w, h):
+            raise ValueError(f"image is {image.size}, the picture {w}x{h}")
+        px = np.asarray(image.convert("RGBA"), dtype=np.int32).reshape(-1, 4)
+        change = np.ones(w * h, bool) if mask is None else np.asarray(mask, bool).reshape(-1)
+        if self.img_type in (4, 5):
+            pal = np.array(self.palette(), dtype=np.int32)
+            old = np.frombuffer(raw, np.uint8)
+            idx = (np.stack([old & 15, old >> 4], 1).reshape(-1) if self.img_type == 4 else old.copy())[:w * h].astype(np.int32)
+            same = (pal[np.minimum(idx, len(pal) - 1)] == px).all(1)  # an unchanged colour keeps its index (palettes repeat colours)
+            todo = np.nonzero(change & ~same)[0]
+            for lo in range(0, len(todo), 4096):  # nearest colour, alpha weighed like a colour channel
+                part = todo[lo:lo + 4096]
+                d = ((px[part, None, :] - pal[None, :, :]) ** 2).sum(2)
+                idx[part] = d.argmin(1)
+            if self.img_type == 4:
+                idx = np.concatenate([idx, np.zeros(len(idx) % 2, np.int32)])
+                out = (idx[0::2] | idx[1::2] << 4).astype(np.uint8).tobytes()
+            else:
+                out = idx.astype(np.uint8).tobytes()
+            return out + raw[len(out):]
+        if self.img_type == 3:
+            new = px.copy()
+            new[:, 3] = (new[:, 3] + 1) // 2
+            old = np.frombuffer(raw, np.uint8)[:w * h * 4].reshape(-1, 4).astype(np.int32)
+            shown = old.copy()
+            shown[:, 3] = np.minimum(255, shown[:, 3] * 2)
+            keep = ~change | (shown == px).all(1)  # alpha above 128 shows as 255: an unchanged pixel keeps its bytes
+            new[keep] = old[keep]
+            return new.astype(np.uint8).tobytes() + raw[w * h * 4:]
+        if self.img_type == 1:
+            v = (px[:, 0] >> 3) | (px[:, 1] >> 3) << 5 | (px[:, 2] >> 3) << 10 | (px[:, 3] >= 128) << 15
+            old = np.frombuffer(raw, "<u2")[:w * h].astype(np.int32)
+            shown = np.stack([(old & 31) << 3, (old >> 5 & 31) << 3, (old >> 10 & 31) << 3, np.where(old & 0x8000, 255, 0)], 1)
+            keep = ~change | (shown == px).all(1)
+            v[keep] = old[keep]
+            return v.astype("<u2").tobytes() + raw[w * h * 2:]
+        raise ValueError(f"image type {self.img_type}: not handled")
+
+
+def files(data):
+    """[(offset, [Picture])] of the TIM2 files one after another from the start of data (a .tex's are padded with zero bytes
+    between them)."""
+    out, pos = [], 0
+    while pos + 4 <= len(data) and data[pos:pos + 4] == b"TIM2":
+        pics = pictures(data, pos)
+        out.append((pos, pics))
+        pos = pics[-1].start + pics[-1].total
+        while pos < len(data) and data[pos] == 0:
+            pos += 1
+    return out
 
 
 def _color(b, kind):

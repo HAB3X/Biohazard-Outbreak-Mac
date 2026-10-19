@@ -27,9 +27,10 @@ def main(argv):
         u = units.setdefault(text.unit_id(raw), {"jp": raw.decode("cp932"), "raw": raw.hex(), "where": {}})
         u["where"][where] = u["where"].get(where, 0) + 1
 
-    pool, _ = sources.exe_pool(arc, game)
-    for i in pool.translatable():
-        add(pool.raw[i], "exe")
+    pools, _ = sources.string_pools(arc, game)
+    for label, pool in pools:
+        for i in pool.translatable():
+            add(pool.raw[i], label)
     for path, node in sources.message_files(arc, game):
         msg = text.MsgBin(node.read())
         if msg.rebuilt({}) != node.read():
@@ -37,7 +38,7 @@ def main(argv):
         for _, raw in msg.strings:
             if text.has_japanese(raw):
                 add(raw, path.rsplit("/", 1)[1].split("(")[1].rstrip(")"))
-    for name, _, _, table in sources.pit_entries(arc, game):
+    for name, _, _, table in sources.table_entries(arc, game):
         for raw in table.texts().values():
             add(raw, name)
     out.mkdir(parents=True, exist_ok=True)

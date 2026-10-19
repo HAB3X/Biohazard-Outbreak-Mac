@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Cuts a batch of untranslated units out of bh_extract.py's units.jsonl, to translate.
 
-    bh_batch.py UNITS.jsonl TRANSLATIONS_DIR OUT.txt [--where SUBSTRING] [--skip N] [--count N]
+    bh_batch.py UNITS.jsonl TRANSLATIONS_DIR OUT.txt [--where SUBSTRING] [--skip N] [--count N] [--fallback DIR]
 
 Writes "unit id TAB Japanese TAB where" lines (a newline in a string as \\n; where: the speakers' numbers of the spm files it is
 in, or the other files' names) of the units no .tsv in TRANSLATIONS_DIR has, those found in a container whose name contains
-SUBSTRING, most used first.
+SUBSTRING, most used first. --fallback: another game's translations folder, whose units count as translated (the game's
+config uses them, see bh_build_patch.py).
 """
 import json
 import sys
@@ -26,7 +27,9 @@ def main(argv):
     if len(args) != 3:
         print(__doc__)
         return 1
-    done = {line.split("\t")[0] for tsv in Path(args[1]).glob("*.tsv") for line in tsv.read_text().splitlines() if line.strip()}
+    folders = [args[1]] + ([opts["fallback"]] if "fallback" in opts else [])
+    done = {line.split("\t")[0] for folder in folders for tsv in Path(folder).glob("*.tsv")
+            for line in tsv.read_text().splitlines() if line.strip()}
     units = [json.loads(line) for line in open(args[0], encoding="utf-8")]
     units = [u for u in units if u["id"] not in done and any(opts.get("where", "") in w for w in u["where"])]
     units.sort(key=lambda u: (-sum(u["where"].values()), u["id"]))

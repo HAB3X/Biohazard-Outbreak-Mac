@@ -1,0 +1,324 @@
+# File 1's pictures with Japanese, redrawn in English at build time (tools/bh_pictures.py says how to read this)
+
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 5
+note = "the scenario names (results, goals), the select screens' button hints"
+edit = [
+    { box = [0, 0, 256, 24], text = "OUTBREAK", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 24, 256, 48], text = "BELOW FREEZING POINT", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 48, 256, 72], text = "THE HIVE", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 72, 256, 97], text = "HELLFIRE", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 97, 256, 122], text = "DECISIONS, DECISIONS", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [3, 123, 188, 142], text = "Scenario goals", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 299, 18, 317], key = "triangle" },
+    { box = [20, 299, 158, 317], text = "Close window", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 320, 15, 345], key = "updown" },
+    { box = [19, 320, 99, 345], text = "Scroll", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [0, 348, 26, 366], key = "leftright" },
+    { box = [27, 348, 153, 366], text = "Character select", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 371, 18, 390], key = "triangle" },
+    { box = [19, 371, 128, 390], text = "Info window", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 396, 18, 414], key = "cross" },
+    { box = [19, 396, 128, 414], text = "Back to title", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [0, 420, 26, 438], key = "leftright" },
+    { box = [27, 420, 122, 438], text = "Scenario select", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 440, 15, 465], key = "updown" },
+    { box = [19, 440, 100, 465], text = "Type select", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 468, 18, 486], key = "cross" },
+    { box = [19, 468, 58, 486], text = "Back", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 492, 18, 510], key = "circle" },
+    { box = [19, 492, 60, 510], text = "OK", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+]
+
+# The scenario cards of the scenario select: the Japanese name (and the small English one under it) over the picture,
+# inpainted away, and the English name in its place
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 0
+note = "The Hive's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 100, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "THE HIVE", font = "avenir", size = 26, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 1
+note = "Decisions, Decisions' card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 236, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "DECISIONS,\nDECISIONS", font = "avenir", size = 22, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 2
+note = "Outbreak's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 100, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "OUTBREAK", font = "avenir", size = 26, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 3
+note = "Hellfire's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 100, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "HELLFIRE", font = "avenir", size = 26, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 4
+note = "Below Freezing Point's card"
+edit = [{ box = [8, 124, 102, 158], erase = "inpaint", blue = 30 },
+        { box = [8, 157, 240, 181], erase = "inpaint", blue = 30 },
+        { box = [10, 136, 246, 180], erase = "keep", text = "BELOW\nFREEZING POINT", font = "avenir", size = 22, color = "#E8F0FF", outline = "#1E3CC8", stroke = 2 }]
+
+[[picture]]
+file = "romdata.afs/result.tex"
+tim = 0
+note = "the results' scenario names, labels and button hints"
+edit = [
+    { box = [0, 1, 228, 25], text = "OUTBREAK", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 26, 228, 50], text = "BELOW FREEZING POINT", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 50, 228, 73], text = "THE HIVE", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 73, 228, 97], text = "HELLFIRE", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 97, 228, 120], text = "DECISIONS, DECISIONS", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 145, 150, 166], text = "EVENTS DONE", font = "arial", color = "auto", outline = "auto", stroke = 2 },
+    { box = [0, 168, 16, 184], key = "triangle" },
+    { box = [16, 168, 180, 185], text = "Show scenario goals", font = "arial", size = 13, color = "auto", outline = "auto" },
+    { box = [0, 184, 16, 201], key = "circle" },
+    { box = [16, 185, 62, 202], text = "OK", font = "arial", size = 13, color = "auto", outline = "auto" },
+    { box = [141, 185, 157, 200], key = "triangle" },
+    { box = [158, 185, 256, 201], text = "Results", font = "arial", size = 13, color = "auto", outline = "auto" },
+    { box = [141, 201, 157, 216], key = "triangle" },
+    { box = [158, 201, 256, 217], text = "Details", font = "arial", size = 13, color = "auto", outline = "auto" },
+]
+
+[[picture]]
+file = "romdata.afs/result.tex"
+tim = 2
+note = "the results' row labels"
+edit = [
+    { box = [0, 96, 80, 113], text = "HEALTH", font = "din", size = 17, color = "auto", outline = "auto" },
+    { box = [0, 127, 80, 143], text = "TEAMWORK", font = "din", size = 17, color = "auto", outline = "auto" },
+    { box = [0, 143, 80, 159], text = "COMBAT", font = "din", size = 17, color = "auto", outline = "auto" },
+]
+
+[[picture]]
+file = "romdata.afs/result.tex"
+tim = 4
+note = "the ATTENTION screen's EXIT button"
+edit = [{ box = [0, 32, 13, 45], key = "circle" }]
+
+[[picture]]
+file = "romdata.afs/demo_com.tex"
+tim = 4
+note = "the violence warning at start-up"
+edit = [{ box = [30, 150, 500, 212], erase = "inpaint", threshold = 190 },
+        { box = [36, 150, 500, 212], erase = "keep", text = "This game contains scenes of violence\nand grotesque imagery.", font = "helvetica", size = 22, color = "#FFFFFF", outline = "#101010" }]
+
+[[picture]]
+file = "romdata.afs/demo_com.tex"
+tim = 6
+note = "the character log's tabs"
+edit = [
+    { box = [423, 385, 512, 407], text = "SPECIAL", font = "arial", size = 17, color = "auto", outline = "" },
+    { box = [421, 409, 512, 432], text = "COMBAT & TEAM", font = "arialnarrow", size = 17, color = "auto", outline = "" },
+    { box = [256, 435, 331, 457], text = "SCENARIO", font = "arialnarrow", size = 17, color = "auto", outline = "" },
+    { box = [332, 435, 373, 457], text = "BASIC", font = "arialnarrow", size = 17, color = "auto", outline = "" },
+    { box = [413, 435, 473, 457], text = "ITEM", font = "arial", size = 17, color = "auto", outline = "" },
+]
+
+[[picture]]
+file = "romdata.afs/demo_com.tex"
+tim = 1
+note = "the ACCESS licence notice"
+edit = [
+    { box = [70, 309, 440, 342], erase = "#FFFFFF", text = "The Internet (network) functions of this product use\nAVE-TCP® by ACCESS Co., Ltd.", font = "arial", size = 10, color = "#101010", outline = "" },
+    { box = [70, 342, 440, 357], erase = "#FFFFFF", text = "AVE-TCP® is a registered trademark of ACCESS Co., Ltd. in Japan.", font = "arial", size = 10, color = "#101010", outline = "" },
+    { box = [70, 386, 440, 400], erase = "#FFFFFF", text = "Kana-kanji conversion in this product is by ACCESS Co., Ltd.", font = "arial", size = 10, color = "#101010", outline = "" },
+]
+
+# The network lobby (rfff.afs): its button hints, labels and messages
+[[picture]]
+file = "rfff.afs/lobby_01.tm2"
+tim = 0
+note = "the server and Capcom ID select titles"
+edit = [
+    { box = [0, 705, 256, 732], erase = "#000000", text = "SELECT SERVER", font = "arial", size = 20, color = "#FFFFFF", outline = "#3A1890" },
+    { box = [0, 732, 256, 766], erase = "#000000", text = "SELECT CAPCOM ID", font = "arial", size = 20, color = "#FFFFFF", outline = "#3A1890" },
+]
+
+[[picture]]
+file = "rfff.afs/player_00.tm2"
+tim = 0
+note = "the lobby's start message"
+edit = [{ box = [0, 386, 230, 414], text = "Starting the game.", font = "arial", size = 20, color = "#FFFFFF", outline = "#1830B0" }]
+
+[[picture]]
+file = "rfff.afs/player_01.tm2"
+tim = 0
+note = "the lobby's start message"
+edit = [{ box = [0, 386, 230, 414], text = "Starting the game.", font = "arial", size = 20, color = "#FFFFFF", outline = "#1830B0" }]
+
+[[picture]]
+file = "rfff.afs/prize01.tm2"
+tim = 0
+note = "the collection's Available label"
+edit = [{ box = [165, 62, 249, 81], erase = "bg", text = "AVAILABLE", font = "din", size = 16, color = "#E8E8E8", outline = "", align = "center" }]
+
+# The lobby's scenario pictures (rfff.afs/scrNN_NN.tm2, two cards each): the scenario's name on the bar at each card's
+# top, and the captions over the picture, inpainted away and drawn in English
+[[picture]]
+file = "rfff.afs/scr54_55.tm2"
+tim = 0
+edit = [
+    { box = [28, 8, 272, 34], erase = "inpaint", threshold = 150 },
+    { box = [30, 9, 272, 33], erase = "keep", text = "OUTBREAK", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 264, 272, 290], erase = "inpaint", threshold = 150 },
+    { box = [30, 265, 272, 289], erase = "keep", text = "OUTBREAK", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 126, 258, 249], erase = "inpaint", threshold = 190 },
+    { box = [28, 126, 258, 249], erase = "keep", text = "J's BAR, a bar in downtown\nRaccoon City.\nIts manager is a known wine buff;\nit's popular for fine liquor\nfrom around the world.\nRaccoon police officers drank here too.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [24, 444, 448, 502], erase = "inpaint", threshold = 190 },
+    { box = [24, 444, 448, 502], erase = "keep", text = "Shelves of books on liquor and jazz hold a few of the owner's favorite wines.\nHe seems to have freely opened even rare vintages for his evening drink.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
+
+[[picture]]
+file = "rfff.afs/scr56_57.tm2"
+tim = 0
+edit = [
+    { box = [28, 8, 272, 34], erase = "inpaint", threshold = 150 },
+    { box = [30, 9, 272, 33], erase = "keep", text = "OUTBREAK", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 264, 272, 290], erase = "inpaint", threshold = 150 },
+    { box = [30, 265, 272, 289], erase = "keep", text = "OUTBREAK", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 170, 302, 249], erase = "inpaint", threshold = 190 },
+    { box = [28, 170, 302, 249], erase = "keep", text = "The owner's pride: the liquor storeroom.\nHe tastes everything and serves only the best.\nHe loves Burgundy above all; his collection\nnumbers over a hundred.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [72, 288, 268, 339], erase = "inpaint", threshold = 190 },
+    { box = [72, 288, 268, 339], erase = "keep", text = "Cindy's locker.\nOn its front, a sticker of the\nRaccoon Zoo's mascot.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [296, 416, 494, 449], erase = "inpaint", threshold = 190 },
+    { box = [296, 416, 494, 449], erase = "keep", text = "The neon sign seen across the street.\nSo bright that people complain...", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [28, 460, 268, 502], erase = "inpaint", threshold = 190 },
+    { box = [28, 460, 268, 502], erase = "keep", text = "Corners of J's BAR, where Cindy worked.\nA glimpse of the staff's everyday life.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
+
+[[picture]]
+file = "rfff.afs/scr58_59.tm2"
+tim = 0
+edit = [
+    { box = [28, 8, 272, 34], erase = "inpaint", threshold = 150 },
+    { box = [30, 9, 272, 33], erase = "keep", text = "BELOW FREEZING POINT", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 264, 272, 290], erase = "inpaint", threshold = 150 },
+    { box = [30, 265, 272, 289], erase = "keep", text = "BELOW FREEZING POINT", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 208, 424, 248], erase = "inpaint", threshold = 190 },
+    { box = [28, 208, 424, 248], erase = "keep", text = "The core of the research here is probably bioweapons.\nAll over the facility, strange things float in culture fluid.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [28, 423, 448, 502], erase = "inpaint", threshold = 190 },
+    { box = [28, 423, 448, 502], erase = "keep", text = "The chemical disposal room safely treats and disposes of\nthe chemicals used in research.\nYet its foolproof design had a flaw: a monster plant, mutated\nby the waste, it seems, now overruns the walls.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
+
+[[picture]]
+file = "rfff.afs/scr60_61.tm2"
+tim = 0
+edit = [
+    { box = [28, 8, 272, 34], erase = "inpaint", threshold = 150 },
+    { box = [30, 9, 272, 33], erase = "keep", text = "BELOW FREEZING POINT", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 264, 272, 290], erase = "inpaint", threshold = 150 },
+    { box = [30, 265, 272, 289], erase = "keep", text = "BELOW FREEZING POINT", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 188, 374, 249], erase = "inpaint", threshold = 190 },
+    { box = [28, 188, 374, 249], erase = "keep", text = "Each section of the lab is tightly locked.\nStaff move between sections with card keys,\nbut where they may enter is strictly set by rank.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [28, 444, 376, 502], erase = "inpaint", threshold = 190 },
+    { box = [28, 444, 376, 502], erase = "keep", text = "The turntable leading to Umbrella's underground lab.\nIt sits in an industrial zone far from downtown,\nhidden in a corner of a disused factory.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
+
+[[picture]]
+file = "rfff.afs/scr62_63.tm2"
+tim = 0
+edit = [
+    { box = [28, 8, 272, 34], erase = "inpaint", threshold = 150 },
+    { box = [30, 9, 272, 33], erase = "keep", text = "THE HIVE", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 264, 272, 290], erase = "inpaint", threshold = 150 },
+    { box = [30, 265, 272, 289], erase = "keep", text = "THE HIVE", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 188, 358, 249], erase = "inpaint", threshold = 190 },
+    { box = [28, 188, 358, 249], erase = "keep", text = "Raccoon General Hospital from above.\nA rooftop heliport stands ready for emergencies.\nAcross the road from the entrance lies a park.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [28, 444, 376, 502], erase = "inpaint", threshold = 190 },
+    { box = [28, 444, 376, 502], erase = "keep", text = "Raccoon Hospital's front entrance.\nAs an emergency hospital, it stays fairly bright at night.\nThe heart of the city's health care.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
+
+[[picture]]
+file = "rfff.afs/scr64_65.tm2"
+tim = 0
+edit = [
+    { box = [28, 8, 272, 34], erase = "inpaint", threshold = 150 },
+    { box = [30, 9, 272, 33], erase = "keep", text = "THE HIVE", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 264, 272, 290], erase = "inpaint", threshold = 150 },
+    { box = [30, 265, 272, 289], erase = "keep", text = "THE HIVE", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 166, 338, 249], erase = "inpaint", threshold = 190 },
+    { box = [28, 166, 338, 249], erase = "keep", text = "Leeches swarm over the sewer's ceiling and walls.\nThere's no telling how many.\nAvoiding heat and seeking comfort,\nthey seem to have gathered here.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [28, 444, 376, 502], erase = "inpaint", threshold = 190 },
+    { box = [28, 444, 376, 502], erase = "keep", text = "The ward's windows look out over the park.\nOn sunny days children's cries ride the breeze.\nNow only the ominous groans of the dead drift by.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
+
+[[picture]]
+file = "rfff.afs/scr66_67.tm2"
+tim = 0
+edit = [
+    { box = [28, 8, 272, 34], erase = "inpaint", threshold = 150 },
+    { box = [30, 9, 272, 33], erase = "keep", text = "HELLFIRE", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 264, 272, 290], erase = "inpaint", threshold = 150 },
+    { box = [30, 265, 272, 289], erase = "keep", text = "HELLFIRE", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 188, 392, 249], erase = "inpaint", threshold = 190 },
+    { box = [28, 188, 392, 249], erase = "keep", text = "The setting: a hotel called the \"Apple Inn.\"\nIts low rates draw students and travelers.\nIts 1F restaurant is proud of its monthly course.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [28, 444, 314, 502], erase = "inpaint", threshold = 190 },
+    { box = [28, 444, 314, 502], erase = "keep", text = "A single room.\nAn honest $25 a night.\nThe owner's antiques decorate it.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
+
+[[picture]]
+file = "rfff.afs/scr68_69.tm2"
+tim = 0
+edit = [
+    { box = [28, 8, 272, 34], erase = "inpaint", threshold = 150 },
+    { box = [30, 9, 272, 33], erase = "keep", text = "HELLFIRE", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 264, 272, 290], erase = "inpaint", threshold = 150 },
+    { box = [30, 265, 272, 289], erase = "keep", text = "HELLFIRE", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 188, 464, 249], erase = "inpaint", threshold = 190 },
+    { box = [28, 188, 464, 249], erase = "keep", text = "The Apple Inn's security office.\nGuards live in by shifts and use it as their quarters.\nOne apparently brought his model guns to admire on the shelf.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [28, 444, 358, 502], erase = "inpaint", threshold = 190 },
+    { box = [28, 444, 358, 502], erase = "keep", text = "The Apple Inn's rooms surround a courtyard\ncalled Apple Inn Square.\nA stone in its center bears the building's map.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
+
+[[picture]]
+file = "rfff.afs/scr70_71.tm2"
+tim = 0
+edit = [
+    { box = [28, 8, 272, 34], erase = "inpaint", threshold = 150 },
+    { box = [30, 9, 272, 33], erase = "keep", text = "DECISIONS, DECISIONS", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 264, 272, 290], erase = "inpaint", threshold = 150 },
+    { box = [30, 265, 272, 289], erase = "keep", text = "DECISIONS, DECISIONS", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 166, 384, 249], erase = "inpaint", threshold = 190 },
+    { box = [28, 166, 384, 249], erase = "keep", text = "An entrance hall open all the way to the roof.\nDesigned before the war by Japanese architect K. Ozawa.\nThe huge portrait on the front wall is of the first\npresident, William A. Fitzgerald.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [28, 423, 446, 502], erase = "inpaint", threshold = 190 },
+    { box = [28, 423, 446, 502], erase = "keep", text = "The clock tower, a symbol of Raccoon University.\nIt stands much as it was built: a building\nof historic value too.\nFor over fifty years its bell has rung across campus unchanged.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
+
+[[picture]]
+file = "rfff.afs/scr72_73.tm2"
+tim = 0
+edit = [
+    { box = [28, 8, 272, 34], erase = "inpaint", threshold = 150 },
+    { box = [30, 9, 272, 33], erase = "keep", text = "DECISIONS, DECISIONS", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [28, 264, 272, 290], erase = "inpaint", threshold = 150 },
+    { box = [30, 265, 272, 289], erase = "keep", text = "DECISIONS, DECISIONS", font = "arial", size = 17, color = "#F4F4F4", outline = "#181818" },
+    { box = [138, 38, 298, 77], erase = "inpaint", threshold = 190 },
+    { box = [138, 38, 298, 77], erase = "keep", text = "Nearly all the furnishings\nare valuable antiques.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [270, 188, 494, 227], erase = "inpaint", threshold = 190 },
+    { box = [270, 188, 494, 227], erase = "keep", text = "The president's office trophies.\nProof of success in many sports events.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [48, 223, 168, 247], erase = "inpaint", threshold = 190 },
+    { box = [48, 223, 168, 247], erase = "keep", text = "Past presidents' photos.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [118, 303, 238, 332], erase = "inpaint", threshold = 190 },
+    { box = [118, 303, 238, 332], erase = "keep", text = "Antique chess set.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [372, 286, 494, 324], erase = "inpaint", threshold = 190 },
+    { box = [372, 286, 494, 324], erase = "keep", text = "A Japanese gun given\nby the designer.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [328, 428, 498, 455], erase = "inpaint", threshold = 190 },
+    { box = [328, 428, 498, 455], erase = "keep", text = "A Raccoon-born sculptor's work.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+    { box = [28, 458, 328, 502], erase = "inpaint", threshold = 190 },
+    { box = [28, 458, 328, 502], erase = "keep", text = "Art from around the world collected by the\ncurrent president. Some are said to be museum-grade...", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
