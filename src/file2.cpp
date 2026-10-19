@@ -6,7 +6,7 @@
 int main(int argc, char** argv)
 {
     static Ps2GameInfo game = {"Biohazard Outbreak File 2", "SLPM_656.92", 1356096};
-    BiohazardControls::Apply(game);
+    BiohazardControls::Apply(game, BiohazardControls::File2);
     Tsnd::Register();
     return ps2_main(argc, argv, &game);
 }

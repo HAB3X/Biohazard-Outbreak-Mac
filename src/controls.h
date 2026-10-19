@@ -1,47 +1,41 @@
-// Biohazard Outbreak's PC controls: the keyboard and mouse in the layout of the original PC releases of Resident Evil 4 and
-// 5 (WASD to move, the mouse's buttons to ready and attack, E for the action, Shift to run, Escape for the game's own pause
-// menu: START), each a button of the PS2's controller (Ps2GameInfo's controls). One mode: the game's menus and its play use
-// the same buttons (the Japanese game's: circle confirms and cross goes back, as run and action are on the same two). A gamepad
-// is the PS2's controller as before; every control can be rebound in the PC menus' Controls
+// Biohazard Outbreak's PC controls: the keyboard and mouse in the layout of the original PC releases of Resident Evil 4 and 5
+// (WASD to move, the mouse's right button to ready or aim the weapon and its left to fire, E for the action, Shift to run, Tab
+// for the inventory), each a button of the PS2's controller (Ps2GameInfo's controls), in three modes the game's own memory says:
+// play, its menus (the title menu, the selects, the status screen with its ITEM, SPECIAL and FILE tabs, the item's actions) and
+// the title and movies (Escape or Return is START there, which skips them). Escape is START in play (the status screen, the
+// game's own pause) and CROSS, back, in every menu, the status screen's top level included. A gamepad is the PS2's controller as
+// before. docs/controls.md has the layout; every control can be rebound in the PC menus' Controls (F10 opens the PC options)
 #pragma once
 
 #include "ps2/runtime.h"
 
+#include <cstdint>
+
 namespace BiohazardControls
 {
-const char* const Modes[] = {"Game"};
-
-inline int Mode() { return 0; }
-
-const Ps2GameControl Controls[] = {
-    {"move_forward", "Move forward", "left_up", "W", 0},
-    {"move_back", "Move back", "left_down", "S", 0},
-    {"move_left", "Move left", "left_left", "A", 0},
-    {"move_right", "Move right", "left_right", "D", 0},
-    {"walk", "Walk", "walk", "Left Ctrl", 0},
-    {"run", "Run, back out of a menu", "cross", "Left Shift, Backspace", 0},
-    {"action", "Action, confirm", "circle", "E, Return", 0},
-    {"attack", "Attack, use an item", "square", "Mouse Left", 0},
-    {"ready", "Ready the weapon", "r1", "Mouse Right", 0},
-    {"command", "Command the partner", "triangle", "Space, Tab", 0},
-    {"item_previous", "Previous item", "l1", "Q", 0},
-    {"item_next", "Next item", "r2", "R", 0},
-    {"quick", "Quick action", "l2", "F", 0},
-    {"select", "Select", "select", "M", 0},
-    {"menu_up", "Menu up, D-pad up", "up", "Up", 0},
-    {"menu_down", "Menu down, D-pad down", "down", "Down", 0},
-    {"menu_left", "Menu left, D-pad left", "left", "Left", 0},
-    {"menu_right", "Menu right, D-pad right", "right", "Right", 0},
+// Where one game's memory keeps what the controls read (the executable's data and the game overlay's, at the addresses the
+// game loads them to). The game keeps its active tasks (the game's loop, the title, a menu, the status screen...) in a list of
+// up to 8 entries, each the address of the task's function, with the count in a word of its own: a task's function says what's up
+struct Layout
+{
+    uint32_t taskCount, taskList;
+    uint32_t gameTask;      // the in-game loop (play)
+    uint32_t cutsceneTask;  // the game's loop while a cutscene plays (0: not found)
+    uint32_t baseTask;      // the executable's own loop (movies, the title and loading, and under the game)
+    uint32_t selectTask;    // the scenario, character, partner and difficulty selects
+    uint32_t titleState;    // a word: 0 a movie, 2 the title's "PRESS START", 3 its menu (single play, collection, options...)
+    uint32_t statusTask;    // the status screen
+    uint32_t titleCursor;   // the title menu's item (a word, 0 the first)
+    uint32_t statusTab;     // the status screen's tab (a byte: 0 ITEM, 1 SPECIAL, 2 FILE)
+    uint32_t statusCursor;  // the status screen's item cursor: a word, the address of the slot it's on (the equipped weapon's is elsewhere)
+    uint32_t statusPopup;   // a byte that's nonzero while the item's actions (use, combine, give...) are up
+    uint32_t slotStride;
+    float titleTop, titleStep; // where the title menu's six items are drawn: the first's middle and the step, as fractions of the picture's height
+    uint32_t slotStrideUnused;    // the item slots' size: the grid's four are one after the other from where the cursor is as the screen opens
 };
 
-// The game's own pause (Escape is START) and these controls
-inline void Apply(Ps2GameInfo& game)
-{
-    game.ownPause = 1;
-    game.controls = Controls;
-    game.controlCount = static_cast<int>(sizeof(Controls) / sizeof(Controls[0]));
-    game.modes = Modes;
-    game.modeCount = static_cast<int>(sizeof(Modes) / sizeof(Modes[0]));
-    game.mode = Mode;
-}
+extern const Layout File1;
+extern const Layout File2;
+
+void Apply(Ps2GameInfo& game, const Layout& layout);
 }
