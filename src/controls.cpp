@@ -49,8 +49,8 @@ const Ps2GameControl Controls[] = {
     {"menu_back", "Back, close (cross)", "cross", "Escape, Left Shift, Backspace", Menus},
     {"menu_triangle", "Triangle", "triangle", "Space", Menus},
     {"menu_square", "Square", "square", "F", Menus},
-    {"menu_tab_previous", "Previous tab (L1)", "l1", "Q, Page Up", Menus},
-    {"menu_tab_next", "Next tab (R1)", "r1", "R, Page Down", Menus},
+    {"menu_tab_previous", "Previous tab (L1)", "l1", "Q, PageUp", Menus},
+    {"menu_tab_next", "Next tab (R1)", "r1", "R, PageDown", Menus},
     {"menu_start", "Close the inventory (START)", "start", "Tab", Menus},
     {"menu_select", "Select", "select", "M", Menus},
     {"title_start", "Start, skip", "start", "Escape, Return, Space, E, Tab", Title},
@@ -102,6 +102,10 @@ int CurrentMode()
 }
 
 int MenuUp() { return CurrentMode() != Play; }
+
+// While the weapon is readied in play (R1, the mouse's right button) the mouse aims, as in the PC releases of Resident Evil 4
+// and 5: across it turns toward the targets, up and down it aims high and low (the left stick's, as the game aims)
+int MouseStick(uint32_t pressed) { return CurrentMode() == Play && (pressed & R1) != 0 ? 1 : 0; }
 
 // --- the mouse in the menus: the pointer over an item moves the game's cursor there, a click confirms the item, the wheel turns
 // pages. The game's cursor is moved the way the player moves it, with D-pad presses, one a step and each checked in the game's
@@ -401,8 +405,11 @@ void Vblank()
 const Layout File2 = {0x24ad3c, 0x2aa890, 0x344cb0, 0, 0x1b3fa0, 0x554870, 0x24ac70, 0x6c8fa0,
                       0x8bfe4c, 0x76a60e, 0x7671f4, 0x767210, 0x98, 0.645f, 0.0450f};
 
-// File 1's (its tab, cursors and the title menu's are still to find)
-const Layout File1 = {0x23bb30, 0x29b0d0, 0x341b80, 0x341af0, 0x1b3400, 0, 0x23ba68, 0x6b9450, 0, 0, 0, 0, 0, 0.591f, 0.0536f};
+// File 1's (found by memory diffs: the title menu's cursor stepping 0-1-2-1, the status screen's tab 0-1-2-1-0, its item cursor
+// moving by the slots' stride with Right and Down, the item popup's byte 0x1C after it as in File 2: 1 while the actions are up).
+// Its selects aren't a task of the list (the list is empty there), so the wheel turns them as a list
+const Layout File1 = {0x23bb30, 0x29b0d0, 0x341b80, 0x341af0, 0x1b3400, 0, 0x23ba68, 0x6b9450, 0x90d1cc, 0x723f9e, 0x720b84, 0x720ba0, 0x98,
+                      0.591f, 0.0536f};
 
 void Apply(Ps2GameInfo& game, const Layout& layout)
 {
@@ -414,6 +421,7 @@ void Apply(Ps2GameInfo& game, const Layout& layout)
     game.modeCount = static_cast<int>(sizeof(Modes) / sizeof(Modes[0]));
     game.mode = CurrentMode;
     game.menu = MenuUp;
+    game.mouseStick = MouseStick;
     game.vblank = Vblank;
 }
 }
