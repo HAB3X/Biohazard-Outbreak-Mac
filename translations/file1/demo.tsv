@@ -26,11 +26,11 @@ ce31900556	   No goals achieved
 a6fc4c1671	 (Here, press
 2ff4c83261	)
 44eea607de	L/R: Item  Up/Down: Value  Left/Right: PL\n
-c044fbd9f9	X: Back
+c044fbd9f9	{cross}: Back
 b6f6c6f62d	DIFFICULTY
 d25d206f6e	Difficulty:
 db31aeb82f	Up/Down: Item  L/R: Value\n
-523c9fbcde	O: Start  X: Back\n
+523c9fbcde	{circle}: Start  {cross}: Back\n
 7ba0a9775f	: Next page
 70d99387fa	: Back
 3c136b0c44	: EXIT

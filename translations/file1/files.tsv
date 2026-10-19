@@ -17,17 +17,17 @@ f24ce6af6c	It's easy to dismiss it as a ghost story\nkids tell at camp. But the 
 409d4819e6	And the day after each one vanishes, a\nthick fog always rolls in. From the sewer\nthat runs north-south along the street, a\nwoman's tormented voice echoes for an\nhour.\n
 a652e6060a	The sewers were searched thoroughly, of\ncourse. But there was no sign of the\nmissing, not a trace.\n
 4ac1218e35	The police deny any link to the bizarre\ncases that have soared since the cabin\nincident, but surely there is one.\n
-eb85f0832f	\n\n* If you changed the controller type,\n  read the button names accordingly.\n
-5e798db109	[Moving]\nThe <c1>D-pad<c0> or <c1>left stick<c0> moves the\nplayer (PC) you control.\nThe D-pad turns with the PC's facing;\nthe left stick follows the screen.\n
-7e30fd1e15	[Readying and Attacking]\nThe <c1>R1 button<c0> readies the equipped\nweapon; the <c1>circle button<c0> attacks.\nWhile ready, the D-pad turns you.\nPress the <c1>L1 button<c0> while ready to\nswitch targets.\n
-dc489d5285	[About Reloading 1]\n"<c1>Combine<c0>" ammo with its gun, or press\nthe <c1>L1 button<c0> with the weapon\nequipped, to reload.\n
+eb85f0832f	\n\n* If you changed the controls, read the\n  keys and buttons accordingly.\n
+5e798db109	[Moving]\nThe <c1>direction keys<c0> or <c1>stick<c0> move the\nplayer (PC) you control.\nThe direction keys turn with the PC's\nfacing; the stick follows the screen.\n
+7e30fd1e15	[Readying and Attacking]\nThe <c1>ready control<c0> readies the equipped\nweapon; <c1>attack<c0> attacks.\nWhile ready, the directions turn you.\nUse <c1>previous item<c0> while ready to\nswitch targets.\n
+dc489d5285	[About Reloading 1]\n"<c1>Combine<c0>" ammo with its gun, or use\n<c1>previous item<c0> with the weapon\nequipped, to reload.\n
 2cac4d8e9a	[About Reloading 2]\nReloading takes time per round loaded.\nThere are also items that refill all the\nrounds at once.\n
-a8e4b7bbbc	[Special Actions]\nBesides walking, a PC can climb steps\nand ladders.\nPress the <c1>circle button<c0> before a step or\nladder to do so.\n
-16970ce2a4	[Handing Over Items]\nSelect an item and "<c1>Give<c0>" to pass it\nto another PC. With an item selected,\nthe <c1>square button<c0> also hands it over.\n
+a8e4b7bbbc	[Special Actions]\nBesides walking, a PC can climb steps\nand ladders.\nPress <c1>{circle}<c0> before a step or\nladder to do so.\n
+16970ce2a4	[Handing Over Items]\nSelect an item and "<c1>Give<c0>" to pass it\nto another PC. With an item selected,\n<c1>{square}<c0> also hands it over.\n
 33e6a6f326	[Asking for Items]\nOn the status screen, pick another PC's\nitem and "<c1>Ask<c0>" to say you want it.\n
-0e3aa4c5ac	[Lending a Shoulder]\nGo up to a hurt PC and press the <c1>circle\nbutton<c0> to lend a shoulder. Press the\n<c1>X button<c0> to stop. You can also lift\na crawling PC and lend a shoulder.\n
-61aba0d45e	[Ad-lib]\nPress the <c1>square button<c0> and the PC\nspeaks to suit the moment.\nA casual line may be a hint.\n
-f73061ce1b	[Appeal]\nThe <c1>right stick<c0> tells other PCs what\nyou want (an <c1>Appeal<c0>).\nUse it to ask for help or to call for\nsomeone.\n
+0e3aa4c5ac	[Lending a Shoulder]\nGo up to a hurt PC and press <c1>{circle}<c0>\nto lend a shoulder. Press <c1>{cross}<c0>\nto stop. You can also lift a crawling\nPC and lend a shoulder.\n
+61aba0d45e	[Ad-lib]\nPress <c1>{square}<c0> and the PC speaks to\nsuit the moment.\nA casual line may be a hint.\n
+f73061ce1b	[Appeal]\nThe <c1>appeal control<c0> tells other PCs\nwhat you want (an <c1>Appeal<c0>).\nUse it to ask for help or to call for\nsomeone.\n
 9fd1fa75e2	Guest's Memo 1
 fe1a4a3b74	dad said keep a diary when i go to my\nnew school. today is practice.\n
 1f38615f50	dad is always busy. he is a teacher at\nthe university. today he had a meeting\nwith important people so he left early.\n
@@ -100,7 +100,7 @@ d10293a12d	The waterway's supervisor has changed.\nChief <c1>Scott Jones<c0> kee
 fe67b1d668	Guard's Guidelines
 3ce9aa2256	...A guard needs more than strength and\nskill. Knowing the surroundings, the\njudgment to apply it, and the drive to\nact are what matter.\n
 62806aea3f	Always check the map, know your\nsituation, have the courage and spirit\nto help others, and still take great\ncare to protect yourself.\n
-740477ad98	Your strong body exists to protect\nyou and others. A needed skill:\npress the X button while "ready"...\n\n(The rest is stained with blood)\n
+740477ad98	Your strong body exists to protect\nyou and others. A needed skill:\npress {cross} while "ready"...\n\n(The rest is stained with blood)\n
 f5dbfa8e13	On the Key Specimen
 d55e4e82e4	The samples kept here are parasites\nthat split off from their hosts by\nrejection. They are very unstable,\nso handle them with great care.\n
 5b48cce0b3	To transport them, use MI Corp.'s\nportable capsules.\n\nThe fluid in a capsule gets\ncontaminated in a few hours; replace\nall of it each time.\n

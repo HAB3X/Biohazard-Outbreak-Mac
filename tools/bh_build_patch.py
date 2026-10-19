@@ -7,7 +7,7 @@ TRANSLATIONS_DIR (default translations/GAME) holds *.tsv files: unit id, TAB, th
 optionally TAB, a note. Units without a translation stay Japanese. Every line is checked: ASCII only, the Japanese's control
 tags kept, and what is rebuilt must fit its container (an error names what does not). A game whose config names a `fallback`
 game uses that game's English for the lines both games share and its own folder doesn't translate. The pictures of
-translations/GAME/pictures.toml are redrawn too (bh_pictures.py).
+translations/GAME/pictures.toml are redrawn too (bh_pictures.py), and the fonts' button glyphs drawn as keys (bh_font.py).
 
 The patch is version 2 of the runtime's disc patch: "DPAT", u32 2, u32 count, then per range u64 disc offset, u32 length, u32
 variant (0 always; 1 laid while the keyboard and mouse are the device used last, 2 while a gamepad is: a picture with the
@@ -18,6 +18,7 @@ import sys
 from pathlib import Path
 
 import bh_archive as archive
+import bh_font as font
 import bh_pictures as pictures
 import bh_sources as sources
 import bh_text as text
@@ -119,7 +120,7 @@ def main(argv):
             if mine:
                 patches += [(node.offset + offset + off, data)
                             for off, data in changed_runs(table.entry, table.rebuilt(mine))]
-        patches = [(off, data, 0) for off, data in patches] + pictures.patches(arc, game)
+        patches = [(off, data, 0) for off, data in patches] + pictures.patches(arc, game) + font.patches(arc, game)
     except (text.DoesNotFit, pictures.DoesNotFit) as e:
         raise SystemExit(f"does not fit: {e}")
     check_overlaps(patches)
