@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """The pictures with Japanese in them, redrawn in English from your disc at build time (nothing of the game's art is in this
-repository: translations/<game>/pictures.toml says where on a picture to erase and what English to draw, in which font).
+repository: translations/<game>/pictures.toml says where on a picture to erase and what English to draw, in which font;
+translations/pictures-shared.toml the same for the pictures both discs have alike).
 
     bh_pictures.py GAME render OUTDIR [FILE]     the edited pictures as PNG, each device's variant, to look at
     bh_pictures.py GAME show FILE OUTDIR [ENTRY]  every picture of a container as PNG, 3x with a 16 pixel grid (to find boxes)
@@ -66,8 +67,12 @@ class DoesNotFit(Exception):
 
 
 def spec(game):
-    path = archive.REPO / "translations" / game / "pictures.toml"
-    return tomllib.loads(path.read_text()).get("picture", []) if path.exists() else []
+    """The game's pictures.toml and translations/pictures-shared.toml (the pictures both discs have the same)."""
+    out = []
+    for path in (archive.REPO / "translations" / game / "pictures.toml", archive.REPO / "translations" / "pictures-shared.toml"):
+        if path.exists():
+            out += tomllib.loads(path.read_text()).get("picture", [])
+    return out
 
 
 # --- the keyboard's keys -------------------------------------------------------------------------------------------------
