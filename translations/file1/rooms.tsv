@@ -746,9 +746,9 @@ e963fd51c7	Operate the terminal?
 7d22d766a3	<p1>Wrong pass number
 65c712a1ca	<p1>That pass number
 2b6f082cec	<p1>has already been entered
-844c7d409b	<p1>The elevator can now
-e01491255b	<p1>take me there
-0e6ee330fd	<p1>The elevator can now go to the roof,
+844c7d409b	<p1>By elevator, B2F
+e01491255b	<p1>can now be reached
+0e6ee330fd	<p1>By elevator, the roof
 59feb3252c	<p1>Leeches are crawling over the panel
 a3cf42c2e7	<p1>It's dangerous to put a hand near
 9980c0eb12	<p1>Bags block the way,
@@ -826,3 +826,183 @@ f2e366d3ed	<p1>...Take care... of Rachel...
 dc542b0693	<p1>Books on hair growth are lined up
 ff37eb0f08	<p1>He must have really worried about it
 de54265234	<p1>...I've learned firsthand they don't work
+7bab3d29b5	<p1>Bags of concrete are piled up
+b12f4be627	<p1>Seems to be a device that opens the gate
+31aed788e2	<p1>...No need to operate it
+b705cc8570	<p1>The door is shut tight...
+fa769d5c11	<p1>An elevator
+fbcddb632f	<p1>The control panel is broken
+0696f4fb3e	<p1>The shutter is down
+2466687c9a	<p1>A large capsule
+b321afe916	<p1>It's filled with liquid
+326ccb3024	<p1>Something was hastily erased
+180d11f7a0	<p1>Measuring instruments are lined up
+e38843929c	<p1>Something is in the big glass case
+ebaf366b79	<p1>...Is it alive?
+88a296a045	<p1>It won't open from this side...
+0b31592c96	<p1>A large culture tank
+59aafb2b17	<p1>A research sample is hooked up to it...
+58cea2a6f0	<p1>A memo is stuck to the shelf
+d137ac4a54	<p1>Some chemical is piled up in bulk
+67e94eea26	<p1>It's stopped, still flashing a warning
+bff5d1b42e	<p1>Vines reach out from behind the lift...
+a50e6a24e7	<p1>Drugs due for disposal are piled up
+8deec7bde1	<p1>Through the thick glass
+1d2bfd9065	<p1>I can see what's beyond
+ad40f24198	<p1>A terminal that manages staff IDs
+c435b55086	<p1>No need to operate it
+fcd00678b4	<p1>The passcode and fingerprint
+cf84b051f0	<p1>are already registered
+4979a8de1d	The terminal controlling this storage
+71da505d2b	Please enter the pass number
+837feeec2a	<p1>An empty drug shelf
+0a017bf70b	<p1>has been left pulled out
+7110c4c0e9	<p1>All kinds of chemicals are lined up...
+5ac6faf9e2	<p1>Nothing I particularly need
+024162d52d	<p1>The power equipment is exposed
+7b9100db6b	<p1>...It seems to be working normally
+5341a68370	<p1>There's a hole for fitting something
+7949a93ffb	<p1>There's a maintenance panel
+b29e4cfe5e	<p1>It seems to be bolted shut
+dbb7a1e520	<p1>All kinds of terminals
+5673ca02a2	<p1>Some screens show warnings
+e1d979506f	<p1>An emergency door
+f6313954d2	<p1>It won't open as it is
+b8d053a184	<p1>There's a floor plan of the lab
+fa9b35160a	It seems to control the facility's locks
+10e8016ba8	Please enter the passcode
+7b919a590b	<p1>Computer room unlocked
+f2a93ddcea	<p1>Shutter 17 released
+58b25cd1cc	<p1>Choo-choo train (temp)
+cc0b232ee2	<p1>That lock seems
+f5b91fc4cf	<p1>to be open already
+a9703530dc	<p1>An emergency is in progress;
+f31f0d5dee	<p1>passcode rejected
+77e3e2a990	<p1>The door is torn wide open...
+8e0583b4c5	<p1>A lot of blood
+5b111ee197	<p1>has dripped onto the floor...
+9d38f4af5e	<p1>...I don't feel like buying anything here
+f55d13d510	<p1>There's a grimy sink
+b9d01cc143	<p1>The water is still warm...
+f0651cdfde	<p1>A grimy sink...
+7ba7b098f6	<p1>Did they relax here
+9b1d706aa9	<p1>watching movies?
+6b175a5a67	<p1>The table is a mess
+47e923ecb9	<p1>Thawed the wrench's ice in the sink
+7ad2845409	<p1>Now it works as a "Wrench"
+4f6fb81f32	<p1>A grimy sink
+cb18a9b746	<p1>The water has gone cold...
+5cfa3b5347	<p1>Everything seems sold out...
+eecf062ff8	<p1>The shutter is already open
+da4a756e41	<p1>It's electronically locked...
+1769ac13c5	<p1>It seems to need a card key
+e494dc8886	There's some kind of control panel
+211c55a5cc	A panel for opening the shutter
+bcb72412f6	<p1>The shutter is badly warped
+ed9015ccd2	<p1>No human could have done this...
+813f05974a	<p1>Some kind of cocoon
+5159d83bcb	<p1>It's covered in sticky thread
+79b52ce4cd	A terminal for entering a passcode
+63190b2753	Register?
+b05e4e6d27	<p1>A terminal for entering a passcode
+06464f89ef	<p1>I don't know the passcode
+5334efd1c4	<p1>There's a giant cocoon
+9711ee7fd6	Someone is stuck to it with sticky thread
+4d8c505717	Pull them free?
+bd8d5dcb8f	<p1>Passcode and fingerprint registered
+66a5e18b60	<p1>...Did something happen?
+7728f4205d	<p1>Some papers have fallen here
+9ac812e080	<p1>...It doesn't seem to work...
+4437a9a19a	<p1>Huge claw marks...
+56061dac94	<p1>The turntable's control panel
+6d81a15f11	Turn the key?
+d85445308a	<p1>The turntable is frozen;
+ffff1ad192	<p1>it won't move
+5db35348f8	<p1>Getting the turntable moving comes first
+bddc309939	<p1>No need to operate it now
+ae13f5fba0	<p1>The rails are buried in ice
+2e67d1b634	<p1>I can't get to the surface like this...
+ce2f271470	<p1>The ice is starting to melt
+a5dae044e2	<p1>Now I can get
+c6dbb6bd6d	<p1>the turntable moving
+3ab904a579	<p1>The door is shut tight...
+afe0f155ff	<p1>I mean, game over
+dc0d05427b	<p1>The door has been broken...
+3abafdffc8	<p1>The shutter's control panel
+83a1a65c32	<p1>Vines are tangled around the ladder
+ce362c4b01	<p1>I can't extend the ladder like this
+61c6bff820	<p1>The vines have withered
+ac52737378	<p1>Now I can extend the ladder
+84b3df4029	<p1>The vines keep me from using the ladder...
+80e41607de	<p1>A plant grown to an enormous size...
+c63a02a578	<p1>The vines keep it from extending...
+5085b0ad06	A fingerprint scanner
+fc55837106	Use it?
+82560ba5ca	<p1>Guest user confirmed
+f579e2f550	<p1>Unlocking
+4e9812619a	<p1>A fingerprint scanner
+713a415b72	<p1>I have to register a fingerprint somewhere...
+2c02bcd4e2	<p1>It's electronically locked
+0bd6e8a823	<p1>The panel on the left seems to control it
+ad9d18b0e3	<p1>It's sealed tight...
+53cae7f0e6	<p1>The door's lock is already released
+1bc2d17038	<p1>A big machine is roaring
+66b5918caa	<p1>It seems to be running out of control
+446acf25d1	<p1>The machine has stopped completely
+0db7f7c40d	A panel for running the test unit
+9b38c1d7a5	Stop the unit?
+6f7f14ff37	<p1>It's working normally
+f493f9d268	<p1>A bundle of papers is on the floor
+5a7b52a7a0	<p1>The lever is frozen...
+1bc0df3fff	<p1>It won't move unless it's thawed
+6823df34f2	<p1>A bundle of papers I've already examined
+12b553cd7e	<p1>An eerie specimen floats here
+6b637dfefe	<p1>...It looks like it could move any second
+362f06f347	<p1>Just one capsule is broken
+21516eac99	<p1>...The blood is still fresh
+c9d3fa684b	<p1>A capsule broken from the inside
+dab401927c	<p1>Some papers were left behind...
+feeb90a514	<p1>I don't want to die...
+b050f25be2	<p1>Someone... give me a spray...
+3aeff006ce	<p1>Give him the first aid spray?
+2795a14fb7	<p1>Thank you...
+3e5a577a41	<p1>Here, take this instead
+8f2405168f	<p1>Be careful out there...
+51c3533e13	<p1>It's shut tight!
+ab69ea6763	<p1>No time for that!
+31343377d8	<p1>Once power is restored
+28bf74d9d0	<p1>departure will be automatic
+ed3e5a48f9	This panel can move the locomotive
+38bfd3ba08	<p1>It's dangerous here!
+4e2d7b9882	<p1>There's no going back from here...
+c9db3ed33a	<p1>The turntable is going up
+918fd764df	<p1>Passengers, please hurry
+bc745f6262	<p1>An unknown monster
+a970a5e4fb	<p1>It's half frozen
+941faa113e	<p1>A specimen under improvement...
+75f0621e79	<p1>The cold seems to have stopped it
+597c352288	<p1>A civilian...
+f9fc986f25	<p1>What are you doing here...?
+096234368b	<p1>...You'd better get out fast
+c0c5062a11	<p1>before you end up... like me
+f7e91cdf17	<p1>...No answer
+070f532c77	<p1>He seems to have passed out...
+86169d0516	<p1>You... Yoko?
+79c535a0f1	<p1>I'm surprised... you came back here
+b6f3d54000	<p1>You're after a specimen too?
+c709317eeb	<p1>Monica seems to have wanted one too,
+f01c592830	<p1>but it's too much for her
+e3390041ff	<p1>After all, it's Dr. Birkin's
+be983f02ce	<p1>masterpiece
+09fe54c65f	<p1>Let sleeping dogs lie...
+565d52d4de	<p1>and you won't get bitten
+b7cf6f6856	<p1>Take this
+088b16c954	<p1>I don't... need it... anymore...
+977de8eddb	<p1>User number 53029 confirmed
+f09eb59780	<p1>A notebook has been dropped...
+41ca39bb21	<p1>A locomotive of a rare type
+b39eb01dbb	<p1>Some special car, maybe?
+24ad14760f	<p1>That researcher's body...
+7174e6cf71	<p1>What happened?
+ef5f34c297	<p1>Monica...
+ef6d8fa85f	<p1>How did it come to this...
