@@ -1,0 +1,32 @@
+# File 1's pictures with Japanese, redrawn in English at build time (tools/bh_pictures.py says how to read this)
+
+[[picture]]
+file = "romdata.afs/select.tex"
+tim = 5
+note = "the scenario names (results, goals), the select screens' button hints"
+edit = [
+    { box = [0, 0, 256, 24], text = "OUTBREAK", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 24, 256, 48], text = "BELOW FREEZING POINT", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 48, 256, 72], text = "THE HIVE", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 72, 256, 97], text = "HELLFIRE", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [0, 97, 256, 122], text = "DECISIONS, DECISIONS", font = "avenir", color = "#FFFFFF", outline = "#1428B4", stroke = 2 },
+    { box = [3, 123, 188, 142], text = "Scenario goals", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 299, 18, 317], key = "triangle" },
+    { box = [20, 299, 158, 317], text = "Close window", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 320, 15, 345], key = "updown" },
+    { box = [19, 320, 99, 345], text = "Scroll", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [0, 348, 26, 366], key = "leftright" },
+    { box = [27, 348, 153, 366], text = "Character select", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 371, 18, 390], key = "triangle" },
+    { box = [19, 371, 128, 390], text = "Info window", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 396, 18, 414], key = "cross" },
+    { box = [19, 396, 128, 414], text = "Back to title", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [0, 420, 26, 438], key = "leftright" },
+    { box = [27, 420, 122, 438], text = "Scenario select", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 440, 15, 465], key = "updown" },
+    { box = [19, 440, 100, 465], text = "Type select", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 468, 18, 486], key = "cross" },
+    { box = [19, 468, 58, 486], text = "Back", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+    { box = [2, 492, 18, 510], key = "circle" },
+    { box = [19, 492, 60, 510], text = "OK", font = "arial", size = 14, color = "#FFFFFF", outline = "#0C2A4C" },
+]
