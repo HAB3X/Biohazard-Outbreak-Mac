@@ -971,3 +971,211 @@ cceaafe078	Set the IP address automatically?
 42fa764748	Usually, choose automatic.
 e08fab7f27	IP address
 fe3e43de53	Netmask
+3d9a598826	Default router
+cfefd7469a	Fill in the items below.
+49e6d8f3c8	Auto
+fd3da67ee5	Manual
+15095f3648	Set the DNS server automatically?
+07aff68089	Primary DNS
+5e715eb7d5	Secondary DNS
+64b1abd86c	Enter the DNS server addresses.
+e7918f5131	DHCP host name
+e24885172e	Enter the DHCP host name.
+a4690d5d13	Name
+80d3b1a54d	Give the connection provider settings
+53b1d949ea	you made a name.
+327e061796	Choose the connection provider settings
+b44f50187b	to check or change.
+ca99037128	Choose the provider settings to delete
+0287010dc5	Choose the provider settings to test
+bcdc745cbc	First, the proxy settings:
+77ed27ad71	Does your connection provider need
+07b46ddef5	proxy settings?
+1a2ef7085b	Proxy address
+43fc178c5a	Port
+9db2d24197	Security proxy
+4496554a69	Enter a security proxy
+b787d5e985	only if it is needed.
+e8dd7d9b96	Choose the Ethernet mode.
+2d7c0d6c3c	Stop and go back to the network settings menu.
+ed52bb8587	Setting up the connection provider.
+ed294edfac	You'll need your connection provider's
+29e5e825e3	user ID, password and other network details.
+4c71be75cc	 
+bb2b893cb4	Have your connection provider's
+348e6c8f89	papers ready.
+e882250ca3	Switching to the setup guide to set the provider.
+a274474b03	All right?
+68c9d29d2b	Unless you save at the end of the setup guide,
+18c2937c5f	the changes won't take effect.
+d740547d8e	Delete these connection provider settings?
+bfd0fd8f6f	There is no device for a broadband connection,
+ba72f89304	or there are no provider settings.
+0e8e36f454	Check the connection device and
+b23fd09350	provider settings.
+ee7719c5a5	There is no save data.
+965611f406	The save data was changed.
+2cdb685552	Back to the network settings menu.
+90e2c1dcc4	Not enough space to save. Saving
+d427176342	needs 94 KB or more of free space.
+016eaf94ef	Delete some other save data,
+9887d78b3f	then try again.
+e22a403f57	The save data is not formatted.
+63b0f65a22	Format it?
+2913356737	Formatting.
+8af2d073fa	Don't quit the game.
+5d579d617c	The save data was formatted
+ac35c56c21	.
+316783a199	The save data could not be formatted.
+bb84b5850c	Choose where to save again.
+48d8072956	With 4 provider settings, no more can
+4a6a635c96	be made.
+5146a55a09	Delete one with "Delete settings".
+77d18eb9fe	The save data has no valid "Your
+bc10a9fa17	network configuration file".
+7b663841ad	The connection test was stopped.
+f66b774aa6	Save the settings?
+74b2156496	The network connection failed.
+5e564efac4	The connection test succeeded.
+bcc1ac5a6d	Saved.
+9911cc0fbe	Could not save the settings.
+d33f8fdbf8	Deleted.
+43037b1959	Could not delete the settings.
+5e4d7578d4	Setting up the proxy.
+0424b40184	Keep your connection provider's papers
+17457e80ce	at hand.
+ed8f455c16	Proxy setup finished.
+6a57b9f018	Register these settings?
+0b17c2dcd3	Details
+af3ceafba6	Quit?
+99417117c7	While it finishes, don't quit the game
+3054cec259	or turn off the power.
+9e7392d250	This device and provider setting
+8b665547f0	combination can't connect.
+21d18ec2ff	"Your network configuration file" in the
+f36b14a7b8	save data could not be read.
+cb024b9c46	The "Your network configuration file"
+6f5de77d6d	in the save data
+b96288c342	was made on another system
+953a3f2a40	and can't be used.
+45ae20c151	AOL settings can't be edited or deleted.
+01ff79b857	needs 112 KB or more of free space.
+07ee429f9e	Saving the save data.
+3ae01d034c	Don't quit the game.
+b8a355aaf7	Deleting the settings from the save data.
+68849ebeda	There is no save data.
+c75428373a	Please add it.
+0e92ba8151	Starting the connection test.
+2a97d8114e	Press Confirm.
+0daef6f5ec	Start the connection test
+a6fa51eac6	Testing the connection.
+6b09271c64	Connecting...
+0cffce9be7	Check that a supported device is
+f5d7437d90	connected correctly.
+a81c52650a	If this error keeps appearing,
+d3fe76647b	restart the game and try again.
+782aa2ac6e	Save the network settings?
+cd0c6feca2	An error occurred. Check that the
+0daeb12fe2	Ethernet cable is connected to
+4ad80ff0c9	the network adapter correctly.
+4f2bb0db89	Getting an IP address by DHCP
+5ba2efd9f2	failed. Check the DHCP settings
+a9a000ecd9	of the network settings.
+89c6023140	PPPoE authentication failed.
+ccbd490461	Check the PPPoE user ID and password
+9dee68fda5	of the network settings.
+7d3f4c604e	was not found. Check that it is connected.
+7badd4a012	Cancelling...
+cc5b8d902b	Could not connect.
+76935a4b76	The network settings may
+b65d3a4b22	have been changed.
+5bb2b79d0d	Check the settings again.
+1f46c38c74	The save data has no valid "NET file"
+b21b76c71f	.
+39ff3554ed	The device settings are full; no more
+102c9b6fd2	can be made.
+8e831022d2	Delete existing provider settings,
+1709463a9e	then try again.
+498b07f0c3	Not enough free space to delete. Deleting
+b25f18c594	With 6 combinations, no more can
+200cec0bf9	An unlinked combination file
+26c9cd420f	was found.
+bdb820a118	Delete it?
+5f3d106921	An unlinked connection device file
+cd0be60497	Registration complete.
+e736901dd6	No provider settings or connection
+6d9810836e	device are set, so they couldn't be loaded.
+12c8385fc2	"Your network configuration file" was
+1b714553e5	loaded from the save data.
+fe20cda6d7	An unlinked connection provider settings
+012f1a8617	file was found.
+584da3aa31	A combination, device or
+6a80fcce29	provider settings file
+70804e7f47	is not linked, so it can't be deleted.
+8f25fb3a7c	Set up the network?
+c150be0884	(Setting up the network loses all
+25d0cd39d7	unsaved data)
+272c37f92c	Loading the network settings
+37a7130a05	from the save data.
+573fa48f6a	Don't quit the game.
+4c0f568c54	To play online,
+bfcf1cf769	you need network settings.
+8de644ce89	To play online, proxy settings are
+c0610c256f	needed. If you haven't set them,
+c22e911f66	set the proxy.
+f504364f95	Choose the settings to connect to the network.
+7acafce3fc	Make new provider settings.
+d44e6a7bfd	When setting up for the first time, start here.
+e588f4efe2	Check or change provider settings.
+0a242d6351	Delete provider settings.
+12cf369a45	Test the connection with provider settings.
+200ccac9a6	Until the setup is finished,
+2fce5ea527	If your provider needs no ID, or you use a router
+9f53b01f16	(with the ID and password already set in
+febbb4759f	the router), choose "Not needed".
+7d3fd98dc0	Some providers call the user ID an access ID
+514396d873	or login ID, or by another name.
+c4e67fe3c7	The password you enter shows as '*'.
+bcef29e61c	To set a DHCP host name,
+e83f28487c	use the advanced settings.
+7ab5c9d93b	To set the IP address by hand,
+2988988d95	choose this.
+dabb369ee1	Enter the IP address.
+bbe425a243	Enter the netmask.
+7337ad3143	Enter the default router.
+bf23b377ac	If no DNS server address is given,
+4d0c4b777c	To set the DNS server address by hand,
+7d74f5c797	Enter the primary DNS.
+ce90125930	Enter the secondary DNS.
+ce7123982a	If your provider has no such setting,
+e17da4d14f	you don't need to enter it.
+d64474a1d9	Press Right to go back.
+0ad386d8de	A name like the provider's name,
+e4995995c8	one that tells what the setting is, is best.
+7769480559	If your provider has no proxy settings,
+18011ae2a5	choose "Not needed".
+701510efb5	Enter the proxy server address (HTTP).
+871aedc496	Enter the port number.
+d406c7025b	Enter the security proxy (S-HTTP).
+e3c6929ed9	Some providers call it HTTPS, Secure
+32f9e7e51d	or another name.
+01d8177ae0	If you don't need to choose a device,
+d545aaced2	(the device is detected automatically)
+2aad08fae4	Not usable
+cb614ff9f3	Device: not usable
+c9e82d5d84	Device: %s/%s
+02032e0002	Not set
+82d842115b	          Device  %s/%s
+c714124a3c	        Not usable
+f736e9e31a	  Device details  %s
+1b3563747a	         User ID  %s
+14abe902c5	       Host name  %s
+da9c404196	      IP address  %s
+8b2a7e6547	         Netmask  %s
+eb1f5bbc48	  Default router  %s
+85d51c3012	     Primary DNS  %s
+626e1b1217	   Secondary DNS  %s
+010cc1efb7	[ID:%s HN:%s]
+51a69a1d02	[ID:%s]
+f68b30f44f	[ID:%s HN:%s]<BR>
+8d891308cc	[ID:%s]<BR>
