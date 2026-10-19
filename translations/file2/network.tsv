@@ -194,3 +194,221 @@ d518dd9a87	Slot %s needs save space
 0842cbd20d	A NET file can be shared by
 cfb3ad1bfe	the games that support it
 1006646858	No supported connection device (modem)
+c4bf68805e	was found
+189c1de98d	Use the modem listed
+756d11d2e5	in the manual
+f401836b63	To use another modem,
+9ce3c0e631	restart the game, then
+89d6f6176e	choose "Network"
+425217f9b8	Saved
+7f4ab857b8	Loaded
+bad9610392	Moving
+6267bcc0e5	Asking for a match
+e2a56ddceb	Connection stopped
+830f406d62	Loading the NET file
+8ce215a453	If you don't load the file,
+fea633ad8a	your modem settings, other players' IDs
+0df77e57fa	and so on can't be saved. Take care.
+c27be264f6	Load the NET file?
+0faede6ae5	Until you leave "Network" mode,
+8d705e848b	the save data
+fbae3ac4e6	must not be removed
+c0e9c9c30d	Leave the network?
+a01cc01305	In port A-1,
+7e649b768a	with 9 or more blocks free,
+83e35d596d	put the save data
+f742767b11	was found
+71d610c92d	Online play is possible
+d2e2caabc0	From now on, do not
+dbae009719	plug or unplug the modem
+501b439325	: delete this ID?
+9ee54d129e	Your ID, your partners' IDs
+565c02219a	and all registered info in the save data
+caad3492b0	will be erased. Are you sure?
+22541fd394	Restore the original save data;
+32f73e3f2b	it won't save correctly
+92982d9e23	Can't go on
+94363d1cae	The original save data is missing,
+723f7923ef	Can't connect
+ef159e6481	Leave this mode?
+f5aef8ad69	Not registered
+9f7d4dc0af	is busy
+9977bc813b	Please wait a while
+6da9739a6d	and try again
+90448b9b8a	No reply from the modem
+5ec4fc301a	Loading data
+90d654f413	Put the save data in the
+0f2cfc37b5	expansion socket
+ad21625301	                      A-1
+1ec6645331	                      A-1 or 2
+68fc8df2c7	NET file          =
+e69179cc90	System file       =
+a940f2d077	When you're ready,
+c49d5e7e46	press Start
+16355cf7b3	Data loaded
+2813f689de	: data was set
+d8b26b11a5	You don't meet the entry terms
+1108acd832	This match room is full
+ea9436e039	The server may be busy
+9a4164bd3d	Check the modem's settings
+be772de6e6	and call again
+437be09795	There is no system file
+50dd211cf6	A-1 or 2
+2bf420d74d	          put the save data
+40a45ec51b	with the system file
+333773d29b	The modem settings may be wrong
+4d3976448f	or the line is very busy
+e6350e3ee2	The call can't go through
+5becaa3e76	Reconnect?
+1627dfb6a5	No reply from the other side
+f65863a503	Could not connect for some reason
+5df0bb8215	The server
+31130acc2b	may be busy
+0179b4929b	The line is busy
+038e35aa11	Call again with the next number?
+bf5f258d34	No phone number is registered
+e3f4ff380d	Save the replay data of the
+2fb77d4a52	last battle to a file?
+f270e98b5e	Stop saving?
+90b489e456	Overwrite?
+a336f7fd1d	Save as new?
+bb4723384d	Creating new
+cb0371b12f	Is that all right?
+129e988c1f	is not in this match room now
+ff67dc8d6f	received a message
+453b874d3c	Sending message
+b5f64c679f	: block messages from now on?
+012c761d13	: messages blocked from now on
+75834cdfa7	: block matches from now on?
+7f3e9e047d	: matches blocked from now on
+11eaa4c958	Starting the scenario
+12fee0f8fc	Too many blocked players
+89707052a4	No more players can be blocked
+bde6a06c67	Search
+928bf1da3f	is in
+eaea9ef4ef	The save data
+1f271c4c0c	is not formatted
+989718413e	Format it?
+268b146ece	Formatting the save data
+c2222dcf09	The save data 
+9f6aec99e7	could not be formatted
+57226755a5	Saving the game data
+a2da034263	Slot %s:
+2d3932ba92	the save data
+0cd9450d60	is short of free space
+6dcb9f80d5	To save the game data,
+fb768d8f14	123 KB or more is needed
+f34ada1579	To the save data
+fa33f8a247	the game data was saved
+fa608dc503	The NET file
+62d3b6cebf	was not found
+8fab40b127	If you don't make a file,
+b9d1bfd63d	The save data
+7dc8a92019	has no game data
+2dd16ded14	Create a new one?
+c14349e07b	Game data already exists
+eee3f69920	To the drive,
+2664db7ba3	the NET file
+6c298d86dd	There is no NET file
+2a2cf90ff4	Message sent
+59bc8ecf21	Record your opponents' IDs
+7975a3f3d2	in the NET file?
+7b29fe19f2	Registered
+d53c039203	Getting information
+176bd8019c	Please wait
+2de4b21386	offers to be your partner
+c5a653bdb6	: accept as your partner?
+5c690241a5	Updating the NET file
+cdedec2a24	has left
+4085a99539	This room can't be used
+1cfbc4ac16	Choose another room
+effd07c3dc	This room is full
+f61faf02a6	The room is now full
+a6fb9fead2	is BUSY
+19be13011b	Wait a while and
+f7e33c62d8	check again
+ce5d7c36c5	Your settings differ from the room's
+812e411eb4	Can't enter
+e80c0579e8	: ID deleted
+9f54335793	Fill in every item
+1e748a319e	Fill in the required items
+f11e6912b1	Send the message?
+28fd514e4b	The other player's game title differs,
+80fc12f35a	Remove from the recipients?
+27136520ad	The room's creator closed the room
+8e8f4b8c20	Keyboard controls
+c5e161ec47	Cursor keys  : Move
+e0c2cf492d	Enter        : OK
+3f751d82ea	ESC          : Cancel
+f7b6976599	SPACE        : Software keyboard
+bd015934d4	F1           : Subwindow
+1f3347f11d	F2           : Chat log
+45d9433161	PageUp       : Change member
+8d691244ec	PageDown     : Change member
+f02fb129b6	Home         : Turn page
+f742837a1b	End          : Turn page
+7d96c8cf5e	The area you're going to is an event area.
+a67e0a6c44	You have no event entries left, so you
+3ffb6499fb	can't enter.
+4d2a76d0f8	Install area
+8820609a77	The area you're going to is             
+2506636e54	Entry is restricted, so you
+7def0802a2	could not move.
+a819cd6d2b	Disc area
+e7dde2da67	The area you're going to is                 .
+fe479c21f6	Can't move there.
+061ee943de	Change the setting on the area screen
+1371635ba6	and move again.
+486c0a0da8	The area you're going to is             .
+7234028d38	Recording the results of
+c744a7128d	the auto dial
+7e0f2e7ec5	No "news"
+8f9546b29a	Exchanging data
+1c400ca5ad	An error occurred
+e4f07967c2	Check that a supported connection
+96be76c88a	device is connected 
+100fd42200	to the system correctly
+e010b778c8	If this error keeps appearing,
+68d8e245c3	restart the game and 
+45574d5f59	try again
+1e58287e0d	The call server does not answer
+de988fc996	Check the connection and
+0963e0c83e	connect again after a while
+46fc1c2e81	Check the outside line prefix
+dfceb84167	If nothing improves,
+36fd04822e	Check the phone line is connected
+7509e4b717	Check the Ethernet cable is
+f50b1f359e	connected to the device
+45fae1b281	Getting an IP
+936f5473eb	address by DHCP failed
+2eff365a7a	Check the provider settings'
+bbead308f0	DHCP settings
+efe5fa384a	PPPoE authentication failed 
+3e3d4f975e	In your network configuration file,
+a2eb0c30ac	check the PPPoE user ID 
+1423822061	and password
+a6763faf78	Choose another server
+1ebd9afa7c	There may be a network error
+2c3c5de7f3	From the title screen
+ffa91826d4	connect again
+8854076975	Getting ready to return to the title
+9f2a81f459	Hanging up
+186593d4e6	Starting the network
+2c12bc4d7a	Go on to the next scenario?
+3e9975db21	This room is
+c23e955bd2	a room.
+468f19d369	To enter this room,
+510df52d13	leave the network once,
+15a779ce46	then connect again and enter.
+ea3511547a	, and
+93746a1264	Install room
+fe1a91dab9	so you
+c2cba2dbc4	could not enter.
+348f69b0be	Disc room
+45e7b35877	so you
+d620adac43	Disc room
+1523c0c05a	Disc setting
+d043342bda	               : switched.
+ca0bc3a782	Install room
+4b694e2140	Install setting
+6ef85d0669	: switched.
