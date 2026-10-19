@@ -128,9 +128,6 @@ name = "netwk"
 file = "BIN/3.DAT"
 base = "0x543000"
 text = ["0x543040", "0x5d4080"]
-
-# DNAS (Sony's network authentication): its code decrypts parts of itself as it runs, so it can't be recompiled as it is
-# on the disc; its encrypted words stop the game if they're ever reached
 # Entries of handler tables the game calls through pointers (data words that point at a prologue: addiu sp,sp,-N)
 extra = [
     "0x5439c0", "0x54cd1c", "0x54fb38", "0x5529f8", "0x554edc", "0x554f9c", "0x55507c", "0x5578ec",
@@ -142,12 +139,15 @@ extra = [
     "0x5d37d4",
 ]
 
+# DNAS (Sony's network authentication) decrypts blocks of its code before running them, each library with its own routine
+# (the call's arguments kept beside the block): the recompiler runs those routines on the overlay ahead of time and
+# recompiles the plain code. Words left that don't decode (the blocks' keys, junk between them) stop the game if reached
 [[overlays]]
 name = "netdnas"
 file = "BIN/4.DAT"
 base = "0x6af000"
 text = ["0x6af040", "0x71ff00"]
-encrypted = true
+decrypt = ["0x6db1a0", "0x714f00"]
 
 [[overlays]]
 name = "nethttp"
@@ -176,7 +176,7 @@ name = "insdnas"
 file = "BIN/6.DAT"
 base = "0x6af000"
 text = ["0x6af040", "0x6d8c80"]
-encrypted = true
+decrypt = ["0x6b1ab8", "0x6cfda8", "0x6d80a8"]
 
 [[overlays]]
 name = "single"
