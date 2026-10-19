@@ -130,24 +130,24 @@ c1dac39c9a	  Defeat the bosses that attack one after another!\n
 cfca2df832	-
 c1b0a21423	-
 5f6cd3e4ab	-
-4d399fc67d	MEMORY CARD slot 1
+4d399fc67d	Save slot 1
 bc4ae29ae5	-
-7221dbe22b	Which MEMORY CARD slot will you use?
-33d3608de8	MEMORY CARD slot %s
-fd74d67239	"PlayStation 2" Memory Card (8MB)
+7221dbe22b	Which save slot will you use?
+33d3608de8	Save slot %s:
+fd74d67239	From the save file:
 8d67b0b10b	Loading main data...%t
 4403e6d07b	An error occurred.
 da9473bc27	It could not be loaded correctly.%r
-672bd899c1	MEMORY CARD slot %s:
-0edb9abc15	"PlayStation 2" Memory Card (8MB)
-753ccc4a44	is not inserted.%r
-86839ccb4e	"PlayStation 2" Memory Card (8MB)
+672bd899c1	Save slot %s:
+0edb9abc15	Save file
+753ccc4a44	is missing.%r
+86839ccb4e	Save file
 6cd2a4437c	is not formatted.%r
-c339ab7317	"PlayStation 2" Memory Card (8MB)
+c339ab7317	Save file
 fadf602d46	has no main data.%r
-a3eb792332	"PlayStation 2" Memory Card (8MB)
+a3eb792332	Save file
 3bd02f7cfb	is being accessed...%t
-fdef08a275	"PlayStation 2" Memory Card (8MB)
+fdef08a275	Save file
 ee5320c372	could not be accessed.%r
 55d9f15737	There is no main data.
 046bfb454a	Create it now?
@@ -156,7 +156,7 @@ ee5320c372	could not be accessed.%r
 6860d1e665	It could not be created.%r
 e6a26b56b2	It is not formatted.
 c89b1ce1f4	Format it?
-6adbe4ab11	"PlayStation 2" Memory Card (8MB)
+6adbe4ab11	Save file
 84de6ea6c2	Formatting...%t
 96600fecbb	It could not be formatted.%r
 19c51b8a54	Which file will you load?
@@ -172,13 +172,13 @@ d7d34255a2	To save this game's main data,
 82931f128d	-
 299e8aeaf8	  Continue the game with the following data?
 495ba5c189	-
-de6e83ea0c	MEMORY CARD slot %s
-ab09364f4e	Test-writing to the Memory Card (PS2)...
+de6e83ea0c	Save slot %s
+ab09364f4e	Testing the save data...
 279d825605	Main data loaded.
-e6e311ab70	No card in MEMORY CARD slot %s.
+e6e311ab70	No save data in slot %s.
 6e383f1550	%a KB or more of free space is needed.
 8892bb7766	Start the game like this?
-2f7a1e838f	\nPress any button.
+2f7a1e838f	\nPress Confirm.
 d40b333bf1	Load complete.%r
 c8ca9243db	Save the main data?
 bf50f38f2d	Load the main data?
@@ -187,10 +187,10 @@ f55aaa4e3e	Save complete.
 d1316ca0cb	is being loaded...%t
 9f2c7d7a7c	Loading failed.
 f6fe842748	No main data of the previous game "OUTBREAK".
-aa543c3ef4	MEMORY CARD slot %s: the card that holds the
-8c1a24b5d4	main data saved from the previous OUTBREAK
-022003a2ce	must be inserted.%r
-d9899e97ef	is not inserted.
+aa543c3ef4	Slot %s: save data with the main
+8c1a24b5d4	data of the previous game OUTBREAK
+022003a2ce	is needed.%r
+d9899e97ef	is missing.
 dfc8751c6d	The main data of the previous game "OUTBREAK"
 7e39a80399	is corrupted.
 b8898c7d01	Saving...%t
@@ -232,57 +232,57 @@ f41329728f	Data carry-over cancelled.%r
 cad5bf7200	Record (save) your progress so far?
 4a74066ce6	* Saving will overwrite your scenario
 414e02cda8	save data.
-e2bcac66f0	Do not remove the Memory Card (8MB) or
-0b24057386	controllers, and do not turn off the
-9ad426f785	console or reset it.
+e2bcac66f0	Do not quit the game, remove
+0b24057386	the controller or turn off the
+9ad426f785	power, or reset, while saving.
 457272a4a3	Completed
-b6a27d9df6	No hard disk drive is connected to the console.
-afa79d9719	The hard disk drive does not have enough
+b6a27d9df6	No install drive was found.
+afa79d9719	The drive does not have enough
 f3bbf4fdc8	free space.
 af1867328e	Installing the data requires %a MB or
 9b95c8a951	more of free space.
 bda9ab15fd	Free up enough space, then
 ebef85be93	install again.
 88a4f821fd	The game data is not installed
-b85c89426d	on the hard disk drive.
-be4bb6f4c9	Follow the manual that came with the hard disk
-04b925a63f	drive to repair the hard disk drive.
+b85c89426d	on the drive.
+be4bb6f4c9	Follow the drive's manual
+04b925a63f	to repair the drive.
 a562b3ad73	Please do so.
 6f21e26322	It is not installed correctly.
 2cb2928a12	Please reinstall.
-7df130d3ec	The game data is on the hard disk drive
+7df130d3ec	The game data is on the drive
 c3977bafff	and is already installed.
 61795c5e3f	Overwrite the installation?
-770e1b7c11	Installing the game data on the hard disk
-93fda50bf8	drive lets you play the game more
+770e1b7c11	Installing the game data
+93fda50bf8	lets you play the game more
 f73e8941bf	comfortably.
-49ef830ca8	To install, the hard disk drive needs
+49ef830ca8	To install, the drive needs
 cf2d851dc1	%a MB or more of free space.
 cb2f53d368	Install now?
-66ac378a61	Press any button.
+66ac378a61	Press Confirm.
 af42682f94	 Yes
 38b79fb21c	Installing the game data...
-096e82cecc	Do not turn off or reset the "PlayStation 2"
-5b860102ff	console, or disconnect the hard disk drive
-c71cd4699e	from it.
+096e82cecc	Do not quit the game, turn off the power,
+5b860102ff	reset or disconnect the drive
+c71cd4699e	during installation.
 076b6fc243	Installation complete.
 4649220ad7	Installation failed.
 43a3e30fd8	Cancel the installation?
 43839a56f6	Installation cancelled.
-da374162cc	The hard disk drive is not initialized.
+da374162cc	The drive is not initialized.
 339847b096	Follow the instructions to initialize it.
 f6ed96f21a	Reinstall?
 a759f11e25	Cancel install
 7d8122db7c	Move panel
 4d29c4fc3f	An error occurred during installation.
-ca9c36b9b4	Check the hard disk drive connection and
+ca9c36b9b4	Check the drive's connection and
 08075f8c65	install again.
-d646b7346b	<c1>Hard disk drive-only room
+d646b7346b	<c1>Install-only room
 24bc175426	<c0>: entry was not possible.
 323fdca17b	<c1>Disc-only room
-e18a4110e7	<c1>Hard-disk-only room<c0>.
-f69d85c5a7	Use the data installed on the
-6ba40acac9	hard disk drive?
+e18a4110e7	<c1>Install-only room<c0>.
+f69d85c5a7	Use the installed
+6ba40acac9	game data?
 f7550993fa	<c1>Disc-only room<c0>.
 2b632b5407	Use the data on the disc?
 4978e8c098	Left  
@@ -385,10 +385,10 @@ db1bf0019f	Dash
 f60dd499aa	Adjust the brightness until the colors at
 81ee28b677	the bottom of the bar can no longer be seen.
 5611a22649	Ad-lib VOLUME
-57c49d11c3	Read the game data from the DVD-ROM\n
+57c49d11c3	Read the game data from the disc\n
 5d7d52bd07	and use it.
-e57fe751cc	Use the game data installed on the hard\n
-815ef2a62d	disk drive.
+e57fe751cc	Use the game data\n
+815ef2a62d	installed to the drive.
 d437b797a2	"Your network configuration file":
 e8601e0eaa	edit it?
 10de8b0f13	If you configure the network, all unsaved

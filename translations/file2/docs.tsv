@@ -60,7 +60,7 @@ fafb5627a3	Locker Room
 fddf0b9315	An ordinary newspaper\n(Read the contents in "File")
 fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after some time.\nAlso, if the AIPC is far away, the order\nmay not reach it.\n
 005c38ff06	-
-006ef053f8	<c1>[Aimed Walking]<c0>\nHold R1 and L1 together and use the\ndirectional keys (left stick) to move\nin the attack stance. The nearest enemy\nis auto-searched and targeted.\n
+006ef053f8	<c1>[Aimed Walking]<c0>\nHold Ready and Switch Target together and\nmove to keep the attack stance while you\nwalk. The nearest enemy is auto-searched\nand targeted.\n
 0082f39394	Plywood
 00e231e793	Room 306
 01b360f782	<c1>[Traits]<c0>\nQuick on her feet and, though a woman,\nsurprisingly strong: an all-rounder.\nThe pick tool widens her range. For\nthose who want to fight and explore.\n
@@ -74,14 +74,14 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 029afeb8af	He didn't know the way, so I guided him.\nTo the right path, truly right for them.\n
 02a204a430	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>6SR2<c0>.\nA bother, I know, but it can't be helped.\n                      The Director\n
 03009c1203	-
-040ce3acc1	You can give an AIPC <c1>orders<c0> with <c1>Appeal\n(right stick)<c0>. But each AIPC has its own\nmind, so it doesn't always obey.\n
+040ce3acc1	You can give an AIPC <c1>orders<c0> with <c1>Appeal<c0>.\nBut each AIPC has its own mind, so it\ndoesn't always obey.\n
 0444ee2190	5/22\n  17:30 Good, has appetite\n5/23\n  08:30 Hearty appetite\n  13:20 Periodic EEG anomaly\n  19:00 Stable condition holds\n
 04a0c5ed12	Mountain Path
 04c4a76db9	3F
 04eabe7025	Forest 2
 05e7c39c62	Exhaust Tower
 062ad3a5f3	\n\n               Greg Mueller\n\n<The envelope is firmly sealed...>\n
-066745e3dc	Alternatively, put the cursor on an item\nand press the square button to hand it over.\n(A shortcut for handing over items)\n
+066745e3dc	Alternatively, put the cursor on an item\nand press Ad-lib to hand it over.\n(A shortcut for handing over items)\n
 0706960033	  /  \nWhile sorting junk behind the stage I\nfound an old <c1>BGM tape<c0>.\nI tried it out, and it seems to be the\nsong for the park parade.\n
 070ef5998c	East Passage 2
 07166ab2a5	3/18\n  01:17 Subject died\n
@@ -89,7 +89,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 087e3124d2	\nKitebros Railway (KBS)\n        Guide Pamphlet\n\n      April, 1989\n
 08a55a70f3	[About Herbs 1]\nUsing herbs restores your condition.\n  Green Herb (green)... restores health\n  Blue Herb (blue) ... cures poison\n  Red Herb (red)   ... boosts the effect\n
 09546a1832	You can also move while pulling a partner\nyou're lending a shoulder to.\nPress X to release the hold.\n
-095b2d0eea	<c1>[Special Action 3:\n                  Elbow Tackle]<c0>\n(Press the circle button while holding R1\nwith nothing equipped)\nAn enhanced tackle. With good timing it can\neven knock enemies down.\n
+095b2d0eea	<c1>[Special Action 3:\n                  Elbow Tackle]<c0>\n(Press Action while holding Ready with\nnothing equipped)\nAn enhanced tackle. With good timing it can\neven knock enemies down.\n
 0978726d18	To release it the biosensor must go OFF...\nthat is, the test subject must die.\nOf course, they'd never kill themselves.\n
 099961a509	Junk Parts:\n  The item command <c1>"Combine"<c0> repairs\n  broken items.\nVinyl Tape:\n  Combine items to create new weapons.\n
 099d44a4a3	Will fresh wind blow through a city hall\npiled with problems like stalled welfare\nand rising unemployment? We'll watch his\nmoves.\n
@@ -127,7 +127,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 15f15c6481	Construction Lot
 15f24905a8	Officer Diary
 1605fed95f	Rescue helicopters will be sent as below.\nCarry your citizen ID and gather fast.\n  Place: <c1>Zoo main gate -> Tram terminal<c0>\n  Time: Today 10:00, 15:00,\n        18:00, 22:00 (planned)\n
-160f1a6e9e	You can give an AIPC orders with Appeal\n(right stick). But each AIPC has its own\nmind, so it doesn't always obey.\n
+160f1a6e9e	You can give an AIPC orders with Appeal.\nBut each AIPC has its own mind, so it\ndoesn't always obey.\n
 1633a04d15	-
 166a51ef17	<c1>[Personal Item: Tool Case]<c0>\nContains many tools.\nSome have a limited number of uses.\n
 16b020567d	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>Q898<c0>.\nA bother, I know, but it can't be helped.\n                      The Director\n
@@ -139,13 +139,13 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 184103f5a2	Even when apart from the PC, an AIPC finds\nand uses items somewhere.\nWhen you meet an AIPC again, check its items\non the <c1>status screen<c0>. It might hold\nsomething important...\n
 186cd28ddd	You can also hand an item to a specific\nAIPC by calling its name before giving.\n
 18766b9965	Northwest Passage 3
-18afd8c9dc	<c1>[Special Action:\n                  Dodge Tackle]<c0>\n(Press the X button while holding R1)\nPull back, dodge the enemy's attack and\nthen counter with a tackle. Keep the button\npressed to raise its power.\n
+18afd8c9dc	<c1>[Special Action:\n                  Dodge Tackle]<c0>\n(Press Cancel while holding Ready)\nPull back, dodge the enemy's attack and\nthen counter with a tackle. Keep it\npressed to raise its power.\n
 190f726b13	-
 192099804a	Police Station Basement
 19480f60de	Playing Manual: Controls
 1963fae994	Circular
 19d28a86cb	    Western Raccoon City\n    72 Euston St.\n\n        Lucy Mallet\n\n  Born June 2, 1994  Type A\n
-1ab0cdb478	<c1>[About Movement 2]<c0>\nThe directional keys follow the PC's facing,\nthe left stick follows the screen.\n
+1ab0cdb478	<c1>[About Movement 2]<c0>\nOn a gamepad, the D-pad follows the PC's\nfacing and the left stick the screen.\n
 1add687261	Item command <c1>"Treat"<c0>:\nApproach an injured player and select the\nherb item command <c1>"Treat"<c0>.\nYou can use the herb directly on them\nthere and heal them.\n<c1>"Treat"<c0> also works while lending a shoulder.\n
 1b2316922d	Other works such as sculptures and\npaintings went to museums and private\ncollectors, but nothing was known of\nthis taxidermy. The police told the\nauction manager to list and submit the\nitems sold at once.\n
 1b30db8d12	Jungle Dome
@@ -206,11 +206,11 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 2878a48d03	Padlock Key
 28a75a76e7	A metal plate\nSet with a gem (amethyst)
 2909f18cec	The ringleader is Captain Rodriguez of\nUSS Second Squad. As of 0:00 today he is\na traitor stripped of all authority.\nRetake the cargo and eliminate him.\nFailure is not permitted.\n
-291f19fcb3	<c1>[About Files]<c0>\nVarious information gained in game is\nrecorded as files. Open the status screen\nwith the START button, choose the\n<c1>"FILE"<c0> item with R1/L1, then pick a file.\n
+291f19fcb3	<c1>[About Files]<c0>\nVarious information gained in game is\nrecorded as files. Open the status screen\nwith Status, choose the <c1>"FILE"<c0> tab,\nthen pick a file.\n
 2a04e9f634	North Waterway
 2a49efbc95	Riverbank
 2a5987f42d	  Evacuation Order\nContents:\n  Guide citizens out of sealed zone\nTime:\n  Today, 7 pm\n
-2aa609ed58	<c1>[About Special Actions]<c0>\nThe PC has ways to move beyond walking,\nlike climbing ledges and ladders. Press\nthe circle button before one to do it.\n
+2aa609ed58	<c1>[About Special Actions]<c0>\nThe PC has ways to move beyond walking,\nlike climbing ledges and ladders. Press\nAction in front of one to do it.\n
 2b24a68c91	Examining a door may give a hint to the key\nyou need.\nFirst, explore various places to find the\n<c1>"key"<c0> that fits the door.\n
 2b41a527c1	This is for emergencies only. Never carry\nthe emblems off or move them from\ntheir set places.\n
 2c5caf170d	-
@@ -224,7 +224,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 2fb5196f7e	Dead over half a year, identity unknown.\nLarge amounts of steroids and an unknown\ndrug were found in the skin tissue; police\nopened an investigation HQ.\n
 2fccce1421	<c1>[Personal Item: Coin]<c0>\nA coin always kept in a wallet.\nFlip it and either "heads" or "tails" shows.\nWhat effect would the result bring...?\n
 2fdfa65728	We're moving part of the animal area\n(giraffes, baboons, orangutans) and the shop\nto build a botanical park imitating jungle\nand prairie: the "Jungle Dome"! 750 kinds of\nplants invite you to a hot tropical paradise.\n
-3023f890e9	<c1>[Special Action 2: Aimed Shot]<c0>\n(Keep R1 pressed, then press circle once the\nstance changes)\nA special move with handgun-type weapons.\nA single aimed hit deals heavy damage\n(* not possible with some weapons).\n
+3023f890e9	<c1>[Special Action 2: Aimed Shot]<c0>\n(Keep Ready held, then press Action once\nthe stance changes)\nA special move with handgun-type weapons.\nA single aimed hit deals heavy damage\n(* not possible with some weapons).\n
 30356ff650	<c1>[About Crawling 2]<c0>\nWhile crawling, the virus gauge rises faster\nthan usual.\nTo recover from crawling, use a healing item\nor be helped by another PC.\n
 307d967f5a	However, some items may refuse orders.\n
 3097d5bd88	Pharmacist Memo
@@ -250,25 +250,25 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 38d6d45dc8	<c1>[Extra Item: Lucky Coin]<c0>\nA lucky item believed to have some effect\njust by carrying it.\nWhat benefit might it have...?\n
 38e3db8ca5	-
 391d79c96f	A display piece, no launcher\nWeight near the real thing
-39bd89f64f	        * ATTENTION!! *\nThe button names in each explanation assume\nthe default settings.\nIf you changed the button settings, read\nthem accordingly.\n
+39bd89f64f	        * ATTENTION!! *\nThe control names in each explanation\nassume the default settings. If you\nchanged the controls, read them\naccordingly.\n
 3a8bb9e0b8	Removing the coupler cover on the car's side\nreleases the coupler too. To remove the\ncover, use the <c1>two emblems<c0> for car decoration\nas keys: align the joints behind and twist\nthem in.\n
 3aa801c695	It was the whole hospital's crime, but the\ndirector's motive may have differed. His\nwife was also an inpatient with an incurable\ndisease. Illegal drugs or anything: he had\nto try.\n
 3b8c432d69	The underground line laid by the Kite brothers\nbegan as a small 2-mile run linking only 3\nstations. With economic growth from Umbrella\nridership rose; it now spans 8 stations and\n8.5 miles.\n
 3ba735ab8b	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>B37B<c0>.\nA bother, I know, but it can't be helped.\n                      The Director\n
-3bcdffbf42	[About the Map 3]\nIf you hold the <c1>triangle button<c0> while opening\nthe map screen, you can move the PC while\nthe map is shown.\n
+3bcdffbf42	[About the Map 3]\nIf you hold <c1>Map<c0> while opening the map\nscreen, you can move the PC while the map\nis shown.\n
 3c5e4ce768	\n  * ERROR *\n  Changing settings needs\n  administrator permission\n\n               -> OK\n
 3cc5b8a383	[About Crawling 1]\nWhen damaged and out of health, the PC goes\ninto <c1>a crawling state<c0>.\nRoom changes and attacks are restricted\nwhile crawling.\n
 3d2a8c20ef	Ricky's Notebook
 3da4cf7b10	Five years since I moved away.\nThe groans won't leave my ears.\nMaybe the reagent toxin got to me; my\nhealth fails by the day. A punishment for\nthat madness?\n
-3dac21d62e	Open the <c1>"Status Screen"<c0> in a room with\na dead character. Their item list shows;\nput the cursor on the item you want and\npress the circle button.\n
+3dac21d62e	Open the <c1>"Status Screen"<c0> in a room with\na dead character. Their item list shows;\nput the cursor on the item you want and\npress Confirm.\n
 3e0098ea86	B7F South Passage
 3e1bfe4d81	An employee ID card\nMarked "Lv2"
 3ea172e1a5	Letter
 3ee6bf3d79	\n  The <c1>nap room<c0> has only dull books.\n\n  Who reads <c1>POEMS<c0> anyway.\n
-3efde49e95	Press R1 to aim at the nearest enemy,\nR2 to aim where you're facing.\nAgainst several enemies, press L1 in the\nattack stance to switch the search target.\n
+3efde49e95	Press Ready to aim at the nearest enemy,\nReady Forward to aim where you're facing.\nAgainst several enemies, press Switch\nTarget in the attack stance to change it.\n
 3f0f25b9d6	They mostly appear 2-3 at a time near\ncampers' tents, moving underground.\nOne dog was reportedly hurt for two weeks\nby this insect.\n
 3f3fd7d5a2	Neighbors, please avoid the old mountain\npath during this period unless there is\nan urgent reason.\n\n      Mountain Vigilance Chief\n
-3f64c5cb07	<c1>[Special Action 1: Kick]<c0>\n(Press the X button while holding R1)\nKicks and staggers the enemy ahead.\nFaster than a tackle, handy when\nsurrounded by enemies.\n
+3f64c5cb07	<c1>[Special Action 1: Kick]<c0>\n(Press Cancel while holding Ready)\nKicks and staggers the enemy ahead.\nFaster than a tackle, handy when\nsurrounded by enemies.\n
 3f75732aa4	Film B
 3fe77cae37	August 9, 1998\n         Gun shop robbed\nEarly on Sept 8, two men broke into\nMcCleary's gun shop on Clemens St. and\nfled with $800, a shotgun and ammo.\n
 4028f2a2ae	Seal the tank of raw solvent, keep it at a\nconstant temperature. Long exposure to\nair raises toxicity and yields enzyme\nthat breaks cell membranes.\n
@@ -277,7 +277,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 417f76f379	I ran this far, but it's over.\nMy vision is darkening.\nKevin, Aaron, Fred...\nForgive a coward like me.\n\n0325\n
 41d0d5243d	Single Play Guide (Vol. 1)
 4243f228ac	Addendum\nWhat about that Austin's attitude?\nHe may be a fine hunter, but bringing a\n<c1>private gun to the watch post<c0>!\nHe grudgingly said he'd take it home,\nbut I doubt it.\n
-42568de074	<c1>[Special Action 1:\n                      Escape]<c0>\n(Press the X button while holding R1)\nDodge an attack and move back a few steps.\nThe distance changes with how long you\nhold the X button.\n
+42568de074	<c1>[Special Action 1:\n                      Escape]<c0>\n(Press Cancel while holding Ready)\nDodge an attack and move back a few steps.\nThe distance changes with how long you\nhold Cancel.\n
 4292853ad2	Examination Room
 42b7d1d725	Chain Cutter
 4344571a0d	Ace Key
@@ -288,8 +288,8 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 44c4ef6598	Supplement 2:\n  After planting, leave the zone at once\n  and await HQ orders.\n
 452ab7f78a	Riverside
 452e733726	June 10, 1998\n  Museum accused of illegal taxidermy sale\n200 taxidermied animals from Rams Museum,\nclosed in February, were put up for\nauction.\n
-45651738eb	<c1>[About Aiming and Attacking]<c0>\nPress R1 and the PC readies the equipped\nweapon; circle attacks. While aiming,\nthe directions change facing. Press L1\nwhile aiming to switch the target.\n
-458434ea39	<c1>[About Handing Over]<c0>\nPut the cursor on the item to hand over and\npress circle for the command list. Then\nmove to the <c1>"Give"<c0> command and press circle\nto hand the item over.\n
+45651738eb	<c1>[About Aiming and Attacking]<c0>\nPress Ready and the PC readies the equipped\nweapon; Action attacks. While aiming, the\ndirections change facing. Press Switch\nTarget while aiming to change the target.\n
+458434ea39	<c1>[About Handing Over]<c0>\nPut the cursor on the item to hand over and\npress Confirm for the command list. Then\nmove to the <c1>"Give"<c0> command and press\nConfirm to hand the item over.\n
 458b1f31bc	Supplement:\nKeep the cargo hold low in oxygen (under\n14%). Never expose it to outside air long.\n
 45f4249495	Elephant Key
 46171552b5	-
@@ -334,7 +334,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 5234fa822b	  /  \nOscar's been acting odd lately.\nHe isn't sick, but he's very restless.\nToday he got excited at feeding time\nand broke the iron bars.\n
 528902b218	First turn the main power ON at the office.\nThen set the emblems into the <c1>two lion\nstatues<c0>. That serves as the key.\nThe lock keepers will each hold the\nemblems separately.\n
 52f58e3b59	Emerald Plate
-531d045e70	* If you changed the controller type,\n  read the button names accordingly
+531d045e70	* If you changed the controls,\n  read the control names accordingly
 53c12adaad	Underground Waterway Junction
 540bb6338e	Repairs:\n  Replace pump valve pipes\n  Fix piping around grounds\nSymptoms:\n  Toilet leaks, low water\n
 543b5961b0	MO Disc
@@ -373,7 +373,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 5e30b6b9d4	B6F East Passage
 5e8d3722e4	East Gate
 5ec09ecf9c	<c1>[Extra Item: Charm]<c0>\nA charm said to bring good luck.\nJust carrying it seems to have some\neffect, but...\n
-5f70b74df1	<c1>[Special Action:\n                      Crouch]<c0>\n(Press the X button while holding R1)\nCrouch on the spot and dodge attacks.\nYou can also crouch with two PCs while\nlending a shoulder (R1 button).\n
+5f70b74df1	<c1>[Special Action:\n                      Crouch]<c0>\n(Press Cancel while holding Ready)\nCrouch on the spot and dodge attacks.\nYou can also crouch with two PCs while\nlending a shoulder (Ready).\n
 5f7f513d0f	  September 16\nA new test subject "Hunter mu" arrived,\na specimen for making the ordinary Hunter\nsmaller. Kept in the culture room 2 weeks.\n
 5fc9882cc3	Zoo Flyer 2
 5fe0e5e912	Circular
@@ -398,10 +398,10 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 64af2ba443	Prepare these drugs by 19:00 tomorrow.\n  Induction: Midazolam (150)\n  Maintenance: Isoflurane (200)\n  Relaxant: Pancuronium (50)\nPremedication from 19:30.\n  Atropine, Pentazocine (50 each)\n
 64e171d71d	<c1>[Checking Other PCs' Status]<c0>\nIf another PC is in the same room, the status\nscreen shows its virus gauge, carried items\nand more.\n
 65896dddbd	-
-65ac6acecf	<c1>[R1 or R2 button: attack stance\n                  Circle button: attack]<c0>\nAttacks with the equipped weapon. In the\nstance, up/down on the directional keys\n(left stick) switch between high and low\nstance (with exceptions).\n
+65ac6acecf	<c1>[Ready or Ready Forward: attack stance\n                  Action: attack]<c0>\nAttacks with the equipped weapon. In the\nstance, moving up/down switches between\nhigh and low stance (with exceptions).\n
 65d4031aab	Jim Chapman\n\nJob: Subway worker\nFriendly and cheerful, but a streak of\ntimidity and needless remarks mar him.\nSharp intuition, good at puzzles.\nSomehow likable.\n
 662fa85f8c	A Key Marked with a Joker
-666343bef5	[About the Map 1]\nOpen the map screen with the <c1>triangle button<c0>\nto see rooms you've already visited.\nWith a map in hand, you can see info on\nall rooms.\n
+666343bef5	[About the Map 1]\nOpen the map screen with <c1>Map<c0>\nto see rooms you've already visited.\nWith a map in hand, you can see info on\nall rooms.\n
 66818e9d57	-
 672a86919c	Park Path, South
 679dec8990	  /  \nRick keeps saying he senses someone in\nthe dark. He looks worn out. While exploring\nI dropped and broke the satellite phone.\nNew species don't matter; I must flee...\n
@@ -434,7 +434,7 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 71087ecf3c	East Exit
 72a42169e8	<c1>[Trading With Dead Players]<c0>\nEven if another PC has died, you can open\nthe status screen in the room where it died\nand trade items.\n
 72c6e0961d	B1F
-7351f82b9d	<c1>[Special Action:\n                   Rapid Knife Attack]<c0>\n(Press circle in good time while holding R1;\nhigh/low stance also work)\nSpecial move with a blade (knife, etc.)\nequipped. Slashes leaving no gap to counter.\n
+7351f82b9d	<c1>[Special Action:\n                   Rapid Knife Attack]<c0>\n(Press Action in good time while holding\nReady; high/low stance also work)\nSpecial move with a blade (knife, etc.)\nequipped. Slashes leaving no gap to counter.\n
 738456bd9d	A kind of tool\nHandy for stripping wall material
 744991d2ea	Highway
 746636da51	Specimens
@@ -445,8 +445,8 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 758514672f	No choice, so I'll set the first 5 digits\nof the serial number on the key.\n<c1>I can always find the number by looking\nat the key's back.<c0>\n
 75e0e8ca92	\n         Resume Enclosed\n\n   Name: Leon S. Kennedy\n\n   Do not open unless concerned\n
 75f0bcdf6e	Office Building 1F
-7642e8dc65	<c1>[Special Action 1: Guard]<c0>\n(Press the X button while holding R1)\nCross your arms and take a defensive stance.\nDuring it, enemy attacks do less damage\n(with exceptions).\n* Virus infection damage can't be blocked.\n
-7667d7225a	Once in the picking stance, mash the circle\nbutton until the lock opens (cancel with X).\nThe time to unlock depends on the pick used.\nFinding a pick that suits the lock is the\nsecret to saving time.\n
+7642e8dc65	<c1>[Special Action 1: Guard]<c0>\n(Press Cancel while holding Ready)\nCross your arms and take a defensive stance.\nDuring it, enemy attacks do less damage\n(with exceptions).\n* Virus infection damage can't be blocked.\n
+7667d7225a	Once in the picking stance, mash Action\nuntil the lock opens (stop with Cancel).\nThe time to unlock depends on the pick used.\nFinding a pick that suits the lock is the\nsecret to saving time.\n
 7672ab053c	-
 76748a134f	Police Station Basement Plan
 7676c01cae	The cause of the train fire last month is\nknown. When emergency stopping to clear\nobjects from the track, the emergency brake\nwiring short-circuited.\n
@@ -458,10 +458,10 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 781222b4b9	Room 203
 7820e00292	A key tagged "Director's Office"
 7856937b4a	Clinical Trial Report
-7878d699d9	<c1>[Special Action 2:\n                    Rapid Swing]<c0>\n(Press circle rhythmically while holding R1)\nSpecial action with a pole weapon. With good\ntiming you can keep swinging.\n
+7878d699d9	<c1>[Special Action 2:\n                    Rapid Swing]<c0>\n(Press Action rhythmically while holding\nReady)\nSpecial action with a pole weapon. With good\ntiming you can keep swinging.\n
 79009461dd	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>EXP2<c0>.\nA bother, I know, but it can't be helped.\n              The Director\n
 793ce578d8	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>2994<c0>"\n
-79689f16df	<c1>[Special Action 2:\n                     Full Swing]<c0>\n(Hold R1; after the stance changes, press\ncircle: also works in high/low stance)\nSpecial action with a pole striker. A\nwhole-body blow deals heavy damage.\n
+79689f16df	<c1>[Special Action 2:\n                     Full Swing]<c0>\n(Hold Ready; after the stance changes,\npress Action: also in high/low stance)\nSpecial action with a pole striker. A\nwhole-body blow deals heavy damage.\n
 7994b1a86b	Guard Bulletin
 7a371bbfa4	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>K3G6<c0>.\nA bother, I know, but it can't be helped.\n              The Director\n
 7a544d3bd9	On Manual Coupler Release\n\nTrain couplers are normally released from\nthe cab, but in an emergency manual\nrelease is possible too.\n
@@ -469,10 +469,10 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 7ac9b51199	Footbridge
 7b61a3eeab	The alarm's <c1>beeps get shorter nearer the\ntarget<c0>. The bearer must watch the sound\nchange while finding and removing the\nclaymore.\n
 7b65469b17	Marvin's Memo
-7b813763f2	Choose the item command <c1>"Trade"<c0> and press\ncircle. The cursor moves to your item column;\nselect an empty slot or the item to trade and\npress circle.\n
+7b813763f2	Choose the item command <c1>"Trade"<c0> and press\nConfirm. The cursor moves to your item\ncolumn; select an empty slot or the item to\ntrade and press Confirm.\n
 7bb88c93c6	<c1>[Personal Item:\n                Mark's Own Handgun]<c0>\nMark's favorite gun. Reload with <c1>"Handgun\nRounds"<c0>.\n
 7bff7e5af9	Annex 5F
-7c6f3f7a5d	While crawling, controls like moving and\nattacking are heavily limited and the virus\ngauge advances faster. If there's an item on\nthe floor, go near and press circle to pick\nit up.\n
+7c6f3f7a5d	While crawling, controls like moving and\nattacking are heavily limited and the virus\ngauge advances faster. If there's an item on\nthe floor, go near and press Action to pick\nit up.\n
 7cd0142192	[About Poison]\nEnemy attacks may poison you. While poisoned\nyour health drops little by little over time.\nPOISON shows on the ECG while you are\npoisoned.\n
 7d7f8ed7d5	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>4NZH<c0>.\nA bother, I know, but it can't be helped.\n              The Director\n
 7d81958e43	Staff Passage
@@ -502,13 +502,13 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 86b3a21c87	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>44V7<c0>.\nA bother, I know, but it can't be helped.\n              The Director\n
 86fd9cbe65	-
 873578c514	West Passage
-8742e92efd	<c1>[Added Ad-lib: Map Ad-lib]<c0>\nPress the square button while the map screen\n(triangle button in game) is open to say the\n"room name" at the map's center. Useful for\ntelling partners locations.\n
+8742e92efd	<c1>[Added Ad-lib: Map Ad-lib]<c0>\nPress Ad-lib while the map screen (Map in\ngame) is open to say the "room name" at the\nmap's center. Useful for telling partners\nlocations.\n
 87f95924ba	<c1>[Extra Item: Lighter]<c0>\nCombine with other items to make weapons.\nIt may also help in various events in the\ngame...?\n
 8885ef99ea	Building Roof to Overpass
 88baa5ec2a	\n  The <c1>nap room<c0> lockers are sturdy.\n\n  And now a new <c1>LOCK<c0>, too.\n
 892dd963de	Memo to Alyssa
 89434f18ae	Unicorn Medal
-89570fe3c0	Select the <c1>"Use"<c0> command from the list and press\ncircle to use the key. If the key fits the door,\nit unlocks the lock.\n
+89570fe3c0	Select the <c1>"Use"<c0> command from the list and press\nConfirm to use the key. If the key fits the\ndoor, it unlocks the lock.\n
 895b8a4294	Office
 8aab64c293	Bag of Blood for Transfusion
 8aca156d6d	\n  The <c1>nap room<c0> has too little fun.\n\n  If only we had <c1>CARDS<c0>.\n
@@ -572,11 +572,11 @@ fe28027168	If an AIPC keeps refusing your orders,\ntry giving them again after s
 98a0d08103	An Ordinary Padlock Key
 98a1b038f0	\n  Someone brings private stuff into the <c1>nap\n  room<c0>. Why not ditch that <c1>JUNK<c0>.\n
 98ab43890c	As explained: stay <c1>within 2 m<c0> of the target\nand <c1>hold the button over 2 seconds<c0>. Boost\nis at its limit at that size. It's a special\nwave, so not like a TV remote.\n
-98e111528c	<c1>[Special Action: Spanner Throw]<c0>\n(Press the X button while holding R1)\nThrow a spanner to attack. The number is\nlimited, so use it at the key moment.\n
+98e111528c	<c1>[Special Action: Spanner Throw]<c0>\n(Press Cancel while holding Ready)\nThrow a spanner to attack. The number is\nlimited, so use it at the key moment.\n
 99e0c43181	-
 9a23acc10a	Lion Key
-9a996be8a7	Normally an order is answered by the AIPC\nnear the PC. Call an AIPC's <c1>name<c0> with\n<c1>Appeal Shift (L2 + right stick)<c0> and then\ngive an order to order that AIPC.\n
-9b26ad96cf	<c1>[Added Ad-lib: FILE Remark]<c0>\nPress the square button during the FILE screen\n(choose FILE from the status screen) to remark\non the open page's content. An unexpected hint\nmay be hidden there.\n
+9a996be8a7	Normally an order is answered by the AIPC\nnear the PC. Call an AIPC's <c1>name<c0> with\n<c1>Appeal Shift<c0> and then give an order to\norder that AIPC.\n
+9b26ad96cf	<c1>[Added Ad-lib: FILE Remark]<c0>\nPress Ad-lib on the FILE screen (choose FILE\nfrom the status screen) to remark on the\nopen page's content. An unexpected hint\nmay be hidden there.\n
 9bd8574fcd	About Alyssa
 9cb5dd393c	On Reagent AT1521\n\nReagent AT1521 (hereafter AT) was made to\ndramatically delay and suppress onset in\nindividuals infected with the T-virus.\n
 9d50d7d557	Main Shaft
@@ -597,10 +597,10 @@ a2b5045dc4	Yoko Suzuki\n\nJob: College student (self-described)\nQuiet and reser
 a2cf06544c	Coupler Manual
 a33a066175	Forest 3
 a35bc642a6	[Trading With Dead PCs]\nEven if another PC dies, you can open the\nstatus screen in the <c1>room where it died<c0> and\ntrade items.\n
-a3a9b4d5e0	<c1>[About Asking]<c0>\nPut the cursor on an item the AIPC holds and\npress circle for the command list. Then press\ncircle on the <c1>"Ask"<c0> command to request the\nspecified item.\n
+a3a9b4d5e0	<c1>[About Asking]<c0>\nPut the cursor on an item the AIPC holds and\npress Confirm for the command list. Then\npress Confirm on the <c1>"Ask"<c0> command to\nrequest the specified item.\n
 a3dcf3a588	Locked doors can sometimes be opened without\na key. A door showing <c1>[The lock looks\nbrittle]<c0> can be unlocked by attacking it.\n
 a3e1fc36e5	Researcher's Journal
-a41971e142	Swapping:\nTo take an item out of the knapsack, select\nthe item inside and choose the item command\n<c1>"Swap"<c0>. Select where to swap in the item\nlist and press circle.\n
+a41971e142	Swapping:\nTo take an item out of the knapsack, select\nthe item inside and choose the item command\n<c1>"Swap"<c0>. Select where to swap in the item\nlist and press Confirm.\n
 a4285c30e8	Joker Key
 a4a317cefb	Equipment Room
 a50e4e1315	Road in Front of Apple Inn
@@ -616,7 +616,7 @@ a6d3f95efc	Liquor Cellar
 a6dd8872e6	Watch Post
 a7486a996a	<c1>[Personal Item: Knapsack]<c0>\nIn addition to the usual 4 item slots, it\nholds 4 more items.\n
 a77f0be8fd	Special Research Room
-a79f30046f	Normally an order is answered by the AIPC\nnear the PC. Call an AIPC's name with\nAppeal Shift (L2 + right stick) and then\ngive an order to order that AIPC.\n
+a79f30046f	Normally an order is answered by the AIPC\nnear the PC. Call an AIPC's name with\nAppeal Shift and then give an order to\norder that AIPC.\n
 a87744f7cf	[About Crawling 2]\nWhile crawling, the virus gauge rises faster\nthan usual. To recover from crawling, use a\nhealing item or be helped by another PC.\n
 a911abedbf	West Entrance
 a94c98c90b	  September 12\nI don't like night shifts. I hate the dark.\nJim says it's underground, so day or night\nis irrelevant, but it's a feeling thing.\n
@@ -685,7 +685,7 @@ be79868b91	-
 be973192f2	Garbage Dump
 be9b3b24fa	George Hamilton\n\nJob: Doctor\nWorks at a city hospital. A first-rate\nsurgeon. A calm person with tolerance and\nteamwork who naturally earns trust.\n
 bea4b5009a	\n      August Ratings\n  John Murphy        BB\n  Lloyd Stewart      B\n  Susan Fischer      A\n  Patrick Raze       B\n  Kim Derek          CC\n
-beba164355	<c1>[About Ad-lib]<c0>\nPress the square button and the PC speaks a\nline suited to the situation. An offhand\nline may be a hint for the game.\n
+beba164355	<c1>[About Ad-lib]<c0>\nPress Ad-lib and the PC speaks a line suited\nto the situation. An offhand line may be a\nhint for the game.\n
 bed928b8f7	A shield-shaped emblem\nA blue lion is carved on it
 bfa6585c5f	He said, "If my knowledge and experience\nbenefit the citizens, I could ask for no\nmore", showing strong will and confidence\nin a mild tone.\n
 bfe559e62f	MO Disc (Code G)
@@ -717,7 +717,7 @@ c84e18bd33	\n  I'm the one who broke the <c1>nap room<c0> mirror.\n\n  A minor <
 c8b3ccb5b3	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>7312<c0>"\n
 c92af50518	From now on, to be thorough, if a car stops\nfrom a track fault, power is to be cut. Only\nafter the situation is surely recovered,\nraise emergency power and restore supply.\n
 c95c4bad6e	Camera film\nThe label reads "Mayor's daughter"
-c9aaf0e489	<c1>[About Movement 1]<c0>\nThe directional keys or left stick move the\nplayer (PC) you control.\n
+c9aaf0e489	<c1>[About Movement 1]<c0>\nUse the move controls to move the player\n(PC) you control.\n
 c9c0965935	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>2236<c0>"\n
 ca69d8e437	\n         Spare Handle Work\n               6 -> 4\n          Maintenance Room\n
 cac40cc05d	Seems a key used in the hospital\nIt's rusted and blackened
@@ -727,13 +727,13 @@ cb1b0ff79e	AT is effective only on individuals before\nonset. It cannot erase th
 cb337dfb7a	September 11, 1998\n  A UMA in the Arklay Mountains?\nTestimony is gathering of an insect with\nhuge fangs and a length of 2m sighted in\nthe western Arklay highlands.\n
 cb4c8df249	<c1>[Extra Item: Stun Gun]<c0>\nEquip and use as a weapon. A self-defense\ntool with a high-voltage spark, effective\nat close range. Recharge by combining\nit with a battery.\n
 cbd25208d1	Old Waterway Connector
-cc2badae75	Taking Herbs Out of the Case:\nSelect a herb or mixed herb in the case and\nchoose the item command <c1>"Take Out"<c0>. Pick\nthe slot in the item column and press circle.\n
+cc2badae75	Taking Herbs Out of the Case:\nSelect a herb or mixed herb in the case and\nchoose the item command <c1>"Take Out"<c0>. Pick\nthe slot in the item column and press\nConfirm.\n
 cc76d793b1	Subway B1F
 cd319fd551	-
 cd496d42d2	Worn-Out Key
 cd680c75b4	U-Shaped Corridor
 cd89024497	Storeroom
-cdecbfb098	<c1>[Special Action 2:\n                  Shove]<c0>\n(R1 button + circle with nothing equipped)\nShoves the enemy ahead. You can charge\nit by holding the button, or follow up\nwith an escape.\n
+cdecbfb098	<c1>[Special Action 2:\n                  Shove]<c0>\n(Ready + Action with nothing equipped)\nShoves the enemy ahead. You can charge\nit by holding Action, or follow up\nwith an escape.\n
 ce036f6d54	-
 ce513edb95	\n\n\n\n\n<The envelope is firmly sealed...>\n
 cf1e9ccb22	As usual the power unit needs a passcode.\nI'll change it weekly from now on.\nThis week it's <c1>5TF3<c0>.\nA bother, I know, but it can't be helped.\n              The Director\n
@@ -746,7 +746,7 @@ d0f86b4681	\n\n      SECRET\n
 d0fd88e25b	He's a friendly old man, and a big chess\nfan. He even made the keys he uses at work\nin the shape of chess pieces, so he's\nserious about it.\n
 d103b39af5	Annex 3F
 d1a74f9f4a	Lion Emblem (Blue)
-d1dbc69b6a	<c1>[Picking Up Items While Crawling]<c0>\nEven while crawling, you can pick up items\non the floor (at the same height as the player\ncharacter). Go near the item and press the\ncircle button.\n
+d1dbc69b6a	<c1>[Picking Up Items While Crawling]<c0>\nEven while crawling, you can pick up items\non the floor (at the same height as the player\ncharacter). Go near the item and press\nAction.\n
 d2162c20fd	Control Room
 d240e41cdb	June 1, 1998\n  Zoo vice director suspected of orchid trade\nA surprising suspicion about the motive has\nsurfaced in the embezzlement of funds by Raccoon\nZoo vice director Elliott Martin (67).\n
 d24b666e32	  /  \nOne at noon, another at dusk.\nThe second had a shotgun and I took\na few shots. But I feel no pain at all.\n
@@ -761,21 +761,21 @@ d4b8495ef8	Pipe
 d4c802b349	About Training
 d51c563210	Startup procedure:\nKeep the cradle (dedicated cold-storage\ncapsule) at set temperature and pressure\nand send the startup program to "T". That\nprogram enables set behavior control of "T".\n
 d554128494	The injury of a reporter drew the attention\nof the media, so the hospital was closed at\nlast, but the truth never came out. Evidence\nwas collected and our mouths were shut\nwith money.\n
-d56698d204	<c1>[Shortcut Reload]<c0>\nHold the L1 button with a weapon equipped\nto reload without opening the status screen.\nRounds are loaded one at a time for as long\nas you hold L1.\n
-d57f701a2e	<c1>[About Use Orders]<c0>\nPut the cursor on an item the AIPC holds and\npress circle for the command list. Then press\ncircle on the <c1>"Order"<c0> command to order it\nto use the specified item.\n
+d56698d204	<c1>[Shortcut Reload]<c0>\nHold Switch Target with a weapon equipped\nto reload without opening the status screen.\nRounds are loaded one at a time for as long\nas you hold it.\n
+d57f701a2e	<c1>[About Use Orders]<c0>\nPut the cursor on an item the AIPC holds and\npress Confirm for the command list. Then\npress Confirm on the <c1>"Order"<c0> command to\norder it to use the specified item.\n
 d624141be8	Inside the Heli
 d6550f22b8	Safety Sensor Settings:\n  Object sensor     OFF\n  Heat sensor       OFF\n  EM shutter        ON\n      <c1>Auto-restore after a set time<c0>\n                        -> NEXT\n
 d68431e74e	-
 d6a58a908d	Transformer Room
 d6ab642f7c	About David
 d73f268d31	Director's Diary 2
-d7d3264cdc	Press the circle button near a crawling ally\nto lend a shoulder and help them up.\nThe virus gauge rises faster while crawling,\nso help them up early.\n
+d7d3264cdc	Press Action near a crawling ally to lend\na shoulder and help them up.\nThe virus gauge rises faster while crawling,\nso help them up early.\n
 d8bc1c5607	Subject: Doug Frost\nAge: 68\n\nClinical start: 1993/3/14\nPhysician: Alan Eldert\n
 d98898eb46	-
 d998367095	Illegal dumping of industrial waste has been\ncontinuing in the Ames River, and a link to\nthis case is suspected.\n       Alyssa Ashcroft\n
 d9fe4d7736	A Key Marked with an Ace
 da66c2992c	T-Shaped Corridor
-dab194fc8e	<c1>[About Lending a Shoulder]<c0>\nApproach a damaged PC and press circle to\nlend a shoulder; press X to stop. You can\nalso pull up a crawling PC and lend a\nshoulder.\n
+dab194fc8e	<c1>[About Lending a Shoulder]<c0>\nApproach a damaged PC and press Action to\nlend a shoulder; press Cancel to stop. You\ncan also pull up a crawling PC and lend a\nshoulder.\n
 db15924da5	A Key with a Lion Drawn on It
 dbdcc678ab	\n  The <c1>nap room<c0> is being renovated.\n\n  What <c1>PLAN<c0>? I should ask.\n
 dcb8e12947	Crawling
@@ -808,13 +808,13 @@ e7013e31d2	Director's Office
 e70ac79cea	[About Bleeding]\nEnemy attacks may make you bleed. While\nbleeding you move slowly and lose health\nwith every move. BLEED shows on the ECG\nwhile you bleed.\n
 e725559086	The reagents they sent were all outrageous\nthings. I later learned the data was fed\nback into bioweapon development.\n
 e7f12b5f11	-
-e910c36951	<c1>[About Appeal]<c0>\nWith the right stick you can convey your\nintent to other PCs (Appeal). Use it to ask\nfor cooperation or call for help.\n
+e910c36951	<c1>[About Appeal]<c0>\nWith Appeal you can convey your intent to\nother PCs. Use it to ask for cooperation\nor call for help.\n
 e94227248b	Owner's Private Room
 e9c17c5efc	  /  \nI've come to think of this plant as my\nwife reborn. If I can grant her wish, my\nsorrow might ease.\n
 e9fcf44484	It is deeply regrettable that such measures\nare needed. Keep up firm management and\nwork sincerely.\n                  Station Master\n
 eb247fb5f7	Items moved:\nCabinet with number lock x 2\n\n(1) 2F S.T.A.R.S. Office\n  -> 1F East Office\n         No. "<c1>6249<c0>"\n
-eb27d3c009	<c1>[Special Action 1:\n                      Backstep]<c0>\n(Press the X button while holding R1)\nQuickly pull back and dodge an attack.\n
-eb4759015a	<c1>[Added Appeal: SORRY]<c0>\nPress the square button while holding L2 to\nsay a message meaning "I'm sorry". Use it\nafter an unexpected mistake.\n
+eb27d3c009	<c1>[Special Action 1:\n                      Backstep]<c0>\n(Press Cancel while holding Ready)\nQuickly pull back and dodge an attack.\n
+eb4759015a	<c1>[Added Appeal: SORRY]<c0>\nPress Ad-lib while holding Appeal Shift to\nsay a message meaning "I'm sorry". Use it\nafter an unexpected mistake.\n
 eb5d58450d	Apple Inn, Front Lobby
 ec0dee3f0d	Joseph's Notebook
 ec15446049	5/24\n  08:30 Hearty appetite\n  17:00 Hearty appetite\n5/25\n  08:30 Hearty appetite\n  17:00 Hearty appetite\n
@@ -832,13 +832,13 @@ f004a6df1b	Underground Emergency Passage
 f04cb62a86	To Citizens\nAn important notice from the Raccoon police.\nRiots and looting are occurring all over the\ncity and the situation is very dangerous.\n
 f10a8384d4	Office Key
 f1be8f4f04	A very sturdy board\nSeems useful for blocking doors
-f1f3b7f514	<c1>[About the Map 1]<c0>\nOpen the map screen with the triangle button\nto see rooms you've already visited. With a\nmap in hand you can see all rooms' info.\n
+f1f3b7f514	<c1>[About the Map 1]<c0>\nOpen the map screen with Map to see rooms\nyou've already visited. With a map in hand\nyou can see all rooms' info.\n
 f21e2e1e64	  Seized ammo 2000 and customer file 4\n  Sept 11 -> AMB\n                  XXXXXX\n(The erased part reads "B. IRONS")\n
 f22c23db3d	Jean's Memo
-f2e63ea46a	<c1>[Special Action 1:\n                    Play Dead]<c0>\n(Keep pressing R1 and X)\nCollapse on the spot and enemies won't\nnotice you. The virus spreads faster during\nit, so don't overdo it.\n
+f2e63ea46a	<c1>[Special Action 1:\n                    Play Dead]<c0>\n(Keep holding Ready and Cancel)\nCollapse on the spot and enemies won't\nnotice you. The virus spreads faster during\nit, so don't overdo it.\n
 f2edf38caa	-
 f31b5d616d	The district will soon become a sealed zone\nand civilian entry will be restricted.\nPlease understand, follow instructions and\nact quickly.\n   Raccoon Police Acting Chief\n       Raymond Douglas\n
-f320879590	If no weapon is equipped, press the circle\nbutton in the attack stance to tackle.\nAlso press circle while holding down on the\ndirectional keys (left stick) to do a low kick.\n
+f320879590	If no weapon is equipped, press Action in\nthe attack stance to tackle. Also press\nAction while moving down in the stance to\ndo a low kick.\n
 f32727757b	Reception
 f393da7cd2	\n  The <c1>nap room<c0> chairs are too cheap.\n\n  At least a <c1>SOFA<c0>, please.\n
 f39e2bdda7	August 30, 1996\n  Another prison break attempt at Douglas Prison\nEarly today, the 4th break attempt this year\noccurred at Douglas Prison, long noted for\nits outdated security and aging buildings.\n
@@ -867,7 +867,7 @@ fb05f789a1	Mark Wilkins\n\nJob: Security guard\nWorks for a city security firm. 
 fb23070e37	April 2, 1998\n  High toxins found in sewers\nA citizens' environmental survey team ran\nits own water tests and said toxins far\nabove limits were found in the city's main\nrivers and sewers.\n
 fb33755ba8	<c1>[Traits]<c0>\nA character of average physical ability, not\nreally suited to fighting. But with her drug\nmixing and surprisingly evasive special\nactions she can explore for a long time.\n
 fb94b810f7	Rusty Key
-fbcb5d6aef	Once you get a key, stand the player before\nthe door to open, press START to open the\nstatus screen, put the cursor on the key and\npress circle to show the command list.\n
+fbcb5d6aef	Once you get a key, stand the player before\nthe door to open, press Status to open the\nstatus screen, put the cursor on the key and\npress Confirm to show the command list.\n
 fbefddb1dc	3/14\n  22:00 Subject given T-JCCC 203\n  08:30 Change found in cancer cells\n3/15\n  17:00 Cancer cells vanished\n
 fc039e30d7	Cargo No.  CBL-090092\nContents: organic specimen\nStorage period: 48 hours\nStorage conditions: temp -15 to +45C\n          humidity 5-85% RH\n          pressure 86-106 kPa\n
 fc3cf1b3d1	Removing it needs specialist skill, but if\nunavoidable, strike it from afar and set it\noff beforehand. Be very careful not to enter\nthe blast range.\n

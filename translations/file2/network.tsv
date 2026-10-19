@@ -96,13 +96,13 @@ d2db4b6d05	and there's still no response,
 bd9caeff37	Please wait a while
 1e31742f40	Check that the modem's
 14de86d294	settings are right
-264f9eee64	Choose the MEMORY CARD slot
-61c8199f23	to save the game data to
+264f9eee64	Choose where to save
+61c8199f23	the game data
 f2dfd54c9c	Your online records are on
 00413d695a	the status screen
-4b94bea662	X button = Cancel
-ad47b48529	MEMORY CARD slot 1
-c9a241268b	MEMORY CARD slot 2
+4b94bea662	Back = Cancel
+ad47b48529	Save slot 1
+c9a241268b	Save slot 2
 306bf40117	Looking for an opponent
 2aaca46b1b	Please wait
 09b44f0d3b	The download is complete
@@ -120,7 +120,7 @@ ab4ce19d6a	Registration complete
 16a6b526fd	Your Capcom ID is
 c47e76f7a0	.
 df9075381a	Connecting to the server
-64bdf4b326	Hold START for 1 second or more
+64bdf4b326	Hold Start for 1 second or more
 d0f43982f3	to cancel
 6f99715876	Do you agree to the latest
 5eb6c46c0b	terms of use?
@@ -133,10 +133,10 @@ f96889983f	server it costs 10 yen per 3 min
 7a8bbc9432	it costs 13 yen per minute
 f46d1ee246	Connect to the Multi
 f426a99b0a	Matching server?
-4222135243	MEMORY CARD slot %s: checking the
-750818e294	"PlayStation 2" Memory Card (8MB)
-0f88d92f21	Don't switch off the power or remove
-79df472608	the "PlayStation 2" Memory Card (8MB)
+4222135243	Slot %s: checking
+750818e294	the save data
+0f88d92f21	Don't quit or switch off the power
+79df472608	while the save data is in use
 8bfcf2b1d0	Could not load properly
 543e5c8c5e	Controls
 f8538dad53	D-pad       : Move
@@ -153,11 +153,11 @@ eb63aedb9e	START       : Close
 f163830f71	Register this ID?
 eff21a632c	Returning to the title screen
 7bca6ea30e	Disconnect the line?
-f3f5daf520	Saving the system file to
-1bd62de9bd	the Memory Card (8MB)
-ced82658fd	Saving the NET file to
+f3f5daf520	System file:
+1bd62de9bd	Saving...
+ced82658fd	NET file:
 4db3efc6c5	Could not save properly
-4fccbb6f84	Press the circle button
+4fccbb6f84	Press Confirm
 e7444e830a	Talking to the Capcom server
 7d87367233	No modem was found
 1511a8f16c	Check that the modem is attached
@@ -182,14 +182,14 @@ ef28a9c450	for maintenance
 6297b9e8cf	so the line was cut
 d5e0223dd4	A connection fault occurred
 e6358d89a4	Ending the match; back to the lobby
-a8a1c51031	MEMORY CARD slot %s has no "PlayStation 2"
-c9ae64d89e	Memory Card (8MB) inserted
-ac1476dedc	Insert the card with your NET file,
-e858eb9e00	into MEMORY CARD slot %s
-efd0f014d4	Circle = Don't save
-d518dd9a87	Insert into MEMORY CARD slot %s a
-3b73b23ee9	"PlayStation 2" Memory Card (8MB)
-6a70f3f031	with 123 KB or more free
+a8a1c51031	Slot %s:
+c9ae64d89e	No save data
+ac1476dedc	Your NET file must be in the
+e858eb9e00	(slot %s)
+efd0f014d4	Confirm = Don't save
+d518dd9a87	Slot %s needs save space
+3b73b23ee9	with 123 KB or more free
+6a70f3f031	for the save data
 72a0bb9259	Change the registered details?
 0842cbd20d	A NET file can be shared by
 cfb3ad1bfe	the games that support it
