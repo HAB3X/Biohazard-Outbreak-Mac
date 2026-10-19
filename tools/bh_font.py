@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""The games' text fonts and their PS2 button glyphs: the text's ○ × △ □ (in menus, messages and the English's {circle}
+{cross} {triangle} {square}, see bh_text.english_bytes) are characters of the font, so for the keyboard and mouse the font's
+cells for them show the keys instead (a variant-1 range of the disc patch; the gamepad's variant 2 keeps the PS2 symbols).
+
+    bh_font.py GAME show OUT.png      the four glyphs of each font, as they are and with the keys (8x)
+
+The fonts (config/translate.toml's `fonts`, romdata.afs members): 7808 glyphs of 20x20 pixels, 2 bits each (4 levels, the
+first pixel in a byte's top bits), 100 bytes a glyph, in JIS X 0208 order (row - 1) * 94 + (cell - 1); evidence: glyph 84 is
+'&' (JIS 0x2175) and the symbols around it are JIS row 1's and 2's (docs/research/renderer.md 2.5 has the font's descriptor).
+"""
+import sys
+from pathlib import Path
+
+from PIL import Image, ImageDraw
+
+import bh_archive as archive
+import bh_pictures as pictures
+import bh_sources as sources
+
+CELL, GLYPH = 20, 100
+SYMBOLS = {"circle": 0x217B, "cross": 0x215F, "triangle": 0x2224, "square": 0x2222}  # ○ × △ □ in JIS X 0208
+
+
+def index(jis):
+    return ((jis >> 8) - 0x21) * 94 + (jis & 0xFF) - 0x21
+
+
+def decode(raw):
+    img = Image.new("L", (CELL, CELL))
+    img.putdata([(raw[k // 4] >> (6 - 2 * (k % 4)) & 3) * 85 for k in range(CELL * CELL)])
+    return img
+
+
+def encode(img):
+    levels = [min(3, (v + 42) // 85) for v in img.getdata()]
+    return bytes(levels[i] << 6 | levels[i + 1] << 4 | levels[i + 2] << 2 | levels[i + 3] for i in range(0, len(levels), 4))
+
+
+def key_glyph(label):
+    """A key cap in a cell: a rounded frame at the middle level and the key's name at full brightness, drawn 4x and scaled
+    down (the 4 levels give it some smoothing)."""
+    big = Image.new("L", (CELL * 4, CELL * 4), 0)
+    d = ImageDraw.Draw(big)
+    d.rounded_rectangle([2, 10, CELL * 4 - 3, CELL * 4 - 7], radius=12, outline=150, width=5)
+    rgba = pictures.draw_text(Image.new("RGBA", big.size, (0, 0, 0, 0)), (10, 18, CELL * 4 - 10, CELL * 4 - 14), label,
+                              "arialnarrow" if len(label) > 1 else "arial", None, (255, 255, 255, 255), None, "center")
+    big.paste(255, (0, 0), rgba.split()[3].point(lambda a: 255 if a > 100 else 0))
+    return big.resize((CELL, CELL), Image.LANCZOS)
+
+
+def fonts(arc, game):
+    return [(name, arc.open("/NETBIO00.DAT/" + name)) for name in sources.settings(game).get("fonts", [])]
+
+
+def patches(arc, game):
+    """[(disc offset, bytes, variant)]: each font's four button glyphs, the keyboard's keys (1) and the original (2)."""
+    keys = pictures.key_names(game)
+    out = []
+    for name, node in fonts(arc, game):
+        if node.size != 7808 * GLYPH:
+            raise ValueError(f"{name}: {node.size} bytes, not a 7808-glyph font")
+        for button, jis in SYMBOLS.items():
+            at = index(jis) * GLYPH
+            out.append((node.offset + at, encode(key_glyph(keys[("menus", button)])), 1))
+            out.append((node.offset + at, node.read(at, GLYPH), 2))
+    return out
+
+
+def main(argv):
+    if len(argv) != 4 or argv[2] != "show":
+        print(__doc__)
+        return 1
+    arc = archive.Archive(argv[1])
+    keys = pictures.key_names(argv[1])
+    found = fonts(arc, argv[1])
+    sheet = Image.new("L", (CELL * 8 * 8, CELL * 8 * len(found)), 40)
+    for row, (name, node) in enumerate(found):
+        for col, (button, jis) in enumerate(SYMBOLS.items()):
+            original = decode(node.read(index(jis) * GLYPH, GLYPH))
+            keyed = decode(encode(key_glyph(keys[("menus", button)])))
+            for k, img in enumerate((original, keyed)):
+                sheet.paste(img.resize((CELL * 8, CELL * 8), Image.NEAREST), ((col * 2 + k) * CELL * 8, row * CELL * 8))
+    sheet.save(argv[3])
+    print(f"{len(found)} fonts -> {argv[3]}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

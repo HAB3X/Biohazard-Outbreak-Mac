@@ -62,10 +62,17 @@ def cells(raw):
     return sum(2 if ord(c) > 0xFF else 1 for c in TAG.sub(b"", raw).decode("cp932"))
 
 
+# The PS2 buttons the English may name as the font's own symbols (Shift-JIS ○ × △ □), which show the keyboard's keys when the
+# keyboard is used (bh_font.py): written {circle} {cross} {triangle} {square} in the translations
+BUTTON_GLYPHS = {"{circle}": b"\x81\x9b", "{cross}": b"\x81\x7e", "{triangle}": b"\x81\xa2", "{square}": b"\x81\xa0"}
+
+
 def english_bytes(text, original):
-    """The bytes of an English line: plain ASCII, with the control tags and the end marker of the Japanese it replaces. A Japanese line that
-    ends in spaces (a field's width: the choices' place, a column) keeps its width: the English is padded to it."""
-    raw = text.replace("\\n", "\n").encode("ascii")
+    """The bytes of an English line: plain ASCII (and the button symbols of BUTTON_GLYPHS), with the control tags and the end
+    marker of the Japanese it replaces. A Japanese line that ends in spaces (a field's width: the choices' place, a column)
+    keeps its width: the English is padded to it."""
+    parts = re.split(r"(\{(?:circle|cross|triangle|square)\})", text.replace("\\n", "\n"))
+    raw = b"".join(BUTTON_GLYPHS[p] if p in BUTTON_GLYPHS else p.encode("ascii") for p in parts)
     if tags(raw) != tags(original):
         raise ValueError(f"control tags {tags(raw)} differ from the original's {tags(original)}")
     for marker in LINE_MARKERS:  # ▼ (wait for a button) or a full-width space ends a line: kept, so the English leaves it out

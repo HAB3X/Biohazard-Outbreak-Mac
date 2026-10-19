@@ -9,6 +9,8 @@ base = 0xFFE00
 # demos' subtitles), spmNNNNNN.bin (the characters' speech)
 message_archives = "/NETBIO00.DAT/r0*.afs"
 message_files = '^(r\d{3}|dm\d{3}|spm\d{6})\.bin$'
+# The text fonts (tools/bh_font.py): their button glyphs drawn as the keyboard's keys for the keyboard and mouse
+fonts = ["romdata.afs/d20go04.bin", "romdata.afs/d20le04.bin"]
 # The programs' other strings, as File 1's overlay_pools (see there; "elf" is the executable). Regions found by listing the
 # strings of each data section and keeping the runs of text; left out on purpose: the network overlay's kana tables (the name
 # entry's keyboard, its romaji to kana table), its font table at 0xA4F00 and a test name at 0xB9FC0
@@ -98,6 +100,9 @@ base = 0xFFE00
 message_files = '^(r\d{3}|dm\d{3}|spm\d{6})\.bin$'
 # The same Japanese line in both games is one unit: File 2's English is used for it unless File 1's translations have it
 fallback = "file2"
+# The item and message files (tools/bh_itemmsg.py)
+item_msg = true
+fonts = ["romdata.afs/d20go04.bin", "romdata.afs/s20le04.bin"]
 # The overlays' own pools (file offsets in the overlay; each region runs from its first string to the next data that isn't
 # a string, found by listing the strings of the overlay's data). Many of their strings are reached by code, not pointers:
 # those are translated in place
@@ -109,7 +114,7 @@ overlay_pools = [
     { file = "PROG/SINGLE.BIN", region = [0x1B6D0, 0x1B780], in_place = true },   # results
     { file = "PROG/NETAQ.BIN", region = [0x4BE0, 0x5340], in_place = true },      # the network game's event log
     { file = "PROG/NETWK.BIN", region = [0x9F2D0, 0x9F44C], in_place = true },    # network: chat phrase labels
-    { file = "PROG/NETWK.BIN", region = [0xA1A7D, 0xA2FA0], in_place = true },    # network: error pages and dialogs
+    { file = "PROG/NETWK.BIN", region = [0xA1A80, 0xA2FA0], in_place = true },    # network: error pages and dialogs
     { file = "PROG/NETWK.BIN", region = [0xAD638, 0xAD6F0], in_place = true },    # network: server list
     { file = "PROG/NETWK.BIN", region = [0xAD960, 0xB2D80], in_place = true },    # network: lobby messages, menus
     { file = "PROG/NETWK.BIN", region = [0xB4118, 0xB4150], in_place = true },

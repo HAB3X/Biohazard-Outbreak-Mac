@@ -1,10 +1,12 @@
-"""Where a game's translatable text is on the disc: the programs' string pools, the stage message files, the pit files, the
-programs' inverted lines and the network browser's pages (config/translate.toml). Used by bh_extract.py and bh_build_patch.py, so what one finds the other rewrites."""
+"""Where a game's translatable text is on the disc: the programs' string pools, the stage message files, the pit files,
+File 1's item and message files, the programs' inverted lines and the network browser's pages (config/translate.toml). Used by
+bh_extract.py and bh_build_patch.py, so what one finds the other rewrites."""
 import re
 import struct
 import tomllib
 
 import bh_archive as archive
+import bh_itemmsg as itemmsg
 import bh_pit as pit
 import bh_text as text
 
@@ -91,6 +93,24 @@ def pit_entries(arc, game):
     return out
 
 
+def item_msg_entries(arc, game):
+    """[(name, Node, entry offset, SlotTable or DocChain)] of the text of File 1's item and message files (bh_itemmsg), in
+    romdata.afs and in the stage archives; [] for a game whose config doesn't ask for them."""
+    if not settings(game).get("item_msg"):
+        return []
+    members = list(arc.open("/NETBIO00.DAT/romdata.afs").members())
+    for name, stage in arc.open("/NETBIO00.DAT").members():
+        if re.fullmatch(r"r\d{3}\.afs", name):
+            members += stage.members()
+    out = []
+    for name, node in members:
+        if not name.lower().endswith(".dat") or node.size > 0x80000:
+            continue
+        for offset, table in itemmsg.tables(name, node.read()):
+            out.append((name, node, offset, table))
+    return out
+
+
 def program_inverted(arc, game):
     """[(file name, Node, offset, SlotTable)] of the programs' inverted Shift-JIS lines (as in the pit files; config
     `inverted`)."""
@@ -113,5 +133,6 @@ def html_pages(arc, game):
 
 
 def table_entries(arc, game):
-    """Every container rebuilt in its own bytes: the pit files' entries, the programs' inverted lines, the browser's pages."""
-    return pit_entries(arc, game) + program_inverted(arc, game) + html_pages(arc, game)
+    """Every container rebuilt in its own bytes: the pit files' entries, File 1's item and message files, the programs'
+    inverted lines, the browser's pages."""
+    return pit_entries(arc, game) + item_msg_entries(arc, game) + program_inverted(arc, game) + html_pages(arc, game)

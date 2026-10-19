@@ -5,19 +5,26 @@
 
 TRANSLATIONS_DIR (default translations/GAME) holds *.tsv files: unit id, TAB, the English line ("\\n" for a line break), and
 optionally TAB, a note. Units without a translation stay Japanese. Every line is checked: ASCII only, the Japanese's control
-tags kept, and what is rebuilt must fit its container (an error names what does not). It ends with the coverage: per kind
-of container, how many of its units are translated. A game whose config names a `fallback`
-game uses that game's English for the lines both games share and its own folder doesn't translate.
+tags kept, and what is rebuilt must fit its container (an error names what does not). A game whose config names a `fallback`
+game uses that game's English for the lines both games share and its own folder doesn't translate. The pictures of
+translations/GAME/pictures.toml are redrawn too (bh_pictures.py), and the fonts' button glyphs drawn as keys (bh_font.py). It
+ends with the coverage: per kind of container, how many of its units are translated.
+
+The patch is version 2 of the runtime's disc patch: "DPAT", u32 2, u32 count, then per range u64 disc offset, u32 length, u32
+variant (0 always; 1 laid while the keyboard and mouse are the device used last, 2 while a gamepad is: a picture with the
+PS2's buttons drawn on it has both, at the same offset and size), the bytes.
 """
 import struct
 import sys
 from pathlib import Path
 
 import bh_archive as archive
+import bh_font as font
+import bh_pictures as pictures
 import bh_sources as sources
 import bh_text as text
 
-MAGIC = 0x54415044  # "DPAT"
+MAGIC = 0x54415044  # "DPAT", version 2: each range has a variant (0 always, 1 keyboard and mouse, 2 gamepad)
 
 
 def load_translations(folder, units, fallback=None):
@@ -85,6 +92,14 @@ def changed_runs(old, new, gap=16):
     return runs
 
 
+def check_overlaps(patches):
+    """Sorts the ranges; two may cover the same bytes only as the two devices' variants of one range (same offset and size)."""
+    patches.sort(key=lambda p: (p[0], p[2]))
+    for (a, da, va), (b, db, vb) in zip(patches, patches[1:]):
+        if a + len(da) > b and not (a == b and len(da) == len(db) and {va, vb} == {1, 2}):
+            raise SystemExit(f"two changes overlap at disc offset {b:#x}")
+
+
 def main(argv):
     if len(argv) not in (3, 4):
         print(__doc__)
@@ -110,7 +125,8 @@ def main(argv):
     for name, _, _, table in pits:
         found = table.texts()
         units.update(found)
-        kind = "html" if isinstance(table, text.HtmlPage) else "pit" if name.lower().startswith("pit_") else name
+        kind = ("html" if isinstance(table, text.HtmlPage) else "pit" if name.lower().startswith("pit_")
+                else "item files" if name.lower().endswith(".dat") else name)
         kinds.update({u: kind for u in found if u not in kinds})
     fallback = sources.settings(game).get("fallback")
     new, kept = load_translations(folder, units, fallback and archive.REPO / "translations" / fallback)
@@ -136,17 +152,17 @@ def main(argv):
                 except text.DoesNotFit as e:
                     raise text.DoesNotFit(f"{name}: {e}")
                 patches += [(node.offset + offset + off, data) for off, data in changed_runs(table.entry, rebuilt)]
-    except text.DoesNotFit as e:
+        patches = [(off, data, 0) for off, data in patches] + pictures.patches(arc, game) + font.patches(arc, game)
+    except (text.DoesNotFit, pictures.DoesNotFit) as e:
         raise SystemExit(f"does not fit: {e}")
-    patches.sort(key=lambda p: p[0])
-    for (a, da), (b, _) in zip(patches, patches[1:]):
-        if a + len(da) > b:
-            raise SystemExit(f"two changes overlap at disc offset {b:#x}")
+    check_overlaps(patches)
     with open(out_path, "wb") as f:
-        f.write(struct.pack("<III", MAGIC, 1, len(patches)))
-        for off, data in patches:
-            f.write(struct.pack("<QI", off, len(data)) + data)
-    print(f"{len(new)} of {len(units)} units translated; {len(patches)} ranges, {sum(len(d) for _, d in patches)} bytes -> {out_path}")
+        f.write(struct.pack("<III", MAGIC, 2, len(patches)))
+        for off, data, variant in patches:
+            f.write(struct.pack("<QII", off, len(data), variant) + data)
+    keyed = sum(1 for p in patches if p[2])
+    print(f"{len(new)} of {len(units)} units translated; {len(patches)} ranges ({keyed} for one device), "
+          f"{sum(len(p[1]) for p in patches)} bytes -> {out_path}")
     print("\n".join(coverage(kinds, new, kept)))
     return 0
 
