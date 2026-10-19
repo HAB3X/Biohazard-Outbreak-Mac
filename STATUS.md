@@ -46,6 +46,15 @@ Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its
   music and the menu's confirm sounds (a burst at each START/CROSS press); no clipping. File 1 boots with the driver and is
   audible too. Not yet judged by ear: the waveform and levels are sane but the mix against the real console isn't compared.
 
+## Integration, 2026-10-20
+
+The open branches are merged: the runtime's `biohazard` has `biohazard-translate` (--patch) and `biohazard-input` (latched
+presses, Escape bound by the game, the pointer over menus); the game's `main` has `translate` and `input`. Before this, main's
+`./run.sh file2 --english` asked the runtime for --patch, which only those branches had. Checked on the merged build: File 2
+with `--english` goes from boot through the title, main menu, scenario/character/partner select (English bios) into the
+Training Ground (menus 30 fps, the room 30 once loaded, the load ~21); File 1 to its Outbreak scenario's opening cutscene
+(median 30 fps); both with sound, no fatal. Recompiler tests pass.
+
 ## English patch (branch `translate`, runtime `biohazard-translate`)
 
 `./run.sh file2 --english` builds `build/english-file2.patch` from your disc and `translations/file2/*.tsv` (my own English,
