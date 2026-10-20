@@ -117,9 +117,11 @@ int CurrentMode()
     uint32_t count = Word(g_layout.taskCount);
     if (HasTask(g_layout.gameTask))
     {
-        if (count > 2)
+        // The status task (the status screen, the map, the pause) is the game's menu over play; other tasks over it are
+        // play's own (File 1's 0x6B7020 while a zombie holds the player, who shakes it off with the stick and buttons)
+        if (HasTask(g_layout.statusTask))
         {
-            return HasTask(g_layout.statusTask) && (Word(g_layout.statusKind) & 0xFF) == StatusKindPause ? Pause : Menus;
+            return (Word(g_layout.statusKind) & 0xFF) == StatusKindPause ? Pause : Menus;
         }
         // a scene the game plays itself in its play loop (File 1's opening credits) is the title's: Escape skips it
         bool scene = HasTask(g_layout.cutsceneTask) ||
@@ -526,8 +528,8 @@ void Vblank()
     if (mode != lastMode)
     {
         uint32_t count = std::min<uint32_t>(Word(g_layout.taskCount), 8);
-        Ps2::Log("controls: %s (tasks %u: %08x %08x, title state %u)", Modes[mode], count, count > 0 ? Word(g_layout.taskList) : 0,
-                 count > 1 ? Word(g_layout.taskList + 4) : 0, Word(g_layout.titleState));
+        Ps2::Log("controls: %s (tasks %u: %08x %08x %08x, title state %u)", Modes[mode], count, count > 0 ? Word(g_layout.taskList) : 0,
+                 count > 1 ? Word(g_layout.taskList + 4) : 0, count > 2 ? Word(g_layout.taskList + 8) : 0, Word(g_layout.titleState));
         lastMode = mode;
     }
     static bool spaced = false;
