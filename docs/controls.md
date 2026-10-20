@@ -57,5 +57,8 @@ Escape, Return, Space, E or Tab is START: it skips movies and cutscenes and star
 
 Found by memory diffs during play (`--control ram`): the task list and its count, the game, cutscene, title, select and status
 screen tasks, the title menu's cursor, the status screen's tab, item cursor (moving by a slot's 0x98 bytes) and item-actions
-flag (0x1C after the cursor). File 1's select screens aren't a task of the list (it's empty there), so the wheel turns them as
-a list.
+flag (0x1C after the cursor). File 1's select screens aren't a task of the list (it's empty there): the title overlay's
+state (its address at 0x3065FC; DEMO.BIN's dispatcher at 0x543050 switches on its byte 4) says 8 on the scenario select and
+9 on the character select, so the wheel and the side and arrow clicks step them as in File 2 (the cards and arrows are where
+File 2 has them). The word File 1's layout calls titleState (0x23BA68) is a count of the title's live objects (the code at
+0x19E140 counts a pool of 512), 3 on the title menu: it tells the title menu apart only because that count is 3 there.

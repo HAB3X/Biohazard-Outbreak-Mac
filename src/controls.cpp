@@ -228,8 +228,28 @@ void Aim(Goal goal, int target, bool confirm)
 const Box ScenarioCurrent = {0.375f, 0.39f, 0.195f, 0.20f};
 const Box SelectArrows[2] = {{0.049f, 0.376f, 0.045f, 0.06f}, {0.951f, 0.376f, 0.045f, 0.06f}};
 
-bool InScenarioSelect() { return g_layout.scenarioTask != 0 && HasTask(g_layout.scenarioTask); }
-bool InSelect() { return (g_layout.selectTask != 0 && HasTask(g_layout.selectTask)) || InScenarioSelect(); }
+// File 1's selects run with the task list empty, the title overlay's screen byte saying which
+constexpr uint8_t ScreenScenarioSelect = 8, ScreenCharacterSelect = 9;
+
+int TitleScreen()
+{
+    if (g_layout.screenState == 0 || Word(g_layout.taskCount) != 0)
+    {
+        return -1;
+    }
+    uint32_t state = Word(g_layout.screenState) & 0x1FFFFFF;
+    return state != 0 ? *Ps2::EeMemory(state + 4) : -1;
+}
+
+bool InScenarioSelect()
+{
+    return (g_layout.scenarioTask != 0 && HasTask(g_layout.scenarioTask)) || TitleScreen() == ScreenScenarioSelect;
+}
+bool InCharacterSelect()
+{
+    return (g_layout.selectTask != 0 && HasTask(g_layout.selectTask)) || TitleScreen() == ScreenCharacterSelect;
+}
+bool InSelect() { return InCharacterSelect() || InScenarioSelect(); }
 
 // A click on a select: the step it asks for (Left, Right) or 0 for none
 uint32_t SelectStep(float x, float y)
@@ -238,7 +258,7 @@ uint32_t SelectStep(float x, float y)
     {
         return x < ScenarioCurrent.x ? Left : Right;
     }
-    if (g_layout.selectTask != 0 && HasTask(g_layout.selectTask))
+    if (InCharacterSelect())
     {
         for (int n = 0; n < 2; n++)
         {
@@ -443,6 +463,7 @@ const Layout File2 = {.taskCount = 0x24ad3c,
                       .baseTask = 0x1b3fa0,
                       .selectTask = 0x554870,
                       .scenarioTask = 0x553420,
+                      .screenState = 0,
                       .titleState = 0x24ac70,
                       .statusTask = 0x6c8fa0,
                       .titleCursor = 0x8bfe4c,
@@ -455,7 +476,8 @@ const Layout File2 = {.taskCount = 0x24ad3c,
 
 // File 1's (found by memory diffs: the title menu's cursor stepping 0-1-2-1, the status screen's tab 0-1-2-1-0, its item cursor
 // moving by the slots' stride with Right and Down, the item popup's byte 0x1C after it as in File 2: 1 while the actions are up).
-// Its selects aren't a task of the list (the list is empty there), so the wheel turns them as a list
+// Its selects aren't a task of the list (the list is empty there): the title overlay's screen byte says which (found by memory
+// diffs of the title menu, the scenario and character selects and the difficulty, then DEMO.BIN's code read)
 const Layout File1 = {.taskCount = 0x23bb30,
                       .taskList = 0x29b0d0,
                       .gameTask = 0x341b80,
@@ -463,6 +485,7 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .baseTask = 0x1b3400,
                       .selectTask = 0,
                       .scenarioTask = 0,
+                      .screenState = 0x3065fc,
                       .titleState = 0x23ba68,
                       .statusTask = 0x6b9450,
                       .titleCursor = 0x90d1cc,

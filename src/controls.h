@@ -24,6 +24,9 @@ struct Layout
     uint32_t baseTask;      // the executable's own loop (movies, the title and loading, and under the game)
     uint32_t selectTask;    // the character, partner and difficulty selects
     uint32_t scenarioTask;  // the scenario select (0: not found)
+    // Where the selects aren't tasks (File 1): a word holding the address of the title overlay's state, whose byte 4 says the
+    // screen (DEMO.BIN's dispatcher at 0x543050 switches on it: 8 the scenario select, 9 the character select; 0: none)
+    uint32_t screenState;
     uint32_t titleState;    // a word: 0 a movie, 2 the title's "PRESS START", 3 its menu (single play, collection, options...)
     uint32_t statusTask;    // the status screen
     uint32_t titleCursor;   // the title menu's item (a word, 0 the first)
