@@ -39,6 +39,45 @@ your disc image (local.json) plus `translations/<game>/*.tsv` (unit id, TAB, my 
 - Tags checked to be kept: `<p1>`-style codes, markup with attributes (`<SIZE=3>`, `<font color=...>`), printf codes
   (`%s %2d %1`). `<br>` is layout and free. A unit is one Japanese string wherever it occurs: its English must fit every place.
 
+## Where the text is (File 1; `./run.sh file1 --english`)
+- The same containers as File 2, found the same way (config/translate.toml `[file1]`): the executable SLPM_654.28's pool
+  0x132440-0x134C88 (the same pointer-table kind), its strings outside it (`elf`: the scenarios' short names, the browser's
+  buttons), the overlays PROG/DEMO.BIN (title menus, options, records, gallery), GAME.BIN (results, save, pause, item use),
+  SINGLE.BIN, NETAQ.BIN (the network game's event log) and NETWK.BIN (lobby, network settings, error pages, chat phrases),
+  the stage message files (r001 r002 r028 r035 r041), the browser's pages (rfff.afs, the same pages as File 2's).
+- Item and message files instead of the pit files (tools/bh_itemmsg.py): in romdata.afs and the stage archives, inverted
+  Shift-JIS in fixed fields: `itmsg` (item names and descriptions, 0x40 records), `spitem` (SP items: name 0x14, description
+  0xEC), `evelist`/`newfact` (goals, new-feature notices), `dlmsg` (loading-screen captions), the map files (room and floor
+  names), and `fileNNN.dat` (FILE documents, as File 2's DocChain). English must fit each field.
+- File 2's English is the fallback (config `fallback`): a unit with the same Japanese in both games takes File 2's line unless
+  translations/file1 has it; File 1's own overrides are mostly shorter lines for its smaller slots and device-neutral wording
+  (translations/file1/devices.tsv: save data instead of the memory card, the font's button glyphs instead of button names).
+- NETWK.BIN: the in-place strings must fit their slots; the error page at 0xA1A80 starts after 3 bytes of a binary table
+  (the region begins there). Left Japanese on purpose: the software keyboard's rows, the romaji-to-kana table, the kana
+  dakuten tables, digit tables.
+
+## Pictures (both games; tools/bh_pictures.py, tools/bh_sld.py, tools/tm2.py)
+Pictures with Japanese, and pictures with PS2 button icons, are redrawn at patch-build time from your disc (nothing of the
+game's art is in the repository): translations/<game>/pictures.toml and translations/pictures-shared.toml give the boxes to
+erase (clear, inpaint for text on photos, a fill) and the English to draw (macOS system fonts at build time, or the runtime's
+Fredoka/Luckiest Guy). File 1's .tex are LZ-compressed TIM2 streams (bh_sld), File 2's MOMO containers of them; an edited
+picture is quantised back to its own palette (unchanged pixels keep their bytes) and recompressed, and must not grow.
+A picture with PS2 buttons gets two variants (disc patch version 2: variant 1 laid while the keyboard and mouse were used last,
+2 while a gamepad was): the gamepad's keeps the PS2 symbols, the keyboard's draws key caps with the keys of bindings.txt (or
+src/controls.cpp's defaults). The text fonts' four symbol glyphs (in-text ○ × △ □, and the English's {circle} {cross}
+{triangle} {square}) get the same two variants (tools/bh_font.py: E, Esc, Spc, F by default).
+- Both: cockpit.tex (status screen button glyphs, the map's R1/L1, the item categories and map controls), Error.tm2 (network
+  error), lobby_00/03/05 (lobby buttons and hints, keys), Softkey.tm2, BS_SKIN.TM2 (browser button icons, keys), netwk.tex
+  (network menus' button icons, keys).
+- File 1: select.tex (scenario names, goals, the select screens' hint strip with keys; the five scenario cards), result.tex
+  (names, labels, hints with keys, the EXIT button), demo_com.tex (the violence warning, the ACCESS notice, the character log
+  tabs, the options' button icons with keys), lobby_01 (server and Capcom ID titles), player_00/01 (start message),
+  prize01 (AVAILABLE, button icons with keys), scr54_55...scr72_73 (the lobby's ten scenario cards).
+- File 2: select.tex (hint strip with keys, the twelve scenario cards), result.tex (labels, hints with keys, EXIT), init.tex
+  (ACCESS notice), lobby_01, lobby_15 (standby buttons), prize.tex (AVAILABLE; the collection's button icons with keys).
+- Left as they are: the options' controller picture and its button-name labels (they show the gamepad), the analog stick
+  icons, English art (PRESS START BUTTON, NOW LOADING, costume and gallery pictures).
+
 ## Tools
 - `bh_archive.py GAME ls|get|dump|where` : nested AFS access straight from the ISO.
 - `bh_extract.py GAME work/f2/extract` : all units to units.jsonl (work/ only).
@@ -60,6 +99,20 @@ your disc image (local.json) plus `translations/<game>/*.tsv` (unit id, TAB, my 
 | browser pages (html) | not extracted | 146 / 146 |
 | total | 20825 units extracted | 22026 / 22206 (180 kept on purpose, none left untranslated) |
 
+## Coverage (File 1, units translated / total, from bh_build_patch.py)
+| kind | translated |
+|---|---|
+| exe pool | 222 / 331 (109 kept: the handle-name word filter, save-data titles, full-width floor labels) |
+| elf (outside the pool) | 8 / 8 |
+| overlays DEMO, GAME, SINGLE, NETAQ | 445/446 (1 kept), 34/34, 1/1, 56/56 |
+| network overlay NETWK.BIN | 1157 / 1725 (568 kept: kana, keyboard and digit tables) |
+| item files (items, SP items, goals, notices, captions, maps, FILE documents) | 1431 / 1431 |
+| rooms | 1411 / 1412 (1 kept) |
+| subtitles | 675 / 675 |
+| speech | 7034 / 7034 |
+| browser pages (html) | 146 / 146 (File 2's English) |
+| total | 12620 / 13299 (679 kept on purpose, none left untranslated) |
+
 Kept Japanese on purpose (`-` in the TSVs) is counted apart; everything else has English.
 
 ## Checked in play (headless pictures of the English patch)
@@ -67,8 +120,14 @@ Title and single play menus, scenario select blurbs (Training, Wild Things), cha
 Things opening subtitle, the Training Ground (CHECK!, the task line, the FILE "About Training" document), the item window. The
 FILE and item windows' widths were measured there and every document and description rewrapped to them.
 
+File 1 (2026-10-20): the ACCESS notice, title and single play menus, scenario select (card, blurb, key-cap hints), character
+select and difficulty, the Outbreak opening subtitles, a speech line in the bar, the item window (names and descriptions), the
+status screen tabs, the pause menu (options with the font's key glyphs).
+
 ## Not checked in play
 - Speech lines (spm): the partners' lines did not come up in the scripted sessions; they use the bottom message line whose
   width was measured on room messages and subtitles.
+- File 1: room messages, FILE documents, loading captions, results (the room ran at about 5 frames a second here).
+- The gamepad variant of the pictures and glyphs (no gamepad here; its bytes are the disc's own).
 - The network screens and browser pages (the network doesn't run here), the endings (the epilogue lines fit their slots by
   the builder's check).
