@@ -28,6 +28,9 @@ struct Tunables
     float personalSpace = 200;   // an enemy this close to a partner that can't fight it (no loaded gun, or badly hurt) is
     float badlyHurt = 0.3f;      // stepped away from, unless it's on the player
     float evadeSlack = 1.6f;     // and on until it's this many times as far
+    uint32_t evadeCheckFrames = 30; // stepping away that gets less than evadeMinProgress in this long is given up for
+    float evadeMinProgress = 40;    // evadeBlockedFrames (a wall behind)
+    uint32_t evadeBlockedFrames = 60;
     float shootRange = 1300;     // a partner with a loaded gun shoots its enemy itself within this (the game's attack
                                  // routines wander and wait first)
     uint16_t aimTolerance = 0x0B00; // facing within this of the enemy (about 15 degrees) is on target
@@ -109,7 +112,10 @@ struct Memory
     bool following = false;   // coming back to the player (until followNear)
     int target = -1;          // the enemy being fought
     uint64_t lastLook = 0;    // the last item check asked for
-    bool evading = false;     // stepping away from an enemy
+    bool evading = false;     // stepping away from an enemy, since when and from where (to tell when it's getting nowhere)
+    uint64_t evadeSince = 0;
+    Vec evadeFrom{};
+    uint64_t evadeBlockedUntil = 0;
     int shotTarget = -1;      // the enemy being shot at, its hit points last frame, the presses since it last lost some
     int shotTargetHp = 0;
     uint32_t shotsMissed = 0;

@@ -293,6 +293,20 @@ void KeepsBackingAwayUntilClear()
     CHECK(DecideOnce(w, false, m, 102).pad == 0);
 }
 
+void GivesUpBackingIntoAWall()
+{
+    World w = Bar();
+    AddEnemy(w, 10, 1200, 1150, PartnerRecord); // 150 from the partner, which can't move (a wall behind it)
+    Memory m;
+    int evading = 0;
+    for (uint64_t frame = 100; frame < 100 + 60; frame++)
+    {
+        evading += DecideOnce(w, false, m, frame).pad != 0;
+    }
+    CHECK(evading == static_cast<int>(Defaults.evadeCheckFrames)); // then it stops for a while
+    CHECK(DecideOnce(w, false, m, 100 + 30 + Defaults.evadeBlockedFrames).pad != 0); // and tries again after
+}
+
 void BareHandsOnlyWhenNothingElseIsClose()
 {
     World w = Bar();
@@ -366,6 +380,49 @@ void StopsShootingWhatItCantHit()
     CHECK(presses == 20);
 }
 
+// The owner's rule: the partners leave the scenarios' puzzles and progress to the player. What a partner may pick up for
+// itself, by the item classes of File 1's bar (the class table dumped: each class's flags, its item number)
+void TakesOnlyConsumables()
+{
+    CHECK(Consumable(0x102041));  // Mark's handgun (0x191)
+    CHECK(Consumable(0x2481001)); // a pipe
+    CHECK(Consumable(0x100002));  // rounds (0xFA-0x106)
+    CHECK(Consumable(0x100400));  // a box of handgun rounds (0xC8, 0xD2)
+    CHECK(Consumable(0x40004));   // a green herb (0x12C)
+    CHECK(!Consumable(0x40));     // the characters' own items, files (0x192-0x1A1)
+    CHECK(!Consumable(0x8));      // event items (0x1C3)
+    CHECK(!Consumable(0x8000008));
+    CHECK(!Consumable(0x8040200)); // key items (0x2774-0x2776)
+    CHECK(!Consumable(0x10));     // 0x27A6
+    CHECK(!Consumable(0));        // no class
+}
+
+// Nothing the director asks of the game is a puzzle or event action: its intents are following, guarding and fighting, and
+// its item checks are the gun carried and the item check's look (whose pick-ups are filtered, TakesOnlyConsumables)
+void DecidesNoPuzzleActions()
+{
+    World w = Bar();
+    Memory m;
+    for (uint64_t frame = 0; frame < 2000; frame++)
+    {
+        if (frame == 500)
+        {
+            AddEnemy(w, 10, 1500, 1000, PlayerRecord);
+        }
+        if (frame == 1500)
+        {
+            w.characters[0].speech = static_cast<uint8_t>(Command::HelpMe);
+        }
+        const Decision d = DecideOnce(w, true, m, frame);
+        const bool known = d.intent == Intent::Free || d.intent == Intent::Follow || d.intent == Intent::Guard ||
+                           d.intent == Intent::Fight;
+        CHECK(known);
+        CHECK(d.items == ItemCheck::None || d.items == ItemCheck::TakeOutGun || d.items == ItemCheck::Look);
+        CHECK((d.pressed & ~Pad::Attack) == 0);                 // the only press is the attack
+        CHECK(d.pressed == 0 || (d.pad & Pad::Ready) != 0);      // and only with the weapon readied: never the action
+    }
+}
+
 void ADownedPartnerDecidesNothing()
 {
     World w = Bar();
@@ -395,10 +452,13 @@ int main()
     StepsAwayFacingTheRightWay();
     BacksAwayWithoutAGun();
     KeepsBackingAwayUntilClear();
+    GivesUpBackingIntoAWall();
     BareHandsOnlyWhenNothingElseIsClose();
     AimsThenFires();
     ShootsItsTargetItself();
     StopsShootingWhatItCantHit();
+    TakesOnlyConsumables();
+    DecidesNoPuzzleActions();
     ADownedPartnerDecidesNothing();
     if (g_failures != 0)
     {

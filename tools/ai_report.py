@@ -32,6 +32,7 @@ def parse(path, start, end):
         if t < start or t > end:
             continue
         fields["t"] = t
+        fields["raw"] = rest
         if kind == "S":
             samples.append(fields)
         elif kind == "E":
@@ -105,6 +106,10 @@ def command_response(samples, event):
     return out
 
 
+def consumable(event):
+    return int(event["class"], 16) & (0x1 | 0x2 | 0x400 | 0x800 | 0x4) != 0
+
+
 def report(samples, events):
     out = {"seconds": round(samples[-1]["t"] - samples[0]["t"], 1) if samples else 0, "partners": {}}
     attacks = [e for e in events if e["what"] == "attack"]
@@ -145,6 +150,12 @@ def report(samples, events):
         "heals": [f'{e["from"]}->{e["to"]}/{e["max"]}' for e in events if e["what"] == "heal" and int(e["c"]) == 0],
     }
     out["enemies"] = {"damage_other": credited.get("other", 0), "kills": kills}
+    # Pick-ups the item chooser made (src/partner_ai.cpp's PickItem): an item that isn't a weapon, ammunition or recovery item
+    # (class flags 1, 2/0x400/0x800, 4) taken by a partner is the player's puzzle or progress taken (the New AI refuses them)
+    picks = [e for e in events if e["what"] == "did" and "item" in e]
+    out["pickups"] = {"consumables": sum(1 for e in picks if consumable(e) and "allowed" in e["raw"]),
+                      "puzzle_items_taken": sum(1 for e in picks if not consumable(e) and "allowed" in e["raw"]),
+                      "puzzle_items_refused": sum(1 for e in picks if not consumable(e) and "refused" in e["raw"])}
     # The first enemy within THREAT of the player, and the first partner attack after it
     threat = next((s["t"] for s in samples if 0 <= float(s["pnear"]) < THREAT), None)
     answer = next((a["t"] for a in attacks if threat is not None and a["t"] >= threat), None)
@@ -157,7 +168,7 @@ def report(samples, events):
 
 
 # The numbers worth comparing between runs: a run's in one line, and the mean of several
-KEYS = [("player", "damage_taken"), ("player", "damage_2min"), ("player", "seconds_below_30pct"), ("player", "lowest_hp"), ("enemies", "kills")]
+KEYS = [("pickups", "puzzle_items_taken"), ("player", "damage_taken"), ("player", "damage_2min"), ("player", "seconds_below_30pct"), ("player", "lowest_hp"), ("enemies", "kills")]
 PARTNER_KEYS = ["far_share", "median_distance", "attacks", "hits", "rounds_used", "damage_dealt", "damage_taken", "stuck_seconds"]
 
 
@@ -203,6 +214,7 @@ def main():
         print(f"partner {c}: " + ", ".join(f"{k} {v}" for k, v in p.items()))
     print("player: " + ", ".join(f"{k} {v}" for k, v in r["player"].items()))
     print("enemies: " + ", ".join(f"{k} {v}" for k, v in r["enemies"].items()))
+    print("pick-ups: " + ", ".join(f"{k} {v}" for k, v in r["pickups"].items()))
     print("commands:", r["commands"])
 
 

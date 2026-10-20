@@ -324,8 +324,25 @@ Decision Decide(const World& world, int partner, const Abilities& abilities, Mem
     const Character& player = world.player();
     const bool rescuing = d.intent == Intent::Fight &&
                           Distance(world.enemies[d.target].position, player.position) < tunables.closeQuarters;
-    const Enemy* close = canFight || rescuing ? nullptr : TooClose(world, me, space, tunables);
+    const Enemy* close = canFight || rescuing || frame < memory.evadeBlockedUntil ? nullptr : TooClose(world, me, space, tunables);
+    if (close != nullptr && !memory.evading)
+    {
+        memory.evadeFrom = me.position;
+        memory.evadeSince = frame;
+    }
     memory.evading = close != nullptr;
+    if (close != nullptr && frame >= memory.evadeSince + tunables.evadeCheckFrames)
+    {
+        // backing into a wall or a corner: stop trying for a while (the game's own moves get it out)
+        if (Distance(me.position, memory.evadeFrom) < tunables.evadeMinProgress)
+        {
+            memory.evadeBlockedUntil = frame + tunables.evadeBlockedFrames;
+            memory.evading = false;
+            close = nullptr;
+        }
+        memory.evadeFrom = me.position;
+        memory.evadeSince = frame;
+    }
     if (close != nullptr)
     {
         d.pad = StepAway(me.position, me.facing, close->position);

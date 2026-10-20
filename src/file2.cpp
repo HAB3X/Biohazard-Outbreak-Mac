@@ -40,6 +40,8 @@ extern "C" void single_007e99d0(Ps2Cpu* c);
 extern "C" void single_partner_think(Ps2Cpu* c) { PartnerAi::Think(c, PartnerAi::File2, single_007e99d0); }
 extern "C" void single_007e9ad0(Ps2Cpu* c);
 extern "C" void single_partner_perceive(Ps2Cpu* c) { PartnerAi::Perceive(c, PartnerAi::File2, single_007e9ad0); }
+extern "C" void single_007e3aa0(Ps2Cpu* c);
+extern "C" void single_partner_pick_item(Ps2Cpu* c) { PartnerAi::PickItem(c, PartnerAi::File2, single_007e3aa0); }
 
 int main(int argc, char** argv)
 {

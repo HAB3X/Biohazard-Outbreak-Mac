@@ -24,8 +24,18 @@ struct Item
     bool fires = false;  // a gun
     bool heals = false;  // a recovery item (a herb, a spray)
     int rounds = 0;      // a gun's loaded rounds
+    uint32_t classFlags = 0;
     bool loadedGun() const { return id != 0 && fires && rounds > 0; }
 };
+
+// The item class flags (src/partner_ai_world.cpp has where they come from) of the items a partner may take for itself: weapons
+// (1), ammunition (2; the boxes of rounds 0x400 and shells 0x800) and recovery items (4). Everything else (key items, event
+// items, files, the characters' own items) is the player's to find and use: the owner's rule that the partners don't solve
+// the scenarios' puzzles or move them on
+constexpr uint32_t ClassWeapon = 0x1;
+constexpr uint32_t ClassAmmunition = 0x2 | 0x400 | 0x800;
+constexpr uint32_t ClassRecovery = 0x4;
+constexpr bool Consumable(uint32_t classFlags) { return (classFlags & (ClassWeapon | ClassAmmunition | ClassRecovery)) != 0; }
 
 constexpr int PackSize = 9; // four slots, the character's own item, then four in it (Cindy's herb case, a bag)
 
@@ -74,6 +84,8 @@ struct World
 };
 
 World ReadWorld(const Layout& layout);
+// An item's class flags, read from the game (0: none, not there, or no class)
+uint32_t ItemClassFlags(const Layout& layout, uint8_t id);
 // The ground distance (x and z: y is up)
 inline float Distance(const Vec& a, const Vec& b) { return std::hypot(a.x - b.x, a.z - b.z); }
 // The facing from a toward b, as the game measures facings (0x10000 a turn, 0 toward +z, 0x4000 toward +x: the executable's

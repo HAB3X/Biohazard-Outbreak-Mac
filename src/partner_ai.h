@@ -61,6 +61,11 @@ void Think(Ps2Cpu* c, const Layout& layout, Ps2Function original);
 // game AI's wants, plan and target (the setting below choosing it)
 void Perceive(Ps2Cpu* c, const Layout& layout, Ps2Function original);
 
+// The AI's choice of an item lying in the room to pick up (File 1 0x833250, File 2 0x7E3AA0; a0 the record, a3 where the
+// item's object goes, the result nonzero when one was picked: the item check then starts the pick-up plan): the game's, and with
+// this module's AI an item that isn't a consumable (a key, an event item, a file) is left for the player
+void PickItem(Ps2Cpu* c, const Layout& layout, Ps2Function original);
+
 // The PC menus' Gameplay setting: the partners' AI, this module's (the default) or the game's own
 extern const Ps2GameSetting Settings[];
 extern const int SettingCount;

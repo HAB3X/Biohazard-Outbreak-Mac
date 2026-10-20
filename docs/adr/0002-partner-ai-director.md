@@ -50,6 +50,20 @@ Offline only by construction: the overrides are SINGLE.BIN's functions, which on
 runs NETAQ.BIN's code at those addresses, and the characters' update calls the think only with the play mode at 0); no
 network code is touched.
 
+## The partners leave the puzzles to the player
+
+The owner's rule: the AI may not be dumb, but it must not solve the scenarios' puzzles or move them on for the player. What
+the game's own AI can do to the world (docs/research/partner-ai.md, "What a partner can do to the world") is: go through
+doors that aren't locked (its route code turns back at locked ones), pick up items lying in the room, use, combine (reload),
+swap and give the items it carries, help the player up, and Cindy's healing. It never operates a device, enters a code or
+uses an item on the world: none of SINGLE.BIN's calls into the game do, and it presses the action button only to fire.
+Picking up is the one way in: the game's partners pick up anything they have room for, keys and event items included. With
+this module's AI the item chooser (File 1 0x833250, File 2 0x7E3AA0) is overridden too: an item that isn't a weapon,
+ammunition or a recovery item is left where it lies, so the partners never carry what the player needs for the scenario.
+The director's own decisions are following, guarding, fighting and asking the game's item check (its picks filtered as
+above); the only button it presses is the attack, with the weapon readied (tests/partner_ai_brain_test.cpp checks both, and
+the telemetry logs every pick-up the chooser makes, allowed or refused).
+
 ## Options not taken
 
 - **A native AI that writes the virtual pad itself, the game's think replaced.** The cleanest separation, but it means

@@ -33,17 +33,16 @@ int S16(uint32_t address) { return static_cast<int16_t>(rd16(address)); }
 // bytes each, its flags first). The flags, from the classes of File 1's bar (the table dumped, each class's item number at
 // +0x12): 1 a weapon; with 0x2000, 0x4000 or 0x8000 one that fires (the handguns, Kevin's and Mark's 0x190 and 0x191,
 // 0x102041; the shotguns and rifles 0x104001, 0x108001), without them a melee weapon (the knife and the pipes, 0x1001,
-// 0x2481001...); 4 without 1 a recovery item (the herbs and sprays, 0x12C-0x13D, 0x40004: the AI's item use 0x833C90 asks
-// for 4 after 2)
+// 0x2481001...); ammunition 2 (0x100002, 0xFA-0x106: the AI's item use 0x833C90 takes 2 for rounds), 0x400 and 0x800 (the
+// boxes of rounds 0xC8-0xD2, 0x100400: File 2's characters start with one, 7 and 15 rounds, beside their handguns); 4 without 1 a
+// recovery item (the herbs and sprays, 0x12C-0x13D, 0x40004: 0x833C90 asks for 4 after 2)
 constexpr uint32_t ItemSize = 0x3C;
 constexpr uint32_t ItemThere = 0x0;
 constexpr uint32_t ItemRounds = 0x24;
 constexpr uint32_t ItemClass = 0x2B;
 constexpr uint8_t NoClass = 0xFF;
 constexpr uint32_t ItemClassSize = 0x18;
-constexpr uint32_t ClassWeapon = 0x1;
 constexpr uint32_t ClassFirearm = 0xE000;
-constexpr uint32_t ClassRecovery = 0x4;
 
 Item ReadItem(const Layout& layout, uint8_t id)
 {
@@ -55,16 +54,20 @@ Item ReadItem(const Layout& layout, uint8_t id)
     }
     item.id = id;
     item.rounds = S16(at + ItemRounds);
-    const uint8_t itemClass = rd8(at + ItemClass);
-    if (itemClass != NoClass)
-    {
-        const uint32_t flags = rd32(layout.itemClasses + ItemClassSize * itemClass);
-        item.weapon = (flags & ClassWeapon) != 0;
-        item.fires = item.weapon && (flags & ClassFirearm) != 0;
-        item.heals = !item.weapon && (flags & ClassRecovery) != 0;
-    }
+    const uint32_t flags = ItemClassFlags(layout, id);
+    item.weapon = (flags & ClassWeapon) != 0;
+    item.fires = item.weapon && (flags & ClassFirearm) != 0;
+    item.heals = !item.weapon && (flags & ClassRecovery) != 0;
+    item.classFlags = flags;
     return item;
 }
+}
+
+uint32_t ItemClassFlags(const Layout& layout, uint8_t id)
+{
+    const uint32_t at = layout.items + ItemSize * id;
+    const uint8_t itemClass = rd8(at + ItemClass);
+    return id == 0 || rd8(at + ItemThere) == 0 || itemClass == NoClass ? 0 : rd32(layout.itemClasses + ItemClassSize * itemClass);
 }
 
 World ReadWorld(const Layout& layout)

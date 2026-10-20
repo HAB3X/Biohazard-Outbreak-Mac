@@ -9,6 +9,7 @@ SCENARIO  bar-idle      File 1, Outbreak (J's Bar), Kevin, normal: the player st
           bar-commands  the same, the player running off and back and giving each command in turn (This way!, Mark and
                         Cindy by name, Go!, Help me!), 12 s apart, then standing still
           zoo-idle      File 2, Wild Things (the zoo), the first character and partners, easy: the player standing still
+          zoo-commands  the same with bar-commands' commands
 MODE      New or Original (the PC menus' Gameplay: Partner AI)
 --seconds the game time measured from the start of play (240); a run ends early when the partners stop thinking (the
           player's game over): its survived_seconds says when
@@ -229,7 +230,7 @@ def commands(run, log, seconds, seed):
 
 
 SCENARIOS = {"bar-idle": ("file1", to_bar, idle), "bar-commands": ("file1", to_bar, commands),
-             "zoo-idle": ("file2", to_zoo, idle)}
+             "zoo-idle": ("file2", to_zoo, idle), "zoo-commands": ("file2", to_zoo, commands)}
 
 
 def one_run(scenario, mode, seed, folder, seconds):

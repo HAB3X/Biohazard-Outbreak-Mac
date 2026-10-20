@@ -82,6 +82,18 @@ it: Cindy's herb case holds her herbs there). The AI's item check (File 1 0x8237
 of +0x1096 (File 2 +0x10B0) ask (1 use or pick up, 2 give, 4 a better weapon, 8 reload) and starts plan 7, 8 or 9; the plans
 ask it only on arriving somewhere.
 
+## What a partner can do to the world
+
+Everything SINGLE.BIN calls outside itself was listed (the call graph of the decompiled code) and read: route and door code
+(File 1 0x829830 asks the door's state, 0x551C20, and turns back at the locked ones: 2, 3 and 5), the character actions its
+moves start (GAME.BIN 0x637810 picks up the item an AI plan chose, motion 9; 0x637510 uses an item it carries, 0x17, for a
+weapon swap; 0x6375B0 combines, a reload; 0x637740 gives one to the player, 0x15; 0x637990 Cindy's herbs on another, 0x12;
+0x637AF0 helps the player up), item and status queries, the speech and network stand-ins. None operates a device, enters a
+code or uses an item on the world, and its pad presses the action button only to fire (with the weapon readied). The items
+it picks up come from 0x833250 (File 2 0x7E3AA0): it walks the room's item objects (+0x30 0x80, the item at +0x40) and takes
+any it has room for, keys and event items too. With the New AI that chooser is overridden: only weapons, ammunition and
+recovery items (class flags 1, 2/0x400/0x800, 4) are taken; the rest is the player's (the owner's rule: docs/adr/0002).
+
 ## Measured: the game's own AI
 
 File 1, Outbreak (J's Bar, Kevin, normal), the player standing still from the start of play (256 s of play): Mark spent 41%

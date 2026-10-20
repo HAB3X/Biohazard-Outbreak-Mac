@@ -6,6 +6,7 @@
 
 #include <array>
 #include <atomic>
+#include <cstdio>
 
 namespace PartnerAi
 {
@@ -268,6 +269,32 @@ void Apply(Ps2Cpu* c, const Layout& layout, uint32_t record, const Decision& dec
         Engage(c, layout, record, decision.target);
     }
 }
+}
+
+void PickItem(Ps2Cpu* c, const Layout& layout, Ps2Function original)
+{
+    const uint32_t record = c->r[4].uw[0];
+    const uint32_t objectOut = c->r[7].uw[0];
+    original(c);
+    if (c->r[2].uw[0] == 0)
+    {
+        return;
+    }
+    // The object an item lies on in the room: its item at +0x40 (the chooser reads it so)
+    constexpr uint32_t ObjectItem = 0x40;
+    const uint8_t item = rd8(rd32(objectOut) + ObjectItem);
+    const uint32_t flags = ItemClassFlags(layout, item);
+    const bool refuse = g_mode.load() == ModeNew && rd8(layout.playMode) == 0 && !Consumable(flags);
+    if (refuse)
+    {
+        c->r[2].sd[0] = 0; // nothing picked: the player's to find
+    }
+    if (Measuring())
+    {
+        char what[64];
+        std::snprintf(what, sizeof(what), "pick up item=%d class=%x %s", item, flags, refuse ? "refused" : "allowed");
+        NoteEvent(PartnerIndex(layout, record), what, g_frame);
+    }
 }
 
 const Ps2GameSetting Settings[] = {{"Gameplay", "Partner AI", ModeNames, GetMode, SetMode}};
