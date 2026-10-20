@@ -123,7 +123,8 @@ number with them; the NET file screens' header reads "NET File". With the one sa
 ## Still to do
 
 - Online after login (docs/network.md): the lobby works (the owner's run); the game server (8590), rooms, handle name and
-  chat untried since its missing call was added; the configuration list's invisible row text.
+  chat untried since its missing call was added. Network Play connects without the configuration list (skipped, as is the
+  settings editor that froze the game).
 - Sofdec movies: the opening plays; check the other 20 .sfd files (NETBIO01.DAT's adxsnd.afs: PS2demo01.sfd, the endings,
   PS2continue.sfd), and the title screen after the opening.
 - PC texts (the game's button glyphs and its Japanese menu text said for a computer), the PC menus' game settings; mouse aiming

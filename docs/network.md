@@ -17,11 +17,10 @@ this repository's `online`.
    (はい): that's the game's own data, not a network setting.
 3. Broadband connection (ブロードバンド接続): choose Network connection (ネットワーク接続), then 進む (proceed) on the manners
    screen.
-4. The configuration list: the Mac's network is the third row (the first two are the game's "network settings" and
-   "proxy" rows). Its name doesn't show (a drawing bug of the list's text, not yet found): press Down twice, then E.
-5. The game connects (DHCP, DNAS: a progress bar to 100%) and the browser opens obsrv's page: "Login with forum
-   account: ID / Password / LOGIN", and "Auto login through forum" when the forum knows this network's address.
-6. Logging in, with your obsrv.org forum account (sign up on obsrv.org's website first):
+4. The game saves the connection to the NET file and connects (DHCP, DNAS: a progress bar to 100%); the connection list
+   isn't shown (below). The browser opens obsrv's page: "Login with forum account: ID / Password / LOGIN", and "Auto login
+   through forum" when the forum knows this network's address.
+5. Logging in, with your obsrv.org forum account (sign up on obsrv.org's website first):
    - The pointer starts on the ID field. Press E (circle) to open the software keyboard. Wait until it's drawn, then type
      your ID on the Mac's keyboard (Shift for capitals; Backspace deletes; the arrows move over the soft keys instead).
      Press Return to put it in the field.
@@ -40,6 +39,7 @@ game reads a keyboard of three reports at a time, as on a console, and drops key
 |---|---|---|
 | Modules | loads its network modules through Capcom's LOADHIGH.IRX (the USB searcher, the AVE-TCP wrapper, AVE-TCP, its device glue, DHCP, DEV9/SMAP) | `src/loadhigh.cpp` loads each through the runtime's loader; `src/usbsrch.cpp` answers the USB searcher (no USB modem or adaptor); `src/avewrap.cpp` stands in for Capcom's wrapper (RPC 0x01270030) on the runtime's AVE-TCP |
 | Configuration | looks for "Your Network Configuration" on the card, then asks netcnf for its entries | `netwk_card_has_netcnf` (File 2 0x5C84F0, File 1 0x5D0C00) answers "there"; the runtime's netcnf presents the Mac's network, DHCP, DNS 208.72.237.31 (obsrv's, `src/network.h`) |
+| Connection list | the setup screen (netwk's step, File 2 0x5BFD40, File 1 0x5C88C0) lists "edit the network settings", "proxy settings" and the card's configurations | the list is skipped: when it would come up, `netwk_setup_step` (`src/network.cpp`) puts the game where choosing the Mac's configuration puts it (the list's state 0x12: connect, save it as the last connection). If that connection fails, the list's own "stop connecting?" dialog comes up instead (No tries again). The settings rows started Sony's setup program from the disc with LoadExecPS2 (NTGUI2/YN_FILEJ.BIN, after shutting the game's pads and sound down: 0x5C5340); the runtime can't run another program (syscall 6 isn't done), so the game went on with its pads closed: the freeze seen there |
 | Connection | DHCP on the adaptor, the link checked | the Mac's address, mask and router |
 | DNAS | HTTPS to gate1.jp.dnas.playstation.org (DNAS 2.8, its overlays netdnas and insdnas decrypting themselves) | obsrv's DNS names its DNAS (153.121.44.150); the overlays are decrypted at build time (`decrypt` in config/file*.toml); the runtime answers the DNAS IOP helper |
 | Browser | the KDDI browser (nethttp overlay) over HTTPS to www01.kddi-mmbb.jp | obsrv's server (208.72.237.15); its page is /00000010/ for File 2, /00000002/ for File 1 |
@@ -74,6 +74,5 @@ never waits. The wrapper's code is the same on both discs (four bytes of data di
 
 - After the game server: rooms, games with others, handle name and chat (the handle name and chat use the same software
   keyboard, so typing should work there, untried). The owner's next run shows how far it gets.
-- The configuration list's row text doesn't show (File 1's list neither).
 - The mouse in the browser (it has its own pointer, moved by the pad).
 - PPP (modems), the HDD install (insdnas's own DNAS), the network settings screens (they'd write files nothing reads).
