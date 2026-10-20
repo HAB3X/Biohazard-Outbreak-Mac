@@ -7,7 +7,7 @@ b154ffd4bf	Complete  %3d%%
 a285029d9b	Next time, use "LOAD GAME"\n
 c73fe1a50c	to continue playing from here.
 65cbbacefc	:Ad-lib
-b66e772c5f	:Cancel/Dash
+b66e772c5f	:Cancel {play:cross} Dash
 9915fe0066	:OK/Attack
 b33e5cb489	| Meanwhile
 9c7b6bfc9a	|%s
