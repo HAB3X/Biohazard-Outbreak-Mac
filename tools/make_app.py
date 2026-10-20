@@ -1,15 +1,26 @@
 #!/usr/bin/env python3
 """Makes a double-clickable Mac app of a built game: Biohazard Outbreak (file1) or File 2 (file2), with an icon, on the Desktop
-(or where --out says). The app is a copy of the build's program with SDL3 beside it (so it doesn't depend on this folder or
-Homebrew at run time) and the path of the disc image from local.json (or --disc), signed ad hoc as Apple silicon needs.
+(or where --out says). The app plays in English and needs nothing else to start from Finder: it holds a copy of the build's
+program, SDL3 (so it doesn't depend on this folder or Homebrew at run time), the English patch built here from your disc and
+translations/ (tools/bh_build_patch.py), and the path of the disc image from local.json (or --disc); it's signed ad hoc as
+Apple silicon needs.
 
     python3 tools/make_app.py file1|file2|both [--out DIR] [--disc PATH]
 
-Run it again after a rebuild to refresh the app. The icon is the game's own title logo (tools/make_icon.py): the first run starts the
-game headless to take a picture of its title screen into work/ (ignored by git), and the icon is made from it.
+Run it again after a rebuild, a change to the translations, or a change of keys in the PC menus' Controls: the English
+patch's key caps (the pictures' button prompts and the font's button glyphs) are drawn with the keys bound when the app is
+made. The patch isn't rebuilt when the app starts: that needs this folder's tools and Python with Pillow and numpy (a Finder
+launch has neither on its PATH) and takes about a minute.
+
+The app keeps its settings, key bindings and saves where run.sh's runs do (~/Library/Application Support/PS2 Native
+Runtime/<the game's executable>): the runtime's folder doesn't depend on how the game was started.
+
+The icon is the game's own title logo (tools/make_icon.py): the first run starts the game headless to take a picture of its
+title screen into work/ (ignored by git), and the icon is made from it.
 """
 import argparse
 import json
+import os
 import plistlib
 import shutil
 import subprocess
@@ -77,7 +88,11 @@ def make(game, out, disc):
     run("install_name_tool", "-change", reference, f"@rpath/{lib.name}", str(macos / g["exe"]))
     run("install_name_tool", "-add_rpath", "@executable_path/../Frameworks", str(macos / g["exe"]))
     (resources / "disc.txt").write_text(str(disc) + "\n")
-    # The app's own executable asks nothing: it starts the game with the disc the build was given
+    # The English, from this disc and the translations as they are now (the keys of the settings folder's bindings.txt)
+    subprocess.run([sys.executable, str(ROOT / "tools" / "bh_build_patch.py"), game, str(resources / "english.patch")],
+                   check=True, stdout=subprocess.DEVNULL, env={**os.environ, f"{game.upper()}_DISC": str(disc)})
+    # The app's own executable asks nothing: it starts the game with the disc the build was given, in English. Options given
+    # to the app (open -a APP --args ...) are passed on; macOS's old -psn_ argument isn't an option of the game's
     launcher = macos / "Biohazard"
     launcher.write_text(f"""#!/bin/sh
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -86,7 +101,11 @@ if [ ! -f "$DISC" ]; then
     osascript -e 'display alert "Disc image not found" message "Put the disc image back where it was, or run tools/make_app.py again with --disc."' >/dev/null
     exit 1
 fi
-exec "$DIR/{g['exe']}" --disc "$DISC"
+for a in "$@"; do
+    shift
+    case "$a" in -psn_*) ;; *) set -- "$@" "$a" ;; esac
+done
+exec "$DIR/{g['exe']}" --disc "$DISC" --patch "$DIR/../Resources/english.patch" "$@"
 """)
     launcher.chmod(0o755)
     make_icon.write_icns(title_picture(game, disc), game, resources / "AppIcon.icns")

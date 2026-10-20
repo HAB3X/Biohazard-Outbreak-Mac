@@ -55,6 +55,17 @@ with `--english` goes from boot through the title, main menu, scenario/character
 Training Ground (menus 30 fps, the room 30 once loaded, the load ~21); File 1 to its Outbreak scenario's opening cutscene
 (median 30 fps); both with sound, no fatal. Recompiler tests pass.
 
+## The Mac apps
+
+`python3 tools/make_app.py both` makes "Biohazard Outbreak.app" and "Biohazard Outbreak File 2.app" on the Desktop (`--out DIR`
+elsewhere): each starts from Finder in English, with nothing else needed at run time (the program, SDL3, the English patch
+built from your disc at make time, the disc's path; signed ad hoc). They keep their settings, key bindings and saves where
+run.sh's runs do (~/Library/Application Support/PS2 Native Runtime/SLPM_654.28 and SLPM_656.92). **Make them again after a
+rebuild** (`ninja -C build`), a change to translations/, or a change of keys in the PC menus' Controls: the patch's key caps
+are drawn with the keys bound when the app is made (the patch isn't rebuilt at launch: that needs this folder's Python tools
+with Pillow and numpy, which a Finder launch doesn't have, and about a minute). Options can be passed for a test run:
+`open -a "Biohazard Outbreak" --args --run-seconds 60 --snapshots DIR --snapshot-at 50`.
+
 ## English patch (branch `translate`, runtime `biohazard-translate`)
 
 `./run.sh file2 --english` builds `build/english-file2.patch` from your disc and `translations/file2/*.tsv` (my own English,
