@@ -6,8 +6,9 @@ is turned into C ahead of time; a runtime stands in for the rest of the console.
 keyboard and mouse controls in the style of the PC releases of Resident Evil 4 and 5, and online on the revived servers at
 [obsrv.org](https://obsrv.org).
 
-> This project isn't affiliated with or endorsed by Capcom or Sony. It contains none of the games' code or data: you need
-> your own discs. The recompiled code, the English patch and the app are made on your machine, from your disc images.
+> This project isn't affiliated with or endorsed by Capcom or Sony. You need your own discs. This repository's source contains
+> none of the games' code or data. The ready-made apps contain the games' code recompiled (made from the discs' executables)
+> but none of the discs' data: the English patch is made on your Mac from your disc image the first time you play.
 
 ## Status
 
@@ -27,8 +28,7 @@ obsrv.org, logs in, runs the lobby and connects to the game server; play in an o
 | Saves (a memory card image per game) | Done |
 | A native Metal renderer replacing the GS's OpenGL path | **Being made**: drawing every scene tried, off unless chosen (`--gs metal`) |
 
-Known issues: the online caution screen's "Next"/"Back" words don't show beside their keys (E goes on, Esc goes back), and
-Network Play still shows the connection list (choose the third row: Down twice, then E).
+Known issues: [docs/PLAYING.md](docs/PLAYING.md#known-issues).
 
 ## Screenshots
 
@@ -43,7 +43,14 @@ File 1's first scenario, Outbreak.
 
 ## Getting Started
 
-### Quick start
+### Playing (the ready-made apps)
+
+Download `Biohazard-Outbreak-File1-macOS.zip` or `Biohazard-Outbreak-File2-macOS.zip` from the
+[releases](https://github.com/HAB3X/Biohazard-Outbreak-Mac/releases) and read [docs/PLAYING.md](docs/PLAYING.md). You need
+an Apple-silicon Mac with macOS 26 or later and your own disc image of the Japanese release; nothing else is installed. The
+app asks for your disc image the first time, checks it, and makes the English patch from it (less than a minute).
+
+### Building from source: quick start
 
 ```sh
 brew install cmake ninja sdl3
@@ -55,7 +62,7 @@ cmake --build build
 python3 tools/make_app.py both
 ```
 
-This makes "Biohazard Outbreak.app" and "Biohazard Outbreak File 2.app" on your Desktop, in English.
+This makes "Biohazard Outbreak.app" and "Biohazard Outbreak File 2.app" on your Desktop, in English, for your Mac.
 
 ### Step by step
 
@@ -71,8 +78,10 @@ What you need:
    `cmake -S . -B build -G Ninja -DFILE2_DISC="/path/to/file2.iso"`
 2. Build: `cmake --build build`. The first build recompiles the executables and overlays, which takes a few minutes.
 3. Play: `./run.sh file2 --english` (or `file1`). The first run with `--english` builds `build/english-file2.patch` from
-   your disc and the translations (about a minute).
+   your disc and the translations (about half a minute).
 4. Or make the apps: `python3 tools/make_app.py both`. Make them again after a rebuild or after changing your keys.
+5. The apps to share (no disc data in them, their own Python to make the English patch on the player's Mac):
+   `python3 tools/make_app.py file2 --release --disc /path/to/file2.iso` ([docs/RELEASING.md](docs/RELEASING.md)).
 
 Trip-ups:
 
@@ -111,12 +120,14 @@ the GS, VIF and VU graphics hardware drawn on the GPU. [STATUS.md](STATUS.md) ha
 
 ## Documentation
 
+- [docs/PLAYING.md](docs/PLAYING.md): playing with the ready-made apps
 - [STATUS.md](STATUS.md): what works, what's being worked on
 - [docs/controls.md](docs/controls.md): the keyboard and mouse controls, and how they follow the game
 - [docs/translation.md](docs/translation.md): the English patch, its coverage and how it's built
 - [docs/network.md](docs/network.md): online play, and what stands in for the games' network modules
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md): how speed is measured, and what was changed
 - [ps2-native-runtime/DESIGN.md](ps2-native-runtime/DESIGN.md): how the runtime is put together
+- [docs/RELEASING.md](docs/RELEASING.md): making the ready-made apps; [docs/adr/](docs/adr/): decisions and why
 
 ## References
 
@@ -132,6 +143,8 @@ HAB3X.
 ## License
 
 No licence has been chosen for this repository's code yet; until one is, all rights are reserved. The runtime's third-party
-parts keep their own licences (`ps2-native-runtime/runtime/third_party/`, `ps2-native-runtime/runtime/fonts/`).
+parts keep their own licences (`ps2-native-runtime/runtime/third_party/`, `ps2-native-runtime/runtime/fonts/`). The
+ready-made apps also carry Python (PSF License), Pillow (MIT-CMU), NumPy (BSD) and SDL 3 (zlib), whose licences are in each
+app's `Contents/Resources/licenses`.
 
 Biohazard and Resident Evil are trademarks of Capcom Co., Ltd. PlayStation is a trademark of Sony Interactive Entertainment.
