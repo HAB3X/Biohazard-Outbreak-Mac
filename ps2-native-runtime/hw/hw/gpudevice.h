@@ -480,6 +480,10 @@ public:
     virtual bool CopyPicture(const Picture& picture, u32 slot, void* drawnFence, ShownTexture* shown) = 0;
     // A picture's end (statistics)
     virtual void PictureDone() = 0;
+    // Everything given so far done by the GPU (waited for: timing)
+    virtual void Finish() = 0;
+    // The GPU's busy time on this interface's work since the start (seconds; any thread), negative where it isn't measured
+    virtual double GpuSeconds() const = 0;
 };
 
 // Where a vertex goes past x / 16 * scale + 0.5, in pixels (TWIN_HW_VERTEX_OFFSET, 256ths)

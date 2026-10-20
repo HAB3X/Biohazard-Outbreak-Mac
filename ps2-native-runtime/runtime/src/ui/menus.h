@@ -19,6 +19,8 @@ struct SDL_FRect;
 
 namespace Ps2::Ui
 {
+class OverlayDevice;
+
 // A gamepad's control, as the Controls table shows it for an action (by the gamepad's style)
 enum class PadControl : int
 {
@@ -71,6 +73,6 @@ bool MenusVisible();
 bool MenusQuitting();
 // A picture of the window with the menus the script asked for (its path; empty: none)
 std::string MenusShotDue();
-// The overlay drawn over the window's framebuffer (bound, of these pixels; the picture's place in them)
-void MenusDraw(int pixelWidth, int pixelHeight, float pixelScale, const SDL_FRect& picture);
+// The overlay drawn by the presenter's overlay device over the window's picture (of these pixels; the picture's place in them)
+void MenusDraw(OverlayDevice& device, int pixelWidth, int pixelHeight, float pixelScale, const SDL_FRect& picture);
 }

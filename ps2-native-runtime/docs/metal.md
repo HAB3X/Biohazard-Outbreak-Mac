@@ -53,8 +53,10 @@ renderer keeps drawing what the GS is given, so every game on the runtime gets i
 
 ### Switching it on
 
-`--gs metal`, `$PS2_GS=metal`, or `renderer = metal` in graphics.txt. Off by default for every game; `hardware` stays OpenGL.
-With no Metal device the OpenGL renderer draws instead (logged). The PC menus' renderer choice is unchanged.
+`--gs metal`, `$PS2_GS=metal`, or `renderer = metal` in graphics.txt; the default for a game whose `Ps2GameInfo::gsRenderer` is
+"metal" (Biohazard Outbreak's both discs, at 4x: their `gsScale`), OpenGL for the others. With no Apple GPU, or when Metal's
+presenter can't open the window, OpenGL draws instead; a Metal renderer that can't start leaves the software GS drawing under
+Metal's presenter (all logged). The PC menus have no renderer choice.
 
 ### Targets and pages (shared)
 
@@ -83,21 +85,41 @@ test with AFAIL, fog, the depth test, the destination alpha test, the blend, dit
 HwGs's (the GS's sample point at a scale). Nothing a batch draws needs a copy of the target; only a texture that is the target
 being drawn into (an effect reading its own buffer as texels elsewhere) still reads a copy made at the batch's start.
 
+### The pipelines
+
+Every draw's features are the fragment shader's branches on the draw's constants, so one general pipeline (with a depth
+attachment and without) draws anything and nothing is compiled while a game plays: a variant compiled on the render thread for
+each feature set held it for seconds in each new scene. The branches cost: the zoo with zombies at 4x took 8.2 ms of the GPU a
+vblank. So each draw's features (the texture function, TCC, fog, the alpha and destination alpha tests, the blend's terms, the
+frame's and depth buffer's kinds, the sampling's levels and filters: `SpecialisedFeatures` in metaldevice.mm, the shader's
+function constants read by `FEATURE`) also get a pipeline specialised for them, the branches compiled away. It's made in the
+background the first time the features are drawn (the function specialised, then the pipeline, both with completion
+handlers), the general pipeline drawing until it's ready: 12-24 of them in a recording, the zoo with zombies 2.3 ms at 3x and
+4.8 at 4x where the general one took 4.2 and 8.2, every recording's pictures the same (hashes) at 1x and 3x.
+
 ### The picture
 
-The window, its menus overlay, FXAA and the CRT filter are drawn by OpenGL (`runtime/src/display.cpp`,
-`runtime/src/ui/overlayrender.cpp`). The Metal device hands the shown picture over through an IOSurface that both see: the
-picture is copied into one of three IOSurface-backed textures, and the render thread's OpenGL context (kept for this) wraps it
-for the window as before (the three-slot hand-over and its fences unchanged). A `CAMetalLayer` presenter replaces the window's
-OpenGL once the overlay renderer is ported (see "Not done").
+The window's drawing is a presenter's (the runtime's `presenter.h`): Metal's for the Metal renderer (`presentmetal.mm`),
+OpenGL's for the others (`presentgl.cpp`). The renderer copies the shown picture into its slot's texture (display.cpp's three
+slots) and commits the copy without waiting; the presenter draws it into the window's CAMetalLayer's drawable (plain, FXAA or
+the CRT filter, letterboxed), with the PC menus' overlay over it (`ui/overlaymetal.mm`), and presents. Both use one device and
+one command queue (`hw/hw/metalshared.h`): a queue's command buffers run in the order they're committed, so the drawing of a
+slot comes after the copy into it, and a copy into a slot drawn before comes after that drawing, with no fences and no thread
+waiting for the GPU. At most three frames are in flight (a semaphore; the software GS's pictures' textures are used in turn).
+The window's shaders and the overlay's are OpenGL's in Metal's language, line for line; the overlay is one list of draws
+(`ui/overlayrender.cpp`) both presenters' devices draw. The window's picture with the menus (`--ui`'s shots) is the same
+drawing into a texture, read back.
 
 ## How it's checked
 
 - `--gs-replay FILE --snapshots DIR` with each renderer (software, hardware, metal): the vblanks' picture hashes and pictures,
   compared pixel by pixel (`tools/compare_replays.py`: identical pictures, the pixels that differ and by how much). The
   software GS is the reference (the PS2's rules at 1x); OpenGL is the working picture at the scale.
-- The same replays timed (`--gs-replay FILE:PASSES`, the GPU waited for at each pass's end) for speed.
-- Live runs of both games, headless and windowed, `--fps`.
+- The same replays timed (`--gs-replay FILE:PASSES`): each pass waits for the GPU at its end and says the GPU's busy time
+  (Metal's command buffers' GPU start to end, overlaps counted once). `--fps` says the GPU's ms a second too. Other processes
+  using the GPU at the same time stretch both (a command buffer waits for theirs).
+- `TWIN_HW_STATS=1`: the encoders begun, draws (general or specialised) and copies a picture.
+- Live runs of both games, headless and windowed, `--fps`; `MTL_DEBUG_LAYER=1` for Metal's API validation.
 - The structural step (OpenGL moved behind the seam) left every recording's OpenGL picture hash the same.
 
 ## Where it stands
@@ -106,72 +128,75 @@ OpenGL once the overlay renderer is ported (see "Not done").
    Outbreak's ten and WoC's and CTTR's (the title, the Warp Room, CTTR's title and name entry), at 1x and 3x.
 2. The Metal device (metaldevice.mm, metalshaders.h): targets, GS memory and its conversions, texture decoding and caches,
    every draw, the circuits' merge, read backs. No draw is left to the software GS that OpenGL draws.
-3. Every draw's features are the shader's branches on its constants, one pipeline with a depth attachment and one without, made
-   when the device starts: nothing is compiled while a game plays (a variant compiled for each feature set held the render
-   thread for seconds in new scenes). The command buffer is committed once it has filled for 8 ms or 2,048 draws, whether or
-   not anything asks for the picture.
-4. The picture handed to the window through an IOSurface (see "Not done").
+3. Every draw's features are the shader's branches on its constants in the general pipelines, made when the device starts, and
+   a pipeline specialised for each draw's features is made in the background ("The pipelines"). The command buffer is
+   committed once it has filled for 8 ms or 2,048 draws, whether or not anything asks for the picture.
+4. The window drawn by Metal: a CAMetalLayer presenter with the PC menus' overlay, FXAA and the CRT filter; the render thread
+   doesn't wait for the GPU to hand the picture over (the IOSurface hand-over waited about 5 ms a frame).
 5. The texture sampled as the GS samples it (4 bit bilinear weights, its level of detail and level choice, wrap and region
    modes, a target's samples) unless a filtering, upscale or replacement option is on (then the GPU's sampler).
+6. Biohazard Outbreak's default (both discs, at 4x).
 
-The recordings against the software GS (the PS2's rules, 1x; `tools/compare_replays.py`), the share of pixels that differ
-(nearly all by 1 or 2; a handful on polygon and sprite edges by more):
+The recordings against the software GS (the PS2's rules, 1x; `tools/compare_replays.py`, a picture every 0.1 s), the share of
+pixels that differ (nearly all by 1 or 2; a handful on polygon and sprite edges by more); Metal at 4x read at the GS's sample
+points (each 4 x 4 block's first sample) differs as little:
 
-| Recording | Metal 1x | OpenGL 1x |
-|---|---|---|
-| Biohazard Outbreak File 1, the bar | 1.7% | 34.2% |
-| File 1, the bar with zombies | 2.7% | 51.9% |
-| File 1, character select | 1.6% | 63.5% |
-| File 1, Outbreak's opening cutscene | 0 (identical) | 39.7% |
-| File 2, title menu | 0.07% | 34.8% |
-| File 2, Training Ground | 2.8% | 77.8% |
-| File 2, zoo | 5.4% | 79.1% |
-| File 2, partner select | 1.2% | 60.7% |
-| File 2, character select | 0.8% | 60.5% |
-| File 2, opening | 0.2% | 86.3% |
-| File 2, network caution and NET file screens | 0.3% | 76-81% |
-| WoC, the Warp Room | 4.0% | 61.3% |
-| CTTR, title | 1 pixel | 4 pixels |
-| CTTR, name entry | 0.55% | 16.3% |
+| Recording | Metal 1x | Metal 4x at the sample points | OpenGL 1x |
+|---|---|---|---|
+| Biohazard Outbreak File 1, the bar | 1.7% | 4.3% | 34.2% |
+| File 1, the bar with zombies | 2.7% | 2.8% | 51.9% |
+| File 1, character select | 1.6% | 1.6% | 63.5% |
+| File 1, Outbreak's opening cutscene | 0 (identical) | 0 (identical) | 39.7% |
+| File 2, title menu | 0.07% | 0.08% | 34.8% |
+| File 2, Training Ground | 2.8% | 2.8% | 77.8% |
+| File 2, zoo | 5.4% | 5.7% | 79.1% |
+| File 2, zoo with zombies | 7.3% | 7.3% | 84.1% |
+| File 2, partner select | 1.2% | 1.2% | 60.7% |
+| File 2, character select | 0.8% | 0.8% | 60.5% |
+| File 2, opening | 0.2% | 0.2% | 86.3% |
+| File 2, network caution and NET file screens | 0.3% | 0.3% | 76-81% |
+| File 2, network setup screens | 0 (identical) | 0 (identical) | 0 (identical) |
 
-What's left is the GPU's interpolation of colours and texture coordinates, where the GS steps its own (a pixel's value a step
-either side). At 3x Metal and OpenGL differ on 37-89% of the pixels by 1.2-2.3 on average (OpenGL's blending rounds where the
-GS truncates, and its sampler's weights aren't the GS's); looked at side by side they're the same pictures.
+What's left is the GPU's interpolation of colours and texture coordinates, where the software GS steps its own (scattered
+pixels a step either side, over surfaces). At 4x Metal and OpenGL differ on 37-89% of the pixels, nearly all by 1 or 2 (OpenGL's
+blending rounds where the GS truncates, its sampler's weights aren't the GS's, and its games' flags trade exactness for speed:
+OpenGL at 4x read at the sample points differs from the software GS by up to 158 in the zoo); looked at side by side they're the
+same pictures.
 
-Speed, the replays at 3x without pictures (ms a vblank, median of passes 2-6, the two renderers one after the other on each
-recording; M4, the machine at load 170-235 from other work, so the numbers are high but paired):
+Speed, the replays without pictures on an M4 (ms a vblank, the median of passes 2-12; the GPU's busy time, and the wall time
+with the GPU waited for at each pass's end). Other agents' games shared the GPU and the CPUs throughout (load 4-11), so these
+vary run to run: the quietest run's, with the range over three more runs under heavier load where it differed much:
 
-| Recording | OpenGL | Metal |
-|---|---|---|
-| File 1, the bar | 0.50 | 0.45 |
-| File 1, the bar with zombies | 4.63 | 3.92 |
-| File 1, character select | 3.68 | 2.60 |
-| File 1, opening cutscene | 1.41 | 1.42 |
-| File 2, title menu | 3.00 | 2.48 |
-| File 2, Training Ground | 2.38 | 1.82 |
-| File 2, zoo | 1.88 | 1.61 |
-| File 2, zoo with zombies | 7.83 | 5.33 |
-| File 2, partner select | 4.33 | 2.92 |
-| File 2, character select | 3.58 | 2.52 |
-| File 2, opening | 2.71 | 2.11 |
-| File 2, network caution | 0.93 | 0.45 |
+| Recording | Metal 3x GPU | Metal 4x GPU | Metal 5x GPU | Metal 4x render thread CPU |
+|---|---|---|---|---|
+| File 2, zoo with zombies | 2.5 (to 4.1) | 4.2 (to 6.6) | 8.5 (to 10.4) | 3.6-5.8 |
+| File 1, the bar with zombies | 1.3 | 1.9 | 2.5 | 2.8-3.1 |
+| File 1, character select | 1.0 | 1.4 | 2.4 | 1.9-2.3 |
+| File 2, character select | 1.0 | 1.5 | 2.2 | 1.9-2.2 |
+| File 2, partner select | 1.1 | 1.7 | 3.0 | 2.1-3.0 |
+| File 2, Training Ground | 1.7 | 3.1 | 4.9 | 1.3-1.6 |
+| File 2, zoo | 0.7 | 1.1 | 2.2 | 1.1-1.4 |
+| File 2, title menu | 0.9 | 1.3 | 1.9 | 1.5-2.3 |
+| File 2, opening | 1.0 | 2.0 | 3.2 | 0.8-1.2 |
 
-In play (File 2 from boot into the Training Ground's bar, `--fps`): 30 frames a second with either, headless and in a window.
-Headless at load 2-5 the render thread took 65 ms of CPU a second with Metal against 87 with OpenGL; in a window the numbers
-swung with the machine's load (78-179 and 117-152 in two pairs of runs). The hand-over's own cost: 0.15 ms of the render
-thread's CPU a frame and a wait of about 5 ms for the GPU.
+A game frame is two vblanks at 30 frames a second: the zoo with zombies at 4x is 8-13 ms of the GPU's 33 a frame on the M4.
+OpenGL's replays at 3x and 4x took 2-8 ms a vblank of wall time against Metal's 2-6 under the same load.
+
+In play (Metal at 4x, both discs, headless and in a window, `--fps`): 30 frames a second from boot through the menus, the
+selects, the network screens to obsrv's login page and into the first scenarios (File 1's bar, File 2's Training Ground), but
+for loads and the PC menus' pause. File 2's Training Ground in a window, the same place at each scale: the GPU 190, 271 and 294
+ms a second at 3x, 4x and 5x (shared with the other agents' games), the render thread 64 and the EE 54 ms a second at each.
 
 ## Not done
 
-- The window's hand-over waits for the GPU on the render thread: the picture is copied by Metal into one of three IOSurfaces,
-  the render thread waits for that (about 5 ms a frame in File 2's Training Ground at 3x, almost no CPU), and its OpenGL
-  context copies the surface into the slot's texture for the window. A presenter on a CAMetalLayer (display.cpp's window, the
-  PC menus' overlay renderer and the FXAA and CRT filters in Metal) removes the wait and OpenGL with it.
-- WoC's levels (the distance blur reads its depth through the depth test at the GS's sample point, which Metal now makes as
-  OpenGL does) and CTTR's races (wrapping shadow volume sums, the glow's region modes) aren't in a recording yet: only WoC's
-  title and Warp Room and CTTR's title and name entry were compared.
-- Depth interpolated in float above 2^24 (as OpenGL's); exact when a primitive's depth is the same at its vertexes.
-- Colours, texture coordinates and fog are the GPU's interpolation, not the GS's own stepping: the last 0-5% of pixels a step
-  off the software GS at 1x. Stepping them as the GS does (its edge and span DDA's fixed point in the shader) would close it.
-- Metal isn't any game's default yet: Biohazard Outbreak (Ps2GameInfo or its run.sh/app) would choose it once its picture is
-  checked by eye in a window over a playthrough and the hand-over's wait is gone.
+- The colours', texture coordinates' and fog's stepping as the software GS steps them (its triangles' planes in double
+  precision at each run's start, then single precision steps along the run): not cheap in a fragment shader (the run's start
+  found from the edges, double precision emulated) and only seen at 1x as single steps on scattered pixels; at the default 4x
+  there's no reference to be exact against.
+- Depth interpolated in float above 2^24 (as OpenGL's); exact when a primitive's depth is the same at its vertexes. Every
+  Biohazard Outbreak primitive with a depth above 2^24 in the recordings (Z32: up to 0xFFFFFFFE in the zoo, the partner select
+  and the opening) has the same depth at its vertexes, so none of its pictures changes; WoC's and CTTR's weren't looked at.
+- WoC's levels and CTTR's races aren't in a recording yet: only WoC's title and Warp Room and CTTR's title and name entry were
+  compared. They keep OpenGL as their default.
+- The specialised pipelines are made again each run (Metal's own shader cache keeps the compiled code between runs; a binary
+  archive would keep the pipelines too).

@@ -9,6 +9,7 @@
 #include "../../hw/ee/vu.h"
 #include "../../hw/ee/vu1translate.h"
 #include "../../hw/gs/gs.h"
+#include "../../hw/hw/hwgs.h"
 #include "../../hw/png.h"
 #include "ui/menus.h"
 #include "sound/spu2.h"
@@ -443,6 +444,7 @@ void PresenterRun()
     u64 lastFrames = 0, lastVblanks = 0;
     // The working threads' CPU time at the last --fps line
     double lastCpu[static_cast<int>(ThreadRole::Count)] = {};
+    double lastGpu = 0;
     InputInit();
     u64 shown = 0;
     // The last picture of the GS's memory (the software GS's), for the menus' scripted pictures when headless
@@ -493,11 +495,19 @@ void PresenterRun()
                     cpu[r] = (now - lastCpu[r]) * 1000.0 / (t - (nextFps - 1));
                     lastCpu[r] = now;
                 }
-                Log("%.0f s: %llu frames, %llu vblanks; CPU ms a second: EE %.0f, render %.0f, VU1 %.0f, sound %.0f, timer %.0f",
+                // And the GPU's, where it's measured (Metal's)
+                double gpu = NativeGraphics::HardwareGpuSeconds();
+                char gpuText[48] = "";
+                if (gpu >= 0)
+                {
+                    snprintf(gpuText, sizeof(gpuText), "; GPU ms a second %.0f", (gpu - lastGpu) * 1000.0 / (t - (nextFps - 1)));
+                    lastGpu = gpu;
+                }
+                Log("%.0f s: %llu frames, %llu vblanks; CPU ms a second: EE %.0f, render %.0f, VU1 %.0f, sound %.0f, timer %.0f%s",
                     t, static_cast<unsigned long long>(frames), static_cast<unsigned long long>(blanks),
                     cpu[static_cast<int>(ThreadRole::Ee)], cpu[static_cast<int>(ThreadRole::Render)],
                     cpu[static_cast<int>(ThreadRole::Vu1)], cpu[static_cast<int>(ThreadRole::Sound)],
-                    cpu[static_cast<int>(ThreadRole::Timer)]);
+                    cpu[static_cast<int>(ThreadRole::Timer)], gpuText);
             }
             if (g_window != nullptr)
             {

@@ -330,7 +330,7 @@ void Vu1RecordChunk(Ee::Vu& vu1, Ee::Vif& vif1);
 void Vu1RecordData(u32 kind, u32 value, const u32* words, u32 count);
 bool Vu1Replay(Ee::Vu& vu1, Ee::Vif& vif1, Ee::Gif& gif, const std::vector<u8>& file, u32 pass);
 
-// --- display.cpp: the window (OpenGL) and the picture's way from the GS to it
+// --- display.cpp: the window (drawn by OpenGL or Metal: presenter.h) and the picture's way from the GS to it
 // The window and the GPU's contexts made (the main thread, before RenderStart): the window, or null when headless
 SDL_Window* DisplayOpen();
 // The render thread's start: its context made current and the hardware renderer started (unless the software GS is asked for)
@@ -365,6 +365,8 @@ enum class DisplaySetting
 };
 int DisplayGet(DisplaySetting setting);
 void DisplaySet(DisplaySetting setting, int value);
+// A setting's default (the game's own where it has one: Ps2GameInfo::gsScale)
+int DisplayDefault(DisplaySetting setting);
 std::string DisplayWindowSizeText(int choice);
 int DisplayWindowSizeCount();
 // The window's size in points as it is, and put back (the menus' countdown going back)

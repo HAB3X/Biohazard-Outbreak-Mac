@@ -96,6 +96,7 @@ enum class OverlayImage : u32
 };
 
 struct OverlayCommand;
+class OverlayDevice;
 
 // A frame being recorded
 class OverlayFrame
@@ -120,8 +121,9 @@ public:
 f32 OverlayTextWidth(const std::string& text, const TextStyle& style);
 f32 OverlayLineHeight(const TextStyle& style);
 
-// The frame drawn over the window's framebuffer (bound, of these pixels; pixelScale: the window's pixels a point)
-void DrawOverlay(OverlayFrame& frame, int pixelWidth, int pixelHeight, float pixelScale);
+// The frame drawn by the presenter's overlay device over the window's picture (of these pixels; pixelScale: the window's pixels
+// a point)
+void DrawOverlay(OverlayFrame& frame, OverlayDevice& device, int pixelWidth, int pixelHeight, float pixelScale);
 // The reference space's place in a window of these pixels, and a window point (SDL's mouse) in reference space (by the window
 // the overlay was drawn over last)
 void ReferenceMapping(f32 pixelWidth, f32 pixelHeight, f32* scale, f32* offsetX, f32* offsetY);

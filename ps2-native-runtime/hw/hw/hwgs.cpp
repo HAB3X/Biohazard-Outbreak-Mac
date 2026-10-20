@@ -317,6 +317,14 @@ public:
     bool ReadDisplay(Gs::DisplayImage& image);
     bool CopyDisplay(u32 slot, void* drawnFence, NativeGraphics::ShownTexture* shown);
     void MakeCurrent() { device_->MakeCurrent(); }
+    double GpuSeconds() const { return device_->GpuSeconds(); }
+    // The batch drawn and the GPU's work waited for
+    void Finish()
+    {
+        MakeCurrent();
+        Flush();
+        device_->Finish();
+    }
 
     HardwareStats stats = {};
 
@@ -3501,6 +3509,19 @@ bool HardwareDisplayTexture(DisplayTexture* display)
 {
     Picture picture;
     return g_Hw != nullptr && g_Hw->ShownPicture(display, &picture);
+}
+
+double HardwareGpuSeconds()
+{
+    return HardwareRendererActive() ? g_Hw->GpuSeconds() : -1.0;
+}
+
+void HardwareFinish()
+{
+    if (g_Hw != nullptr)
+    {
+        g_Hw->Finish();
+    }
 }
 
 bool HardwareReadDisplay(Gs::DisplayImage& image)

@@ -10,16 +10,13 @@
 
 #include "gpudevice.h"
 
-#include "gl.h"
 #include "metalshaders.h"
+#include "metalshared.h"
 
 #import <Foundation/Foundation.h>
-#import <IOSurface/IOSurface.h>
-#import <Metal/Metal.h>
-#include <OpenGL/CGLIOSurface.h>
-#include <OpenGL/OpenGL.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -165,6 +162,65 @@ struct alignas(16) CircuitsUniforms
     f32 background[4];
 };
 
+// The draw's features a specialised pipeline is made for: each the shader's function constant k_NAME (metalshaders.h's FEATURE),
+// whose branches the compiler then drops. The general pipeline (none of them set) draws until a draw's specialised one is ready:
+// they're compiled in the background as their features are first drawn, never on the render thread. Specialised, the zoo with
+// zombies' replay took 2.3 ms of the GPU a vblank at 3x and 4.8 at 4x where the general one took 4.2 and 8.2, every recording's
+// pictures the same
+struct SpecialisedFeature
+{
+    const char* name;
+    u32 DrawUniforms::*member;
+};
+constexpr SpecialisedFeature SpecialisedFeatures[] = {
+    {"textured", &DrawUniforms::textured},
+    {"tfx", &DrawUniforms::tfx},
+    {"tcc", &DrawUniforms::tcc},
+    {"fog", &DrawUniforms::fog},
+    {"uvMode", &DrawUniforms::uvMode},
+    {"texAlpha", &DrawUniforms::texAlpha},
+    {"gsSample", &DrawUniforms::gsSample},
+    {"region", &DrawUniforms::region},
+    {"mipmap", &DrawUniforms::mipmap},
+    {"lodConst", &DrawUniforms::lodConst},
+    {"nativeTexel", &DrawUniforms::nativeTexel},
+    {"alphaTest", &DrawUniforms::alphaTest},
+    {"atst", &DrawUniforms::atst},
+    {"afail", &DrawUniforms::afail},
+    {"date", &DrawUniforms::date},
+    {"datm", &DrawUniforms::datm},
+    {"blend", &DrawUniforms::blend},
+    {"blendA", &DrawUniforms::blendA},
+    {"blendB", &DrawUniforms::blendB},
+    {"blendC", &DrawUniforms::blendC},
+    {"blendD", &DrawUniforms::blendD},
+    {"pabe", &DrawUniforms::pabe},
+    {"colclamp", &DrawUniforms::colclamp},
+    {"fba", &DrawUniforms::fba},
+    {"dither", &DrawUniforms::dither},
+    {"frameKind", &DrawUniforms::frameKind},
+    {"depthKind", &DrawUniforms::depthKind},
+    {"ztst", &DrawUniforms::ztst},
+    {"zWrite", &DrawUniforms::zWrite},
+    {"frameWrite", &DrawUniforms::frameWrite},
+    {"nativeZtst", &DrawUniforms::nativeZtst},
+    {"levelCount", &DrawUniforms::levelCount},
+    {"magLinear", &DrawUniforms::magLinear},
+    {"mmin", &DrawUniforms::mmin},
+    {"mxl", &DrawUniforms::mxl}
+};
+constexpr size_t SpecialisedCount = std::size(SpecialisedFeatures);
+// A specialised pipeline's features and its depth attachment (last)
+using SpecialisedKey = std::array<u32, SpecialisedCount + 1>;
+
+// The specialised pipelines made or being made (nil: being made, or it failed and the general one draws), shared with the
+// compiler's completion handlers
+struct SpecialisedPipelines
+{
+    std::mutex lock;
+    std::map<SpecialisedKey, id<MTLRenderPipelineState>> pipelines;
+};
+
 static_assert(sizeof(VertexUniforms) == 24 && sizeof(DrawUniforms) == 320 && sizeof(ConversionUniforms) == 96 &&
               sizeof(MergeUniforms) == 208 && sizeof(DecodeUniforms) == 48 && sizeof(CircuitsUniforms) == 128);
 
@@ -268,6 +324,15 @@ public:
     void ReadPicture(const Picture& picture, std::vector<u32>& pixels) override;
     bool CopyPicture(const Picture& picture, u32 slot, void* drawnFence, ShownTexture* shown) override;
     void PictureDone() override;
+    void Finish() override
+    {
+        Submit(true);
+        ReportCounts();
+    }
+    double GpuSeconds() const override
+    {
+        return static_cast<double>(SharedMetalGpu()->gpuNanoseconds.load(std::memory_order_relaxed)) / 1e9;
+    }
 
 private:
     // The command buffer being filled, and its one open encoder
@@ -286,6 +351,8 @@ private:
     id<MTLLibrary> Library(bool depth);
     id<MTLComputePipelineState> Kernel(const char* name);
     id<MTLRenderPipelineState> DrawPipeline(bool depth);
+    // The draw's specialised pipeline when it's ready, else the general one (its making begun the first time)
+    id<MTLRenderPipelineState> PipelineFor(const DrawUniforms& u, bool depth);
     id<MTLSamplerState> SamplerFor(const BatchKey& key);
     id<MTLBuffer> Bytes(const void* data, size_t bytes, size_t* offset) { return Stage(data, bytes, offset); }
     // A rectangle of a texture read back (RGBA bytes or words), the GPU waited for
@@ -299,6 +366,7 @@ private:
     // every draw's features are the shader's branches, so nothing is compiled while a game plays)
     id<MTLLibrary> libraries_[2] = {};
     id<MTLRenderPipelineState> drawPipelines_[2] = {};
+    std::shared_ptr<SpecialisedPipelines> specialised_ = std::make_shared<SpecialisedPipelines>();
     id<MTLCommandBuffer> commands_ = nil;
     // When the command buffer was begun, and its draws: it's committed once it has filled for a while, whether or not anything
     // asks for the picture (a game run without a window or pictures would otherwise keep its work from the GPU)
@@ -335,55 +403,69 @@ private:
     // The copies of targets a batch reads (by size), and the merged circuits' picture
     std::map<std::pair<u32, u32>, TextureId> copies_;
     TextureId merged_ = 0;
-    // The window's hand-over (display.cpp's three slots): the picture copied by Metal into an IOSurface the render thread's
-    // OpenGL sees too (a rectangle texture of it), then by OpenGL into the slot's texture the window's context draws
-    struct HandOver
+    // The window's hand-over (display.cpp's three slots): the picture copied into the slot's texture, which the Metal
+    // presenter draws (on the same queue, so after the copy)
+    id<MTLTexture> slots_[3] = {};
+
+    // TWIN_HW_STATS: the encoders begun, the draws and the copies of targets, by kind (a picture's, every 60 pictures and at
+    // Finish; all of them since the last report when no picture was asked for)
+    void Count(const char* kind)
     {
-        IOSurfaceRef surface = nullptr;
-        id<MTLTexture> metal = nil;
-        Hw::GLuint rectangle = 0;
-        Hw::GLuint rectangleFbo = 0;
-        Hw::GLuint texture = 0;
-        Hw::GLuint fbo = 0;
-        u32 width = 0;
-        u32 height = 0;
-    };
-    HandOver handOver_[3];
-    bool handedOver_ = false;
-    bool MakeHandOver(HandOver& h, u32 width, u32 height);
+        static const bool counting = std::getenv("TWIN_HW_STATS") != nullptr;
+        if (counting)
+        {
+            counts_[kind]++;
+        }
+    }
+    void ReportCounts();
+    std::map<std::string, u64> counts_;
+    u32 pictures_ = 0;
+    u32 reported_ = 0;
 };
+
+void MetalDevice::ReportCounts()
+{
+    if (counts_.empty())
+    {
+        return;
+    }
+
+    const u32 pictures = pictures_ - reported_;
+    reported_ = pictures_;
+    if (pictures != 0)
+    {
+        std::fprintf(stderr, "encoders and draws a picture over %u:", pictures);
+    }
+    else
+    {
+        std::fprintf(stderr, "encoders and draws:");
+    }
+    for (auto& entry : counts_)
+    {
+        std::fprintf(stderr, " %s %.1f;", entry.first.c_str(), static_cast<double>(entry.second) / std::max<u32>(pictures, 1));
+    }
+
+    std::fprintf(stderr, "\n");
+    counts_.clear();
+}
 
 MetalDevice::~MetalDevice()
 {
     Submit(true);
-    for (HandOver& h : handOver_)
-    {
-        if (h.surface != nullptr)
-        {
-            CFRelease(h.surface);
-        }
-    }
 }
 
 bool MetalDevice::Init()
 {
     @autoreleasepool
     {
-        device_ = MTLCreateSystemDefaultDevice();
-        if (device_ == nil)
+        const MetalGpu* gpu = SharedMetalGpu();
+        if (gpu == nullptr)
         {
-            std::fprintf(stderr, "graphics: Metal renderer: no Metal device\n");
             return false;
         }
 
-        // Programmable blending (reading the target in the fragment shader) is Apple's GPUs'
-        if (![device_ supportsFamily:MTLGPUFamilyApple1])
-        {
-            std::fprintf(stderr, "graphics: Metal renderer: %s can't read its targets in a shader\n", [[device_ name] UTF8String]);
-            return false;
-        }
-
-        queue_ = [device_ newCommandQueue];
+        device_ = gpu->device;
+        queue_ = gpu->queue;
         uint8_t white[4] = {0, 0, 0, 0};
         MTLTextureDescriptor* blank = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:1
                                                                                          height:1 mipmapped:NO];
@@ -395,7 +477,7 @@ bool MetalDevice::Init()
         DrawPipeline(false);
         DrawPipeline(true);
         for (const char* name :
-             {"MemoryFromTarget", "TargetFromMemory", "MergeWrites", "DecodeLevel", "Upscale", "MergeCircuits", "CopyPicture"})
+             {"MemoryFromTarget", "TargetFromMemory", "MergeWrites", "DecodeLevel", "Upscale", "MergeCircuits"})
         {
             Kernel(name);
         }
@@ -413,7 +495,14 @@ id<MTLLibrary> MetalDevice::Library(bool depth)
         NSError* error = nil;
         MTLCompileOptions* options = [MTLCompileOptions new];
         options.preprocessorMacros = @{@"DEPTH" : @(depth ? 1 : 0)};
-        library = [device_ newLibraryWithSource:[NSString stringWithUTF8String:MetalShaderSource] options:options error:&error];
+        // The specialised features' function constants first (the shader's FEATURE reads them)
+        std::string source = "#include <metal_stdlib>\n";
+        for (size_t i = 0; i < SpecialisedCount; i++)
+        {
+            source += "constant uint k_" + std::string(SpecialisedFeatures[i].name) + " [[function_constant(" + std::to_string(i) + ")]];\n";
+        }
+        source += MetalShaderSource;
+        library = [device_ newLibraryWithSource:[NSString stringWithUTF8String:source.c_str()] options:options error:&error];
         if (library == nil)
         {
             std::fprintf(stderr, "graphics: Metal renderer: the shaders: %s\n", [[error localizedDescription] UTF8String]);
@@ -454,15 +543,16 @@ id<MTLRenderPipelineState> MetalDevice::DrawPipeline(bool depth)
 
     id<MTLLibrary> library = Library(depth);
     MTLRenderPipelineDescriptor* descriptor = [MTLRenderPipelineDescriptor new];
+    NSError* error = nil;
     descriptor.vertexFunction = [library newFunctionWithName:@"DrawVertex"];
-    descriptor.fragmentFunction = [library newFunctionWithName:@"DrawFragment"];
+    // (with no function constant set: every feature from the draw's constants)
+    descriptor.fragmentFunction = [library newFunctionWithName:@"DrawFragment" constantValues:[MTLFunctionConstantValues new] error:&error];
     descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA8Unorm;
     if (depth)
     {
         descriptor.colorAttachments[1].pixelFormat = MTLPixelFormatR32Uint;
     }
 
-    NSError* error = nil;
     state = [device_ newRenderPipelineStateWithDescriptor:descriptor error:&error];
     if (state == nil)
     {
@@ -471,6 +561,76 @@ id<MTLRenderPipelineState> MetalDevice::DrawPipeline(bool depth)
     }
 
     return state;
+}
+
+id<MTLRenderPipelineState> MetalDevice::PipelineFor(const DrawUniforms& u, bool depth)
+{
+    SpecialisedKey key;
+    for (size_t i = 0; i < SpecialisedCount; i++)
+    {
+        key[i] = u.*SpecialisedFeatures[i].member;
+    }
+
+    key[SpecialisedCount] = depth ? 1 : 0;
+    {
+        std::lock_guard<std::mutex> guard(specialised_->lock);
+        auto found = specialised_->pipelines.find(key);
+        if (found != specialised_->pipelines.end())
+        {
+            if (found->second != nil)
+            {
+                Count("draw (specialised)");
+                return found->second;
+            }
+
+            Count("draw (general)");
+            return DrawPipeline(depth);
+        }
+
+        specialised_->pipelines[key] = nil;
+    }
+
+    // Made in the background: the function specialised, then its pipeline
+    Count("specialised pipeline begun");
+    MTLFunctionConstantValues* constants = [MTLFunctionConstantValues new];
+    for (size_t i = 0; i < SpecialisedCount; i++)
+    {
+        [constants setConstantValue:&key[i] type:MTLDataTypeUInt atIndex:i];
+    }
+
+    MTLRenderPipelineDescriptor* descriptor = [MTLRenderPipelineDescriptor new];
+    descriptor.vertexFunction = [Library(depth) newFunctionWithName:@"DrawVertex"];
+    descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA8Unorm;
+    if (depth)
+    {
+        descriptor.colorAttachments[1].pixelFormat = MTLPixelFormatR32Uint;
+    }
+
+    std::shared_ptr<SpecialisedPipelines> specialised = specialised_;
+    id<MTLDevice> device = device_;
+    [Library(depth) newFunctionWithName:@"DrawFragment" constantValues:constants completionHandler:^(id<MTLFunction> fragment, NSError* error) {
+        if (fragment == nil)
+        {
+            std::fprintf(stderr, "graphics: Metal renderer: a specialised shader: %s (the general one draws)\n",
+                         [[error localizedDescription] UTF8String]);
+            return;
+        }
+
+        descriptor.fragmentFunction = fragment;
+        [device newRenderPipelineStateWithDescriptor:descriptor completionHandler:^(id<MTLRenderPipelineState> state, NSError* failed) {
+            if (state == nil)
+            {
+                std::fprintf(stderr, "graphics: Metal renderer: a specialised pipeline: %s (the general one draws)\n",
+                             [[failed localizedDescription] UTF8String]);
+                return;
+            }
+
+            std::lock_guard<std::mutex> guard(specialised->lock);
+            specialised->pipelines[key] = state;
+        }];
+    }];
+    Count("draw (general)");
+    return DrawPipeline(depth);
 }
 
 id<MTLSamplerState> MetalDevice::SamplerFor(const BatchKey& key)
@@ -553,6 +713,7 @@ id<MTLRenderCommandEncoder> MetalDevice::RenderInto(const Target* colour, const 
     }
 
     render_ = [Commands() renderCommandEncoderWithDescriptor:pass];
+    Count(depth != nullptr ? "render (with depth)" : "render");
     renderColour_ = colour;
     renderDepth_ = depth;
     return render_;
@@ -564,6 +725,7 @@ id<MTLComputeCommandEncoder> MetalDevice::Compute()
     {
         EndEncoder();
         compute_ = [Commands() computeCommandEncoder];
+        Count("compute");
     }
 
     return compute_;
@@ -575,6 +737,7 @@ id<MTLBlitCommandEncoder> MetalDevice::Blit()
     {
         EndEncoder();
         blit_ = [Commands() blitCommandEncoder];
+        Count("blit");
     }
 
     return blit_;
@@ -601,6 +764,7 @@ void MetalDevice::Submit(bool wait)
     __block std::vector<id<MTLBuffer>> returning = std::move(used);
     std::mutex* lock = &freeArenasLock_;
     std::vector<id<MTLBuffer>>* free = &freeArenas_;
+    SharedMetalGpu()->Measure(commands_);
     [commands_ addCompletedHandler:^(id<MTLCommandBuffer>) {
         std::lock_guard<std::mutex> guard(*lock);
         for (id<MTLBuffer> buffer : returning)
@@ -754,6 +918,7 @@ TextureId MetalDevice::CopyTarget(Target& target)
     }
 
     [Blit() copyFromTexture:source toTexture:TextureOf(copy)];
+    Count("copy of a target");
     stats_.copies++;
     return copy;
 }
@@ -1076,6 +1241,7 @@ void MetalDevice::DrawBatch(const BatchKey& k, const std::vector<HwVertex>& vert
         }
 
         [Blit() copyFromTexture:depth toTexture:copy];
+        Count("copy of a depth target");
         depthCopy = copy;
     }
 
@@ -1083,7 +1249,6 @@ void MetalDevice::DrawBatch(const BatchKey& k, const std::vector<HwVertex>& vert
     const u32 n = k.colour->scale;
     const u32 width = k.colour->width * n;
     const u32 height = k.colour->height * n;
-    [encoder setRenderPipelineState:DrawPipeline(k.depth != nullptr)];
 
     VertexUniforms v = {};
     v.viewSize[0] = static_cast<f32>(width);
@@ -1184,6 +1349,7 @@ void MetalDevice::DrawBatch(const BatchKey& k, const std::vector<HwVertex>& vert
     MTLScissorRect scissor = {static_cast<NSUInteger>(left), static_cast<NSUInteger>(top), static_cast<NSUInteger>(right - left),
                               static_cast<NSUInteger>(bottom - top)};
     [encoder setScissorRect:scissor];
+    [encoder setRenderPipelineState:PipelineFor(u, k.depth != nullptr)];
     const MTLPrimitiveType type = k.primitive == Topology::Triangles ? MTLPrimitiveTypeTriangle
                                   : k.primitive == Topology::Lines  ? MTLPrimitiveTypeLine
                                                                     : MTLPrimitiveTypePoint;
@@ -1238,126 +1404,82 @@ void MetalDevice::ReadPicture(const Picture& picture, std::vector<u32>& pixels)
     ReadTexture(texture, static_cast<u32>(picture.left), static_cast<u32>(picture.top), picture.width, picture.height, pixels.data());
 }
 
-bool MetalDevice::MakeHandOver(HandOver& h, u32 width, u32 height)
+bool MetalDevice::CopyPicture(const Picture& picture, u32 slot, void*, ShownTexture* shown)
 {
-    constexpr Hw::GLenum TextureRectangle = 0x84F5, Bgra = 0x80E1, UnsignedInt8888Rev = 0x8367;
-    Hw::Gl& gl = Hw::GetGl();
-    if (h.surface != nullptr)
+    __strong id<MTLTexture>& copy = slots_[slot % 3];
+    if (copy == nil || copy.width != picture.width || copy.height != picture.height)
     {
-        CFRelease(h.surface);
-        h.surface = nullptr;
-        h.metal = nil;
-    }
-
-    const u32 format = 'BGRA';
-    NSDictionary* properties = @{
-        (NSString*)kIOSurfaceWidth : @(width),
-        (NSString*)kIOSurfaceHeight : @(height),
-        (NSString*)kIOSurfaceBytesPerElement : @4,
-        (NSString*)kIOSurfacePixelFormat : @(format),
-    };
-    h.surface = IOSurfaceCreate((__bridge CFDictionaryRef)properties);
-    if (h.surface == nullptr)
-    {
-        std::fprintf(stderr, "graphics: Metal renderer: no IOSurface for the window's picture\n");
-        return false;
-    }
-
-    MTLTextureDescriptor* descriptor = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm width:width
-                                                                                         height:height mipmapped:NO];
-    descriptor.usage = MTLTextureUsageShaderWrite | MTLTextureUsageShaderRead;
-    h.metal = [device_ newTextureWithDescriptor:descriptor iosurface:h.surface plane:0];
-    if (h.rectangle == 0)
-    {
-        gl.GenTextures(1, &h.rectangle);
-        gl.GenFramebuffers(1, &h.rectangleFbo);
-        gl.GenTextures(1, &h.texture);
-        gl.GenFramebuffers(1, &h.fbo);
-    }
-
-    gl.BindTexture(TextureRectangle, h.rectangle);
-    if (CGLTexImageIOSurface2D(CGLGetCurrentContext(), TextureRectangle, Hw::GL_RGBA8, static_cast<Hw::GLsizei>(width), static_cast<Hw::GLsizei>(height), Bgra,
-                               UnsignedInt8888Rev, h.surface, 0) != kCGLNoError)
-    {
-        std::fprintf(stderr, "graphics: Metal renderer: OpenGL can't see the window's IOSurface\n");
-        return false;
-    }
-
-    gl.BindFramebuffer(Hw::GL_FRAMEBUFFER, h.rectangleFbo);
-    gl.FramebufferTexture2D(Hw::GL_FRAMEBUFFER, Hw::GL_COLOR_ATTACHMENT0, TextureRectangle, h.rectangle, 0);
-    gl.BindTexture(Hw::GL_TEXTURE_2D, h.texture);
-    gl.TexParameteri(Hw::GL_TEXTURE_2D, Hw::GL_TEXTURE_MAX_LEVEL, 0);
-    gl.TexParameteri(Hw::GL_TEXTURE_2D, Hw::GL_TEXTURE_WRAP_S, static_cast<Hw::GLint>(Hw::GL_CLAMP_TO_EDGE));
-    gl.TexParameteri(Hw::GL_TEXTURE_2D, Hw::GL_TEXTURE_WRAP_T, static_cast<Hw::GLint>(Hw::GL_CLAMP_TO_EDGE));
-    gl.TexImage2D(Hw::GL_TEXTURE_2D, 0, static_cast<Hw::GLint>(Hw::GL_RGBA8), static_cast<Hw::GLsizei>(width), static_cast<Hw::GLsizei>(height), 0, Hw::GL_RGBA,
-                  Hw::GL_UNSIGNED_BYTE, nullptr);
-    gl.BindFramebuffer(Hw::GL_FRAMEBUFFER, h.fbo);
-    gl.FramebufferTexture2D(Hw::GL_FRAMEBUFFER, Hw::GL_COLOR_ATTACHMENT0, Hw::GL_TEXTURE_2D, h.texture, 0);
-    gl.BindFramebuffer(Hw::GL_FRAMEBUFFER, 0);
-    h.width = width;
-    h.height = height;
-    return true;
-}
-
-bool MetalDevice::CopyPicture(const Picture& picture, u32 slot, void* drawnFence, ShownTexture* shown)
-{
-    // The render thread's OpenGL context is current (display.cpp keeps it so with Metal): without it, no hand-over (the
-    // window reads the picture back instead)
-    if (CGLGetCurrentContext() == nullptr || !Hw::LoadGl())
-    {
-        return false;
-    }
-
-    HandOver& h = handOver_[slot % 3];
-    if ((h.surface == nullptr || h.width != picture.width || h.height != picture.height) && !MakeHandOver(h, picture.width, picture.height))
-    {
-        return false;
+        MTLTextureDescriptor* descriptor = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+                                                                                              width:picture.width
+                                                                                             height:picture.height
+                                                                                          mipmapped:NO];
+        descriptor.usage = MTLTextureUsageShaderRead;
+        descriptor.storageMode = MTLStorageModePrivate;
+        copy = [device_ newTextureWithDescriptor:descriptor];
     }
 
     id<MTLTexture> source = picture.target != nullptr ? TextureOf(picture.target->texture) : TextureOf(merged_);
-    const u32 origin[2] = {static_cast<u32>(picture.left), static_cast<u32>(picture.top)};
-    id<MTLComputeCommandEncoder> encoder = Compute();
-    [encoder setComputePipelineState:Kernel("CopyPicture")];
-    [encoder setTexture:source atIndex:0];
-    [encoder setTexture:h.metal atIndex:1];
-    [encoder setBytes:origin length:sizeof(origin) atIndex:0];
-    [encoder dispatchThreads:MTLSizeMake(picture.width, picture.height, 1) threadsPerThreadgroup:MTLSizeMake(16, 16, 1)];
-    // (Metal's writes done before OpenGL reads the surface: the IOSurface has no synchronisation between the two)
-    Submit(true);
-
-    Hw::Gl& gl = Hw::GetGl();
-    if (drawnFence != nullptr)
-    {
-        Hw::GLsync drawn = static_cast<Hw::GLsync>(drawnFence);
-        gl.WaitSync(drawn, 0, Hw::GL_TIMEOUT_IGNORED);
-        gl.DeleteSync(drawn);
-    }
-
-    gl.BindFramebuffer(Hw::GL_READ_FRAMEBUFFER, h.rectangleFbo);
-    gl.BindFramebuffer(Hw::GL_DRAW_FRAMEBUFFER, h.fbo);
-    gl.Disable(Hw::GL_SCISSOR_TEST);
-    gl.BlitFramebuffer(0, 0, static_cast<Hw::GLint>(h.width), static_cast<Hw::GLint>(h.height), 0, 0, static_cast<Hw::GLint>(h.width),
-                       static_cast<Hw::GLint>(h.height), Hw::GL_COLOR_BUFFER_BIT, Hw::GL_NEAREST);
-    gl.BindFramebuffer(Hw::GL_FRAMEBUFFER, 0);
-    shown->texture = h.texture;
-    shown->width = h.width;
-    shown->height = h.height;
-    shown->fence = gl.FenceSync(Hw::GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    gl.Flush();
-    if (!handedOver_)
-    {
-        handedOver_ = true;
-        std::fprintf(stderr, "graphics: Metal renderer: the picture goes to the window through an IOSurface\n");
-    }
-
+    [Blit() copyFromTexture:source sourceSlice:0 sourceLevel:0
+               sourceOrigin:MTLOriginMake(static_cast<NSUInteger>(picture.left), static_cast<NSUInteger>(picture.top), 0)
+                 sourceSize:MTLSizeMake(picture.width, picture.height, 1)
+                  toTexture:copy destinationSlice:0 destinationLevel:0 destinationOrigin:MTLOriginMake(0, 0, 0)];
+    // Committed, not waited for: the presenter's drawing of it is committed to the same queue later, so it runs after
+    Submit(false);
+    shown->texture = 0;
+    shown->metal = (__bridge void*)copy;
+    shown->width = picture.width;
+    shown->height = picture.height;
+    shown->fence = nullptr;
     return true;
 }
 
 void MetalDevice::PictureDone()
 {
+    if (++pictures_ - reported_ == 60)
+    {
+        ReportCounts();
+    }
+
     // The vblank's work to the GPU (nothing waits for it here)
     Submit(false);
 }
+}
+
+void MetalGpu::Measure(id<MTLCommandBuffer> commands)
+{
+    MetalGpu* gpu = this;
+    [commands addCompletedHandler:^(id<MTLCommandBuffer> done) {
+        const double start = done.GPUStartTime, end = done.GPUEndTime;
+        std::lock_guard<std::mutex> lock(gpu->busyLock);
+        const double from = std::max(start, gpu->busyUntil);
+        if (end > from)
+        {
+            gpu->gpuNanoseconds.fetch_add(static_cast<uint64_t>((end - from) * 1e9), std::memory_order_relaxed);
+        }
+        gpu->busyUntil = std::max(gpu->busyUntil, end);
+    }];
+}
+
+MetalGpu* SharedMetalGpu()
+{
+    static MetalGpu* gpu = [] () -> MetalGpu* {
+        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+        if (device == nil)
+        {
+            std::fprintf(stderr, "graphics: no Metal device\n");
+            return nullptr;
+        }
+
+        // Programmable blending (reading the target in the fragment shader) is Apple's GPUs'
+        if (![device supportsFamily:MTLGPUFamilyApple1])
+        {
+            std::fprintf(stderr, "graphics: Metal: %s can't read its targets in a shader\n", [[device name] UTF8String]);
+            return nullptr;
+        }
+
+        return new MetalGpu{device, [device newCommandQueue]};
+    }();
+    return gpu;
 }
 
 std::unique_ptr<GpuDevice> MakeMetalDevice(HardwareStats& stats, const Gs::Gs& gs)

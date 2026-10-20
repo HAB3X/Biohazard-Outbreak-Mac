@@ -12,6 +12,7 @@
 #include "../../hw/ee/gif.h"
 #include "../../hw/gs/backend.h"
 #include "../../hw/gs/gs.h"
+#include "../../hw/hw/hwgs.h"
 #include "../../hw/png.h"
 #include "../../hw/state.h"
 
@@ -232,6 +233,7 @@ bool GsReplay(Gs::Gs& gs, Ee::Gif& gif, const std::vector<u8>& file, u32 pass)
     u64 vblanks = 0;
     auto start = std::chrono::steady_clock::now();
     const double cpuStart = ThreadCpuSeconds();
+    const double gpuStart = NativeGraphics::HardwareGpuSeconds();
     double picturesTime = 0;
     for (size_t at = 20 + size; at + sizeof(Header) <= file.size();)
     {
@@ -310,11 +312,20 @@ bool GsReplay(Gs::Gs& gs, Ee::Gif& gif, const std::vector<u8>& file, u32 pass)
     {
         gs.backend()->Flush();
     }
+    // (the GPU's work done before the pass is timed)
+    NativeGraphics::HardwareFinish();
     double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count() - picturesTime;
     // (the thread's own CPU time too: on a busy host the wall clock's varies with what else runs)
-    Log("gs replay: pass %u: %llu vblanks drawn in %.3f s (%.1f vblanks a second), %.3f s of the thread's CPU%s", pass + 1,
+    // (and the GPU's, where it's measured: Metal's)
+    const double gpu = NativeGraphics::HardwareGpuSeconds();
+    char gpuText[64] = "";
+    if (gpu >= 0)
+    {
+        snprintf(gpuText, sizeof(gpuText), ", %.3f s of the GPU", gpu - gpuStart);
+    }
+    Log("gs replay: pass %u: %llu vblanks drawn in %.3f s (%.1f vblanks a second), %.3f s of the thread's CPU%s%s", pass + 1,
         static_cast<unsigned long long>(vblanks), seconds, static_cast<double>(vblanks) / seconds, ThreadCpuSeconds() - cpuStart,
-        hashes != nullptr ? ", the pictures' reads not counted" : "");
+        gpuText, hashes != nullptr ? ", the pictures' reads not counted" : "");
     if (hashes != nullptr)
     {
         fclose(hashes);

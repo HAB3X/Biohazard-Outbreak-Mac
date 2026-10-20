@@ -31,7 +31,7 @@ add_library(ps2hw STATIC
     hw/png.cpp
 )
 target_include_directories(ps2hw PUBLIC hw)
-target_link_libraries(ps2hw PUBLIC SDL3::SDL3 "-framework Metal" "-framework Foundation" "-framework IOSurface" "-framework OpenGL")
+target_link_libraries(ps2hw PUBLIC SDL3::SDL3 "-framework Metal" "-framework Foundation")
 set_source_files_properties(hw/hw/metaldevice.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 target_compile_options(ps2hw PRIVATE -O2 -fno-strict-float-cast-overflow -Wno-deprecated-declarations)
 
@@ -41,6 +41,8 @@ add_library(ps2runtime STATIC
     runtime/src/cpu.cpp
     runtime/src/disc.cpp
     runtime/src/display.cpp
+    runtime/src/presentgl.cpp
+    runtime/src/presentmetal.mm
     runtime/src/dmac.cpp
     runtime/src/gs.cpp
     runtime/src/gsrecord.cpp
@@ -83,6 +85,8 @@ add_library(ps2runtime STATIC
     runtime/src/ui/menuview.cpp
     runtime/src/ui/mouseart.cpp
     runtime/src/ui/overlay.cpp
+    runtime/src/ui/overlaygl.cpp
+    runtime/src/ui/overlaymetal.mm
     runtime/src/ui/overlayrender.cpp
 )
 # The PC menus' fonts are built into the program (runtime/fonts)
@@ -91,7 +95,8 @@ set_source_files_properties(runtime/src/ui/overlay.cpp PROPERTIES
     COMPILE_DEFINITIONS "PS2_FONTS_DIR=\"${ps2_fonts}\""
     OBJECT_DEPENDS "${ps2_fonts}/LuckiestGuy-Regular.ttf;${ps2_fonts}/Fredoka-SemiBold.ttf;${ps2_fonts}/Fredoka-Bold.ttf")
 target_include_directories(ps2runtime PUBLIC runtime/include PRIVATE runtime/src)
-target_link_libraries(ps2runtime PUBLIC ps2hw SDL3::SDL3 resolv)
+target_link_libraries(ps2runtime PUBLIC ps2hw SDL3::SDL3 resolv "-framework QuartzCore")
+set_source_files_properties(runtime/src/presentmetal.mm runtime/src/ui/overlaymetal.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 target_compile_options(ps2runtime PRIVATE -O2 -g -Wall -Wno-unused-function)
 
 # The IPU's test on a real movie (runtime/tests/ipu/main.cpp): built when asked, `ninja ps2_ipu_movie`

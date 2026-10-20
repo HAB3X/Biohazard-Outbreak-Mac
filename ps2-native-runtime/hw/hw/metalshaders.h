@@ -143,6 +143,10 @@ vertex Varyings DrawVertex(uint id [[vertex_id]], device const HwVertex* vertexe
     return out;
 }
 
+// A draw's feature: a specialised pipeline's constant (k_NAME, declared before this source by the device: metaldevice.mm's
+// SpecialisedFeatures, compiled away with the branches it rules out), else the draw's constants' (the general pipeline)
+#define FEATURE(name) (is_function_constant_defined(k_##name) ? k_##name : u.name)
+
 // A texel coordinate wrapped by CLAMP's mode as the software GS wraps it (its region modes kept inside the level)
 int RegionWrap(int c, int mode, int size, int low, int high)
 {
@@ -243,18 +247,18 @@ float4 GsLevel(texture2d<float> tex, constant DrawUniforms& u, float2 uv, uint l
 // or MMIN's, and with mipmaps the level (rounded, or the two round it blended by the fraction)
 float4 GsSample(texture2d<float> tex, constant DrawUniforms& u, float2 uv, float q)
 {
-    if (u.mxl == 0)
+    if (FEATURE(mxl) == 0)
     {
-        return GsLevel(tex, u, uv, 0, u.magLinear != 0);
+        return GsLevel(tex, u, uv, 0, FEATURE(magLinear) != 0);
     }
     float lod = u.lodConst != 0 ? u.lodK : -log2(abs(q)) * u.lodL + u.lodK;
-    if (lod <= 0.0 || u.levelCount == 1)
+    if (lod <= 0.0 || FEATURE(levelCount) == 1)
     {
-        return GsLevel(tex, u, uv, 0, lod <= 0.0 ? u.magLinear != 0 : (u.mmin & 1) != 0);
+        return GsLevel(tex, u, uv, 0, lod <= 0.0 ? FEATURE(magLinear) != 0 : (FEATURE(mmin) & 1) != 0);
     }
-    bool linear = u.mmin >= 4;
-    float maxLevel = float(u.levelCount - 1);
-    if ((u.mmin & 1) == 0)
+    bool linear = FEATURE(mmin) >= 4;
+    float maxLevel = float(FEATURE(levelCount) - 1);
+    if ((FEATURE(mmin) & 1) == 0)
     {
         return GsLevel(tex, u, uv, uint(min(floor(lod + 0.5), maxLevel)), linear);
     }
@@ -262,7 +266,7 @@ float4 GsSample(texture2d<float> tex, constant DrawUniforms& u, float2 uv, float
     uint level = uint(floor(clamped));
     float fraction = float(uint((clamped - float(level)) * 16.0) & 15u);
     float4 c0 = GsLevel(tex, u, uv, level, linear);
-    if (level + 1 >= u.levelCount || fraction == 0.0)
+    if (level + 1 >= FEATURE(levelCount) || fraction == 0.0)
     {
         return c0;
     }
@@ -290,10 +294,10 @@ fragment Pixel DrawFragment(Varyings in [[stage_in]], float4 destination [[color
                             constant DrawUniforms& u [[buffer(0)]])
 {
     // The texture's coordinates in texels (derivatives taken before anything diverges)
-    float2 uv = u.uvMode != 0 ? in.stq.xy : in.stq.xy / in.stq.z * u.texSize;
+    float2 uv = FEATURE(uvMode) != 0 ? in.stq.xy : in.stq.xy / in.stq.z * u.texSize;
     float2 uvAcross = dfdx(uv);
     float2 uvDown = dfdy(uv);
-    if (u.nativeTexel != 0)
+    if (FEATURE(nativeTexel) != 0)
     {
         // The texture read where the GS reads it: the block's first sample's coordinates
         float2 block = floor(in.position.xy / float(u.targetScale)) * float(u.targetScale);
@@ -316,13 +320,13 @@ fragment Pixel DrawFragment(Varyings in [[stage_in]], float4 destination [[color
     // The depth test
 #if DEPTH
     uint storedDepth = destinationDepth;
-    uint zd = u.depthKind == 2 ? storedDepth & 0xFFFFFFu : u.depthKind == 3 ? storedDepth & 0xFFFFu : storedDepth;
-    if (u.nativeZtst == 0 && ((u.ztst == 2 && z < zd) || (u.ztst == 3 && z <= zd)))
+    uint zd = FEATURE(depthKind) == 2 ? storedDepth & 0xFFFFFFu : FEATURE(depthKind) == 3 ? storedDepth & 0xFFFFu : storedDepth;
+    if (FEATURE(nativeZtst) == 0 && ((FEATURE(ztst) == 2 && z < zd) || (FEATURE(ztst) == 3 && z <= zd)))
     {
         discard_fragment();
     }
 #endif
-    if (u.nativeZtst != 0)
+    if (FEATURE(nativeZtst) != 0)
     {
         // A texture at the PS2's resolution made from upscaled buffers tested where the GS tests it: at the block's first
         // sample, against the depth there as the batch found it (else the samples near where the test changes pass with the
@@ -331,9 +335,9 @@ fragment Pixel DrawFragment(Varyings in [[stage_in]], float4 destination [[color
         float2 back = in.position.xy - (block + 0.5);
         float here = in.zIsFlat != 0 ? float(in.zFlat) : in.depth - depthAcross * back.x - depthDown * back.y;
         uint there = depthCopy.read(uint2(block)).r;
-        there = u.depthKind == 2 ? there & 0xFFFFFFu : u.depthKind == 3 ? there & 0xFFFFu : there;
+        there = FEATURE(depthKind) == 2 ? there & 0xFFFFFFu : FEATURE(depthKind) == 3 ? there & 0xFFFFu : there;
         uint at = min(uint(clamp(here, 0.0, 4294967040.0)), u.zmax);
-        if ((u.nativeZtst == 2 && at < there) || (u.nativeZtst == 3 && at <= there))
+        if ((FEATURE(nativeZtst) == 2 && at < there) || (FEATURE(nativeZtst) == 3 && at <= there))
         {
             discard_fragment();
         }
@@ -347,26 +351,26 @@ fragment Pixel DrawFragment(Varyings in [[stage_in]], float4 destination [[color
     uint g = c7.g >> 7;
     uint b = c7.b >> 7;
     uint a = va;
-    if (u.textured != 0)
+    if (FEATURE(textured) != 0)
     {
         // The GS's texel coordinates are exact (S/Q times the size, on its sixteenth of a texel grid); the GPU's interpolation
         // can land a hair under a texel's edge where the GS lands on it: a 256th of a texel puts it back on the GS's side
         uv += 1.0 / 256.0;
         float4 t;
-        if (u.gsSample != 0)
+        if (FEATURE(gsSample) != 0)
         {
             t = GsSample(tex, u, uv, in.stq.z);
         }
-        else if (u.region != 0)
+        else if (FEATURE(region) != 0)
         {
             t = RegionSample(tex, u, uv);
         }
         else
         {
             float lod = 0.0;
-            if (u.mipmap != 0)
+            if (FEATURE(mipmap) != 0)
             {
-                lod = min(u.lodConst != 0 ? u.lodK : log2(1.0 / abs(in.stq.z)) * u.lodL + u.lodK, u.lodMax);
+                lod = min(FEATURE(lodConst) != 0 ? u.lodK : log2(1.0 / abs(in.stq.z)) * u.lodL + u.lodK, u.lodMax);
             }
             if (u.texSnap > 0.0)
             {
@@ -374,56 +378,56 @@ fragment Pixel DrawFragment(Varyings in [[stage_in]], float4 destination [[color
             }
             t = floor(tex.sample(smp, uv / u.texActual, level(lod)) * 255.0 + 0.5);
         }
-        if (u.texAlpha == 1)
+        if (FEATURE(texAlpha) == 1)
         {
             t.a = (u.aem != 0 && t.r + t.g + t.b == 0.0) ? 0.0 : float(u.ta0);
         }
-        else if (u.texAlpha == 2)
+        else if (FEATURE(texAlpha) == 2)
         {
             t.rgb = floor(t.rgb / 8.0) * 8.0;
             t.a = t.a >= 128.0 ? float(u.ta1) : ((u.aem != 0 && t.r + t.g + t.b == 0.0) ? 0.0 : float(u.ta0));
         }
         uint4 tx = uint4(t);
-        if (u.tfx == 1)
+        if (FEATURE(tfx) == 1)
         {
             r = tx.r;
             g = tx.g;
             b = tx.b;
-            a = u.tcc != 0 ? tx.a : va;
+            a = FEATURE(tcc) != 0 ? tx.a : va;
         }
         else
         {
             // Modulate, and the highlights with the vertex's alpha added
-            uint add = u.tfx == 0 ? 0u : va;
+            uint add = FEATURE(tfx) == 0 ? 0u : va;
             r = min(((tx.r * c7.r) >> 14) + add, 255u);
             g = min(((tx.g * c7.g) >> 14) + add, 255u);
             b = min(((tx.b * c7.b) >> 14) + add, 255u);
-            a = u.tcc == 0 ? va : u.tfx == 0 ? min((tx.a * c7.a) >> 14, 255u) : u.tfx == 2 ? min(tx.a + va, 255u) : tx.a;
+            a = FEATURE(tcc) == 0 ? va : FEATURE(tfx) == 0 ? min((tx.a * c7.a) >> 14, 255u) : FEATURE(tfx) == 2 ? min(tx.a + va, 255u) : tx.a;
         }
     }
 
     // The alpha test: a failure keeps nothing, or keeps the frame, the depth or the frame's colour
-    bool writeFrame = u.frameWrite != 0;
-    bool writeDepth = u.zWrite != 0;
+    bool writeFrame = FEATURE(frameWrite) != 0;
+    bool writeDepth = FEATURE(zWrite) != 0;
     uint alphaMask = 0;
-    if (u.alphaTest != 0)
+    if (FEATURE(alphaTest) != 0)
     {
-        bool pass = u.atst == 0 ? false : u.atst == 1 ? true : u.atst == 2 ? a < u.aref : u.atst == 3 ? a <= u.aref
-                  : u.atst == 4 ? a == u.aref : u.atst == 5 ? a >= u.aref : u.atst == 6 ? a > u.aref : a != u.aref;
+        bool pass = FEATURE(atst) == 0 ? false : FEATURE(atst) == 1 ? true : FEATURE(atst) == 2 ? a < u.aref : FEATURE(atst) == 3 ? a <= u.aref
+                  : FEATURE(atst) == 4 ? a == u.aref : FEATURE(atst) == 5 ? a >= u.aref : FEATURE(atst) == 6 ? a > u.aref : a != u.aref;
         if (!pass)
         {
-            if (u.afail == 0)
+            if (FEATURE(afail) == 0)
             {
                 discard_fragment();
             }
-            writeDepth = writeDepth && u.afail == 2;
-            writeFrame = writeFrame && u.afail != 2;
-            alphaMask = u.afail == 3 ? 0xFF000000u : 0u;
+            writeDepth = writeDepth && FEATURE(afail) == 2;
+            writeFrame = writeFrame && FEATURE(afail) != 2;
+            alphaMask = FEATURE(afail) == 3 ? 0xFF000000u : 0u;
         }
     }
 
     // Fog
-    if (u.fog != 0)
+    if (FEATURE(fog) != 0)
     {
         uint f = uint(max(floor(in.fog + 1.0 / 4096.0), 0.0));
         r = (f * r + (255u - f) * u.fogR) >> 8;
@@ -435,10 +439,10 @@ fragment Pixel DrawFragment(Varyings in [[stage_in]], float4 destination [[color
     uint4 d = uint4(destination * 255.0 + 0.5);
     uint fd = d.r | d.g << 8 | d.b << 16 | d.a << 24;
     uint fd16 = (d.r >> 3) | (d.g >> 3) << 5 | (d.b >> 3) << 10 | (d.a >= 0x80u ? 0x8000u : 0u);
-    if (u.date != 0)
+    if (FEATURE(date) != 0)
     {
-        uint bit = u.frameKind == 2 ? (fd16 >> 15) & 1u : fd >> 31;
-        if (bit != u.datm)
+        uint bit = FEATURE(frameKind) == 2 ? (fd16 >> 15) & 1u : fd >> 31;
+        if (bit != FEATURE(datm))
         {
             discard_fragment();
         }
@@ -449,7 +453,7 @@ fragment Pixel DrawFragment(Varyings in [[stage_in]], float4 destination [[color
     out.depth = storedDepth;
     if (writeDepth)
     {
-        out.depth = u.depthKind == 2 ? (storedDepth & 0xFF000000u) | (z & 0xFFFFFFu) : u.depthKind == 3 ? (z & 0xFFFFu) : z;
+        out.depth = FEATURE(depthKind) == 2 ? (storedDepth & 0xFF000000u) | (z & 0xFFFFFFu) : FEATURE(depthKind) == 3 ? (z & 0xFFFFu) : z;
     }
 #endif
     out.colour = destination;
@@ -469,22 +473,22 @@ fragment Pixel DrawFragment(Varyings in [[stage_in]], float4 destination [[color
     uint dr = d.r;
     uint dg = d.g;
     uint db = d.b;
-    uint da = u.frameKind == 1 ? 0x80u : d.a;
+    uint da = FEATURE(frameKind) == 1 ? 0x80u : d.a;
 
     // The blend: ((A - B) * C >> 7) + D on each colour channel; PABE blends only pixels whose alpha's top bit is set
     int sr = int(r);
     int sg = int(g);
     int sb = int(b);
-    if (u.blend != 0 && !(u.pabe != 0 && (a & 0x80u) == 0))
+    if (FEATURE(blend) != 0 && !(FEATURE(pabe) != 0 && (a & 0x80u) == 0))
     {
-        int cf = int(u.blendC == 0 ? a : u.blendC == 1 ? da : u.blendFix);
-        sr = ((int(Pick(u.blendA, r, dr)) - int(Pick(u.blendB, r, dr))) * cf >> 7) + int(Pick(u.blendD, r, dr));
-        sg = ((int(Pick(u.blendA, g, dg)) - int(Pick(u.blendB, g, dg))) * cf >> 7) + int(Pick(u.blendD, g, dg));
-        sb = ((int(Pick(u.blendA, b, db)) - int(Pick(u.blendB, b, db))) * cf >> 7) + int(Pick(u.blendD, b, db));
+        int cf = int(FEATURE(blendC) == 0 ? a : FEATURE(blendC) == 1 ? da : u.blendFix);
+        sr = ((int(Pick(FEATURE(blendA), r, dr)) - int(Pick(FEATURE(blendB), r, dr))) * cf >> 7) + int(Pick(FEATURE(blendD), r, dr));
+        sg = ((int(Pick(FEATURE(blendA), g, dg)) - int(Pick(FEATURE(blendB), g, dg))) * cf >> 7) + int(Pick(FEATURE(blendD), g, dg));
+        sb = ((int(Pick(FEATURE(blendA), b, db)) - int(Pick(FEATURE(blendB), b, db))) * cf >> 7) + int(Pick(FEATURE(blendD), b, db));
     }
 
     // Dithering of 16 bit frames (the matrix's place the PS2's pixel, or the screen's), then the clamp (or the low byte kept)
-    if (u.dither != 0)
+    if (FEATURE(dither) != 0)
     {
         uint2 p = uint2(in.position.xy) / max(u.ditherScale, 1u);
         int dm = u.dimx[(p.y & 3) * 4 + (p.x & 3)];
@@ -492,13 +496,13 @@ fragment Pixel DrawFragment(Varyings in [[stage_in]], float4 destination [[color
         sg += dm;
         sb += dm;
     }
-    uint fr = u.colclamp != 0 ? uint(clamp(sr, 0, 255)) : uint(sr) & 0xFFu;
-    uint fg = u.colclamp != 0 ? uint(clamp(sg, 0, 255)) : uint(sg) & 0xFFu;
-    uint fb = u.colclamp != 0 ? uint(clamp(sb, 0, 255)) : uint(sb) & 0xFFu;
-    uint fa = a | (u.fba != 0 ? 0x80u : 0u);
+    uint fr = FEATURE(colclamp) != 0 ? uint(clamp(sr, 0, 255)) : uint(sr) & 0xFFu;
+    uint fg = FEATURE(colclamp) != 0 ? uint(clamp(sg, 0, 255)) : uint(sg) & 0xFFu;
+    uint fb = FEATURE(colclamp) != 0 ? uint(clamp(sb, 0, 255)) : uint(sb) & 0xFFu;
+    uint fa = a | (FEATURE(fba) != 0 ? 0x80u : 0u);
     uint mask = u.fbmsk | alphaMask;
     uint written;
-    if (u.frameKind == 2)
+    if (FEATURE(frameKind) == 2)
     {
         uint c16 = (fr >> 3) | (fg >> 3) << 5 | (fb >> 3) << 10 | (fa & 0x80u) << 8;
         uint m16 = ((mask >> 3) & 0x1Fu) | ((mask >> 6) & 0x3E0u) | ((mask >> 9) & 0x7C00u) | ((mask >> 16) & 0x8000u);
@@ -822,17 +826,6 @@ kernel void Upscale(uint2 at [[thread_position_in_grid]], texture2d<float> sourc
         sum += row * wy[y];
     }
     out.write(clamp(sum, 0.0, 1.0), at);
-}
-
-// The picture copied for the window's hand-over (from its place in a target into a texture of its own)
-kernel void CopyPicture(uint2 at [[thread_position_in_grid]], texture2d<float> source [[texture(0)]],
-                        texture2d<float, access::write> out [[texture(1)]], constant uint2& origin [[buffer(0)]])
-{
-    if (at.x >= out.get_width() || at.y >= out.get_height())
-    {
-        return;
-    }
-    out.write(source.read(at + origin), at);
 }
 
 // The PCRTC's two circuits merged (circuit 1 over circuit 2 by ALP or its own alpha, over the background colour), at the scale

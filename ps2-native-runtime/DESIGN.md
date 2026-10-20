@@ -302,24 +302,34 @@ the PCRTC's picture to the presenter at each vblank (an SDL3 window, or PNGs wit
 The GS draws on the GPU: the hardware layer's OpenGL 3.3 renderer (`hw/hw/hwgs.*`) takes each primitive from the GS's front end
 and draws it into render targets at a multiple of the PS2's resolution (3x by default: a 640x224 field is drawn at 1920x672),
 keeping them and the GS's local memory in step page by page; what it can't draw exactly is left to the software rasteriser.
-It runs on the render thread with an OpenGL context of its own, made on the main thread (SDL's windows are the main thread's)
-sharing the window's textures. At each vblank the render thread copies the shown picture into one of three textures and
-fences the copy; the window (its own context, on the main thread) draws the newest one at 4:3, letterboxed, once the fence is
-passed, and fences its drawing so the render thread doesn't copy into a texture still being drawn (the Crash Twinsanity port's
-hand-over). Snapshots read the picture back at the internal resolution. Headless, the context has a hidden window.
+At each vblank the render thread copies the shown picture into one of three slots; the main thread draws the newest one at
+4:3, letterboxed, with the PC menus over it. The drawing is a presenter's (`presenter.h`), with the renderer's graphics
+interface: OpenGL's (`presentgl.cpp`: the window's context, and the render thread's own, made on the main thread since SDL's
+windows are the main thread's, sharing the window's textures; the copy is fenced, the window waits for the fence and fences its
+drawing so the render thread doesn't copy into a texture still being drawn, the Crash Twinsanity port's hand-over; headless,
+the render thread's context has a hidden window) or Metal's (`presentmetal.mm`: the window's CAMetalLayer shows the frames; the
+renderer and the presenter share one device and command queue, `hw/hw/metalshared.h`, so the presenter's drawing of a slot runs
+after the copy into it without either thread waiting for the GPU; at most three frames in flight). display.cpp keeps the
+window, the settings, the slots and which picture is drawn where. The PC menus' overlay is a list of draws
+(`ui/overlayrender.cpp`) that each presenter's overlay device draws (`ui/overlaygl.cpp`, `ui/overlaymetal.mm`: the same shader in
+GLSL and Metal's language). Snapshots read the picture back at the internal resolution.
 
 The settings: `--gs hardware|metal|software`, `--scale 1-8` and `--texture-upscale 0|2|4` (the textures decoded from the game's data
 upscaled on the GPU, a bicubic pass), or `$PS2_GS`, `$PS2_GS_SCALE`, `$PS2_TEXTURE_UPSCALE`, or `graphics.txt` in the settings
-folder (written with the defaults the first time). The software GS (the PS2's own rules at its resolution) draws when it's asked
-for, when there's no OpenGL 3.3 and with `PS2_RENDER_THREAD=0` (the GPU's context belongs to the render thread).
+folder (written with the defaults the first time). The defaults are OpenGL at 3x unless the game has its own
+(`Ps2GameInfo::gsRenderer`, `gsScale`: Biohazard Outbreak's Metal at 4x); graphics.txt has a `version`, and a file from before
+games had their own takes its `renderer = hardware` and `scale = 3` (written whatever the player chose) as not chosen. Metal
+without an Apple GPU, or a Metal presenter that can't open the window, leaves OpenGL drawing; a Metal renderer that can't start
+leaves the software GS under Metal's presenter (all logged). The software GS (the PS2's own rules at its resolution) draws when
+it's asked for, when there's no GPU renderer and with `PS2_RENDER_THREAD=0` (the GPU's work belongs to the render thread).
 
-The renderer's GPU calls are a device's (`hw/hw/gpudevice.h`): OpenGL's (`gldevice.cpp`, the default) or Metal's
+The renderer's GPU calls are a device's (`hw/hw/gpudevice.h`): OpenGL's (`gldevice.cpp`, the runtime's default) or Metal's
 (`metaldevice.mm`, `--gs metal`, renderer = metal in graphics.txt; docs/metal.md has the design and where it stands). HwGs's
 targets, pages, texture caches and batching are the same for both. Metal makes every pixel's GS rules in its fragment shader
 on the target's own pixel (Apple GPUs read it there), the depth on the GS's integer values and the texture sampled as the GS
 samples it, so none of the copies, extra passes and approximations below are Metal's; at 1x its pictures differ from the
-software GS's on 0-5% of the pixels (by 1 or 2: the GPU's interpolation), OpenGL's on 34-86%. The picture reaches the window
-through an IOSurface the window's OpenGL reads.
+software GS's on 0-7% of the pixels (by 1 or 2: the GPU's interpolation), OpenGL's on 34-86%. Each draw's features get a
+pipeline specialised for them (function constants), compiled in the background while the general one draws.
 
 Primitives that read the buffer they draw into (WoC's Warp Room draws about 300 a frame) read one copy of it made when their
 batch began, as PCSX2's hardware renderers do, instead of a copy and two render passes each: the Warp Room went from 10-20
