@@ -1015,6 +1015,9 @@ public:
     void ReadPicture(const Picture& picture, std::vector<u32>& pixels) override;
     bool CopyPicture(const Picture& picture, u32 slot, void* drawnFence, ShownTexture* shown) override;
     void PictureDone() override;
+    void Finish() override { GetGl().Finish(); }
+    // (not measured: OpenGL's timer queries aren't used)
+    double GpuSeconds() const override { return -1.0; }
 
 private:
     const Program& ProgramFor(u32 bits);

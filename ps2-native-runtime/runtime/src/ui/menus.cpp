@@ -436,12 +436,11 @@ void ResetPage(const std::string& title)
     }
     else if (title == "Display")
     {
-        DisplaySet(DisplaySetting::Scale, 3);
-        DisplaySet(DisplaySetting::TextureUpscale, 0);
-        DisplaySet(DisplaySetting::Filtering, 0);
-        DisplaySet(DisplaySetting::AntiAliasing, 0);
-        DisplaySet(DisplaySetting::Crt, 0);
-        DisplaySet(DisplaySetting::VSync, 1);
+        for (DisplaySetting setting : {DisplaySetting::Scale, DisplaySetting::TextureUpscale, DisplaySetting::Filtering,
+                                       DisplaySetting::AntiAliasing, DisplaySetting::Crt, DisplaySetting::VSync})
+        {
+            DisplaySet(setting, DisplayDefault(setting));
+        }
     }
     else if (title == "Sound")
     {
@@ -574,7 +573,7 @@ void BuildOptions()
         "Internal resolution", "The picture drawn at a multiple of the PS2's resolution: sharper, and slower, the higher it is",
         [] { return DisplayGet(DisplaySetting::Scale) - 1; }, [](int v) { DisplaySet(DisplaySetting::Scale, v + 1); }, {});
     scale.maximum = 7;
-    scale.valueText = [](int v) { return Times(v + 1) + (v + 1 == 3 ? "  ·  default" : ""); };
+    scale.valueText = [](int v) { return Times(v + 1) + (v + 1 == DisplayDefault(DisplaySetting::Scale) ? "  ·  default" : ""); };
     scale.shown = onGpu;
     display.rows.push_back(scale);
     Row filtering = DisplayChoice("Texture filtering", "How the game's textures are smoothed: as the PS2 did, or more",
@@ -1362,7 +1361,7 @@ void ScriptStep(const std::string& token)
         {"back", SDL_SCANCODE_BACKSPACE}, {"delete", SDL_SCANCODE_DELETE}, {"up", SDL_SCANCODE_UP},
         {"down", SDL_SCANCODE_DOWN}, {"left", SDL_SCANCODE_LEFT}, {"right", SDL_SCANCODE_RIGHT},
         {"tab", SDL_SCANCODE_TAB}, {"q", SDL_SCANCODE_Q}, {"e", SDL_SCANCODE_E}, {"k", SDL_SCANCODE_K},
-        {"f1", SDL_SCANCODE_F1},
+        {"f1", SDL_SCANCODE_F1}, {"f10", SDL_SCANCODE_F10},
     };
     for (const auto& [name, code] : Keys)
     {
@@ -1817,7 +1816,7 @@ static f32 PromptOpacity(const std::string& asked)
     return at();
 }
 
-void MenusDraw(int pixelWidth, int pixelHeight, float pixelScale, const SDL_FRect& picture)
+void MenusDraw(OverlayDevice& device, int pixelWidth, int pixelHeight, float pixelScale, const SDL_FRect& picture)
 {
     NoteWindow(pixelWidth, pixelHeight, pixelScale);
     f32 promptOpacity = PromptOpacity(g_screen == Screen::None ? InputPrompt() : std::string());
@@ -1869,7 +1868,7 @@ void MenusDraw(int pixelWidth, int pixelHeight, float pixelScale, const SDL_FRec
             DrawCursor(frame, g_mouseX, g_mouseY, over);
         }
     }
-    DrawOverlay(frame, pixelWidth, pixelHeight, pixelScale);
+    DrawOverlay(frame, device, pixelWidth, pixelHeight, pixelScale);
 }
 
 std::string PadControlText(PadControl control, PromptStyle style)

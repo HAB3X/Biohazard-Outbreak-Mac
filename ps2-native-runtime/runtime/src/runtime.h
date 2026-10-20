@@ -87,6 +87,12 @@ void Log(const char* format, ...) __attribute__((format(printf, 1, 2)));
 [[noreturn]] void Fatal(const char* format, ...) __attribute__((format(printf, 1, 2)));
 // The guest's call stack (from the host's) to the log
 void Backtrace();
+// From now on everything written to stderr also goes to SETTINGS/logs/latest.log (the run before's kept as previous.log),
+// up to LogFileLimit bytes: so a run started from Finder, whose stderr goes nowhere, leaves its log where a player can send it
+constexpr size_t LogFileLimit = 32u << 20;
+void LogToFile(const std::string& settingsDir);
+// The log file's descriptor (-1 when there's none), for writers that can't go through stderr (a crash's handler)
+int LogFileDescriptor();
 // --control's commands (control.cpp): keys held from now, and a picture asked for, taken at the next vblank
 void InputLiveKeys(const std::vector<std::string>& names, double hold);
 // SDL events as a window's: a key or mouse button (bindings.txt's names) pressed, let go, or both at once; the mouse (0-1 over the
@@ -102,7 +108,8 @@ void GsLiveStop();
 void GsLiveRecord(const std::string& file, u64 vblanks);
 void ControlStart(const std::string& path);
 #ifdef PS2_TRACE_ENTER
-void TraceEnterDump();
+// The function entry counts so far to FILE ($PS2_TRACE_FILE when none is given)
+void TraceEnterDump(const char* file = nullptr);
 #endif
 // Logs a message once per key
 bool Once(const std::string& key);
@@ -330,7 +337,7 @@ void Vu1RecordChunk(Ee::Vu& vu1, Ee::Vif& vif1);
 void Vu1RecordData(u32 kind, u32 value, const u32* words, u32 count);
 bool Vu1Replay(Ee::Vu& vu1, Ee::Vif& vif1, Ee::Gif& gif, const std::vector<u8>& file, u32 pass);
 
-// --- display.cpp: the window (OpenGL) and the picture's way from the GS to it
+// --- display.cpp: the window (drawn by OpenGL or Metal: presenter.h) and the picture's way from the GS to it
 // The window and the GPU's contexts made (the main thread, before RenderStart): the window, or null when headless
 SDL_Window* DisplayOpen();
 // The render thread's start: its context made current and the hardware renderer started (unless the software GS is asked for)
@@ -365,6 +372,8 @@ enum class DisplaySetting
 };
 int DisplayGet(DisplaySetting setting);
 void DisplaySet(DisplaySetting setting, int value);
+// A setting's default (the game's own where it has one: Ps2GameInfo::gsScale)
+int DisplayDefault(DisplaySetting setting);
 std::string DisplayWindowSizeText(int choice);
 int DisplayWindowSizeCount();
 // The window's size in points as it is, and put back (the menus' countdown going back)

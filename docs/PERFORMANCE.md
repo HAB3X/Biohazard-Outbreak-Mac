@@ -138,3 +138,34 @@ with Metal, 87 with OpenGL. Every draw is one render pass per pair of targets ke
 pipeline (two: with and without depth) built at start, its features branches, because compiling a variant per feature set
 held the render thread for seconds in each new scene.
 
+## Metal by default, at 4x (2026-10-21, runtime `biohazard-metal2`)
+
+Both discs draw with Metal at 4x unless the player chooses otherwise (`Ps2GameInfo::gsRenderer` and `gsScale` in
+`src/file1.cpp`, `src/file2.cpp`; OpenGL where there's no Apple GPU). The window is Metal's too now (a CAMetalLayer, the PC
+menus, FXAA and the CRT filter drawn by Metal): the render thread no longer waits about 5 ms a frame to hand the picture over.
+Each draw's features also get a specialised pipeline, made in the background (the zoo with zombies' replay: 2.3 ms of the GPU
+a vblank at 3x where it took 4.2, 4.8 at 4x where it took 8.2; the pictures the same). The runtime's docs/metal.md has the
+recordings' tables.
+
+Why 4x: the replays' GPU time a vblank on the M4 (other agents' games sharing the GPU throughout, so a range):
+
+| Recording | 3x | 4x | 5x |
+|---|---|---|---|
+| File 2 zoo with zombies (the heaviest) | 2.5-4.1 | 4.2-6.6 | 8.1-10.4 |
+| File 1 bar with zombies | 0.8-1.3 | 1.4-1.9 | 2.1-2.5 |
+| File 2 Training Ground | 1.5-1.7 | 2.7-3.1 | 4.6-4.9 |
+| File 2 partner select | 1.1-2.2 | 1.7-2.9 | 3.0-3.4 |
+
+A frame (30 a second) is two vblanks: the zoo with zombies at 4x is 8-13 ms of the M4's GPU in 33. A base M1's GPU at about
+1.7 times slower: 14-22 ms (42-67% of a frame), and its render thread (4.5-5.8 ms a vblank here, 1.6 times slower) about 15-19 ms
+of its frame on a core of its own: 30 frames a second with room to spare. At 5x the M1's GPU would need 27-35 ms of 33: no margin.
+At 3x the picture is upscaled 1.4 times to a 1280 x 960 window on a Retina screen (2560 x 1920 pixels); at 4x it's shown at
+nearly its own pixels. Texture filtering (bilinear) took 20-30% off the GPU's time but isn't the GS's sampling; FXAA and the CRT
+filter cost the window's drawing almost nothing (left off: FXAA softens the text). Measured on the M4 only: the M1 figures are
+an estimate from the earlier report's ratios (CPU about 1.6, GPU about 1.7 times slower).
+
+In play at 4x (`--fps`, headless and in a window, with Metal's API validation on in four of the runs): both discs from boot
+through the menus, the selects, the network screens to obsrv's login page (not logged in) and into their first scenarios at 30
+frames a second (but for loads and the PC menus' pause). File 2's Training Ground in a window, the same place at each scale:
+the GPU 190, 271 and 294 ms a second at 3x, 4x and 5x (shared), the render thread 64 ms and the EE 54 ms a second at each.
+

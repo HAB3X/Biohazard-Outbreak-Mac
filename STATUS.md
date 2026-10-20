@@ -100,24 +100,30 @@ docs/network.md (the runtime's docs/network.md has the design).
   'title' (not reproduced in any run here, headless or windowed, with a copy of the owner's save: a picture of it is
   needed); SCREEN ADJUST / EDIT NETWORK CONFIGURATION stay (docs/controls.md says why).
 
-## The Metal renderer (branch `metal`, runtime `biohazard-metal`), 2026-10-20
+## The Metal renderer (branch `metal2`, runtime `biohazard-metal2`), 2026-10-21
 
-The plan's fourth step, begun. The runtime's GPU renderer now draws through a device interface, OpenGL's or Metal's, with the
-same targets, page tracking and texture caches (the runtime's docs/metal.md: the design, the options weighed, the numbers).
-Metal makes each pixel's GS rules in its fragment shader on the target's own pixel, so none of OpenGL's copies of the target,
-extra passes or batch breaks are needed, and the games' gsLooseFrameMasks and gsRoundedRegionBlends don't apply to it (it's
-exact either way). Switched on with `./run.sh file2 --gs metal` (or `renderer = metal` in graphics.txt); OpenGL stays the
-default.
+The plan's fourth step. The runtime's GPU renderer draws through a device interface, OpenGL's or Metal's, with the same targets,
+page tracking and texture caches (the runtime's docs/metal.md: the design, the options weighed, the numbers). Metal makes each
+pixel's GS rules in its fragment shader on the target's own pixel, so none of OpenGL's copies of the target, extra passes or
+batch breaks are needed, and the games' gsLooseFrameMasks and gsRoundedRegionBlends don't apply to it (it's exact either way).
 
-- Pictures: fourteen GS recordings (both games' menus, selects, rooms, the opening, File 1's opening cutscene, the network
-  screens; WoC's and CTTR's too) at 1x against the software GS: 0-5% of the pixels differ, by 1 or 2 (OpenGL: 16-86%); File
-  1's cutscene identical. At 3x the same pictures as OpenGL's by eye.
-- Speed: the recordings' replays at 3x take 0.45-5.33 ms a vblank against OpenGL's 0.50-7.83 (the zoo with zombies 5.33
-  against 7.83, the partner select 2.92 against 4.33); the same in File 1's cutscene.
-- Play: both games from boot into their first scenario at 30 frames a second, headless and in a window; the window gets the
-  picture through an IOSurface.
-- Not done: the window's hand-over waits for the GPU on the render thread (a CAMetalLayer presenter removes it), WoC's levels
-  and CTTR's races not yet in a recording, the GS's own stepping of colours and texture coordinates.
+**It's both discs' default now, at 4x** (`src/file1.cpp`, `src/file2.cpp`: `gsRenderer = "metal"`, `gsScale = 4`). OpenGL stays:
+`renderer = hardware` in graphics.txt or `./run.sh file2 --gs hardware`; it draws by itself where there's no Apple GPU. A
+graphics.txt from before (it said `renderer = hardware` and `scale = 3` whatever the player chose) takes the new defaults.
+
+- The window is Metal's: a CAMetalLayer presenter draws the picture, the PC menus (F10), FXAA and the CRT filter; the render
+  thread doesn't wait for the GPU to hand the picture over (the IOSurface hand-over waited about 5 ms a frame).
+- Each draw's features get a specialised pipeline, made in the background: the zoo with zombies 4.8 ms of the GPU a vblank at
+  4x where it took 8.2, every recording's pictures the same.
+- Pictures: fifteen GS recordings at 1x against the software GS: 0-7% of the pixels differ, by 1 or 2 (OpenGL: 34-86%); File 1's
+  cutscene and the network setup identical; Metal at 4x read at the GS's sample points as close.
+- Speed and why 4x: docs/PERFORMANCE.md (the zoo with zombies 8-13 ms of the M4's GPU a frame at 4x, an estimated 14-22 on a
+  base M1).
+- Play at 4x: both discs from boot through the menus, selects, network screens to obsrv's login page (not logged in) and into
+  their first scenarios at 30 frames a second, headless and in a window; Metal's API validation clean in those runs; the PC
+  menus, FXAA, the CRT filter, v-sync and fullscreen checked in the window.
+- Not done: the software GS's own stepping of colours and texture coordinates (single steps on scattered pixels at 1x, not
+  cheap in a shader), WoC's levels and CTTR's races not in a recording (they keep OpenGL), a playthrough by eye in a window.
 
 ## The Mac apps
 
@@ -176,7 +182,7 @@ number with them; the NET file screens' header reads "NET File". With the one sa
   PS2continue.sfd), and the title screen after the opening.
 - PC texts (the game's button glyphs and its Japanese menu text said for a computer), the PC menus' game settings; mouse aiming
   if the game has a use for the right stick.
-- The native renderer: Metal draws every scene tried (above); a presenter on Metal, then the default for both games.
+- The native renderer: Metal is the default (above); a playthrough by eye in a window, and the slower Macs measured.
 
 ## Notes
 

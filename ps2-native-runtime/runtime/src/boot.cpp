@@ -539,6 +539,15 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         fflush(stdout);
         return 0;
     }
+    LogToFile(g_options.settingsDir);
+    {
+        std::string line;
+        for (int i = 0; i < argc; i++)
+        {
+            line += (i ? " " : "") + std::string(argv[i]);
+        }
+        Log("%s (%s): %s", game->title, game->executable, line.c_str());
+    }
     if (!g_options.patch.empty() && !DiscLoadPatch(g_options.patch))
     {
         return 1;

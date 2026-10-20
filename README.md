@@ -26,7 +26,7 @@ obsrv.org, logs in, runs the lobby and connects to the game server; play in an o
 | Speed: 30 frames a second in every scene measured | Done on an M4; slower Macs not measured yet |
 | Online: network, DNAS, the KDDI browser, obsrv.org's login, lobby and game server | **Login and lobby work; rooms and games not tried yet** |
 | Saves (a memory card image per game) | Done |
-| A native Metal renderer replacing the GS's OpenGL path | **Being made**: drawing every scene tried, off unless chosen (`--gs metal`) |
+| A native Metal renderer replacing the GS's OpenGL path | Done: the default (at 4x the PS2's resolution), OpenGL still there (`renderer = hardware` in `graphics.txt`, or `--gs hardware`) |
 
 Known issues: [docs/PLAYING.md](docs/PLAYING.md#known-issues).
 

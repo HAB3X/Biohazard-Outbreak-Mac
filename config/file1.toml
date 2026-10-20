@@ -142,7 +142,7 @@ base = "0x540000"
 text = ["0x540040", "0x5d6080"]
 # The network configuration is the Mac's (src/network.cpp): no card holds one, and the setup screen connects with it without
 # showing its list; the software keyboard's step tells the Mac's keyboard to type (src/typing.cpp)
-overrides = { "0x5d0c00" = "netwk_card_has_netcnf", "0x553820" = "netwk_soft_keyboard_step", "0x5c88c0" = "netwk_setup_step" }
+overrides = { "0x5d0c00" = "netwk_card_has_netcnf", "0x553820" = "netwk_soft_keyboard_step", "0x5a51c0" = "netwk_usb_key", "0x5c88c0" = "netwk_setup_step" }
 # Entries of handler tables the game calls through pointers (data words that point at a prologue: addiu sp,sp,-N); 0x565FE0 a
 # function the executable's task system calls by a pointer made at run time (seen in DNAS's progress screen)
 extra = [
@@ -186,6 +186,8 @@ name = "single"
 file = "PROG/SINGLE.BIN"
 base = "0x820000"
 text = ["0x820040", "0x838800"]
+# The partners' think stood in by src/partner_ai.cpp (it runs this one, as recompiled, and measures)
+overrides = { "0x822440" = "single_partner_think" }
 extra = [
     "0x82a8a0", "0x82a8f0", "0x82ab20", "0x82ad60", "0x82ae00", "0x82af50", "0x82aff0", "0x82b070",
 ]

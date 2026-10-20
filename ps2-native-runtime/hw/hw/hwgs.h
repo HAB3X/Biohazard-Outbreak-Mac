@@ -46,15 +46,19 @@ struct DisplayTexture
     u32 height;
 };
 bool HardwareDisplayTexture(DisplayTexture* display);
+// The work given so far drawn, the GPU waited for (timing)
+void HardwareFinish();
 // The shown picture read back at the internal resolution (RGBA, top row first)
 bool HardwareReadDisplay(Gs::DisplayImage& image);
-// The render thread's hand-over (renderthread.h): the shown picture copied into a texture of its own (one of three, by slot) for
-// the window's context to draw while this one goes on drawing. The window's fence from its last drawing of the slot's copy is
-// waited for first (null: none), and a fence the window's context waits for is made. False when the shown buffer isn't a
-// render target (the picture is read from local memory)
+// The render thread's hand-over (display.cpp's three slots): the shown picture copied into a texture of its own (one of three, by
+// slot) for the window to draw while the renderer goes on drawing. OpenGL's: a texture of the window's shared context, the
+// window's fence from its last drawing of the slot's copy waited for first (null: none), and a fence the window's context waits
+// for made. Metal's: a texture (id<MTLTexture>) the Metal presenter draws, its copy committed to the queue they share (no
+// fences). False when the shown buffer isn't a render target (the picture is read from local memory)
 struct ShownTexture
 {
     u32 texture;
+    void* metal;
     u32 width;
     u32 height;
     void* fence;
@@ -84,4 +88,7 @@ struct HardwareStats
     const char* lastFallback;
 };
 HardwareStats GetHardwareStats();
+// The GPU's busy time on the renderer's work since the start (seconds; any thread): Metal's, its presenter's work too. Negative
+// when it isn't measured (OpenGL, the software GS)
+double HardwareGpuSeconds();
 }

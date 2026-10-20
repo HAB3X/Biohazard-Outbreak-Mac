@@ -1,9 +1,9 @@
-// The window and the picture's way to it. The GS draws on the GPU (the hardware layer's OpenGL renderer, hw/hw/hwgs.h) at a
-// multiple of the PS2's resolution, on the render thread with an OpenGL context of its own; the window has another, sharing
-// its textures. At each vblank the render thread copies the shown picture into one of three textures and fences it, and the
-// main thread draws the newest one over the window when the fence is passed (the Crash Twinsanity native port's hand-over,
-// graphics/display.cpp there). Snapshots read the picture back. The software GS (the PS2's own rules at its resolution) is
-// still there: --gs software or $PS2_GS=software, and whenever there's no OpenGL 3.3 or no render thread.
+// The window and the picture's way to it. The GS draws on the GPU (the hardware layer's renderer, hw/hw/hwgs.h) at a multiple of
+// the PS2's resolution, on the render thread; at each vblank the render thread copies the shown picture into one of three slots
+// for the window, and the main thread draws the newest one over the window when it can. The drawing is a presenter's
+// (presenter.h): OpenGL's for the OpenGL renderer and the software GS, Metal's for the Metal renderer. Snapshots read the
+// picture back. The software GS (the PS2's own rules at its resolution) is still there: --gs software or $PS2_GS=software, and
+// whenever there's no GPU renderer or no render thread.
 //
 // The PC menus' display settings are kept here and in graphics.txt: the window's size or fullscreen, the GPU's internal
 // resolution, the textures' filtering and upscale, anti-aliasing (FXAA on the picture shown, or supersampling: the internal
@@ -11,10 +11,10 @@
 // port's graphics/display.cpp and ui/crtfilter.cpp). The menus' overlay is drawn over the picture (ui/menus.h).
 #include "runtime.h"
 
-#include "ui/menus.h"
+#include "presenter.h"
+#include "ps2/runtime.h"
 
 #include "../../hw/gs/gs.h"
-#include "../../hw/hw/gl.h"
 #include "../../hw/hw/hwgs.h"
 #include "../../hw/native.h"
 #include "../../hw/png.h"
@@ -32,8 +32,6 @@
 namespace NativeGraphics
 {
 Hardware& GetHardware() { return Ps2::Hw(); }
-bool PresenterContext(SDL_Window** window, SDL_GLContext* context);
-bool RenderContext(SDL_Window** window, SDL_GLContext* context);
 }
 
 namespace Native
@@ -43,28 +41,21 @@ std::string SettingsFolder() { return Ps2::g_options.settingsDir; }
 
 namespace Ps2
 {
+extern const Ps2GameInfo* g_game;
+
 namespace
 {
-using namespace Hw;
-
 SDL_Window* g_window = nullptr;
-SDL_GLContext g_windowContext = nullptr;
-// The render thread's context, with a hidden window of its own to be current with
-SDL_Window* g_renderWindow = nullptr;
-SDL_GLContext g_renderContext = nullptr;
-thread_local bool t_onRenderThread = false;
-
-// The window's drawing: a quad over the viewport from the vertex number alone, rows top first; FXAA's and the CRT filter's
-// programs in its place when they're on
-GLuint g_program = 0;
-GLint g_uvRect = -1;
-GLuint g_fxaaProgram = 0;
-GLuint g_crtProgram = 0;
-GLuint g_vertexArray = 0;
-// The software GS's pictures (and the hardware renderer's when the shown buffer isn't one of its targets) go up into this
-GLuint g_cpuTexture = 0;
-u32 g_cpuWidth = 0, g_cpuHeight = 0;
-bool g_vsyncSet = false;
+// The window's drawing (null: no window and no GPU renderer)
+std::unique_ptr<Presenter> g_presenter;
+// The picture the presenter has in use: none, a slot's copy, or the software GS's pixels
+enum class InUse
+{
+    None,
+    Slot,
+    Pixels,
+};
+InUse g_inUse = InUse::None;
 
 // The display settings (graphics.txt): the window's size in points, fullscreen, the textures' filtering (0 the game's, 1
 // bilinear, 2 trilinear), anti-aliasing (0 off, 1 FXAA, 2 and 3 supersampling 2x and 4x), the CRT filter, v-sync
@@ -76,95 +67,6 @@ bool g_crt = false;
 bool g_vsync = true;
 // The window's sizes the menus offer
 constexpr int WindowSizes[][2] = {{960, 720}, {1280, 960}, {1600, 1200}, {1920, 1440}, {1280, 720}, {1920, 1080}};
-
-constexpr const char* VertexSource = R"(#version 330 core
-out vec2 place;
-uniform vec4 uvRect;
-void main()
-{
-    vec2 corner = vec2(gl_VertexID & 1, gl_VertexID >> 1);
-    place = mix(uvRect.xy, uvRect.zw, vec2(corner.x, 1.0 - corner.y));
-    gl_Position = vec4(corner * 2.0 - 1.0, 0.0, 1.0);
-}
-)";
-
-constexpr const char* FragmentSource = R"(#version 330 core
-in vec2 place;
-out vec4 colour;
-uniform sampler2D picture;
-void main()
-{
-    colour = vec4(texture(picture, place).rgb, 1.0);
-}
-)";
-
-// FXAA (a short version of Timothy Lottes' FXAA 3 console algorithm): edges found by luma contrast with their neighbours and
-// blended along them, on the shown picture (the Twinsanity port's)
-constexpr const char* FxaaSource = R"(#version 330 core
-in vec2 place;
-out vec4 colour;
-uniform sampler2D picture;
-uniform vec2 texel;
-float Luma(vec3 c)
-{
-    return dot(c, vec3(0.299, 0.587, 0.114));
-}
-void main()
-{
-    vec3 m = texture(picture, place).rgb;
-    vec3 nw = texture(picture, place + vec2(-1.0, -1.0) * texel).rgb;
-    vec3 ne = texture(picture, place + vec2(1.0, -1.0) * texel).rgb;
-    vec3 sw = texture(picture, place + vec2(-1.0, 1.0) * texel).rgb;
-    vec3 se = texture(picture, place + vec2(1.0, 1.0) * texel).rgb;
-    float lm = Luma(m);
-    float lnw = Luma(nw);
-    float lne = Luma(ne);
-    float lsw = Luma(sw);
-    float lse = Luma(se);
-    float lowest = min(lm, min(min(lnw, lne), min(lsw, lse)));
-    float highest = max(lm, max(max(lnw, lne), max(lsw, lse)));
-    vec2 direction = vec2(-((lnw + lne) - (lsw + lse)), (lnw + lsw) - (lne + lse));
-    float reduce = max((lnw + lne + lsw + lse) * 0.25 * (1.0 / 8.0), 1.0 / 128.0);
-    float smallest = 1.0 / (min(abs(direction.x), abs(direction.y)) + reduce);
-    direction = clamp(direction * smallest, vec2(-8.0), vec2(8.0)) * texel;
-    vec3 a = 0.5 * (texture(picture, place + direction * (1.0 / 3.0 - 0.5)).rgb + texture(picture, place + direction * (2.0 / 3.0 - 0.5)).rgb);
-    vec3 b = a * 0.5 + 0.25 * (texture(picture, place - direction * 0.5).rgb + texture(picture, place + direction * 0.5).rgb);
-    float lb = Luma(b);
-    colour = vec4((lb < lowest || lb > highest) ? a : b, 1.0);
-}
-)";
-
-// The CRT filter: the picture as a period television showed it, kept subtle (the Twinsanity port's ui/crtfilter.cpp): the
-// beam's horizontal softness, a dark gap between the picture's lines (less where the line is bright, as a beam blooms), an
-// aperture grille's faint stripes at the screen's own pixels, the brightness the gaps take given back, the corners a touch
-// darker. pictureSize is the PS2's lines (the texture's at the internal resolution divided down)
-constexpr const char* CrtSource = R"(#version 330 core
-in vec2 place;
-out vec4 colour;
-uniform sampler2D picture;
-uniform vec2 pictureSize;
-uniform vec2 viewSize;
-vec3 Sample(vec2 at)
-{
-    return texture(picture, at).rgb;
-}
-void main()
-{
-    vec2 texel = 1.0 / pictureSize;
-    vec3 beam = Sample(place) * 0.5 + Sample(place - vec2(texel.x, 0.0)) * 0.25 + Sample(place + vec2(texel.x, 0.0)) * 0.25;
-    float row = fract(place.y * pictureSize.y);
-    float brightness = max(max(beam.r, beam.g), beam.b);
-    float depth = mix(0.35, 0.12, brightness);
-    float line = 1.0 - depth * pow(abs(row - 0.5) * 2.0, 2.0);
-    float column = mod(floor(place.x * viewSize.x), 3.0);
-    vec3 grille = viewSize.x >= pictureSize.x * 2.0 ? (column == 0.0 ? vec3(1.0, 0.94, 0.94)
-                                                     : column == 1.0 ? vec3(0.94, 1.0, 0.94) : vec3(0.94, 0.94, 1.0))
-                                                   : vec3(1.0);
-    vec2 centred = place * 2.0 - 1.0;
-    float vignette = 1.0 - 0.08 * dot(centred * centred, vec2(0.5, 0.5));
-    colour = vec4(clamp(beam * line * grille * 1.12 * vignette, 0.0, 1.0), 1.0);
-}
-)";
 
 // The three copies of the shown picture the render thread hands over: the one the window draws (busy), the newest one made
 // (ready) and one to make the next into. A copy's fences: the render thread's after its copy (the window waits for it), the
@@ -181,138 +83,41 @@ int g_ready = -1;
 // copies into the third)
 int g_shown = -1;
 
-GLuint Compile(Gl& gl, GLenum kind, const char* source)
+// The renderer and scale a game has unless its player chooses others: its own (Ps2GameInfo::gsRenderer, gsScale), else the
+// runtime's (OpenGL at 3x)
+std::string DefaultRenderer()
 {
-    GLuint shader = gl.CreateShader(kind);
-    gl.ShaderSource(shader, 1, &source, nullptr);
-    gl.CompileShader(shader);
-    GLint ok = 0;
-    gl.GetShaderiv(shader, GL_COMPILE_STATUS, &ok);
-    if (!ok)
+    if (g_game == nullptr || g_game->gsRenderer == nullptr)
     {
-        char log[1024];
-        gl.GetShaderInfoLog(shader, sizeof(log), nullptr, log);
-        Log("graphics: the window's shader: %s", log);
+        return "hardware";
     }
-    return shader;
+    const std::string renderer = g_game->gsRenderer;
+    if (renderer != "hardware" && renderer != "metal" && renderer != "software")
+    {
+        Fatal("Ps2GameInfo::gsRenderer is \"%s\": hardware, metal or software", renderer.c_str());
+    }
+    return renderer;
 }
 
-void SetGlAttributes()
-{
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
-}
-
-GLuint Program(Gl& gl, const char* fragmentSource)
-{
-    GLuint vertex = Compile(gl, GL_VERTEX_SHADER, VertexSource);
-    GLuint fragment = Compile(gl, GL_FRAGMENT_SHADER, fragmentSource);
-    GLuint program = gl.CreateProgram();
-    gl.AttachShader(program, vertex);
-    gl.AttachShader(program, fragment);
-    gl.LinkProgram(program);
-    gl.DeleteShader(vertex);
-    gl.DeleteShader(fragment);
-    GLint linked = 0;
-    gl.GetProgramiv(program, GL_LINK_STATUS, &linked);
-    if (!linked)
-    {
-        Log("graphics: a window's program doesn't link");
-        return 0;
-    }
-    gl.UseProgram(program);
-    gl.Uniform1i(gl.GetUniformLocation(program, "picture"), 0);
-    return program;
-}
-
-// The window's context and what it draws with (false: no OpenGL 3.3)
-bool MakeWindowContext()
-{
-    g_windowContext = SDL_GL_CreateContext(g_window);
-    if (g_windowContext == nullptr)
-    {
-        Log("graphics: no OpenGL 3.3 context for the window: %s", SDL_GetError());
-        return false;
-    }
-    SDL_GL_MakeCurrent(g_window, g_windowContext);
-    if (!LoadGl())
-    {
-        return false;
-    }
-    SDL_GL_SetSwapInterval(g_vsync ? 1 : 0);
-    g_vsyncSet = true;
-    Gl& gl = GetGl();
-    g_program = Program(gl, FragmentSource);
-    if (g_program == 0)
-    {
-        return false;
-    }
-    g_fxaaProgram = Program(gl, FxaaSource);
-    g_crtProgram = Program(gl, CrtSource);
-    g_uvRect = gl.GetUniformLocation(g_program, "uvRect");
-    gl.GenVertexArrays(1, &g_vertexArray);
-    gl.GenTextures(1, &g_cpuTexture);
-    gl.BindTexture(GL_TEXTURE_2D, g_cpuTexture);
-    gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLint>(GL_CLAMP_TO_EDGE));
-    gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLint>(GL_CLAMP_TO_EDGE));
-    gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    return true;
-}
-
-// The render thread's context, made here (SDL's windows are the main thread's) sharing the window's objects
-bool MakeRenderContext()
-{
-    SetGlAttributes();
-    if (g_windowContext != nullptr)
-    {
-        SDL_GL_MakeCurrent(g_window, g_windowContext);
-        SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
-    }
-    g_renderWindow = SDL_CreateWindow("graphics", 64, 64, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-    if (g_renderWindow != nullptr)
-    {
-        g_renderContext = SDL_GL_CreateContext(g_renderWindow);
-    }
-    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0);
-    if (g_renderContext == nullptr)
-    {
-        Log("graphics: no OpenGL 3.3 context for the render thread: %s", SDL_GetError());
-        if (g_renderWindow != nullptr)
-        {
-            SDL_DestroyWindow(g_renderWindow);
-            g_renderWindow = nullptr;
-        }
-        return false;
-    }
-    // Making it made it current here: the window's again (the render thread makes its own current there)
-    if (g_windowContext != nullptr)
-    {
-        SDL_GL_MakeCurrent(g_window, g_windowContext);
-    }
-    else
-    {
-        SDL_GL_MakeCurrent(g_renderWindow, nullptr);
-    }
-    return true;
-}
+int DefaultScale() { return g_game != nullptr && g_game->gsScale > 0 ? std::clamp(g_game->gsScale, 1, 8) : 3; }
 
 // graphics.txt's renderer and scale as read (the options may say otherwise for this run: those are written back)
-std::string g_fileRenderer = "hardware";
-int g_fileScale = 3;
+std::string g_fileRenderer;
+int g_fileScale = 0;
 int g_fileUpscale = 0;
+// graphics.txt's form: 2 since a game can have defaults of its own (a file without it is older)
+constexpr int GraphicsVersion = 2;
 
 void WriteGraphicsSettings()
 {
     std::error_code ec;
     std::filesystem::create_directories(g_options.settingsDir, ec);
     std::ofstream out(g_options.settingsDir + "/graphics.txt");
-    out << "# The picture (the PC menus' Display tab changes these). renderer: hardware (the GPU draws the PS2's graphics),\n"
-           "# metal (the same through Metal; being made, docs/metal.md) or software (the PS2's own rules, at its resolution; slower).\n"
-           "# --gs, $PS2_GS override it\n"
+    out << "# The picture (the PC menus' Display tab changes these). renderer: metal (the GPU draws the PS2's graphics through\n"
+           "# Metal), hardware (the same through OpenGL) or software (the PS2's own rules, at its resolution; slower). This game's\n"
+           "# own: " << DefaultRenderer() << ". --gs, $PS2_GS override it\n"
            "renderer = " << g_fileRenderer << "\n"
-           "# The GPU's resolution, 1-8 times the PS2's (--scale, $PS2_GS_SCALE)\n"
+           "# The GPU's resolution, 1-8 times the PS2's (this game's own: " << DefaultScale() << "; --scale, $PS2_GS_SCALE)\n"
            "scale = " << g_fileScale << "\n"
            "# The game's textures made smoother on the GPU: 0 (off), 2 or 4 times their size (--texture-upscale, "
            "$PS2_TEXTURE_UPSCALE)\n"
@@ -327,7 +132,29 @@ void WriteGraphicsSettings()
            "vsync = " << (g_vsync ? 1 : 0) << "\n"
            "# The window: its size in points, and fullscreen (0 or 1; Cmd+F or Alt+Enter switch)\n"
            "window = " << g_windowWidth << "x" << g_windowHeight << "\n"
-           "fullscreen = " << (g_fullscreen ? 1 : 0) << "\n";
+           "fullscreen = " << (g_fullscreen ? 1 : 0) << "\n"
+           "# This file's form\n"
+           "version = " << GraphicsVersion << "\n";
+}
+
+// A file from before games had defaults of their own wrote the runtime's renderer and scale whatever the player chose (the
+// menus have no renderer, and 3x was the default): those are taken as not chosen, so the game's own apply (logged)
+void ForgetOldDefaults(std::map<std::string, std::string>& file)
+{
+    auto version = file.find("version");
+    if (file.empty() || (version != file.end() && atoi(version->second.c_str()) >= GraphicsVersion))
+    {
+        return;
+    }
+    for (const auto& [key, old] : {std::pair<const char*, const char*>{"renderer", "hardware"}, {"scale", "3"}})
+    {
+        auto found = file.find(key);
+        if (found != file.end() && found->second == old)
+        {
+            file.erase(found);
+            Log("graphics: graphics.txt's %s = %s was the old default: the game's own now", key, old);
+        }
+    }
 }
 
 // The settings folder's graphics.txt (written with the defaults the first time): name = value lines
@@ -381,11 +208,11 @@ SDL_FRect PictureRect(int width, int height)
     return {(width - 640 * scale) / 2, (height - 480 * scale) / 2, 640 * scale, 480 * scale};
 }
 
-// The texture to draw: the newest copy (it becomes the shown one), else the shown one again when asked to redraw, else the
-// pixels given; 0 when there's nothing new to draw. Its picture's size
-GLuint TakePicture(const Gs::DisplayImage* image, bool redraw, u32* width, u32* height, int* slot)
+// The picture to draw made the presenter's: the newest copy (it becomes the shown one), else the shown one again when asked to
+// redraw, else the pixels given, else the pixels drawn last when asked to redraw. False when there's nothing (new) to draw; the
+// slot drawn (-1: none)
+bool TakePicture(const Gs::DisplayImage* image, bool redraw, int* slot)
 {
-    Gl& gl = GetGl();
     *slot = -1;
     {
         std::lock_guard<std::mutex> lock(g_slotLock);
@@ -402,16 +229,9 @@ GLuint TakePicture(const Gs::DisplayImage* image, bool redraw, u32* width, u32* 
     }
     if (*slot >= 0)
     {
-        Slot& s = g_slots[*slot];
-        if (s.shown.fence != nullptr)
-        {
-            gl.WaitSync(static_cast<GLsync>(s.shown.fence), 0, GL_TIMEOUT_IGNORED);
-            gl.DeleteSync(static_cast<GLsync>(s.shown.fence));
-            s.shown.fence = nullptr;
-        }
-        *width = s.shown.width;
-        *height = s.shown.height;
-        return s.shown.texture;
+        g_presenter->UseShown(g_slots[*slot].shown);
+        g_inUse = InUse::Slot;
+        return true;
     }
     if (image != nullptr && image->width != 0)
     {
@@ -420,73 +240,29 @@ GLuint TakePicture(const Gs::DisplayImage* image, bool redraw, u32* width, u32* 
             std::lock_guard<std::mutex> lock(g_slotLock);
             g_shown = -1;
         }
-        gl.ActiveTexture(GL_TEXTURE0);
-        gl.BindTexture(GL_TEXTURE_2D, g_cpuTexture);
-        gl.PixelStorei(GL_UNPACK_ALIGNMENT, 4);
-        gl.PixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-        gl.TexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(GL_RGBA8), static_cast<GLsizei>(image->width),
-                      static_cast<GLsizei>(image->height), 0, GL_RGBA, GL_UNSIGNED_BYTE, image->pixels.data());
-        g_cpuWidth = image->width;
-        g_cpuHeight = image->height;
-        *width = g_cpuWidth;
-        *height = g_cpuHeight;
-        return g_cpuTexture;
+        g_presenter->UsePixels(*image);
+        g_inUse = InUse::Pixels;
+        return true;
     }
-    if (redraw && g_cpuWidth != 0)
-    {
-        *width = g_cpuWidth;
-        *height = g_cpuHeight;
-        return g_cpuTexture;
-    }
-    return 0;
+    return redraw && g_inUse == InUse::Pixels;
 }
 
-// The picture (and the menus' overlay) drawn into the framebuffer bound, of these pixels
-void DrawPicture(GLuint texture, u32 pictureWidth, u32 pictureHeight, GLuint framebuffer, int width, int height,
-                 float pixelScale)
+// A frame of a window of these pixels: the picture's place, its filter (the CRT filter, else FXAA, else none) and its lines
+WindowFrame FrameOf(int width, int height, float pixelScale)
 {
-    Gl& gl = GetGl();
-    SDL_FRect dst = PictureRect(width, height);
-    gl.BindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    gl.Disable(GL_SCISSOR_TEST);
-    gl.Disable(GL_BLEND);
-    gl.Disable(GL_DEPTH_TEST);
-    gl.Disable(GL_STENCIL_TEST);
-    gl.ColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    gl.Viewport(0, 0, width, height);
-    gl.ClearColor(0, 0, 0, 1);
-    gl.Clear(GL_COLOR_BUFFER_BIT);
-    if (texture != 0)
-    {
-        gl.Viewport(static_cast<GLint>(dst.x), static_cast<GLint>(height - dst.y - dst.h), static_cast<GLsizei>(dst.w),
-                    static_cast<GLsizei>(dst.h));
-        gl.ActiveTexture(GL_TEXTURE0);
-        gl.BindTexture(GL_TEXTURE_2D, texture);
-        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(GL_LINEAR));
-        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(GL_LINEAR));
-        // The CRT filter, else FXAA, else the plain picture
-        GLuint program = g_crt && g_crtProgram != 0 ? g_crtProgram : g_antiAliasing == 1 && g_fxaaProgram != 0 ? g_fxaaProgram
-                                                                                                                 : g_program;
-        gl.UseProgram(program);
-        gl.Uniform4f(gl.GetUniformLocation(program, "uvRect"), 0, 0, 1, 1);
-        if (program == g_fxaaProgram)
-        {
-            gl.Uniform2f(gl.GetUniformLocation(program, "texel"), 1.0f / static_cast<float>(pictureWidth),
-                         1.0f / static_cast<float>(pictureHeight));
-        }
-        else if (program == g_crtProgram)
-        {
-            // The PS2's lines: the picture's pixels less the GPU's scale (the software GS's are the PS2's own)
-            float scale = texture == g_cpuTexture ? 1.0f : static_cast<float>(NativeGraphics::HardwareScale());
-            gl.Uniform2f(gl.GetUniformLocation(program, "pictureSize"), static_cast<float>(pictureWidth) / scale,
-                         static_cast<float>(pictureHeight) / scale);
-            gl.Uniform2f(gl.GetUniformLocation(program, "viewSize"), dst.w, dst.h);
-        }
-        gl.BindVertexArray(g_vertexArray);
-        gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    }
-    gl.Viewport(0, 0, width, height);
-    Ui::MenusDraw(width, height, pixelScale, dst);
+    WindowFrame frame = {};
+    frame.width = width;
+    frame.height = height;
+    frame.pixelScale = pixelScale;
+    frame.place = PictureRect(width, height);
+    frame.filter = g_crt ? PictureFilter::Crt : g_antiAliasing == 1 ? PictureFilter::Fxaa : PictureFilter::Plain;
+    // The PS2's lines: the picture's pixels less the GPU's scale (the software GS's are the PS2's own)
+    u32 pictureWidth = 0, pictureHeight = 0;
+    g_presenter->PictureSize(&pictureWidth, &pictureHeight);
+    float scale = g_inUse == InUse::Pixels ? 1.0f : static_cast<float>(NativeGraphics::HardwareScale());
+    frame.pictureLines[0] = static_cast<float>(pictureWidth) / scale;
+    frame.pictureLines[1] = static_cast<float>(pictureHeight) / scale;
+    return frame;
 }
 
 void ApplyWindow()
@@ -521,20 +297,46 @@ void ApplyRenderer()
         });
     });
 }
+
+// The window made for the presenter and its drawing opened (headless without --ui: no window); false when the presenter
+// can't draw it
+bool OpenWindow(bool hiddenWindow)
+{
+    if (g_options.headless && !hiddenWindow)
+    {
+        return g_presenter->Open(nullptr, g_vsync);
+    }
+    SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE | g_presenter->PrepareWindow() | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+    if (hiddenWindow)
+    {
+        flags |= SDL_WINDOW_HIDDEN;
+    }
+    else if (g_fullscreen)
+    {
+        flags |= SDL_WINDOW_FULLSCREEN;
+    }
+    g_window = SDL_CreateWindow(WindowTitle().c_str(), hiddenWindow ? 1280 : g_windowWidth, hiddenWindow ? 960 : g_windowHeight, flags);
+    return g_window != nullptr && g_presenter->Open(g_window, g_vsync);
+}
 }
 
 SDL_Window* DisplayOpen()
 {
     // The renderer: the GPU unless asked for the software GS
+    g_fileRenderer = DefaultRenderer();
+    g_fileScale = DefaultScale();
     std::map<std::string, std::string> file = ReadGraphicsSettings();
+    const bool old = !file.empty() && file.find("version") == file.end();
+    ForgetOldDefaults(file);
+    const std::string scaleText = std::to_string(DefaultScale());
     if (g_options.gs < 0)
     {
-        const std::string renderer = Setting("PS2_GS", file, "renderer", "hardware");
+        const std::string renderer = Setting("PS2_GS", file, "renderer", DefaultRenderer().c_str());
         g_options.gs = renderer == "software" ? 0 : renderer == "metal" ? 2 : 1;
     }
     if (g_options.gsScale < 0)
     {
-        g_options.gsScale = atoi(Setting("PS2_GS_SCALE", file, "scale", "3").c_str());
+        g_options.gsScale = atoi(Setting("PS2_GS_SCALE", file, "scale", scaleText.c_str()).c_str());
     }
     g_options.gsScale = std::clamp(g_options.gsScale, 1, 8);
     if (g_options.textureUpscale < 0)
@@ -542,9 +344,9 @@ SDL_Window* DisplayOpen()
         g_options.textureUpscale = atoi(Setting("PS2_TEXTURE_UPSCALE", file, "texture_upscale", "0").c_str());
     }
     g_options.textureUpscale = g_options.textureUpscale >= 4 ? 4 : g_options.textureUpscale >= 2 ? 2 : 0;
-    const std::string fileRenderer = Setting("", file, "renderer", "hardware");
+    const std::string fileRenderer = Setting("", file, "renderer", DefaultRenderer().c_str());
     g_fileRenderer = fileRenderer == "software" || fileRenderer == "metal" ? fileRenderer : "hardware";
-    g_fileScale = std::clamp(atoi(Setting("", file, "scale", "3").c_str()), 1, 8);
+    g_fileScale = std::clamp(atoi(Setting("", file, "scale", scaleText.c_str()).c_str()), 1, 8);
     g_fileUpscale = atoi(Setting("", file, "texture_upscale", "0").c_str());
     g_filtering = std::clamp(atoi(Setting("", file, "filtering", "0").c_str()), 0, 2);
     g_antiAliasing = std::clamp(atoi(Setting("", file, "anti_aliasing", "0").c_str()), 0, 3);
@@ -558,7 +360,7 @@ SDL_Window* DisplayOpen()
         g_windowHeight = 960;
     }
     // Settings added since the file was written are written in with their defaults
-    if (!file.empty() && file.find("vsync") == file.end())
+    if (old || (!file.empty() && file.find("vsync") == file.end()))
     {
         WriteGraphicsSettings();
     }
@@ -581,27 +383,33 @@ SDL_Window* DisplayOpen()
         g_options.gs = 0;
         return nullptr;
     }
-    if (!g_options.headless || hiddenWindow)
+    // Metal's presenter for the Metal renderer, OpenGL's for the rest; OpenGL's in Metal's place when there's no Apple GPU or
+    // Metal's can't draw the window
+    if (g_options.gs == 2)
     {
-        SetGlAttributes();
-        SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-        if (hiddenWindow)
+        g_presenter = MakeMetalPresenter();
+        if (g_presenter == nullptr || !OpenWindow(hiddenWindow))
         {
-            flags |= SDL_WINDOW_HIDDEN;
-        }
-        else if (g_fullscreen)
-        {
-            flags |= SDL_WINDOW_FULLSCREEN;
-        }
-        g_window = SDL_CreateWindow(WindowTitle().c_str(), hiddenWindow ? 1280 : g_windowWidth, hiddenWindow ? 960 : g_windowHeight,
-                                    flags);
-        if (g_window == nullptr || !MakeWindowContext())
-        {
-            Log("graphics: no window: %s", SDL_GetError());
-            Fatal("no OpenGL window");
+            Log("graphics: no Metal presenter: OpenGL draws");
+            g_options.gs = 1;
+            g_presenter.reset();
+            if (g_window != nullptr)
+            {
+                SDL_DestroyWindow(g_window);
+                g_window = nullptr;
+            }
         }
     }
-    if (g_options.gs != 0 && !MakeRenderContext())
+    if (g_presenter == nullptr)
+    {
+        g_presenter = MakeGlPresenter();
+        if (!OpenWindow(hiddenWindow))
+        {
+            Log("graphics: no window: %s", SDL_GetError());
+            Fatal("no window to draw in");
+        }
+    }
+    if (g_options.gs != 0 && !g_presenter->OpenRenderer())
     {
         g_options.gs = 0;
     }
@@ -610,21 +418,20 @@ SDL_Window* DisplayOpen()
 
 void DisplayRenderThreadStart()
 {
-    t_onRenderThread = true;
-    if (g_options.gs == 0 || g_renderContext == nullptr)
+    if (g_presenter == nullptr)
     {
         return;
     }
-    // (the render thread's OpenGL context is current with Metal too: the picture is handed to the window's OpenGL)
-    SDL_GL_MakeCurrent(g_renderWindow, g_renderContext);
-    if (g_options.gs == 2 && !NativeGraphics::StartHardwareRenderer(static_cast<u32>(EffectiveScale()), NativeGraphics::GpuApi::Metal))
+    g_presenter->RenderThreadStart();
+    if (g_options.gs == 0)
     {
-        Log("graphics: no Metal renderer: OpenGL draws");
-        g_options.gs = 1;
+        return;
     }
-    if (g_options.gs == 1 && !NativeGraphics::StartHardwareRenderer(static_cast<u32>(EffectiveScale()), NativeGraphics::GpuApi::OpenGl))
+    // The presenter's own interface's renderer (Metal's for --gs metal, else OpenGL's)
+    const NativeGraphics::GpuApi api = g_presenter->RendererApi();
+    if (!NativeGraphics::StartHardwareRenderer(static_cast<u32>(EffectiveScale()), api))
     {
-        Log("graphics: no hardware renderer: the software GS draws");
+        Log("graphics: no %s renderer: the software GS draws", api == NativeGraphics::GpuApi::Metal ? "Metal" : "OpenGL");
         g_options.gs = 0;
         return;
     }
@@ -700,16 +507,9 @@ void DisplayPresent(const Gs::DisplayImage* image, bool redraw, SDL_FRect* pictu
         }
         return;
     }
-    Gl& gl = GetGl();
-    if (!g_vsyncSet)
-    {
-        SDL_GL_SetSwapInterval(g_vsync ? 1 : 0);
-        g_vsyncSet = true;
-    }
-    u32 pictureWidth = 0, pictureHeight = 0;
     int slot = -1;
-    GLuint texture = TakePicture(image, redraw, &pictureWidth, &pictureHeight, &slot);
-    if (texture == 0 && !redraw)
+    bool picture = TakePicture(image, redraw, &slot);
+    if (!picture && !redraw)
     {
         return;
     }
@@ -718,19 +518,20 @@ void DisplayPresent(const Gs::DisplayImage* image, bool redraw, SDL_FRect* pictu
     SDL_GetWindowSizeInPixels(g_window, &width, &height);
     SDL_GetWindowSize(g_window, &points, &pointsHigh);
     float density = points > 0 ? static_cast<float>(width) / static_cast<float>(points) : 1.0f;
-    DrawPicture(texture, pictureWidth, pictureHeight, 0, width, height, density);
-    if (slot >= 0)
+    void* drawn = g_presenter->Present(FrameOf(width, height, density), picture);
+    if (slot >= 0 && drawn != nullptr)
     {
-        void* drawn = gl.FenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-        gl.Flush();
-        std::lock_guard<std::mutex> lock(g_slotLock);
-        if (g_slots[slot].drawn != nullptr)
+        void* old = nullptr;
         {
-            gl.DeleteSync(static_cast<GLsync>(g_slots[slot].drawn));
+            std::lock_guard<std::mutex> lock(g_slotLock);
+            old = g_slots[slot].drawn;
+            g_slots[slot].drawn = drawn;
         }
-        g_slots[slot].drawn = drawn;
+        if (old != nullptr)
+        {
+            g_presenter->DropFence(old);
+        }
     }
-    SDL_GL_SwapWindow(g_window);
     // The mouse's place over the picture goes by the window's points
     SDL_FRect dst = PictureRect(width, height);
     *pictureRect = {dst.x / density, dst.y / density, dst.w / density, dst.h / density};
@@ -742,8 +543,6 @@ bool DisplayShot(const std::string& path, const Gs::DisplayImage* image)
     {
         return false;
     }
-    Gl& gl = GetGl();
-    SDL_GL_MakeCurrent(g_window, g_windowContext);
     // The window's own size (headless, its hidden one's points: a 1280 x 960 window as on a screen of one pixel a point)
     int width = 0, height = 0;
     if (g_options.headless)
@@ -757,31 +556,17 @@ bool DisplayShot(const std::string& path, const Gs::DisplayImage* image)
     int points = 0, pointsHigh = 0;
     SDL_GetWindowSize(g_window, &points, &pointsHigh);
     float density = points > 0 && !g_options.headless ? static_cast<float>(width) / static_cast<float>(points) : 1.0f;
-    u32 pictureWidth = 0, pictureHeight = 0;
     int slot = -1;
-    GLuint texture = TakePicture(image, true, &pictureWidth, &pictureHeight, &slot);
-    GLuint target = 0, framebuffer = 0;
-    gl.GenTextures(1, &target);
-    gl.BindTexture(GL_TEXTURE_2D, target);
-    gl.TexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(GL_RGBA8), width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    gl.GenFramebuffers(1, &framebuffer);
-    gl.BindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, target, 0);
-    DrawPicture(texture, pictureWidth, pictureHeight, framebuffer, width, height, density);
-    std::vector<u32> rows(static_cast<size_t>(width) * height), pixels(rows.size());
-    gl.BindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    gl.PixelStorei(GL_PACK_ALIGNMENT, 4);
-    gl.ReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, rows.data());
-    for (int y = 0; y < height; y++)
+    bool picture = TakePicture(image, true, &slot);
+    std::vector<u32> pixels;
+    if (!g_presenter->Capture(FrameOf(width, height, density), picture, pixels))
     {
-        for (int x = 0; x < width; x++)
-        {
-            pixels[static_cast<size_t>(y) * width + x] = rows[static_cast<size_t>(height - 1 - y) * width + x] | 0xFF000000u;
-        }
+        return false;
     }
-    gl.BindFramebuffer(GL_FRAMEBUFFER, 0);
-    gl.DeleteFramebuffers(1, &framebuffer);
-    gl.DeleteTextures(1, &target);
+    for (u32& pixel : pixels)
+    {
+        pixel |= 0xFF000000u;
+    }
     if (!WritePng(path, pixels.data(), static_cast<u32>(width), static_cast<u32>(height)))
     {
         return false;
@@ -817,6 +602,23 @@ int DisplayGet(DisplaySetting setting)
     case DisplaySetting::Crt: return g_crt ? 1 : 0;
     case DisplaySetting::VSync: return g_vsync ? 1 : 0;
     case DisplaySetting::OnGpu: return g_options.gs != 0 ? 1 : 0;
+    }
+    return 0;
+}
+
+int DisplayDefault(DisplaySetting setting)
+{
+    switch (setting)
+    {
+    case DisplaySetting::Scale: return DefaultScale();
+    case DisplaySetting::VSync: return 1;
+    case DisplaySetting::Fullscreen:
+    case DisplaySetting::WindowSize:
+    case DisplaySetting::TextureUpscale:
+    case DisplaySetting::Filtering:
+    case DisplaySetting::AntiAliasing:
+    case DisplaySetting::Crt:
+    case DisplaySetting::OnGpu: return 0;
     }
     return 0;
 }
@@ -859,7 +661,10 @@ void DisplaySet(DisplaySetting setting, int value)
     case DisplaySetting::Crt: g_crt = value != 0; break;
     case DisplaySetting::VSync:
         g_vsync = value != 0;
-        g_vsyncSet = false;
+        if (g_presenter != nullptr)
+        {
+            g_presenter->SetVsync(g_vsync);
+        }
         break;
     case DisplaySetting::OnGpu: return;
     }
@@ -896,36 +701,12 @@ void DisplaySetWindowPoints(int width, int height)
 
 void DisplayClose()
 {
+    g_presenter.reset();
     if (g_window != nullptr)
     {
         SDL_DestroyWindow(g_window);
         g_window = nullptr;
     }
     SDL_Quit();
-}
-}
-
-namespace NativeGraphics
-{
-bool PresenterContext(SDL_Window** window, SDL_GLContext* context)
-{
-    if (Ps2::g_window == nullptr || Ps2::g_windowContext == nullptr)
-    {
-        return false;
-    }
-    *window = Ps2::g_window;
-    *context = Ps2::g_windowContext;
-    return true;
-}
-
-bool RenderContext(SDL_Window** window, SDL_GLContext* context)
-{
-    if (!Ps2::t_onRenderThread || Ps2::g_renderContext == nullptr)
-    {
-        return false;
-    }
-    *window = Ps2::g_renderWindow;
-    *context = Ps2::g_renderContext;
-    return true;
 }
 }

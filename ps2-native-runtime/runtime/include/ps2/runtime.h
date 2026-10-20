@@ -110,6 +110,11 @@ typedef struct Ps2GameInfo
     // memory wait for them. For a game whose VIF1 codes have no interrupt bit (the DMA has ended for the EE before VIF1 gets to
     // it; one stops the program). VU1 was most of the EE's time in Biohazard Outbreak's 3D
     int vu1Thread;
+    // Optional. The picture's defaults for this game, where its player hasn't chosen (graphics.txt, the PC menus, --gs and
+    // --scale choose): its renderer, "metal" (the GPU through Metal; OpenGL where there's no Apple GPU), "hardware" (through
+    // OpenGL) or "software" (NULL: hardware), and its scale, 1-8 times the PS2's resolution (0: 3)
+    const char* gsRenderer;
+    int gsScale;
 } Ps2GameInfo;
 
 // A prompt shown over the picture near its bottom (the PC menus' style: e.g. "Hold any button to skip"), NULL to take it down
