@@ -79,7 +79,7 @@ const Ps2GameControl Controls[] = {
 };
 
 constexpr uint32_t Up = 1u << 4, Right = 1u << 5, Down = 1u << 6, Left = 1u << 7, L1 = 1u << 10, R1 = 1u << 11,
-                   Circle = 1u << 13, Start = 1u << 3;
+                   Circle = 1u << 13, Cross = 1u << 14, Start = 1u << 3;
 
 Layout g_layout = {};
 
@@ -188,6 +188,7 @@ enum class Goal
     Slot,
     Action,   // a row of the item's actions (use, equip, combine, give...)
     PauseRow, // a row of SELECT's pause menu
+    OptionsRow, // a row of the title's OPTIONS list
 };
 
 struct Steer
@@ -241,6 +242,28 @@ const PauseItem PauseItems[] = {{0, 0.200f, true},  {1, 0.379f, true},  {3, 0.46
 constexpr float PauseLeft = 0.19f, PauseRight = 0.81f, PauseRowHalf = 0.0223f;
 uint32_t PauseCursor() { return g_layout.statusKind - 3; }
 
+// The title's OPTIONS: a state the word optionsState points at while it's up (0 otherwise): its byte 1 is 3 on the list and 5
+// in one of its screens (brightness, sound...), its byte 4 the list's cursor (0 the first). The rows a step of 0.0893 of the
+// picture's height apart (both games; seen in pictures of the list)
+constexpr uint8_t OptionsList = 3, OptionsScreen = 5;
+constexpr float OptionsStep = 0.0893f, OptionsHalfWidth = 0.22f;
+
+uint32_t OptionsState()
+{
+    if (g_layout.optionsState == 0 || HasTask(g_layout.gameTask))
+    {
+        return 0;
+    }
+    uint32_t state = Word(g_layout.optionsState) & 0x1FFFFFF;
+    return state != 0 && state < 0x1FFFFF0 ? state : 0;
+}
+
+bool OptionsListUp()
+{
+    uint32_t state = OptionsState();
+    return state != 0 && *Ps2::EeMemory(state + 1) == OptionsList;
+}
+
 // Where the cursor is now in the goal's terms, -1 when it isn't where it can be steered (the item's actions are up...)
 int CursorNow()
 {
@@ -251,6 +274,7 @@ int CursorNow()
     case Goal::Slot: return SlotsUsable() ? SlotOf(Word(g_layout.statusCursor)) : -1;
     case Goal::Action: return ActionsUp() ? static_cast<int>(*Ps2::EeMemory(ActionCursor())) : -1;
     case Goal::PauseRow: return CurrentMode() == Pause ? static_cast<int>(*Ps2::EeMemory(PauseCursor())) : -1;
+    case Goal::OptionsRow: return OptionsListUp() ? static_cast<int>(*Ps2::EeMemory(OptionsState() + 4)) : -1;
     default: return -1;
     }
 }
@@ -264,7 +288,8 @@ uint32_t NextButton(int now)
     {
     case Goal::TitleItem:
     case Goal::Action:
-    case Goal::PauseRow: return to > now ? Down : Up;
+    case Goal::PauseRow:
+    case Goal::OptionsRow: return to > now ? Down : Up;
     case Goal::Tab: return to > now ? R1 : L1;
     case Goal::Slot:
     {
@@ -364,6 +389,18 @@ bool Under(float x, float y, bool click)
             }
         }
     }
+    if (OptionsListUp())
+    {
+        for (int n = 0; n < g_layout.optionsItems; n++)
+        {
+            if (Inside({0.5f, g_layout.optionsTop + OptionsStep * static_cast<float>(n), OptionsHalfWidth, OptionsStep / 2}, x, y))
+            {
+                Aim(Goal::OptionsRow, n, click);
+                return true;
+            }
+        }
+        return false;
+    }
     if (CurrentMode() == Pause)
     {
         for (const PauseItem& item : PauseItems)
@@ -429,6 +466,13 @@ void Step()
     if (g_steer.goal == Goal::PauseRow && now != g_steer.target)
     {
         *Ps2::EeMemory(PauseCursor()) = static_cast<uint8_t>(g_steer.target);
+        return;
+    }
+    // The options' list draws its highlight from its cursor: set directly, it follows the pointer at once (a press a row
+    // took the list most of a second)
+    if (g_steer.goal == Goal::OptionsRow && now != g_steer.target)
+    {
+        *Ps2::EeMemory(OptionsState() + 4) = static_cast<uint8_t>(g_steer.target);
         return;
     }
     if (g_steer.pressed)
@@ -537,6 +581,34 @@ void PointBrowser(uint32_t state, float x, float y)
     std::memcpy(Ps2::EeMemory(state + 16), at, sizeof(at));
 }
 
+// The options' CONTROLLER SETTINGS (the list's first row) shows the PS2 pad; while the keyboard and mouse were used last it's
+// the PC menus' Controls instead: the game's screen is left at once (CROSS) and the PC options open over the list
+void ControllerSettings()
+{
+    static int leaving = 0; // vertical blanks since CROSS was pressed to leave the game's screen (0: not leaving)
+    uint32_t state = OptionsState();
+    bool inScreen = state != 0 && *Ps2::EeMemory(state + 1) == OptionsScreen && *Ps2::EeMemory(state + 4) == 0;
+    if (leaving == 0)
+    {
+        if (inScreen && ps2_prompt_style() == 0)
+        {
+            ps2_press_buttons(Cross, 0.05);
+            leaving = 1;
+        }
+        return;
+    }
+    if (!inScreen)
+    {
+        leaving = 0;
+        ps2_open_settings();
+        return;
+    }
+    if (++leaving % 45 == 0) // the press came during the screen's own transition: again
+    {
+        ps2_press_buttons(Cross, 0.05);
+    }
+}
+
 // Game side, each vertical blank: the tap spacing of the menus, and the mouse
 void Vblank()
 {
@@ -551,6 +623,7 @@ void Vblank()
                  count > 1 ? Word(g_layout.taskList + 4) : 0, count > 2 ? Word(g_layout.taskList + 8) : 0, Word(g_layout.titleState));
         lastMode = mode;
     }
+    ControllerSettings();
     static bool spaced = false;
     bool menu = MenuUp();
     if (menu != spaced)
@@ -622,6 +695,9 @@ const Layout File2 = {.taskCount = 0x24ad3c,
                       .statusCursor = 0x7671f4,
                       .statusPopup = 0x767210,
                       .statusKind = 0x767254,
+                      .optionsState = 0x24b08c,
+                      .optionsItems = 7,
+                      .optionsTop = 0.295f,
                       .browserOverlay = "BIN/5.DAT",
                       .browserPointer = 0x24b360,
                       .slotStride = 0x98,
@@ -650,6 +726,9 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .statusCursor = 0x720b84,
                       .statusPopup = 0x720ba0,
                       .statusKind = 0x720be4,
+                      .optionsState = 0x23be40,
+                      .optionsItems = 6,
+                      .optionsTop = 0.339f,
                       .browserOverlay = "PROG/NETHTTP.BIN",
                       .browserPointer = 0x23bee0,
                       .slotStride = 0x98,

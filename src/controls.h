@@ -42,6 +42,11 @@ struct Layout
     uint32_t statusCursor;  // the status screen's item cursor: a word, the address of the slot it's on (the equipped weapon's is elsewhere)
     uint32_t statusPopup;   // a byte that's nonzero while the item's actions (use, combine, give...) are up
     uint32_t statusKind;    // a byte: what the status task shows (1 the status screen, 2 the map, 4 SELECT's pause menu)
+    // The title's OPTIONS: the word holding the address of its state while it's up (found by memory diffs of the list's cursor:
+    // File 2 gp - 0x6064, File 1 0x23BE40), its rows, and the first row's middle as a fraction of the picture's height
+    uint32_t optionsState;
+    int optionsItems;
+    float optionsTop;
     // The network browser (the KDDI browser of Network Play, its overlay `browserOverlay` as the disc names it): the word
     // (gp - 0x5D90) holding the address of its pointer's state, the pointer's x and y (16 bits each, in the 640 x 448
     // picture) at 16 and 18 there (netwk's link-focus code at 0x567370 in File 2 sets them so)
