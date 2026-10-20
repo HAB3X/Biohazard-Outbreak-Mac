@@ -67,14 +67,31 @@ def string_pools(arc, game):
     return pools, nodes
 
 
+def _starts_function(data, at):
+    """Whether the word at the offset is a function's first instruction: addiu sp, sp, -N (the stack frame every non-leaf
+    function of these games opens with)"""
+    if not 0 <= at <= len(data) - 4:
+        return False
+    word = struct.unpack_from("<I", data, at)[0]
+    return word >> 16 == 0x27BD and word & 0x8000 != 0
+
+
 def _check_shared(pool, own, images):
     """The executable's pointers to an overlay pool's strings are that overlay's only if no other overlay loaded over the same
-    addresses has a string at the address (the image's bytes there NUL-terminated text after a NUL): else an error."""
+    addresses has something else there. A function there makes the executable's word a pointer to that function: it's left
+    as it is (File 1: 0x562100 is DEMO.BIN's string "NO.040" but a function in GAME.BIN and NETWK.BIN, which the network
+    screens call through the executable's word; rewritten as the moved string, Network Play called an odd address and
+    stopped). A string there too makes it ambiguous: an error."""
     for i, refs in enumerate(pool.shared_refs):
         address = pool.starts[i] + pool.base
         for name, (data, first_byte, _) in images.items():
             at = address - first_byte
-            if name in (own, "elf") or not 0 < at < len(data) or data[at - 1] != 0 or b"\0" not in data[at:]:
+            if name in (own, "elf") or not 0 < at < len(data):
+                continue
+            if _starts_function(data, at):
+                pool.shared_refs[i] = []
+                break
+            if data[at - 1] != 0 or b"\0" not in data[at:]:
                 continue
             if text.looks_like_text(data[at:data.index(b"\0", at)], at):
                 raise ValueError(f"the executable's pointer to {address:#x} (at {[hex(o) for _, o in refs]}) could be "
