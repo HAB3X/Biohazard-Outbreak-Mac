@@ -86,6 +86,25 @@ docs/network.md (the runtime's docs/network.md has the design).
   shift (L2), 1-4 the appeals (the right stick), O the pause menu (SELECT), Tab/Escape START (docs/controls.md). The pause
   menu's controller readout and File 1's options legend show the menus' keys (one picture serves both).
 
+## The Metal renderer (branch `metal`, runtime `biohazard-metal`), 2026-10-20
+
+The plan's fourth step, begun. The runtime's GPU renderer now draws through a device interface, OpenGL's or Metal's, with the
+same targets, page tracking and texture caches (the runtime's docs/metal.md: the design, the options weighed, the numbers).
+Metal makes each pixel's GS rules in its fragment shader on the target's own pixel, so none of OpenGL's copies of the target,
+extra passes or batch breaks are needed, and the games' gsLooseFrameMasks and gsRoundedRegionBlends don't apply to it (it's
+exact either way). Switched on with `./run.sh file2 --gs metal` (or `renderer = metal` in graphics.txt); OpenGL stays the
+default.
+
+- Pictures: fourteen GS recordings (both games' menus, selects, rooms, the opening, File 1's opening cutscene, the network
+  screens; WoC's and CTTR's too) at 1x against the software GS: 0-5% of the pixels differ, by 1 or 2 (OpenGL: 16-86%); File
+  1's cutscene identical. At 3x the same pictures as OpenGL's by eye.
+- Speed: the recordings' replays at 3x take 0.45-5.33 ms a vblank against OpenGL's 0.50-7.83 (the zoo with zombies 5.33
+  against 7.83, the partner select 2.92 against 4.33); the same in File 1's cutscene.
+- Play: both games from boot into their first scenario at 30 frames a second, headless and in a window; the window gets the
+  picture through an IOSurface.
+- Not done: the window's hand-over waits for the GPU on the render thread (a CAMetalLayer presenter removes it), WoC's levels
+  and CTTR's races not yet in a recording, the GS's own stepping of colours and texture coordinates.
+
 ## The Mac apps
 
 `python3 tools/make_app.py both` makes "Biohazard Outbreak.app" and "Biohazard Outbreak File 2.app" on the Desktop (`--out DIR`
@@ -129,7 +148,7 @@ number with them; the NET file screens' header reads "NET File". With the one sa
   PS2continue.sfd), and the title screen after the opening.
 - PC texts (the game's button glyphs and its Japanese menu text said for a computer), the PC menus' game settings; mouse aiming
   if the game has a use for the right stick.
-- The native renderer.
+- The native renderer: Metal draws every scene tried (above); a presenter on Metal, then the default for both games.
 
 ## Notes
 

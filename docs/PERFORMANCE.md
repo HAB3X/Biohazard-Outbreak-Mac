@@ -81,3 +81,29 @@ dispatcher 2-3%, `ps2_call`'s overlay lookups 2%.
   replays at scale 3, 4, 5 and 8 took 2.8, 3.2, 4.9 and 11.8 ms a vblank of GPU (Training Ground; filtering no different), so
   scale 8 (4x with 2x supersampling) is 23.5 ms a frame on the M4's GPU. The slow runs were most likely scripted runs left on
   the partner or character select (10-11 and 7-8 frames a second then), which the text change fixed.
+
+## The Metal renderer (2026-10-20, runtime `biohazard-metal`)
+
+The GS drawn by Metal (`--gs metal`; the runtime's docs/metal.md) against OpenGL, the recordings' replays at 3x, median of
+passes 2-6, each pair one after the other (load 170-235 from other work: both sides high, paired):
+
+| Recording | OpenGL ms a vblank | Metal |
+|---|---|---|
+| File 1 bar | 0.50 | 0.45 |
+| File 1 bar with zombies | 4.63 | 3.92 |
+| File 1 character select | 3.68 | 2.60 |
+| File 1 opening cutscene | 1.41 | 1.42 |
+| File 2 title menu | 3.00 | 2.48 |
+| File 2 Training Ground | 2.38 | 1.82 |
+| File 2 zoo | 1.88 | 1.61 |
+| File 2 zoo with zombies | 7.83 | 5.33 |
+| File 2 partner select | 4.33 | 2.92 |
+| File 2 character select | 3.58 | 2.52 |
+| File 2 opening | 2.71 | 2.11 |
+| File 2 network caution | 0.93 | 0.45 |
+
+In play, File 2's Training Ground headless at load 2-5: 30 frames a second with both, the render thread 65 ms of CPU a second
+with Metal, 87 with OpenGL. Every draw is one render pass per pair of targets kept open across batches; the shader is one
+pipeline (two: with and without depth) built at start, its features branches, because compiling a variant per feature set
+held the render thread for seconds in each new scene.
+
