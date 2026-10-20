@@ -25,7 +25,7 @@ obsrv.org, logs in, runs the lobby and connects to the game server; play in an o
 | Speed: 30 frames a second in every scene measured | Done on an M4; slower Macs not measured yet |
 | Online: network, DNAS, the KDDI browser, obsrv.org's login, lobby and game server | **Login and lobby work; rooms and games not tried yet** |
 | Saves (a memory card image per game) | Done |
-| A native Metal renderer replacing the GS's OpenGL path | Not started |
+| A native Metal renderer replacing the GS's OpenGL path | **Being made**: drawing every scene tried, off unless chosen (`--gs metal`) |
 
 Known issues: the online caution screen's "Next"/"Back" words don't show beside their keys (E goes on, Esc goes back), and
 Network Play still shows the connection list (choose the third row: Down twice, then E).
