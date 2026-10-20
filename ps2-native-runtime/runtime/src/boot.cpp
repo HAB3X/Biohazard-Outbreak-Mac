@@ -230,7 +230,7 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         else if (a == "--gs")
         {
             std::string which = next();
-            g_options.gs = which == "software" ? 0 : 1;
+            g_options.gs = which == "software" ? 0 : which == "metal" ? 2 : 1;
         }
         else if (a == "--scale")
         {

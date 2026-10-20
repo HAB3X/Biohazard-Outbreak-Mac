@@ -1,6 +1,6 @@
 #pragma once
 
-// The hardware renderer: the GS's primitives drawn by the GPU (OpenGL 3.3 core) into render targets at the internal resolution,
+// The hardware renderer: the GS's primitives drawn by the GPU (OpenGL 3.3 core, or Metal: gpudevice.h) into render targets at the internal resolution,
 // the way PCSX2's hardware renderers do. Local memory stays the PS2's and the GS front end (registers, kicks, transfers, the
 // CLUT, the PCRTC) the same; the renderer keeps a render target for each frame and depth buffer it draws into and keeps them and
 // local memory in step page by page. What it can't draw exactly (a frame in a Z format, blends GL's blending can't make, the
@@ -19,9 +19,15 @@ struct DisplayImage;
 
 namespace NativeGraphics
 {
-// Switched on (with the GPU's context current, or one of its own made in a hidden window), at an internal scale (1-8). False when
-// OpenGL 3.3 isn't there: the software rasteriser stays
-bool StartHardwareRenderer(u32 scale);
+// The GPU interface it draws with: OpenGL 3.3 (with the GPU's context current, or one of its own made in a hidden window), or
+// Metal (docs/metal.md)
+enum class GpuApi
+{
+    OpenGl,
+    Metal,
+};
+// Switched on at an internal scale (1-8). False when the GPU interface isn't there: the software rasteriser stays
+bool StartHardwareRenderer(u32 scale, GpuApi api);
 void StopHardwareRenderer();
 bool HardwareRendererActive();
 void HardwareSetScale(u32 scale);

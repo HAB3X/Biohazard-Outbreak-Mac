@@ -308,10 +308,18 @@ fences the copy; the window (its own context, on the main thread) draws the newe
 passed, and fences its drawing so the render thread doesn't copy into a texture still being drawn (the Crash Twinsanity port's
 hand-over). Snapshots read the picture back at the internal resolution. Headless, the context has a hidden window.
 
-The settings: `--gs hardware|software`, `--scale 1-8` and `--texture-upscale 0|2|4` (the textures decoded from the game's data
+The settings: `--gs hardware|metal|software`, `--scale 1-8` and `--texture-upscale 0|2|4` (the textures decoded from the game's data
 upscaled on the GPU, a bicubic pass), or `$PS2_GS`, `$PS2_GS_SCALE`, `$PS2_TEXTURE_UPSCALE`, or `graphics.txt` in the settings
 folder (written with the defaults the first time). The software GS (the PS2's own rules at its resolution) draws when it's asked
 for, when there's no OpenGL 3.3 and with `PS2_RENDER_THREAD=0` (the GPU's context belongs to the render thread).
+
+The renderer's GPU calls are a device's (`hw/hw/gpudevice.h`): OpenGL's (`gldevice.cpp`, the default) or Metal's
+(`metaldevice.mm`, `--gs metal`, renderer = metal in graphics.txt; docs/metal.md has the design and where it stands). HwGs's
+targets, pages, texture caches and batching are the same for both. Metal makes every pixel's GS rules in its fragment shader
+on the target's own pixel (Apple GPUs read it there), the depth on the GS's integer values and the texture sampled as the GS
+samples it, so none of the copies, extra passes and approximations below are Metal's; at 1x its pictures differ from the
+software GS's on 0-5% of the pixels (by 1 or 2: the GPU's interpolation), OpenGL's on 34-86%. The picture reaches the window
+through an IOSurface the window's OpenGL reads.
 
 Primitives that read the buffer they draw into (WoC's Warp Room draws about 300 a frame) read one copy of it made when their
 batch began, as PCSX2's hardware renderers do, instead of a copy and two render passes each: the Warp Room went from 10-20

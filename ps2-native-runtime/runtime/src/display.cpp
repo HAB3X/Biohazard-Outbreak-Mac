@@ -308,8 +308,9 @@ void WriteGraphicsSettings()
     std::error_code ec;
     std::filesystem::create_directories(g_options.settingsDir, ec);
     std::ofstream out(g_options.settingsDir + "/graphics.txt");
-    out << "# The picture (the PC menus' Display tab changes these). renderer: hardware (the GPU draws the PS2's graphics) or\n"
-           "# software (the PS2's own rules, at its resolution; slower). --gs, $PS2_GS override it\n"
+    out << "# The picture (the PC menus' Display tab changes these). renderer: hardware (the GPU draws the PS2's graphics),\n"
+           "# metal (the same through Metal; being made, docs/metal.md) or software (the PS2's own rules, at its resolution; slower).\n"
+           "# --gs, $PS2_GS override it\n"
            "renderer = " << g_fileRenderer << "\n"
            "# The GPU's resolution, 1-8 times the PS2's (--scale, $PS2_GS_SCALE)\n"
            "scale = " << g_fileScale << "\n"
@@ -528,7 +529,8 @@ SDL_Window* DisplayOpen()
     std::map<std::string, std::string> file = ReadGraphicsSettings();
     if (g_options.gs < 0)
     {
-        g_options.gs = Setting("PS2_GS", file, "renderer", "hardware") == "software" ? 0 : 1;
+        const std::string renderer = Setting("PS2_GS", file, "renderer", "hardware");
+        g_options.gs = renderer == "software" ? 0 : renderer == "metal" ? 2 : 1;
     }
     if (g_options.gsScale < 0)
     {
@@ -540,7 +542,8 @@ SDL_Window* DisplayOpen()
         g_options.textureUpscale = atoi(Setting("PS2_TEXTURE_UPSCALE", file, "texture_upscale", "0").c_str());
     }
     g_options.textureUpscale = g_options.textureUpscale >= 4 ? 4 : g_options.textureUpscale >= 2 ? 2 : 0;
-    g_fileRenderer = Setting("", file, "renderer", "hardware") == "software" ? "software" : "hardware";
+    const std::string fileRenderer = Setting("", file, "renderer", "hardware");
+    g_fileRenderer = fileRenderer == "software" || fileRenderer == "metal" ? fileRenderer : "hardware";
     g_fileScale = std::clamp(atoi(Setting("", file, "scale", "3").c_str()), 1, 8);
     g_fileUpscale = atoi(Setting("", file, "texture_upscale", "0").c_str());
     g_filtering = std::clamp(atoi(Setting("", file, "filtering", "0").c_str()), 0, 2);
@@ -598,7 +601,7 @@ SDL_Window* DisplayOpen()
             Fatal("no OpenGL window");
         }
     }
-    if (g_options.gs == 1 && !MakeRenderContext())
+    if (g_options.gs != 0 && !MakeRenderContext())
     {
         g_options.gs = 0;
     }
@@ -608,12 +611,18 @@ SDL_Window* DisplayOpen()
 void DisplayRenderThreadStart()
 {
     t_onRenderThread = true;
-    if (g_options.gs != 1 || g_renderContext == nullptr)
+    if (g_options.gs == 0 || g_renderContext == nullptr)
     {
         return;
     }
+    // (the render thread's OpenGL context is current with Metal too: the picture is handed to the window's OpenGL)
     SDL_GL_MakeCurrent(g_renderWindow, g_renderContext);
-    if (!NativeGraphics::StartHardwareRenderer(static_cast<u32>(EffectiveScale())))
+    if (g_options.gs == 2 && !NativeGraphics::StartHardwareRenderer(static_cast<u32>(EffectiveScale()), NativeGraphics::GpuApi::Metal))
+    {
+        Log("graphics: no Metal renderer: OpenGL draws");
+        g_options.gs = 1;
+    }
+    if (g_options.gs == 1 && !NativeGraphics::StartHardwareRenderer(static_cast<u32>(EffectiveScale()), NativeGraphics::GpuApi::OpenGl))
     {
         Log("graphics: no hardware renderer: the software GS draws");
         g_options.gs = 0;
@@ -621,13 +630,13 @@ void DisplayRenderThreadStart()
     }
     NativeGraphics::HardwareSetUpscale(g_options.textureUpscale == 4 ? 2 : g_options.textureUpscale == 2 ? 1 : 0);
     NativeGraphics::HardwareSetFiltering(g_filtering);
-    Log("graphics: the GS draws on the GPU at %dx the PS2's resolution%s", g_options.gsScale,
+    Log("graphics: the GS draws on the GPU (%s) at %dx the PS2's resolution%s", g_options.gs == 2 ? "Metal" : "OpenGL", g_options.gsScale,
         g_options.textureUpscale != 0 ? (", textures upscaled " + std::to_string(g_options.textureUpscale) + "x").c_str() : "");
 }
 
 void DisplayNoRenderThread()
 {
-    if (g_options.gs == 1)
+    if (g_options.gs != 0)
     {
         Log("graphics: the hardware renderer needs the render thread: the software GS draws");
         g_options.gs = 0;
@@ -807,7 +816,7 @@ int DisplayGet(DisplaySetting setting)
     case DisplaySetting::AntiAliasing: return g_antiAliasing;
     case DisplaySetting::Crt: return g_crt ? 1 : 0;
     case DisplaySetting::VSync: return g_vsync ? 1 : 0;
-    case DisplaySetting::OnGpu: return g_options.gs == 1 ? 1 : 0;
+    case DisplaySetting::OnGpu: return g_options.gs != 0 ? 1 : 0;
     }
     return 0;
 }

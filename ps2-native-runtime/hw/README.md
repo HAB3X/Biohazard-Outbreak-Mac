@@ -71,4 +71,9 @@ here unchanged except for:
   without it), their staging through a fresh buffer, and a write over pages with writes waiting merged with them later.
   CTTR's race: 183 render passes a frame to 43
 
+- `hw/hwgs.cpp`, `hw/gldevice.cpp`, `hw/gpudevice.h` (ps2-native-runtime's): the GPU's calls moved out of HwGs behind a
+  device interface (`GpuDevice`), OpenGL's in `gldevice.cpp`, so another GPU interface (Metal, docs/metal.md) can draw with the
+  same targets, page tracking and texture caches; every recording's picture the same. The unused CPU read back and upload of
+  whole targets (`Download`, `Upload`, `Staging`: memory's copy on the GPU replaced them) left out
+
 Fixes made in either place should be copied to the other.

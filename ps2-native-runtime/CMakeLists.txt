@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(ps2_native_runtime C CXX)
+project(ps2_native_runtime C CXX OBJCXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,12 +24,15 @@ add_library(ps2hw STATIC
     hw/gs/workers.cpp
     hw/hw/bc7.cpp
     hw/hw/gl.cpp
+    hw/hw/gldevice.cpp
+    hw/hw/metaldevice.mm
     hw/hw/hwgs.cpp
     hw/hw/replace.cpp
     hw/png.cpp
 )
 target_include_directories(ps2hw PUBLIC hw)
-target_link_libraries(ps2hw PUBLIC SDL3::SDL3)
+target_link_libraries(ps2hw PUBLIC SDL3::SDL3 "-framework Metal" "-framework Foundation" "-framework IOSurface" "-framework OpenGL")
+set_source_files_properties(hw/hw/metaldevice.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 target_compile_options(ps2hw PRIVATE -O2 -fno-strict-float-cast-overflow -Wno-deprecated-declarations)
 
 # The runtime: memory, the kernel, the hardware registers, the DMAC, the IOP and the presenter

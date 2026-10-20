@@ -267,7 +267,8 @@ struct Options
         float y;
     };
     std::vector<Click> clicks;
-    // What draws the GS's primitives: 1 the GPU (the hardware layer's OpenGL renderer), 0 the software GS; the GPU's internal
+    // What draws the GS's primitives: 1 the GPU (the hardware layer's renderer through OpenGL), 2 the same through Metal
+    // (docs/metal.md), 0 the software GS; the GPU's internal
     // resolution (1-8 times the PS2's) and its textures' upscale (0, 2 or 4 times). -1: $PS2_GS, $PS2_GS_SCALE,
     // $PS2_TEXTURE_UPSCALE, or the defaults (the GPU at 3x, no upscale)
     int gs = -1;
