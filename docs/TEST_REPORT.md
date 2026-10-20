@@ -105,3 +105,11 @@ File 2's Password field "test"; a memory dump showed the form holding them; noth
 still opening at 6-8 frames a second went to the pad (the first two letters lost once on File 1): wait for it to be drawn.
 Single play afterwards: File 2's Training Ground loads, Kevin walks. Login itself and the lobby untested (needs the owner's
 account). Details: docs/network.md.
+
+## After login, 2026-10-20 (branch `online`)
+
+The owner logged in (File 2, English patch, forum auto-login): the lobby (208.72.237.15:8200) ran five minutes, then joining
+a game connected to the game server (208.72.237.31:8590) and stopped: the AVE wrapper's function 4 (a connection's option
+got, AVE-TCP 0x4109) wasn't done. Functions 3 and 4 and AVE-TCP's options are in now; `ps2_avetcp_test` (the runtime's)
+checks them against a local server (31 checks pass), with the call the game made. The new build reaches obsrv's login page
+again (File 2, English); past login it waits for the owner's next run.

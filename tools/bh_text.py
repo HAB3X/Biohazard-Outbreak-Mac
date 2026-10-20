@@ -71,13 +71,32 @@ BUTTON_GLYPHS = {"{circle}": b"\x81\x9b", "{cross}": b"\x81\x7e", "{triangle}": 
                  "{play:square}": b"\x81\xbb"}
 
 
+# A line written {drop} is left out: the PS2's memory card slot ("MEMORY CARD slot %s:") and "the "PlayStation 2" memory
+# card (8MB)" lines of the save dialogs, which a Mac's one save location has no use for. It's taken out of the message
+# tables that list it (config `message_rows`, drop_lines) and is empty wherever else it's drawn. Its slot number code goes
+# with it: the games' printers look for the code in the line (the message box, File 2's 0x1C6200 and File 1's 0x1C3150,
+# strstr for "%s"; the network screens' printer, netwk 0x592EE0 and 0x596360, strchr for '%'), so a line without one is
+# drawn as it is. A wait code (%r, %t) can't
+# be dropped: the dialog's pause would go with it. For the same reason a line that stays may leave its slot number out,
+# written {without %s} (or %d, %1) in the English.
+DROP = "{drop}"
+DROPPABLE_TAGS = {b"%s", b"%d", b"%1"}
+WITHOUT = re.compile(r"\{without (%s|%d|%1)\}")
+
+
 def english_bytes(text, original):
     """The bytes of an English line: plain ASCII (and the button symbols of BUTTON_GLYPHS), with the control tags and the end
     marker of the Japanese it replaces. A Japanese line that ends in spaces (a field's width: the choices' place, a column)
-    keeps its width: the English is padded to it."""
-    parts = re.split(r"(\{(?:play:)?(?:circle|cross|triangle|square)\})", text.replace("\\n", "\n"))
+    keeps its width: the English is padded to it. DROP gives an empty line; {without %s} leaves the slot number out."""
+    if text == DROP:
+        kept = [t for t in tags(original) if t not in DROPPABLE_TAGS]
+        if kept:
+            raise ValueError(f"a line with {kept} can't be dropped")
+        return b""
+    left_out = [code.encode() for code in WITHOUT.findall(text)]
+    parts = re.split(r"(\{(?:play:)?(?:circle|cross|triangle|square)\})", WITHOUT.sub("", text).replace("\\n", "\n"))
     raw = b"".join(BUTTON_GLYPHS[p] if p in BUTTON_GLYPHS else p.encode("ascii") for p in parts)
-    if tags(raw) != tags(original):
+    if sorted(tags(raw) + left_out) != tags(original):
         raise ValueError(f"control tags {tags(raw)} differ from the original's {tags(original)}")
     for marker in LINE_MARKERS:  # ▼ (wait for a button) or a full-width space ends a line: kept, so the English leaves it out
         if original.endswith(marker):
@@ -176,6 +195,40 @@ class ExePool:
                 out.setdefault(name, []).append((off, struct.pack("<I", room[0] + self.base)))
             room[0] += len(raw)
         return out
+
+
+def drop_lines(original, image, region, base, dropped):
+    """Takes the lines at the addresses `dropped` out of the message tables in `region` (file offsets) of an image: a table
+    is a run of string pointers ending in 0, a dialog's lines in order (File 2's message box walks one to its 0 at
+    0x1C6200, File 1's at 0x1C3150, File 2's network screens' at netwk 0x5932F0). The lines after a dropped one move up and the run ends in one more 0.
+    `original` is the image as on the disc (whose pointers say what was dropped), `image` its rebuilt bytes (pointers
+    already moved by the pools), changed in place. A table that would be left empty, or a pointer from elsewhere in the
+    image into a table past its first dropped line (that line would no longer be what it points at), is an error."""
+    words = lambda data, at: struct.unpack_from("<I", data, at)[0]
+    pointers = {}  # address -> how many words of the original image hold it (anything pointing into a table)
+    for at in range(0, len(original) - 3, 4):
+        pointers[words(original, at)] = pointers.get(words(original, at), 0) + 1
+    pos, changed = region[0], 0
+    while pos < region[1]:
+        if words(original, pos) == 0:
+            pos += 4
+            continue
+        start = pos
+        while pos < region[1] and words(original, pos) != 0:
+            pos += 4
+        slots = range(start, pos, 4)
+        gone = [at for at in slots if words(original, at) in dropped]
+        if not gone:
+            continue
+        if len(gone) == len(slots):
+            raise DoesNotFit(f"message table at {start + base:#x}: every line is dropped")
+        inside = [at for at in slots if at > start and at >= gone[0] and pointers.get(at + base)]
+        if inside:
+            raise DoesNotFit(f"message table at {start + base:#x}: {inside[0] + base:#x} is pointed at from elsewhere")
+        kept = [image[at:at + 4] for at in slots if at not in gone]
+        image[start:pos] = b"".join(kept) + bytes(4 * len(gone))
+        changed += len(gone)
+    return changed
 
 
 class MsgBin:

@@ -1,8 +1,9 @@
 # Network Play on obsrv.org
 
 Both discs' Network Play runs on the Mac against obsrv.org's revived servers: the network setup, DNAS and the KDDI browser up
-to obsrv's login page, with the Mac's keyboard typing into the game's software keyboard. What happens after logging in (the
-lobby, games with other players) hasn't been tried yet.
+to obsrv's login page, with the Mac's keyboard typing into the game's software keyboard. The owner logged in (File 2,
+English) and the lobby ran for five minutes; joining a game stopped at the game server (a connection's option the wrapper
+didn't have), now done. Rooms and games past that are untried.
 
 The runtime's side (AVE-TCP on the Mac's sockets, the network configuration, DNAS's IOP helper and its overlays decrypted
 ahead of time, the USB keyboard) is in its `docs/network.md`; this is the games' side. Runtime branch `biohazard-online`,
@@ -43,7 +44,7 @@ game reads a keyboard of three reports at a time, as on a console, and drops key
 | DNAS | HTTPS to gate1.jp.dnas.playstation.org (DNAS 2.8, its overlays netdnas and insdnas decrypting themselves) | obsrv's DNS names its DNAS (153.121.44.150); the overlays are decrypted at build time (`decrypt` in config/file*.toml); the runtime answers the DNAS IOP helper |
 | Browser | the KDDI browser (nethttp overlay) over HTTPS to www01.kddi-mmbb.jp | obsrv's server (208.72.237.15); its page is /00000010/ for File 2, /00000002/ for File 1 |
 | Typing | the software keyboard (netwk's step, File 2 0x552F10, File 1 0x553820, once a frame while it's up) reads the USB keyboard through libusbkb | the step's override (`src/typing.cpp`) tells the runtime the game takes typed text, so the Mac's keys reach its USB keyboard |
-| Lobby, games | the lobby (obsrv's port 8200) and games (8590) | not tried yet |
+| Lobby, games | the lobby (TCP to obsrv's 8200), then the game server (TCP to 8590, where it gets and sets option 0x2008, no Nagle) | the wrapper's functions 3 and 4 and AVE-TCP's options; the lobby worked in the owner's run, the game server untried since |
 
 Functions the recompiler didn't find on its own (only reached through pointers made at run time) are in the configs'
 `extra` lists: netwk's 0x566120 (File 2) and 0x565FE0 (File 1), from DNAS's progress screen. nethttp's `extra` lists had
@@ -60,11 +61,19 @@ now leaves them out.
 - Single play unchanged: File 2's Training Ground loads and Kevin walks (the keys are the pad's outside the software
   keyboard).
 
+## What the game asks of the network
+
+Every call of the EE's network library goes through one function to the wrapper's RPC server (File 2's 0x1C75B0, File 1's
+0x1C3CD0). Their callers ask for functions 1-7, 11, 13, 15, 16, 19, 22, 30, 31, 33-49, 54-56, 58-63, 70-72 and 74 (both
+discs), all in `src/avewrap.cpp` but the modem's PPP (33-40). Not one asks for a passive open (8-10) or UDP (81-84): the
+game's online play is TCP to obsrv's servers, which relay games (obsrv-pack's servers listen on TCP only). Every receive
+(function 19) follows a status call that said data is waiting (File 2's 0x1CABC0, and 0x1D01E0 through 0x1D0490), so it
+never waits. The wrapper's code is the same on both discs (four bytes of data differ), and so is AVE-TCP's.
+
 ## Not done
 
-- After login: the lobby, handle name and chat (the handle name and chat use the same software keyboard, so typing should
-  work there, untried), games with others (UDP and peer connections aren't in the runtime's AVE-TCP yet: a game that uses
-  them stops, naming the call).
+- After the game server: rooms, games with others, handle name and chat (the handle name and chat use the same software
+  keyboard, so typing should work there, untried). The owner's next run shows how far it gets.
 - The configuration list's row text doesn't show (File 1's list neither).
 - The mouse in the browser (it has its own pointer, moved by the pad).
 - PPP (modems), the HDD install (insdnas's own DNAS), the network settings screens (they'd write files nothing reads).

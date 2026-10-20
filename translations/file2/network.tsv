@@ -101,8 +101,8 @@ bd9caeff37	Please wait a while
 f2dfd54c9c	Your online records are on
 00413d695a	the status screen
 4b94bea662	Back = Cancel
-ad47b48529	Save slot 1
-c9a241268b	Save slot 2
+ad47b48529	Save data
+c9a241268b	Other save data
 306bf40117	Looking for an opponent
 2aaca46b1b	Please wait
 09b44f0d3b	The download is complete
@@ -133,8 +133,8 @@ f96889983f	server it costs 10 yen per 3 min
 7a8bbc9432	it costs 13 yen per minute
 f46d1ee246	Connect to the Multi
 f426a99b0a	Matching server?
-4222135243	Slot %s: checking
-750818e294	the save data
+4222135243	{drop}
+750818e294	Checking the save data
 0f88d92f21	Don't quit or switch off the power
 79df472608	while the save data is in use
 8bfcf2b1d0	Could not load properly
@@ -182,14 +182,14 @@ ef28a9c450	for maintenance
 6297b9e8cf	so the line was cut
 d5e0223dd4	A connection fault occurred
 e6358d89a4	Ending the match; back to the lobby
-a8a1c51031	Slot %s:
+a8a1c51031	{drop}
 c9ae64d89e	No save data
-ac1476dedc	Your NET file must be in the
-e858eb9e00	(slot %s)
+ac1476dedc	The NET file must be
+e858eb9e00	in the save data.{without %s}
 efd0f014d4	Confirm = Don't save
-d518dd9a87	Slot %s needs save space
-3b73b23ee9	with 123 KB or more free
-6a70f3f031	for the save data
+d518dd9a87	Saving needs{without %s}
+3b73b23ee9	123 KB or more of free space
+6a70f3f031	in the save data.
 72a0bb9259	Change the registered details?
 0842cbd20d	A NET file can be shared by
 cfb3ad1bfe	the games that support it
@@ -211,12 +211,12 @@ fea633ad8a	your modem settings, other players' IDs
 0df77e57fa	and so on can't be saved. Take care.
 c27be264f6	Load the NET file?
 0faede6ae5	Until you leave "Network" mode,
-8d705e848b	the save data
-fbae3ac4e6	must not be removed
+8d705e848b	don't quit the game
+fbae3ac4e6	or turn off the power.
 c0e9c9c30d	Leave the network?
-a01cc01305	In port A-1,
-7e649b768a	with 9 or more blocks free,
-83e35d596d	put the save data
+a01cc01305	The save data needs
+7e649b768a	9 or more blocks of free space
+83e35d596d	to go on.
 f742767b11	was found
 71d610c92d	Online play is possible
 d2e2caabc0	From now on, do not
@@ -237,10 +237,10 @@ f5aef8ad69	Not registered
 6da9739a6d	and try again
 90448b9b8a	No reply from the modem
 5ec4fc301a	Loading data
-90d654f413	Put the save data in the
-0f2cfc37b5	expansion socket
-ad21625301	                      A-1
-1ec6645331	                      A-1 or 2
+90d654f413	The NET file and system file are
+0f2cfc37b5	read from the save data:
+ad21625301	                      save data
+1ec6645331	                      save data
 68fc8df2c7	NET file          =
 e69179cc90	System file       =
 a940f2d077	When you're ready,
@@ -253,9 +253,9 @@ ea9436e039	The server may be busy
 9a4164bd3d	Check the modem's settings
 be772de6e6	and call again
 437be09795	There is no system file
-50dd211cf6	A-1 or 2
-2bf420d74d	          put the save data
-40a45ec51b	with the system file
+50dd211cf6	{drop}
+2bf420d74d	          The system file must be
+40a45ec51b	in the save data.
 333773d29b	The modem settings may be wrong
 4d3976448f	or the line is very busy
 e6350e3ee2	The call can't go through
@@ -293,23 +293,23 @@ eaea9ef4ef	The save data
 c2222dcf09	The save data 
 9f6aec99e7	could not be formatted
 57226755a5	Saving the game data
-a2da034263	Slot %s:
-2d3932ba92	the save data
+a2da034263	{drop}
+2d3932ba92	The save data
 0cd9450d60	is short of free space
 6dcb9f80d5	To save the game data,
 fb768d8f14	123 KB or more is needed
-f34ada1579	To the save data
-fa33f8a247	the game data was saved
+f34ada1579	The game data
+fa33f8a247	was saved.
 fa608dc503	The NET file
 62d3b6cebf	was not found
 8fab40b127	If you don't make a file,
 b9d1bfd63d	The save data
 7dc8a92019	has no game data
 2dd16ded14	Create a new one?
-c14349e07b	Game data already exists
+c14349e07b	already has game data
 eee3f69920	To the drive,
 2664db7ba3	the NET file
-6c298d86dd	There is no NET file
+6c298d86dd	has no NET file
 2a2cf90ff4	Message sent
 59bc8ecf21	Record your opponents' IDs
 7975a3f3d2	in the NET file?
@@ -677,9 +677,9 @@ c0543c0bd6	First time
 3a0f94abe9	Keep the login ID and password
 dfcc12b072	Keep the login ID only
 64c383f0e5	Don't keep them
-21f4f37a6f	If you keep your login ID and
-889fdb8cee	password in your save data,
-68f73f7554	please take care of it.
+21f4f37a6f	If you keep your login ID and password,
+889fdb8cee	{drop}
+68f73f7554	please take care of your save data.
 3516c17e9c	Your NET file says
 22032902a3	you have registered
 604bd3e7bc	before.
@@ -708,25 +708,25 @@ e71693f2bd	A valid MMBB login ID
 8b7e2e16a5	If you go online, unsaved main data
 b3a94e27ab	may be lost.
 639f9fa760	Looking for the NET file...
-74dba876ae	Slot %1:
-ace2def4fe	must not be removed.
+74dba876ae	{drop}
+ace2def4fe	Don't quit the game.
 a520d0073e	The NET file was found.
-96f8f4950c	Slot %1:
-18624fcc13	is missing.
+96f8f4950c	{drop}
+18624fcc13	The save data is missing.
 8e28d98a2d	The NET file was not found.
 79510d2fcc	Without the file, other players'
 d711bb3f29	info and so on can't be saved.
 8db0104498	Create a new NET file?
 d43067406c	From now on, while online, this NET file
 1c9b398417	is saved automatically.
-bc1d2075f9	Don't turn off the power
-d23f04e5db	or quit the game.
-dfc07c07db	Checking...
-31dc28e1cd	or quit the game.
+bc1d2075f9	Don't turn off the power or
+d23f04e5db	quit the game.
+dfc07c07db	Checking the save data...
+31dc28e1cd	quit the game.
 5136c3c0dd	Saving the NET file...
 6d734b3f33	The NET file was saved.
 8d14e067f7	The NET file could not be saved.
-3db0f91577	Use slot %s.
+3db0f91577	in the save data.{without %s}
 4d7765c8a6	There is no NET file.
 c2dbf75bbd	Connecting by broadband.
 bf58d18dab	A broadband connection can't be made now.
@@ -770,7 +770,7 @@ bbc5c8772e	it costs 13 yen per minute.
 41dcf533cc	Finding the connection device
 80600203b9	needed for dial-up.
 3fd2530cdf	The connection device was found.
-194aa693d8	plug or unplug it.
+194aa693d8	unplug anything.
 b800e8e853	From now on broadband can't be used.
 7d8fd53f7a	To connect by broadband,
 9672a716ae	No connection device was found.
@@ -839,9 +839,9 @@ bd182833af	Main data of game version %v
 204b0a4c7d	To play online,
 807a73e126	save the main data of game version %v.
 18601b52d2	Please save it.
-0d71f03ead	Save it to the save data?
-059291e48f	Checking.
-3db0c9e7ea	was removed.
+0d71f03ead	Save it now?
+059291e48f	Checking the save data.
+3db0c9e7ea	The save data was removed.
 44bbeff980	Saving the main data...
 3ec6fde215	The main data was saved.
 a88c46a5d9	The main data
@@ -871,7 +871,7 @@ d32d748b6e	%y KB or more of free space is needed.
 c5847388cd	Stop saving the main data?
 907c6388ad	The main data could not be saved.
 f04f11967b	Save the current state (and pilot name)?
-31a5853343	Could not access it.
+31a5853343	The save data could not be accessed.
 de3ef2e203	No pilot name was entered.
 dff5274551	A pilot name for online play
 5bf47a82c8	must be entered.
@@ -880,11 +880,11 @@ c2feaf92d9	trademarks of Sony Computer Entertainment Inc.
 44e7f7819f	Autoloading the main data...
 2ced018617	The main data was autoloaded.
 ba34f890fb	Until the version update ends,
-4359ca42a9	Slot %s: the main data
-57aa477743	is missing.
+4359ca42a9	The main data{without %s}
+57aa477743	The save data is missing.
 e8a91d390f	Choose where to load
-6f7ca60a28	was replaced.
-9e04f55745	Formatted.
+6f7ca60a28	The save data was replaced.
+9e04f55745	The save data was formatted.
 459b6e205e	Enter line prefix
 21ac41eea4	The NET file could not be saved.
 63d71ad318	Load it?
@@ -905,8 +905,8 @@ aabe16efa5	Erase
 e7dced4e03	Don't erase
 e80b7e0727	Re-enter
 ea1117915e	Read the online terms of use
-747ca21482	Save slot 1
-74ae9e26a9	Save slot 2
+747ca21482	Save data
+74ae9e26a9	Other save data
 208f51b103	restart the game and 
 527f63a46d	Check the connection provider settings'
 a119cdc6b1	PPPoE user ID 

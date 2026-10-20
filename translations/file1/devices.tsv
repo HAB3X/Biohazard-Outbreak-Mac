@@ -1,19 +1,5 @@
 # Lines File 2's English (the fallback) words for the PS2's hardware, said device-neutrally for File 1: the save data for
 # the memory card, the font's button symbols ({circle}...: the keys with the keyboard) for the buttons
-4d399fc67d	Save slot 1
-7221dbe22b	Which save slot will you use?
-33d3608de8	Save slot %s
-672bd899c1	Save slot %s:
-de6e83ea0c	Save slot %s
-fd74d67239	From the save file (8MB)
-0edb9abc15	The save file (8MB)
-86839ccb4e	The save file (8MB)
-c339ab7317	The save file (8MB)
-a3eb792332	The save file (8MB)
-fdef08a275	The save file (8MB)
-6adbe4ab11	Do not quit the game
-ab09364f4e	Test-writing the save data...
-e6e311ab70	No save file in slot %s.
 096e82cecc	Do not turn off or reset the system
 666343bef5	[About the Map 1]\nOpen the map screen with <c1>{play:triangle}<c0>\nto see rooms you've already visited.\nWith a map in hand, you can see info on\nall rooms.\n
 3bcdffbf42	[About the Map 3]\nIf you hold <c1>{play:triangle}<c0> while opening the\nmap screen, you can move the PC while\nthe map is shown.\n

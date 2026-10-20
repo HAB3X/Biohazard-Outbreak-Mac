@@ -5,8 +5,10 @@
 // The RPC block (the EE's at 0x316680, sent and received whole): word 0 an argument of some functions, word 6 (0x18) the
 // result, the arguments from 0x1C. As in the module, the functions work in the block where it landed in the IOP's memory
 // (data sent and received, names and addresses are read and written there) and build AVE-TCP's parameter blocks beside
-// it. Each function is the module's (its dispatch is at 0x2098; offsets are AVEWRAPE.IRX's); the PPP (modem) functions,
-// passive opens and UDP aren't here yet: a call of one stops the game, naming it.
+// it. Each function is the module's (its dispatch is at 0x2098; offsets are AVEWRAPE.IRX's). The EE's network library
+// (File 2's 0x1C75B0, File 1's 0x1C3CD0, and their callers) calls functions 1-7, 11, 13, 15, 16, 19, 22, 30, 31, 33-49,
+// 54-56 and 58-63, 70-72 and 74, in both games; of those, the PPP (modem) ones (33-40) aren't here. The module's
+// passive opens (8-10) and UDP (81-84) are never called. A call of a function not here stops the game, naming it.
 #include "network.h"
 
 #include "ps2/avetcp.h"
@@ -113,6 +115,14 @@ void SetAddress(Call& call, bool set)
         call.P32(4, call.In(0x1C)).P32(8, call.In(0x20)).P32(12, call.In(0x24));
     }
     call.Result(call.Api(set ? 0x4105 : 0x4106));
+}
+
+// 3 (0x2A4): 0x4108 sets the option at 0x1E of the handle at 0x1C to the value at 0x22 (its size the 16-bit 0x20); 4 (0x304):
+// 0x4109 gets it into 0x22 (the result its size, 4)
+void Option(Call& call, bool set)
+{
+    call.Clear(0x10).P16(0, call.In16(0x1C)).P16(2, call.In16(0x1E)).P16(4, call.In16(0x20)).P32(8, call.block + 0x22);
+    call.Result(call.Api(set ? 0x4108 : 0x4109));
 }
 
 // 7 (0x364): 0x4110, an active open to word 0x1C's address, 16-bit 0x20's port, from 0x22's local port
@@ -492,6 +502,10 @@ void Serve(RpcCall& c)
     case 1:
     case 2:
         SetAddress(call, c.fno == 1);
+        break;
+    case 3:
+    case 4:
+        Option(call, c.fno == 3);
         break;
     case 5:
         Start(call);

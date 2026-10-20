@@ -1,13 +1,13 @@
 1c9b398417	will be autosaved.
-2913356737	Formatting...
+2913356737	Formatting the save data...
 445dd35a41	Resuming deletes the suspended data.
 56871b3c96	Resume the game from the suspended data?
 6ce05dd8d8	Suspended data exists.
 bae9ed4b83	To start a new scenario,
 c7b1becf86	the suspended data will be deleted. OK?
 cabe907549	It could not be saved correctly.
-059291e48f	Checking...
-05d247e847	The check failed.%r
+059291e48f	Checking the save data...
+05d247e847	Checking the save data failed.%r
 0a8c98d131	Loading main data...
 1703cbf578	  Treat
 1b83880f19	Resuming the game.
@@ -33,7 +33,7 @@ cabe907549	It could not be saved correctly.
 8a0d4bead1	  Equip
 8fa28c4e0c	All we could do was run for our lives...\n
 9046b4284e	Autosaving main data...
-939fb77b24	From now on, save slot %s
+939fb77b24	From now on, the main data{without %s}
 9411b899c0	dance like monstrous beasts. Beyond them, death\n
 9515ff1e05	<p1>Read it?
 9a4d425d49	   Drop
@@ -41,7 +41,6 @@ cabe907549	It could not be saved correctly.
 a1b1779e20	   Use
 a9e38592b8	drive off the nightmare. How long can this last?\n
 ac12fc44de	 was asked to use an item
-ace2def4fe	or remove the save file.
 b52fe8401f	's request
 b5a78cc788	Cold and silence reign, and a deadly plague.\n
 b6b312a265	Creating main data...
@@ -56,7 +55,7 @@ cf878360ca	 - I need it
 d26e83c4ac	Dawn will bring hope... or the end?\n
 db69fbbf19	Autosave finished.
 dbcf190514	 Reload
-dfc1992a33	The check failed.
+dfc1992a33	Checking the save data failed.
 e4c6fe107e	's order
 e51c850049	SOFTDIP DATA
 e938709236	  Swap

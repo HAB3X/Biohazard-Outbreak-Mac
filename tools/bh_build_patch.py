@@ -28,10 +28,10 @@ MAGIC = 0x54415044  # "DPAT", version 2: each range has a variant (0 always, 1 k
 
 
 def load_translations(folder, units, fallback=None):
-    """({unit id: English bytes}, {unit ids kept Japanese on purpose}); units = {unit id: original bytes} the disc has. `fallback`: another game's translations
+    """({unit id: English bytes}, {unit ids kept Japanese on purpose}, {unit ids dropped: text.DROP}); units = {unit id: original bytes} the disc has. `fallback`: another game's translations
     folder, whose English is used for the units `folder` doesn't have (the same Japanese line in both games); its units
     that this disc doesn't have are passed over."""
-    out, handled, kept = {}, set(), set()
+    out, handled, kept, dropped = {}, set(), set(), set()
     for source in [folder] + ([fallback] if fallback else []):
         own = source == folder
         for tsv in sorted(Path(source).glob("*.tsv")):
@@ -51,11 +51,28 @@ def load_translations(folder, units, fallback=None):
                 if english == "-":  # kept Japanese on purpose
                     kept.add(uid)
                     continue
+                if english == text.DROP:
+                    dropped.add(uid)
                 try:
                     out[uid] = text.english_bytes(english, units[uid])
                 except (UnicodeEncodeError, ValueError) as e:
                     raise SystemExit(f"{tsv.parent.name}/{tsv.name}:{n}: unit {uid}: {e}")
-    return out, kept
+    return out, kept, dropped
+
+
+def drop_lines(pools, nodes, images, rows, dropped):
+    """Takes the dropped lines (text.DROP) out of the message tables the config lists (`message_rows`: an image and a
+    region of its file, see text.drop_lines), in the rebuilt `images`. Returns how many lines were taken out."""
+    at = {}  # image name: (its base, the addresses of its dropped strings, as on the disc)
+    for _, pool in pools:
+        base, addresses = at.setdefault(pool.own, (pool.base, set()))
+        addresses.update(pool.starts[i] + base for i in pool.translatable() if text.unit_id(pool.raw[i]) in dropped)
+    count = 0
+    for table in rows:
+        base, addresses = at[table["file"]]
+        image = images.setdefault(table["file"], bytearray(nodes[table["file"]].read()))
+        count += text.drop_lines(nodes[table["file"]].read(), image, tuple(table["region"]), base, addresses)
+    return count
 
 
 def coverage(kinds, new, kept):
@@ -129,7 +146,7 @@ def main(argv):
                 else "item files" if name.lower().endswith(".dat") else name)
         kinds.update({u: kind for u in found if u not in kinds})
     fallback = sources.settings(game).get("fallback")
-    new, kept = load_translations(folder, units, fallback and archive.REPO / "translations" / fallback)
+    new, kept, dropped = load_translations(folder, units, fallback and archive.REPO / "translations" / fallback)
     patches = []  # (disc offset, bytes)
     try:
         images = {}  # image name: its new bytes (one image can be changed by several pools: strings, pointers)
@@ -138,6 +155,7 @@ def main(argv):
                 image = images.setdefault(name, bytearray(nodes[name].read()))
                 for off, data in ranges:  # in order: a slot is cleared, then strings are written into it
                     image[off:off + len(data)] = data
+        taken = drop_lines(pools, nodes, images, sources.settings(game).get("message_rows", []), dropped)
         for name, image in images.items():
             patches += [(nodes[name].offset + off, data) for off, data in changed_runs(nodes[name].read(), image)]
         for path, node, msg in messages:
@@ -163,6 +181,7 @@ def main(argv):
     keyed = sum(1 for p in patches if p[2])
     print(f"{len(new)} of {len(units)} units translated; {len(patches)} ranges ({keyed} for one device), "
           f"{sum(len(p[1]) for p in patches)} bytes -> {out_path}")
+    print(f"{len(dropped)} lines dropped (the PS2's memory card slots), taken out of message tables {taken} times")
     print("\n".join(coverage(kinds, new, kept)))
     return 0
 

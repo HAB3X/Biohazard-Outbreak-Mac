@@ -102,13 +102,17 @@ with Pillow and numpy, which a Finder launch doesn't have, and about a minute). 
 `./run.sh file2 --english` builds `build/english-file2.patch` from your disc and `translations/file2/*.tsv` (my own English,
 keyed by unit ids) and plays with it (runtime `--patch`). File 2's text is all in English: menus, dialogs, item names and
 descriptions, FILE documents, place names, room messages, subtitles, all 15,871 speech lines, the epilogue, the network
-screens and the browser's pages (22,026 of 22,206 units; the other 180 are kept Japanese on purpose: the handle-name word
+screens and the browser's pages (22,027 of 22,206 units; the other 179 are kept Japanese on purpose: the handle-name word
 filter, the name entry's kana tables, puzzle letter grids). Wording is device-neutral (save data, Confirm/Back).
-`./run.sh file1 --english` does the same for File 1 (branch translate-file1): 12,620 of 13,299 units, the other 679 kept
+`./run.sh file1 --english` does the same for File 1 (branch translate-file1): 12,621 of 13,299 units, the other 678 kept
 Japanese on purpose (word filter, kana and keyboard tables); File 2's English is used for the lines both games share. The
 pictures with Japanese or PS2 buttons are redrawn at build time in both games, those with buttons (and the fonts' button
 glyphs) in two variants: key caps while the keyboard and mouse were used last, PS2 symbols with a gamepad (patch version 2).
 Details, window widths and what was checked in play: docs/translation.md.
+The save dialogs say nothing of the PS2's memory card (branch `slots`): no slot, port or "PlayStation 2 memory card (8MB)"
+line in either game. Those lines are written `{drop}` and taken out of the dialogs' line tables at build time, the slot
+number with them; the NET file screens' header reads "NET File". With the one save location the games never ask which slot
+(seen in play: saving, loading, autosave, Network Play's NET file). docs/translation.md "Save dialogs".
 
 ## In progress
 
@@ -118,8 +122,8 @@ Details, window widths and what was checked in play: docs/translation.md.
 
 ## Still to do
 
-- Online after login (docs/network.md): the lobby, handle name and chat, games with others (UDP and peer connections in the
-  runtime's AVE-TCP); the configuration list's invisible row text.
+- Online after login (docs/network.md): the lobby works (the owner's run); the game server (8590), rooms, handle name and
+  chat untried since its missing call was added; the configuration list's invisible row text.
 - Sofdec movies: the opening plays; check the other 20 .sfd files (NETBIO01.DAT's adxsnd.afs: PS2demo01.sfd, the endings,
   PS2continue.sfd), and the title screen after the opening.
 - PC texts (the game's button glyphs and its Japanese menu text said for a computer), the PC menus' game settings; mouse aiming
