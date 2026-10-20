@@ -9,6 +9,7 @@
 // (File 2's 0x1C75B0, File 1's 0x1C3CD0, and their callers) calls functions 1-7, 11, 13, 15, 16, 19, 22, 30, 31, 33-49,
 // 54-56 and 58-63, 70-72 and 74, in both games; of those, the PPP (modem) ones (33-40) aren't here. The module's
 // passive opens (8-10) and UDP (81-84) are never called. A call of a function not here stops the game, naming it.
+#include "lobbytrace.h"
 #include "network.h"
 
 #include "ps2/avetcp.h"
@@ -129,7 +130,9 @@ void Option(Call& call, bool set)
 void Open(Call& call)
 {
     call.Clear(0x18).P32(0, call.In(0x1C)).P16(4, call.In16(0x20)).P16(6, call.In16(0x22));
-    call.Result(call.Api(0x4110));
+    const s16 handle = call.Api(0x4110);
+    call.Result(handle);
+    LobbyTrace::Opened(handle, call.In16(0x20));
 }
 
 // 11-13 (0x564, 0x5A8, 0x5EC): 0x4113 close, 0x4114 shut down, 0x4115 abort the handle at 0x1C; 22 (0x97C) 0x411C deletes it.
@@ -138,6 +141,10 @@ void HandleCall(Call& call, u16 code)
 {
     call.Clear(8).P16(0, call.In16(0x1C)).P16(2, code == 0x411A ? call.In16(0x1E) : 0);
     call.Result(call.Api(code));
+    if (code != 0x411A && code != 0x4114)
+    {
+        LobbyTrace::Closed(static_cast<s16>(call.In16(0x1C)));
+    }
 }
 
 // 14 (0x630): 0x4116, the handle's addresses: the remote address at 0x20, the ports at 0x24 and 0x26 (the module puts the
@@ -206,6 +213,10 @@ void Send(Call& call)
             *IopMemory(call.p + 9) = 1;
             call.P16(0xC, call.In16(0x1E)).P32(0x10, call.block + 0x20);
             r = call.Api(0x4118);
+            if (r > 0)
+            {
+                LobbyTrace::Sent(static_cast<s16>(call.In16(0x1C)), IopMemory(call.block + 0x20), static_cast<u32>(r));
+            }
         }
         else
         {
@@ -219,7 +230,12 @@ void Send(Call& call)
 void Receive(Call& call)
 {
     call.Clear(0x10).P16(0, call.In16(0x1C)).P16(2, call.In16(0x1E)).P32(4, call.block + 0x20).P32(8, 0);
-    call.Result(call.Api(0x4119, call.p + 0x20));
+    const s16 r = call.Api(0x4119, call.p + 0x20);
+    call.Result(r);
+    if (r > 0)
+    {
+        LobbyTrace::Received(static_cast<s16>(call.In16(0x1C)), IopMemory(call.block + 0x20), static_cast<u32>(r));
+    }
 }
 
 // 20 (0x834): what's waiting on the handle at 0x1C (up to the 16-bit 0x1E bytes) into 0x20: 0 when nothing is; -6 when the
@@ -246,6 +262,10 @@ void ReceiveWaiting(Call& call)
             const u16 length = std::min<u16>(waiting, call.In16(0x1E));
             call.Clear(0x10).P16(0, call.In16(0x1C)).P16(2, length).P32(4, call.block + 0x20).P32(8, 0);
             r = call.Api(0x4119, call.p + 0x20);
+            if (r > 0)
+            {
+                LobbyTrace::Received(static_cast<s16>(call.In16(0x1C)), IopMemory(call.block + 0x20), static_cast<u32>(r));
+            }
         }
         else
         {
