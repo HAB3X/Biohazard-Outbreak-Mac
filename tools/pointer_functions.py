@@ -37,6 +37,19 @@ def load_elf(path):
     return segs
 
 
+def after_function_end(img, a):
+    """Whether code at `a` follows a function's last jump and its delay slot: a JR RA, with or without zero padding after it,
+    or a J (a tail call) with zero padding after its delay slot (File 2's game overlay ends 0x67E330 with one, and the
+    handler after it at 0x67E350 is in a table). A J with code right after its delay slot is a jump inside a function"""
+    b = a - 4
+    while img.get(b, 1) == 0 and a - b < 64:
+        b -= 4
+    for jump, padding in ((img.get(b, 0), a - b - 8), (img.get(b - 4, 0), a - b - 4)):
+        if jump == 0x03E00008 and padding >= 0 or jump >> 26 == 2 and padding > 0:
+            return True
+    return False
+
+
 def words(base, blob):
     for i in range(0, len(blob) - 3, 4):
         yield base + i, struct.unpack_from("<I", blob, i)[0]
@@ -122,16 +135,19 @@ def main():
             if w % 4 or not any(lo <= w < hi for lo, hi in (text[:1] if name == "f" else text)) or w in have \
                     or img.get(w, 0) == 0:
                 continue
-            # a word naming code after a JR RA is a start unless it's a case of a switch (a jump table's entry, which the
-            # data holds too): a function's prologue always is. Code after a register jump that isn't JR RA (a dispatcher
-            # ending in its own jump through a table, File 1's game overlay at 0x665870) is a start when the word is in a
-            # table of starts (a known start beside it): a jump table's neighbours are cases, not starts
-            after_jr = img.get(w - 8) == 0x03E00008
-            after_jump = (img.get(w - 8, 0) & 0xFC1FFFFF) == 0x00000008 and img.get(w - 4) == 0 and \
-                any(words_at.get((source, a + d)) in have for d in (-4, 4))
+            # a word naming code after a function's end (a JR RA or a tail call's J) is a start unless it's a case of a
+            # switch (a jump table's entry, which the data holds too): a function's prologue always is. Code after a register
+            # jump that isn't JR RA (a dispatcher ending in its own jump through a table, File 1's game overlay at 0x665870)
+            # is a start when the word is in a table of starts (a known start beside it): a jump table's neighbours are
+            # cases, not starts
+            after_end = after_function_end(img, w)
+            in_table_of_starts = any(words_at.get((source, a + d)) in have for d in (-4, 4))
+            after_jump = (img.get(w - 8, 0) & 0xFC1FFFFF) == 0x00000008 and img.get(w - 4) == 0 and in_table_of_starts
             # (the recompiler takes such a table for the dispatcher's own switch when an entry falls inside it: the table
             # of starts says it isn't)
-            if prologue(img[w]) or (after_jr and w not in cases.get(name, ())) or after_jump:
+            # (a dispatcher that jumps through a table of functions, File 2's game overlay at 0x67D000, is taken for a switch
+            # too: its entries are starts when the table's are, the leaf ones as well as those with a prologue)
+            if prologue(img[w]) or (after_end and (w not in cases.get(name, ()) or in_table_of_starts)) or after_jump:
                 found.setdefault(name, set()).add(w)
     # A prologue after zero padding is a start whether or not anything points at it
     for name, (text, img) in regions.items():

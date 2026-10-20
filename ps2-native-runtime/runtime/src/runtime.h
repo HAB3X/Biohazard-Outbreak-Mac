@@ -87,6 +87,12 @@ void Log(const char* format, ...) __attribute__((format(printf, 1, 2)));
 [[noreturn]] void Fatal(const char* format, ...) __attribute__((format(printf, 1, 2)));
 // The guest's call stack (from the host's) to the log
 void Backtrace();
+// From now on everything written to stderr also goes to SETTINGS/logs/latest.log (the run before's kept as previous.log),
+// up to LogFileLimit bytes: so a run started from Finder, whose stderr goes nowhere, leaves its log where a player can send it
+constexpr size_t LogFileLimit = 32u << 20;
+void LogToFile(const std::string& settingsDir);
+// The log file's descriptor (-1 when there's none), for writers that can't go through stderr (a crash's handler)
+int LogFileDescriptor();
 // --control's commands (control.cpp): keys held from now, and a picture asked for, taken at the next vblank
 void InputLiveKeys(const std::vector<std::string>& names, double hold);
 // SDL events as a window's: a key or mouse button (bindings.txt's names) pressed, let go, or both at once; the mouse (0-1 over the
