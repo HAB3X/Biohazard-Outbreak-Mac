@@ -14,6 +14,9 @@ int main(int argc, char** argv)
     // steps of 255 different (the replay of the character select: at most 4, all on the text) and nothing else; the select
     // went from 21-23 frames a second to 30 (runtime.h's gsRoundedRegionBlends)
     game.gsRoundedRegionBlends = 1;
+    // VIF1 and VU1 on a thread of their own (runtime.h's vu1Thread): its VIF1 codes have no interrupt bit, and VU1 was most of
+    // the EE's time in its 3D
+    game.vu1Thread = 1;
     BiohazardControls::Apply(game, BiohazardControls::File1);
     Tsnd::Register();
     return ps2_main(argc, argv, &game);
