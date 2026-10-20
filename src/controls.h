@@ -21,6 +21,10 @@ struct Layout
     uint32_t taskCount, taskList;
     uint32_t gameTask;      // the in-game loop (play)
     uint32_t cutsceneTask;  // the game's loop while a cutscene plays (0: not found)
+    // A byte that's 0 while the game's loop plays a scene of its own with no cutscene task (File 1's opening credits) and
+    // nonzero while the player has control (0: none; found by memory diffs: the credits and a cutscene against two stretches
+    // of play)
+    uint32_t playControl;
     uint32_t baseTask;      // the executable's own loop (movies, the title and loading, and under the game)
     uint32_t selectTask;    // the character, partner and difficulty selects
     uint32_t scenarioTask;  // the scenario select (0: not found)
@@ -33,6 +37,7 @@ struct Layout
     uint32_t statusTab;     // the status screen's tab (a byte: 0 ITEM, 1 SPECIAL, 2 FILE)
     uint32_t statusCursor;  // the status screen's item cursor: a word, the address of the slot it's on (the equipped weapon's is elsewhere)
     uint32_t statusPopup;   // a byte that's nonzero while the item's actions (use, combine, give...) are up
+    uint32_t statusKind;    // a byte: what the status task shows (1 the status screen, 2 the map, 4 SELECT's pause menu)
     // The network browser (the KDDI browser of Network Play, its overlay `browserOverlay` as the disc names it): the word
     // (gp - 0x5D90) holding the address of its pointer's state, the pointer's x and y (16 bits each, in the 640 x 448
     // picture) at 16 and 18 there (netwk's link-focus code at 0x567370 in File 2 sets them so)
