@@ -1490,10 +1490,10 @@ a65165991f	* Edit network settings
 a16529d631	* Proxy settings
 da65a6c959	First, choose where to save
 7721314124	the provider settings.
-8a28e7f952	Choose where to load the provider
-154103cab6	settings to check or change from.
-2f1b9371d8	Choose where to load the provider
-52d74aa92e	Choose where to load the provider
+8a28e7f952	Provider settings to check or change:
+154103cab6	Choose where to load them from.
+2f1b9371d8	Provider settings to delete:
+52d74aa92e	Provider settings to test:
 d1e14234d5	Choose a device.
 0ff9eb8598	Needed
 81a894d771	Not needed
