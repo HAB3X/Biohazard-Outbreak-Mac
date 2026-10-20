@@ -65,13 +65,19 @@ The pointer over a slot (the four and the equipped weapon's) moves the cursor th
 
 - OPTIONS: the pointer over a row moves the cursor there, a click opens it. CONTROLLER SETTINGS opens the PC menus' Controls
   while the keyboard and mouse were used last (the game's own screen with a gamepad). SCREEN ADJUST and EDIT NETWORK
-  CONFIGURATION are still listed (no count of the list's rows was found to hide them by).
+  CONFIGURATION stay: the options' rows come from one of two layout tables (File 2's demo overlay at 0x56A520 and 0x56A570),
+  the shorter one, without EDIT NETWORK CONFIGURATION, only while the game finds no network adaptor (0x3137B1 below 2, set
+  at boot by 0x1BDC10, which Network Play reads too); SCREEN ADJUST is in both. Neither is safe to change for the menu alone.
+- Single play's NEW GAME/CONTINUE (File 1's SCENARIO), the character log and File 2's COLLECTION/DATA CONVERT: the pointer
+  over a row moves the cursor, a click chooses it.
+- The collection's grid: the pointer over a cell moves the cursor, a click chooses it, a click on a tab switches to it, the
+  wheel scrolls the rows (the grid's own first shown cell tells which cells are on screen).
 - Network Play: the yes/no dialogs (the NET file, formatting, saving), the manners screen's Next and Back and the connection
   list follow the pointer and take a click; a click on a screen with nothing to choose is the confirm. In the KDDI browser
-  (obsrv's pages) the browser's own pointer goes where the Mac's is, and a click selects there (a field opens the software
-  keyboard, a link or button is followed); the wheel moves between links.
-- The title menu, the selects, the character log and the collection: as before (the title menu's rows and the selects by
-  pointer; elsewhere the wheel moves the cursor and a click confirms the current row).
+  (obsrv's pages) the browser's own pointer goes where the Mac's is, a click selects there (a field opens the software
+  keyboard, a link or button is followed), and the wheel scrolls the page (the browser's L1 and R1).
+- Not yet with the mouse: the status screen's SPECIAL and FILE lists (no run with two or more entries to find their cursor),
+  File 1's horizontal "Return to the top menu?" in the collection (the keys work).
 
 ## Title, movies and cutscenes
 
