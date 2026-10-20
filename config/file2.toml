@@ -128,47 +128,43 @@ name = "netwk"
 file = "BIN/3.DAT"
 base = "0x543000"
 text = ["0x543040", "0x5d4080"]
-
-# DNAS (Sony's network authentication): its code decrypts parts of itself as it runs, so it can't be recompiled as it is
-# on the disc; its encrypted words stop the game if they're ever reached
-# Entries of handler tables the game calls through pointers (data words that point at a prologue: addiu sp,sp,-N)
+# The network configuration is the Mac's (src/network.cpp): no card holds one; the software keyboard's step tells the Mac's
+# keyboard to type (src/typing.cpp)
+overrides = { "0x5c84f0" = "netwk_card_has_netcnf", "0x552f10" = "netwk_soft_keyboard_step" }
+# Entries of handler tables the game calls through pointers (data words that point at a prologue: addiu sp,sp,-N); 0x566120 a
+# function the executable's task system calls by a pointer made at run time (seen in DNAS's progress screen)
 extra = [
     "0x5439c0", "0x54cd20", "0x54fb40", "0x552a00", "0x554ee0", "0x554fa0", "0x555080", "0x5578f0",
     "0x558b40", "0x5615c0", "0x561600", "0x561630", "0x5616f0", "0x561710", "0x561730", "0x561750",
     "0x561770", "0x561840", "0x561890", "0x561910", "0x561940", "0x561990", "0x561a30", "0x561a70",
-    "0x561ad0", "0x561b10", "0x566160", "0x566190", "0x566930", "0x566980", "0x566d60", "0x567360",
-    "0x567740", "0x567850", "0x5678e0", "0x567b00", "0x56bbf0", "0x56d830", "0x5800a0", "0x5956b0",
-    "0x597ea8", "0x598cb0", "0x598ed0", "0x59d400", "0x5cc070", "0x5cc360", "0x5cc7e0", "0x5cd040",
-    "0x5d37e0",
+    "0x561ad0", "0x561b10", "0x566120", "0x566160", "0x566190", "0x566930", "0x566980", "0x566d60",
+    "0x567360", "0x567740", "0x567850", "0x5678e0", "0x567b00", "0x56bbf0", "0x56d830", "0x5800a0",
+    "0x5956b0", "0x597ea8", "0x598cb0", "0x598ed0", "0x59d400", "0x5cc070", "0x5cc360", "0x5cc7e0",
+    "0x5cd040", "0x5d37e0",
 ]
 
+# DNAS (Sony's network authentication) decrypts blocks of its code before running them, each library with its own routine
+# (the call's arguments kept beside the block): the recompiler runs those routines on the overlay ahead of time and
+# recompiles the plain code. Words left that don't decode (the blocks' keys, junk between them) stop the game if reached
 [[overlays]]
 name = "netdnas"
 file = "BIN/4.DAT"
 base = "0x6af000"
 text = ["0x6af040", "0x71ff00"]
-encrypted = true
+decrypt = ["0x6db1a0", "0x714f00"]
 
 [[overlays]]
 name = "nethttp"
 file = "BIN/5.DAT"
 base = "0x6af000"
 text = ["0x6af040", "0x703d00"]
-# Entries of handler tables the game calls through pointers (data words that point at a prologue: addiu sp,sp,-N)
+# Entries of handler tables the game calls through pointers (data words that point at a prologue: addiu sp,sp,-N). Not the
+# cases of its switches (code after a case's JR RA that a jump table names): a start there splits the switch's function
 extra = [
-    "0x6b0550", "0x6b5408", "0x6b545c", "0x6b5484", "0x6b54ac", "0x6b574c", "0x6b5774", "0x6b57ac",
-    "0x6b5800", "0x6b5828", "0x6b5850", "0x6b5878", "0x6bde74", "0x6bee30", "0x6ccef4", "0x6ccf10",
-    "0x6ccf2c", "0x6ccf48", "0x6ccf64", "0x6ccf80", "0x6ccf9c", "0x6ccfb8", "0x6ccfd4", "0x6ccff0",
-    "0x6cd00c", "0x6cd028", "0x6cd044", "0x6d91e4", "0x6d92f4", "0x6da6d8", "0x6da6ec", "0x6da710",
-    "0x6da724", "0x6df958", "0x6e9518", "0x6e9520", "0x6e9528", "0x6e9530", "0x6e9538", "0x6e9540",
-    "0x6e9548", "0x6ea534", "0x6ea53c", "0x6ea544", "0x6ea54c", "0x6ea554", "0x6ea55c", "0x6ea564",
-    "0x6ea56c", "0x6ea574", "0x6ea57c", "0x6ea584", "0x6ea58c", "0x6ea594", "0x6f6b80", "0x6f7378",
-    "0x6f97cc", "0x6f97d4", "0x6f97dc", "0x6f97e4", "0x6f97ec", "0x6f97f4", "0x6f97fc", "0x6f9804",
-    "0x6f980c", "0x6f9814", "0x6f981c", "0x6f9824", "0x6f982c", "0x6f9834", "0x6f983c", "0x6f9844",
-    "0x6f984c", "0x6f9854", "0x6f985c", "0x6f9864", "0x6f986c", "0x6f9874", "0x6f987c", "0x6f9884",
-    "0x6fce10", "0x6fde08", "0x701b00", "0x701e20", "0x701f70", "0x701ff0", "0x7026e0", "0x702950",
-    "0x702bb0", "0x702cc0", "0x7030f0", "0x7033f0", "0x703520", "0x703530", "0x703720", "0x703730",
-    "0x7039d0", "0x703a40", "0x703be0", "0x703bf0", "0x703c10", "0x703c20", "0x703c70", "0x703c80",
+    "0x6bde74", "0x6bee30", "0x6da6d8", "0x6da6ec", "0x6da710", "0x6da724", "0x6df958", "0x6f6b80",
+    "0x6f7378", "0x6fce10", "0x6fde08", "0x701b00", "0x701e20", "0x701f70", "0x701ff0", "0x7026e0",
+    "0x702950", "0x702bb0", "0x702cc0", "0x7030f0", "0x7033f0", "0x703520", "0x703530", "0x703720",
+    "0x703730", "0x7039d0", "0x703a40", "0x703be0", "0x703bf0", "0x703c10", "0x703c20", "0x703c70",
 ]
 
 [[overlays]]
@@ -176,7 +172,7 @@ name = "insdnas"
 file = "BIN/6.DAT"
 base = "0x6af000"
 text = ["0x6af040", "0x6d8c80"]
-encrypted = true
+decrypt = ["0x6b1ab8", "0x6cfda8", "0x6d80a8"]
 
 [[overlays]]
 name = "single"

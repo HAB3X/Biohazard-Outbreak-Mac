@@ -96,3 +96,12 @@ Still slow, best theory: overlapping alpha geometry (foliage, text shadows) need
 render-pass changes a picture in the zoo, and OpenGL on Metal submits a command buffer for each; the zoo's replay is 75% waiting
 on the GPU. A native Metal renderer (programmable blending) is the real fix; a copy shared by non-overlapping draws of different
 state would save about a quarter. Not tried: a real window's speed. Tools: `ctl.py r "record 300 FILE"` / `r stop`.
+
+## Network Play, 2026-10-20 (branch `online`)
+
+File 2 and File 1: main menu, Network Play, NET file made and card formatted, the Mac's configuration, DHCP, DNAS 100%, obsrv's
+login page in the KDDI browser. The software keyboard took "Test1" (Shift, Backspace, Return) from the Mac's keyboard on both,
+File 2's Password field "test"; a memory dump showed the form holding them; nothing submitted. Keys typed while the keyboard was
+still opening at 6-8 frames a second went to the pad (the first two letters lost once on File 1): wait for it to be drawn.
+Single play afterwards: File 2's Training Ground loads, Kevin walks. Login itself and the lobby untested (needs the owner's
+account). Details: docs/network.md.
