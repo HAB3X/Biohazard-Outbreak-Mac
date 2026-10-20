@@ -237,8 +237,9 @@ int TitleScreen()
     {
         return -1;
     }
-    uint32_t state = Word(g_layout.screenState) & 0x1FFFFFF;
-    return state != 0 ? *Ps2::EeMemory(state + 4) : -1;
+    // The address as the game keeps it (it may be stale between screens: kept within main memory)
+    uint32_t state = Word(g_layout.screenState);
+    return state != 0 ? *Ps2::EeMemory((state + 4) & 0x1FFFFFF) : -1;
 }
 
 bool InScenarioSelect()
