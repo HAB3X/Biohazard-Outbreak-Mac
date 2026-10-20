@@ -1,6 +1,7 @@
 #include "controls.h"
 
 #include "ps2/iop.h"
+#include "ps2/recomp.h"
 
 #include <algorithm>
 #include <cstring>
@@ -14,12 +15,14 @@ enum Mode : int
     Play,
     Menus,
     Title,
+    Pause,
 };
 
-const char* const Modes[] = {"Play", "Menus", "Title, movies and cutscenes"};
+const char* const Modes[] = {"Play", "Menus", "Title, movies and cutscenes", "Pause menu"};
 
-// Escape is START in play and in the title, CROSS (back) in the menus, where START is the status screen's own key (Tab): the
-// status screen's cross closes it from its top level. Arrows and WASD are the D-pad in the menus; in play WASD is the left
+// Escape is the game's own pause in play (SELECT's pause menu: the game stops, which it doesn't behind the status screen,
+// START's, on Tab), SELECT again in that menu (closing it), START in the title and CROSS (back) in the other menus, where
+// START is the status screen's own key (Tab): the status screen's cross closes it from its top level. Arrows and WASD are the D-pad in the menus; in play WASD is the left
 // stick. Right click is the confirm in the menus (circle), as Return and E are; the left button clicks (see Steer)
 const Ps2GameControl Controls[] = {
     // Play: the game's own roles (its controller settings, type A): circle is the action and, with the weapon ready, the
@@ -45,8 +48,8 @@ const Ps2GameControl Controls[] = {
     {"appeal_come", "Appeal: This way!", "right_down", "2", Play},
     {"appeal_help", "Appeal: Help me!", "right_left", "3", Play},
     {"appeal_thanks", "Appeal: Thanks, sorry", "right_right", "4", Play},
-    {"options", "Pause menu: settings, quit (SELECT)", "select", "O", Play},
-    {"inventory", "Status screen, pause (START)", "start", "Tab, Escape", Play},
+    {"pause", "Pause: settings, quit (SELECT)", "select", "Escape", Play},
+    {"inventory", "Status screen: items, SPECIAL, FILE (START)", "start", "Tab", Play},
     {"dpad_up", "D-pad up", "up", "Up", Play},
     {"dpad_down", "D-pad down", "down", "Down", Play},
     {"dpad_left", "D-pad left", "left", "Left", Play},
@@ -66,10 +69,17 @@ const Ps2GameControl Controls[] = {
     {"menu_start", "Close the inventory (START)", "start", "Tab", Menus},
     {"menu_select", "Select (the options' default settings)", "select", "O", Menus},
     {"title_start", "Start, skip", "start", "Escape, Return, Space, E, Tab", Title},
+    {"pause_up", "Up", "up", "Up, W", Pause},
+    {"pause_down", "Down", "down", "Down, S", Pause},
+    {"pause_left", "Left, less", "left", "Left, A", Pause},
+    {"pause_right", "Right, more", "right", "Right, D", Pause},
+    {"pause_confirm", "Choose", "circle", "E, Return, Mouse Right", Pause},
+    {"pause_back", "Back", "cross", "Backspace, Left Shift", Pause},
+    {"pause_close", "Close the pause (SELECT)", "select", "Escape", Pause},
 };
 
 constexpr uint32_t Up = 1u << 4, Right = 1u << 5, Down = 1u << 6, Left = 1u << 7, L1 = 1u << 10, R1 = 1u << 11,
-                   Circle = 1u << 13, Start = 1u << 3;
+                   Circle = 1u << 13, Cross = 1u << 14, Start = 1u << 3;
 
 Layout g_layout = {};
 
@@ -95,22 +105,53 @@ bool HasTask(uint32_t task)
 }
 
 // The title's menu: the executable's loop alone, with the title's state at its menu
-bool TitleMenu() { return Word(g_layout.taskCount) == 1 && HasTask(g_layout.baseTask) && Word(g_layout.titleState) == 3; }
+bool TitleMenu()
+{
+    return Word(g_layout.taskCount) == 1 && HasTask(g_layout.baseTask) && Word(g_layout.titleState) == g_layout.titleMenus &&
+           (g_layout.titleObjects == 0 || Word(g_layout.titleObjects) == 3);
+}
+
+// The executable's loop alone is the title (movies, PRESS START: START skips and starts) or a menu reached from the title
+// menu. The title's state says which: the menus' value, or (File 1, whose other menus read 0 as its movies do) 0 with the last
+// value other than 0 the menus': the player came from them
+bool TitleMovie()
+{
+    static uint32_t lastSet = 0;
+    uint32_t state = Word(g_layout.titleState);
+    if (state != 0)
+    {
+        lastSet = state;
+    }
+    bool menus = state == g_layout.titleMenus || (g_layout.titleObjects != 0 && state == 0 && lastSet == g_layout.titleMenus);
+    return !menus;
+}
 
 // The game's loop with nothing on top of it is play; the executable's own loop alone (a movie, the title's "PRESS START", a load)
 // is the title and movies; anything else (the title menu, a select, the status screen over the game) is a menu
+// The status task's screen (statusKind): 1 the status screen, 2 the map, 4 SELECT's pause menu
+constexpr uint32_t StatusKindPause = 4;
+
 int CurrentMode()
 {
     uint32_t count = Word(g_layout.taskCount);
     if (HasTask(g_layout.gameTask))
     {
-        return count > 2 ? Menus : HasTask(g_layout.cutsceneTask) ? Title : Play;
+        // The status task (the status screen, the map, the pause) is the game's menu over play; other tasks over it are
+        // play's own (File 1's 0x6B7020 while a zombie holds the player, who shakes it off with the stick and buttons)
+        if (HasTask(g_layout.statusTask))
+        {
+            return (Word(g_layout.statusKind) & 0xFF) == StatusKindPause ? Pause : Menus;
+        }
+        // a scene the game plays itself in its play loop (File 1's opening credits) is the title's: Escape skips it
+        bool scene = HasTask(g_layout.cutsceneTask) ||
+                     (g_layout.playControl != 0 && *Ps2::EeMemory(g_layout.playControl) == 0);
+        return scene ? Title : Play;
     }
     if (HasTask(g_layout.cutsceneTask))
     {
         return Title;
     }
-    return count == 1 && HasTask(g_layout.baseTask) && !TitleMenu() ? Title : Menus;
+    return count == 1 && HasTask(g_layout.baseTask) && TitleMovie() ? Title : Menus;
 }
 
 int MenuUp() { return CurrentMode() != Play; }
@@ -145,6 +186,9 @@ enum class Goal
     TitleItem,
     Tab,
     Slot,
+    Action,   // a row of the item's actions (use, equip, combine, give...)
+    PauseRow, // a row of SELECT's pause menu
+    OptionsRow, // a row of the title's OPTIONS list
 };
 
 struct Steer
@@ -162,26 +206,62 @@ struct Steer
 // nothing in this long is lost
 constexpr int StepTimeout = 90;
 
-// The slots' place moves between runs, and the cursor doesn't open on the first: its address is found when the pointer first
-// goes over them, by moving the cursor up and left until it stops (the slots are one after the other from it)
-uint32_t g_slotBase = 0;
-int g_homeSteps = 0; // the moves toward it made
-constexpr uint32_t Homing[] = {Left, Up, Up};
-constexpr int HomeSteps = sizeof(Homing) / sizeof(Homing[0]);
-constexpr int HomeTimeout = 40; // vertical blanks: a move that shows nothing in this long is at the corner
+// The status screen's item slots: the grid's four, one after the other from 0x8C past the cursor's word (the cursor holds the
+// address of the slot it's on; seen in play: 0x767280, +0x98 right, +0x130 down in File 2), the equipped weapon's elsewhere
+constexpr uint32_t SlotsFromCursor = 0x8C;
 
 bool SlotsUsable()
 {
     return HasTask(g_layout.statusTask) && (Word(g_layout.statusTab) & 0xFF) == 0 && (Word(g_layout.statusPopup) & 0xFF) == 0;
 }
 
-// 0-3 the grid's slots (row by row), 4 the equipped weapon's, -1 before the first slot is known
+// 0-3 the grid's slots (row by row), 4 the equipped weapon's
 int SlotOf(uint32_t cursor)
 {
-    uint32_t n = (cursor - g_slotBase) / g_layout.slotStride;
-    return g_slotBase != 0 && cursor >= g_slotBase && n < 4 && (cursor - g_slotBase) % g_layout.slotStride == 0 ? static_cast<int>(n)
-           : g_slotBase != 0 ? 4
-                             : -1;
+    uint32_t base = g_layout.statusCursor + SlotsFromCursor;
+    uint32_t n = (cursor - base) / g_layout.slotStride;
+    return cursor >= base && n < 4 && (cursor - base) % g_layout.slotStride == 0 ? static_cast<int>(n) : 4;
+}
+
+// The item's actions: up while the popup byte is set, their cursor a byte 2 before the slot cursor's word (0 the first)
+bool ActionsUp() { return HasTask(g_layout.statusTask) && (Word(g_layout.statusPopup) & 0xFF) != 0; }
+uint32_t ActionCursor() { return g_layout.statusCursor - 2; }
+
+// SELECT's pause menu: its cursor a byte 3 before the status task's screen word. Its rows by the cursor's value: 0 the
+// controller type, 1 vibration, 3 and 4 the volumes, 5 brightness, 6 and 7 the screen's position, 8 default settings, 9 quit
+// the game, 10 EXIT (2 isn't used); where they're drawn, as fractions of the picture's height (seen in play, both games)
+struct PauseItem
+{
+    int value;
+    float y;
+    bool setting; // a value the left and right keys change (the wheel turns it)
+};
+const PauseItem PauseItems[] = {{0, 0.200f, true},  {1, 0.379f, true},  {3, 0.468f, true},  {4, 0.513f, true},
+                                {5, 0.602f, true},  {6, 0.691f, true},  {7, 0.736f, true},  {8, 0.780f, false},
+                                {9, 0.825f, false}, {10, 0.870f, false}};
+constexpr float PauseLeft = 0.19f, PauseRight = 0.81f, PauseRowHalf = 0.0223f;
+uint32_t PauseCursor() { return g_layout.statusKind - 3; }
+
+// The title's OPTIONS: a state the word optionsState points at while it's up (0 otherwise): its byte 1 is 3 on the list and 5
+// in one of its screens (brightness, sound...), its byte 4 the list's cursor (0 the first). The rows a step of 0.0893 of the
+// picture's height apart (both games; seen in pictures of the list)
+constexpr uint8_t OptionsList = 3, OptionsScreen = 5;
+constexpr float OptionsStep = 0.0893f, OptionsHalfWidth = 0.22f;
+
+uint32_t OptionsState()
+{
+    if (g_layout.optionsState == 0 || HasTask(g_layout.gameTask))
+    {
+        return 0;
+    }
+    uint32_t state = Word(g_layout.optionsState) & 0x1FFFFFF;
+    return state != 0 && state < 0x1FFFFF0 ? state : 0;
+}
+
+bool OptionsListUp()
+{
+    uint32_t state = OptionsState();
+    return state != 0 && *Ps2::EeMemory(state + 1) == OptionsList;
 }
 
 // Where the cursor is now in the goal's terms, -1 when it isn't where it can be steered (the item's actions are up...)
@@ -192,6 +272,9 @@ int CursorNow()
     case Goal::TitleItem: return TitleMenu() ? static_cast<int>(Word(g_layout.titleCursor)) : -1;
     case Goal::Tab: return HasTask(g_layout.statusTask) ? static_cast<int>(Word(g_layout.statusTab) & 0xFF) : -1;
     case Goal::Slot: return SlotsUsable() ? SlotOf(Word(g_layout.statusCursor)) : -1;
+    case Goal::Action: return ActionsUp() ? static_cast<int>(*Ps2::EeMemory(ActionCursor())) : -1;
+    case Goal::PauseRow: return CurrentMode() == Pause ? static_cast<int>(*Ps2::EeMemory(PauseCursor())) : -1;
+    case Goal::OptionsRow: return OptionsListUp() ? static_cast<int>(*Ps2::EeMemory(OptionsState() + 4)) : -1;
     default: return -1;
     }
 }
@@ -203,7 +286,10 @@ uint32_t NextButton(int now)
     int to = g_steer.target;
     switch (g_steer.goal)
     {
-    case Goal::TitleItem: return to > now ? Down : Up;
+    case Goal::TitleItem:
+    case Goal::Action:
+    case Goal::PauseRow:
+    case Goal::OptionsRow: return to > now ? Down : Up;
     case Goal::Tab: return to > now ? R1 : L1;
     case Goal::Slot:
     {
@@ -228,7 +314,6 @@ uint32_t NextButton(int now)
 void Aim(Goal goal, int target, bool confirm)
 {
     g_steer = Steer();
-    g_homeSteps = 0;
     g_steer.goal = goal;
     g_steer.target = target;
     g_steer.confirm = confirm;
@@ -284,6 +369,9 @@ uint32_t SelectStep(float x, float y)
     return 0;
 }
 
+constexpr float ActionX = 0.705f, ActionTop = 0.241f, ActionStep = 0.0536f, ActionHalfWidth = 0.08f;
+constexpr int ActionRowsMax = 6;
+
 // The goal under the pointer, if there is one (hovering moves the cursor, which a tab doesn't: those are clicked)
 bool Under(float x, float y, bool click)
 {
@@ -300,6 +388,43 @@ bool Under(float x, float y, bool click)
                 return true;
             }
         }
+    }
+    if (OptionsListUp())
+    {
+        for (int n = 0; n < g_layout.optionsItems; n++)
+        {
+            if (Inside({0.5f, g_layout.optionsTop + OptionsStep * static_cast<float>(n), OptionsHalfWidth, OptionsStep / 2}, x, y))
+            {
+                Aim(Goal::OptionsRow, n, click);
+                return true;
+            }
+        }
+        return false;
+    }
+    if (CurrentMode() == Pause)
+    {
+        for (const PauseItem& item : PauseItems)
+        {
+            if (x >= PauseLeft && x < PauseRight && std::abs(y - item.y) < PauseRowHalf)
+            {
+                Aim(Goal::PauseRow, item.value, click && !item.setting);
+                return true;
+            }
+        }
+        return false;
+    }
+    if (ActionsUp())
+    {
+        // drawn left of the slots from the grid's top, a row apart (seen with two and three actions)
+        for (int n = 0; n < ActionRowsMax; n++)
+        {
+            if (Inside({ActionX, ActionTop + ActionStep * static_cast<float>(n), ActionHalfWidth, ActionStep / 2}, x, y))
+            {
+                Aim(Goal::Action, n, click);
+                return true;
+            }
+        }
+        return false;
     }
     if (HasTask(g_layout.statusTask) && g_layout.statusTab != 0)
     {
@@ -323,33 +448,6 @@ bool Under(float x, float y, bool click)
     return false;
 }
 
-// Finds the first slot: moves toward it, each move waited for, and takes the cursor's place at the last
-void Home()
-{
-    if (!SlotsUsable())
-    {
-        g_steer = Steer();
-        g_homeSteps = 0;
-        return;
-    }
-    uint32_t cursor = Word(g_layout.statusCursor);
-    if (g_steer.pressed && cursor == static_cast<uint32_t>(g_steer.last) && ++g_steer.waited < HomeTimeout)
-    {
-        return;
-    }
-    if (g_homeSteps == HomeSteps)
-    {
-        g_slotBase = cursor;
-        g_homeSteps = 0;
-        g_steer.pressed = false;
-        return;
-    }
-    g_steer.last = static_cast<int>(cursor);
-    g_steer.pressed = true;
-    g_steer.waited = 0;
-    ps2_press_buttons(Homing[g_homeSteps++], 0.05);
-}
-
 // One step of the steering: a press toward the target, then wait for the cursor to show it
 void Step()
 {
@@ -357,15 +455,24 @@ void Step()
     {
         return;
     }
-    if (g_steer.goal == Goal::Slot && g_slotBase == 0)
-    {
-        Home();
-        return;
-    }
     int now = CursorNow();
     if (now < 0)
     {
         g_steer = Steer();
+        return;
+    }
+    // The pause menu's cursor is put on its row directly: the menu takes a step only every 90 vertical blanks or so while the
+    // game is stopped (its presses are shown for whole game frames, and a stopped game flips none)
+    if (g_steer.goal == Goal::PauseRow && now != g_steer.target)
+    {
+        *Ps2::EeMemory(PauseCursor()) = static_cast<uint8_t>(g_steer.target);
+        return;
+    }
+    // The options' list draws its highlight from its cursor: set directly, it follows the pointer at once (a press a row
+    // took the list most of a second)
+    if (g_steer.goal == Goal::OptionsRow && now != g_steer.target)
+    {
+        *Ps2::EeMemory(OptionsState() + 4) = static_cast<uint8_t>(g_steer.target);
         return;
     }
     if (g_steer.pressed)
@@ -403,7 +510,15 @@ void Wheel(int kind)
 {
     bool up = kind == PS2_MOUSE_WHEEL_UP;
     uint32_t button;
-    if (HasTask(g_layout.statusTask))
+    if (CurrentMode() == Pause)
+    {
+        button = up ? Right : Left; // over a setting: its value (the cursor goes there as the pointer does)
+    }
+    else if (ActionsUp())
+    {
+        button = up ? Up : Down;
+    }
+    else if (HasTask(g_layout.statusTask))
     {
         button = up ? L1 : R1;
     }
@@ -418,9 +533,97 @@ void Wheel(int kind)
     ps2_press_buttons(button, 0.05);
 }
 
+// --- the network browser: its own pointer, moved by the left stick on the console, follows the Mac's (a click is the
+// confirm, circle, where it points, as any click away from a menu's items)
+
+// Whether a code overlay (by its file on the disc) is in memory: its check words (the words no other overlay over the same
+// addresses holds) are there
+bool OverlayInMemory(const char* file)
+{
+    for (uint32_t n = 0; n < ps2_overlay_count; n++)
+    {
+        const Ps2Overlay& o = ps2_overlays[n];
+        if (std::strcmp(o.file, file) != 0)
+        {
+            continue;
+        }
+        if (o.checkCount == 0)
+        {
+            return false; // nothing to tell it from the others over its addresses: never taken for loaded
+        }
+        for (uint32_t k = 0; k < o.checkCount; k++)
+        {
+            if (Word(o.check[k].address) != o.check[k].word)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+// The browser pointer's state, 0 when the browser isn't up
+uint32_t BrowserPointer()
+{
+    if (g_layout.browserOverlay == nullptr || !OverlayInMemory(g_layout.browserOverlay))
+    {
+        return 0;
+    }
+    uint32_t state = Word(g_layout.browserPointer) & 0x1FFFFFF;
+    return state != 0 && state < 0x1FFFFE0 ? state : 0;
+}
+
+// The pointer put where the Mac's is (x and y the picture's fractions; the browser keeps it within the page's own bounds)
+void PointBrowser(uint32_t state, float x, float y)
+{
+    int16_t at[2] = {static_cast<int16_t>(std::clamp(x, 0.0f, 1.0f) * 640.0f), static_cast<int16_t>(std::clamp(y, 0.0f, 1.0f) * 448.0f)};
+    std::memcpy(Ps2::EeMemory(state + 16), at, sizeof(at));
+}
+
+// The options' CONTROLLER SETTINGS (the list's first row) shows the PS2 pad; while the keyboard and mouse were used last it's
+// the PC menus' Controls instead: the game's screen is left at once (CROSS) and the PC options open over the list
+void ControllerSettings()
+{
+    static int leaving = 0; // vertical blanks since CROSS was pressed to leave the game's screen (0: not leaving)
+    uint32_t state = OptionsState();
+    bool inScreen = state != 0 && *Ps2::EeMemory(state + 1) == OptionsScreen && *Ps2::EeMemory(state + 4) == 0;
+    if (leaving == 0)
+    {
+        if (inScreen && ps2_prompt_style() == 0)
+        {
+            ps2_press_buttons(Cross, 0.05);
+            leaving = 1;
+        }
+        return;
+    }
+    if (!inScreen)
+    {
+        leaving = 0;
+        ps2_open_settings();
+        return;
+    }
+    if (++leaving % 45 == 0) // the press came during the screen's own transition: again
+    {
+        ps2_press_buttons(Cross, 0.05);
+    }
+}
+
 // Game side, each vertical blank: the tap spacing of the menus, and the mouse
 void Vblank()
 {
+    // Each change of mode logged with what decided it (the task list and the title's state), to find screens taken for
+    // the wrong mode
+    static int lastMode = -1;
+    int mode = CurrentMode();
+    if (mode != lastMode)
+    {
+        uint32_t count = std::min<uint32_t>(Word(g_layout.taskCount), 8);
+        Ps2::Log("controls: %s (tasks %u: %08x %08x %08x, title state %u)", Modes[mode], count, count > 0 ? Word(g_layout.taskList) : 0,
+                 count > 1 ? Word(g_layout.taskList + 4) : 0, count > 2 ? Word(g_layout.taskList + 8) : 0, Word(g_layout.titleState));
+        lastMode = mode;
+    }
+    ControllerSettings();
     static bool spaced = false;
     bool menu = MenuUp();
     if (menu != spaced)
@@ -432,21 +635,25 @@ void Vblank()
     if (!menu)
     {
         g_steer = Steer();
-        g_slotBase = 0;
         return;
-    }
-    if (!HasTask(g_layout.statusTask))
-    {
-        g_slotBase = 0;
     }
     float x, y;
     int kind;
+    uint32_t browser = BrowserPointer();
     if (ps2_mouse_moved(&x, &y))
     {
+        if (browser != 0)
+        {
+            PointBrowser(browser, x, y);
+        }
         Under(x, y, false);
     }
     if (ps2_take_click(&x, &y))
     {
+        if (browser != 0)
+        {
+            PointBrowser(browser, x, y);
+        }
         uint32_t step = SelectStep(x, y);
         if (CurrentMode() == Title)
         {
@@ -456,7 +663,7 @@ void Vblank()
         {
             ps2_press_buttons(step, 0.05);
         }
-        else if (!Under(x, y, true))
+        else if (!Under(x, y, true) && CurrentMode() != Pause) // a click beside the pause's rows would change its setting
         {
             ps2_press_buttons(Circle, 0.05); // a click away from the items: the confirm, as Return
         }
@@ -475,17 +682,24 @@ void Vblank()
 const Layout File2 = {.taskCount = 0x24ad3c,
                       .taskList = 0x2aa890,
                       .gameTask = 0x344cb0,
-                      .cutsceneTask = 0,
+                      .cutsceneTask = 0x344c10,
                       .baseTask = 0x1b3fa0,
                       .selectTask = 0x554870,
                       .scenarioTask = 0x553420,
                       .screenState = 0,
                       .titleState = 0x24ac70,
+                      .titleMenus = 3,
                       .statusTask = 0x6c8fa0,
                       .titleCursor = 0x8bfe4c,
                       .statusTab = 0x76a60e,
                       .statusCursor = 0x7671f4,
                       .statusPopup = 0x767210,
+                      .statusKind = 0x767254,
+                      .optionsState = 0x24b08c,
+                      .optionsItems = 7,
+                      .optionsTop = 0.295f,
+                      .browserOverlay = "BIN/5.DAT",
+                      .browserPointer = 0x24b360,
                       .slotStride = 0x98,
                       .titleTop = 0.645f,
                       .titleStep = 0.0450f};
@@ -498,16 +712,25 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .taskList = 0x29b0d0,
                       .gameTask = 0x341b80,
                       .cutsceneTask = 0x341af0,
+                      .playControl = 0x27794d,
                       .baseTask = 0x1b3400,
                       .selectTask = 0,
                       .scenarioTask = 0,
                       .screenState = 0x3065fc,
-                      .titleState = 0x23ba68,
+                      .titleState = 0x200d5c,
+                      .titleMenus = 1,
+                      .titleObjects = 0x23ba68,
                       .statusTask = 0x6b9450,
                       .titleCursor = 0x90d1cc,
                       .statusTab = 0x723f9e,
                       .statusCursor = 0x720b84,
                       .statusPopup = 0x720ba0,
+                      .statusKind = 0x720be4,
+                      .optionsState = 0x23be40,
+                      .optionsItems = 6,
+                      .optionsTop = 0.339f,
+                      .browserOverlay = "PROG/NETHTTP.BIN",
+                      .browserPointer = 0x23bee0,
                       .slotStride = 0x98,
                       .titleTop = 0.591f,
                       .titleStep = 0.0536f};

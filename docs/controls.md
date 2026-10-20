@@ -25,8 +25,8 @@ The game's own roles (its controller settings, type A), on the keys of the PC re
 | M | the map screen (M or Space closes it) | △ |
 | F (hold) | appeal shift: with 1-4, call a partner by name | L2 |
 | 1 2 3 4 | the appeals: 1 "Go!", 2 "This way!", 3 "Help me!", 4 thanks or sorry (each character says it their way) | right stick up, down, left, right |
-| O | the pause menu (settings, quit the game) | SELECT |
-| Tab, Escape | the status screen (inventory, SPECIAL, FILE), the game's own pause | START |
+| Escape | the game's pause menu (settings, quit the game): the game stops; Escape again closes it | SELECT |
+| Tab | the status screen (inventory, SPECIAL, FILE): the game goes on behind it, as on the console | START |
 | Arrows | the D-pad | D-pad |
 
 Checked in File 2's Training Ground (Kevin, unarmed there): the right mouse readies and the left mouse tackles, Space
@@ -50,9 +50,21 @@ seen (no gun there).
 | Tab | close the status screen (START) |
 | Mouse | pointing at a title menu item or an item slot moves the cursor there; a click chooses it; clicking a tab (ITEM, SPECIAL, FILE) opens it; the wheel turns tabs, select pages and lists |
 
+## The pause menu (Escape in play)
+
+The pointer over a row moves the cursor there, the wheel turns the setting under it (volumes, brightness, the screen's
+position), a click on DEFAULT SETTINGS, Quit Game or EXIT chooses it. Arrows and WASD move, E or Return chooses, Escape
+closes it.
+
+## The status screen's items
+
+The pointer over a slot (the four and the equipped weapon's) moves the cursor there, a click opens that item's actions
+(Use, Equip, Combine, Give...), and the pointer and a click choose among them.
+
 ## Title, movies and cutscenes
 
-Escape, Return, Space, E or Tab is START: it skips movies and cutscenes and starts from the title.
+Escape, Return, Space, E or Tab is START: it skips movies and cutscenes (File 2's cutscene task 0x344C10, File 1's
+opening credits by its play-control byte 0x27794D) and starts from the title.
 
 ## Rules worth knowing
 

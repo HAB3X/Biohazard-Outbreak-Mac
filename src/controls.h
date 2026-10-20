@@ -21,18 +21,37 @@ struct Layout
     uint32_t taskCount, taskList;
     uint32_t gameTask;      // the in-game loop (play)
     uint32_t cutsceneTask;  // the game's loop while a cutscene plays (0: not found)
+    // A byte that's 0 while the game's loop plays a scene of its own with no cutscene task (File 1's opening credits) and
+    // nonzero while the player has control (0: none; found by memory diffs: the credits and a cutscene against two stretches
+    // of play)
+    uint32_t playControl;
     uint32_t baseTask;      // the executable's own loop (movies, the title and loading, and under the game)
     uint32_t selectTask;    // the character, partner and difficulty selects
     uint32_t scenarioTask;  // the scenario select (0: not found)
     // Where the selects aren't tasks (File 1): a word holding the address of the title overlay's state, whose byte 4 says the
     // screen (DEMO.BIN's dispatcher at 0x543050 switches on it: 8 the scenario select, 9 the character select; 0: none)
     uint32_t screenState;
-    uint32_t titleState;    // a word: 0 a movie, 2 the title's "PRESS START", 3 its menu (single play, collection, options...)
+    uint32_t titleState;    // a word saying where the title is: a movie, its "PRESS START", its menus
+    uint32_t titleMenus;    // titleState's value on the title menu (File 2 3: 0 a movie, 2 PRESS START; File 1 1: 0 the logos
+                            // and movies, 6 5 4 3 PRESS START; its other menus (character log, the options' screens) read 0 too)
+    uint32_t titleObjects;  // File 1: a count of the title's live objects, 3 on the title menu itself (2 the options list, 4 the
+                            // collection, which read titleMenus as well); 0 where titleState alone says it
     uint32_t statusTask;    // the status screen
     uint32_t titleCursor;   // the title menu's item (a word, 0 the first)
     uint32_t statusTab;     // the status screen's tab (a byte: 0 ITEM, 1 SPECIAL, 2 FILE)
     uint32_t statusCursor;  // the status screen's item cursor: a word, the address of the slot it's on (the equipped weapon's is elsewhere)
     uint32_t statusPopup;   // a byte that's nonzero while the item's actions (use, combine, give...) are up
+    uint32_t statusKind;    // a byte: what the status task shows (1 the status screen, 2 the map, 4 SELECT's pause menu)
+    // The title's OPTIONS: the word holding the address of its state while it's up (found by memory diffs of the list's cursor:
+    // File 2 gp - 0x6064, File 1 0x23BE40), its rows, and the first row's middle as a fraction of the picture's height
+    uint32_t optionsState;
+    int optionsItems;
+    float optionsTop;
+    // The network browser (the KDDI browser of Network Play, its overlay `browserOverlay` as the disc names it): the word
+    // (gp - 0x5D90) holding the address of its pointer's state, the pointer's x and y (16 bits each, in the 640 x 448
+    // picture) at 16 and 18 there (netwk's link-focus code at 0x567370 in File 2 sets them so)
+    const char* browserOverlay;
+    uint32_t browserPointer;
     uint32_t slotStride;    // the item slots' size: the grid's four are one after the other from where the cursor is as the screen opens
     float titleTop, titleStep; // where the title menu's six items are drawn: the first's middle and the step, as fractions of the picture's height
 };
