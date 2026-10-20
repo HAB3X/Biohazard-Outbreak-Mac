@@ -52,6 +52,7 @@ Everything the game keeps is in **~/Library/Application Support/PS2 Native Runti
 | Your controls | `bindings.txt` |
 | The disc image's path | `disc_image.txt` |
 | The English patch, made from your disc (don't share it: it's made of the game's own text and pictures) | `english.patch`, with `english.patch.made-from` and `english-patch.log` |
+| The game's log: this run's, and the one before's | `logs/latest.log`, `logs/previous.log` |
 
 ## Controls
 
@@ -97,9 +98,12 @@ takes the Mac's typing). The steps, in detail: [docs/network.md](network.md).
 
 ## If something goes wrong
 
-The app writes what it's doing to its standard output: run it from Terminal to see it, for example
-`"/Applications/Biohazard Outbreak File 2.app/Contents/MacOS/Biohazard"`. If the English patch couldn't be made, the app says
-so and `english-patch.log` in the settings folder has the details. Please include them with a bug report.
+Every run writes its log to the settings folder (above): `logs/latest.log` is the last run's (or the one running now),
+`logs/previous.log` the one before (so after a crash and a second start, the crash's log is `previous.log`). Each is 32 MB at
+most. Online, the log also has a line for each message the game exchanges with obsrv.org's lobby and game server (their
+commands only: no passwords, no chat). Please send the log with a bug report: it says what the game was doing. To watch it
+live, run the app from Terminal, for example `"/Applications/Biohazard Outbreak File 2.app/Contents/MacOS/Biohazard"`. If the
+English patch couldn't be made, the app says so and `english-patch.log` in the settings folder has the details.
 
 ## Licences
 
