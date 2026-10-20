@@ -1,0 +1,70 @@
+# Network Play on obsrv.org
+
+Both discs' Network Play runs on the Mac against obsrv.org's revived servers: the network setup, DNAS and the KDDI browser up
+to obsrv's login page, with the Mac's keyboard typing into the game's software keyboard. What happens after logging in (the
+lobby, games with other players) hasn't been tried yet.
+
+The runtime's side (AVE-TCP on the Mac's sockets, the network configuration, DNAS's IOP helper and its overlays decrypted
+ahead of time, the USB keyboard) is in its `docs/network.md`; this is the games' side. Runtime branch `biohazard-online`,
+this repository's `online`.
+
+## How to play online
+
+1. Start the game (`./run.sh file2` or `./run.sh file1`), at the main menu choose NETWORK PLAY (ネットワークプレイ), then
+   confirm the caution screen.
+2. The first time, the game asks to make its NET file on the memory card (はい / yes) and, on a blank card, to format it
+   (はい): that's the game's own data, not a network setting.
+3. Broadband connection (ブロードバンド接続): choose Network connection (ネットワーク接続), then 進む (proceed) on the manners
+   screen.
+4. The configuration list: the Mac's network is the third row (the first two are the game's "network settings" and
+   "proxy" rows). Its name doesn't show (a drawing bug of the list's text, not yet found): press Down twice, then E.
+5. The game connects (DHCP, DNAS: a progress bar to 100%) and the browser opens obsrv's page: "Login with forum
+   account: ID / Password / LOGIN", and "Auto login through forum" when the forum knows this network's address.
+6. Logging in, with your obsrv.org forum account (sign up on obsrv.org's website first):
+   - The pointer starts on the ID field. Press E (circle) to open the software keyboard. Wait until it's drawn, then type
+     your ID on the Mac's keyboard (Shift for capitals; Backspace deletes; the arrows move over the soft keys instead).
+     Press Return to put it in the field.
+   - Press Down (S or the down arrow) to move to the Password field, E, type the password, Return. The field shows a row of
+     asterisks whatever the length.
+   - Move down to the LOGIN button under the fields and press E. (Or, when the page says "Signed in as ...", its own LOGIN
+     button logs in through the forum without typing.)
+
+Typing goes to the game only while the software keyboard is up; the rest of the time the keys are the pad's as usual. When
+the Mac is busy (a few frames a second), wait for the keyboard to be drawn before typing and type at a moderate pace: the
+game reads a keyboard of three reports at a time, as on a console, and drops keys typed faster than it reads them.
+
+## What the game does, and what stands in
+
+| Step | The game | On the Mac |
+|---|---|---|
+| Modules | loads its network modules through Capcom's LOADHIGH.IRX (the USB searcher, the AVE-TCP wrapper, AVE-TCP, its device glue, DHCP, DEV9/SMAP) | `src/loadhigh.cpp` loads each through the runtime's loader; `src/usbsrch.cpp` answers the USB searcher (no USB modem or adaptor); `src/avewrap.cpp` stands in for Capcom's wrapper (RPC 0x01270030) on the runtime's AVE-TCP |
+| Configuration | looks for "Your Network Configuration" on the card, then asks netcnf for its entries | `netwk_card_has_netcnf` (File 2 0x5C84F0, File 1 0x5D0C00) answers "there"; the runtime's netcnf presents the Mac's network, DHCP, DNS 208.72.237.31 (obsrv's, `src/network.h`) |
+| Connection | DHCP on the adaptor, the link checked | the Mac's address, mask and router |
+| DNAS | HTTPS to gate1.jp.dnas.playstation.org (DNAS 2.8, its overlays netdnas and insdnas decrypting themselves) | obsrv's DNS names its DNAS (153.121.44.150); the overlays are decrypted at build time (`decrypt` in config/file*.toml); the runtime answers the DNAS IOP helper |
+| Browser | the KDDI browser (nethttp overlay) over HTTPS to www01.kddi-mmbb.jp | obsrv's server (208.72.237.15); its page is /00000010/ for File 2, /00000002/ for File 1 |
+| Typing | the software keyboard (netwk's step, File 2 0x552F10, File 1 0x553820, once a frame while it's up) reads the USB keyboard through libusbkb | the step's override (`src/typing.cpp`) tells the runtime the game takes typed text, so the Mac's keys reach its USB keyboard |
+| Lobby, games | the lobby (obsrv's port 8200) and games (8590) | not tried yet |
+
+Functions the recompiler didn't find on its own (only reached through pointers made at run time) are in the configs'
+`extra` lists: netwk's 0x566120 (File 2) and 0x565FE0 (File 1), from DNAS's progress screen. nethttp's `extra` lists had
+switch-case labels from `tools/pointer_functions.py`, which made bogus function starts in the middle of functions; the tool
+now leaves them out.
+
+## Checked (2026-10-20)
+
+- File 2 and File 1: title to obsrv's login page, DNAS 100% each time (log: `AVE-TCP: connected to 153.121.44.150:443`,
+  then `208.72.237.15:443`; pictures of the login page on both discs).
+- Typing: on both discs the software keyboard took "Test1" from the Mac's keyboard (Shift for the capital, Backspace),
+  Return put it in the ID field; on File 2 "test" in the Password field too. A memory dump showed the browser's form
+  holding username "Test1" and password "test". Nothing was submitted: no connection after the page's own.
+- Single play unchanged: File 2's Training Ground loads and Kevin walks (the keys are the pad's outside the software
+  keyboard).
+
+## Not done
+
+- After login: the lobby, handle name and chat (the handle name and chat use the same software keyboard, so typing should
+  work there, untried), games with others (UDP and peer connections aren't in the runtime's AVE-TCP yet: a game that uses
+  them stops, naming the call).
+- The configuration list's row text doesn't show (File 1's list neither).
+- The mouse in the browser (it has its own pointer, moved by the pad).
+- PPP (modems), the HDD install (insdnas's own DNAS), the network settings screens (they'd write files nothing reads).

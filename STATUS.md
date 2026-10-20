@@ -55,6 +55,15 @@ with `--english` goes from boot through the title, main menu, scenario/character
 Training Ground (menus 30 fps, the room 30 once loaded, the load ~21); File 1 to its Outbreak scenario's opening cutscene
 (median 30 fps); both with sound, no fatal. Recompiler tests pass.
 
+## Online play (branch `online`, runtime `biohazard-online`), 2026-10-20
+
+Network Play reaches obsrv.org's login page on both discs: the network setup (the Mac's network as the one configuration,
+DNS 208.72.237.31), DHCP, DNAS to 100% (its overlays decrypted at build time, the runtime answering DNAS's IOP helper) and
+the KDDI browser over HTTPS, all on the Mac's sockets. The Mac's keyboard types into the game's software keyboard (the
+game's USB keyboard, while the keyboard is up): checked with test text in the login form, nothing submitted. Logging in
+needs the player's own obsrv.org forum account; after login is untested. How to, what stands in for what, what's left:
+docs/network.md (the runtime's docs/network.md has the design).
+
 ## English patch (branch `translate`, runtime `biohazard-translate`)
 
 `./run.sh file2 --english` builds `build/english-file2.patch` from your disc and `translations/file2/*.tsv` (my own English,
@@ -76,11 +85,8 @@ Details, window widths and what was checked in play: docs/translation.md.
 
 ## Still to do
 
-- USB keyboard (USBKB, server 0x80000073? and the chat), the network stack (AVETCP/SN modules, DEV9/SMAP) and DNAS. DNAS's
-  overlays decrypt blocks of themselves before running them: File 2's netdnas.bin calls its decryptor 0x6DB1A0 with
-  parameters kept inline after the call (e.g. 0x6B2274, its data at 0x6B229C) and keys from its own table at 0x6DC280, then
-  FlushCache. Nothing comes from outside, so the decrypted code should be the same every run: decrypt it ahead of time and
-  recompile that (each block an overlay variant the dispatcher picks by its words in memory), rather than interpret.
+- Online after login (docs/network.md): the lobby, handle name and chat, games with others (UDP and peer connections in the
+  runtime's AVE-TCP); the configuration list's invisible row text.
 - Sofdec movies: the opening plays; check the other 20 .sfd files (NETBIO01.DAT's adxsnd.afs: PS2demo01.sfd, the endings,
   PS2continue.sfd), and the title screen after the opening.
 - PC texts (the game's button glyphs and its Japanese menu text said for a computer), the PC menus' game settings; mouse aiming
