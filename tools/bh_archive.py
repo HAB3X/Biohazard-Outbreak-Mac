@@ -7,7 +7,7 @@
     bh_archive.py GAME dump PATH OUTDIR     copy every member of an AFS into OUTDIR as NNNN_name
     bh_archive.py GAME where LSN...         the file or AFS member (as a path) that holds each disc sector
 
-GAME is file1 or file2 (the disc comes from local.json). PATH is "/NETBIO00.DAT/romdata.afs/@580" or ".../FONT8_8.TM2";
+GAME is file1 or file2 (the disc is FILE1_DISC / FILE2_DISC, or local.json's, as run.sh has it). PATH is "/NETBIO00.DAT/romdata.afs/@580" or ".../FONT8_8.TM2";
 a name that occurs more than once in an archive must be given as @index.
 As a library: `Archive(game).open(path)` gives a Node with .read(), .size, .members().
 """
@@ -37,7 +37,9 @@ import disc as discmod  # noqa: E402
 
 
 def disc_path(game):
-    return json.loads((REPO / "local.json").read_text())[game]
+    """The disc image run.sh plays: $FILE1_DISC / $FILE2_DISC, or local.json's (a patch is laid by disc offset, so it must be
+    built from the image it's played with)."""
+    return os.environ.get(f"{game.upper()}_DISC") or json.loads((REPO / "local.json").read_text())[game]
 
 
 class Node:
