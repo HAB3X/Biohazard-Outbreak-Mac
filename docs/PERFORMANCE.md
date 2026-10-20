@@ -70,6 +70,20 @@ dispatcher 2-3%, `ps2_call`'s overlay lookups 2%.
 | VIF1 and VU1 on a thread of their own (vu1Thread, runtime 7d04c36, game 94d8577) | the 3D scenes' longest thread a frame | File 1 bar 13.8 ms (EE), zoo 13.2 | 11.4 (VU1), 9.2; the EE's 4.1 and 3.9 |
 | | GS recordings | | the same pictures (the GS gets the same data in the same order by construction) |
 
+| VU1 status flag's sticky bits kept only when a program reads them (runtime 26f1566, 6dc93a1) | File 1's bar with the zombies in, the VU1 thread a frame | 11.7 ms | 9.1 (load 4) |
+| | PS2_VU1=verify | | 636,811 runs, 1.8 billion instructions, no differences |
+| The frame threads under macOS's time constraint policy (runtime 178a660) | the zoo beside 20 / 40 busy processes (a compiler-like loop each), fps | 26-33 / 11-20 | 30 / 30 steady |
+| | File 1's bar with the zombies in, beside 30 busy processes | | 30 steady |
+| File 1: a missing function start (game a7db74b) | | the bar with the zombies in stopped after ~2 minutes ("not a function start" 0x66F430) | plays on |
+
+### File 1's bar with the zombies in (the owner's 14 frames a second)
+
+Reached by `to_zbar` (the bar, the intro skipped, walk to the door: the zombies' cutscene, then play). On the M4 alone it holds
+30 (EE 4.5 ms a frame, VU1 thread 9.1, render 6.8; its GS replay 2.2 ms a vblank), headless, with the presenter's path forced
+on, and with the English patch. Beside 20 busy processes it fell to 13-21, beside 40 to 11-20: the owner's 14 came with three
+agents building on the same Mac. The time constraint policy keeps it at 30 under that load. The depth buffer fix merged from
+`biohazard` (a 32 bit depth cleared to 0) costs nothing: the replays' times are the same or lower.
+
 ## Looked at and not kept
 
 - `glTextureBarrierNV` in place of the destination copies (the shader reads the frame itself): the same pictures, but the driver
