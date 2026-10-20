@@ -112,17 +112,26 @@ def main():
         (a0, a1), (b0, b1) = spans[source], spans[target]
         return a1 <= b0 or b1 <= a0
     cases = switch_cases(cfg, regions)
+    words_at = {(source, a): w for source, a, w in sources}
     found = {}
     for name, (text, img) in regions.items():
         have = starts.get(name, set())
-        for source, _a, w in sources:
+        for source, a, w in sources:
             if not together(source, name):
                 continue
+            if w % 4 or not any(lo <= w < hi for lo, hi in (text[:1] if name == "f" else text)) or w in have \
+                    or img.get(w, 0) == 0:
+                continue
             # a word naming code after a JR RA is a start unless it's a case of a switch (a jump table's entry, which the
-            # data holds too): a function's prologue always is
-            if w % 4 == 0 and any(lo <= w < hi for lo, hi in (text[:1] if name == "f" else text)) and w not in have \
-                    and img.get(w, 0) != 0 \
-                    and (prologue(img.get(w, 0)) or (img.get(w - 8) == 0x03E00008 and w not in cases.get(name, ()))):
+            # data holds too): a function's prologue always is. Code after a register jump that isn't JR RA (a dispatcher
+            # ending in its own jump through a table, File 1's game overlay at 0x665870) is a start when the word is in a
+            # table of starts (a known start beside it): a jump table's neighbours are cases, not starts
+            after_jr = img.get(w - 8) == 0x03E00008
+            after_jump = (img.get(w - 8, 0) & 0xFC1FFFFF) == 0x00000008 and img.get(w - 4) == 0 and \
+                any(words_at.get((source, a + d)) in have for d in (-4, 4))
+            # (the recompiler takes such a table for the dispatcher's own switch when an entry falls inside it: the table
+            # of starts says it isn't)
+            if prologue(img[w]) or (after_jr and w not in cases.get(name, ())) or after_jump:
                 found.setdefault(name, set()).add(w)
     # A prologue after zero padding is a start whether or not anything points at it
     for name, (text, img) in regions.items():
