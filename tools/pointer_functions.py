@@ -42,6 +42,24 @@ def words(base, blob):
         yield base + i, struct.unpack_from("<I", blob, i)[0]
 
 
+def switch_cases(cfg, regions):
+    """The case labels of the switches the recompiler finds in each overlay (its jump tables' targets)"""
+    sys.path.insert(0, str(RUNTIME / "recomp"))
+    from analysis import Program
+    from image import CodeImage
+    cases = {}
+    for ov in cfg.get("overlays", []):
+        if ov["name"] not in regions:
+            continue
+        text, img = regions[ov["name"]]
+        base = min(img)
+        data = b"".join(struct.pack("<I", img[base + 4 * k]) for k in range(len(img)))
+        program = Program(CodeImage.from_overlay(data, base, text[0]), {"extra_functions": [], "not_functions": []})
+        program.analyse()
+        cases[ov["name"]] = {t for targets in program.jump_tables.values() for t in targets}
+    return cases
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     write = "--write" in sys.argv
@@ -61,7 +79,9 @@ def main():
         for a, w in words(va, blob):
             image[a] = w
     regions = {"f": (exe_text, image)}
-    sources = [(a, w) for a, w in image.items() if not any(lo <= a < hi for lo, hi in exe_text)]
+    # The pointers' sources: the executable's data, and each overlay's (by the overlay they're in, None for the executable)
+    sources = [(None, a, w) for a, w in image.items() if not any(lo <= a < hi for lo, hi in exe_text)]
+    spans = {}
     with tempfile.TemporaryDirectory() as tmp:
         for ov in cfg.get("overlays", []):
             if ov.get("encrypted"):
@@ -71,15 +91,37 @@ def main():
                            check=True, capture_output=True)
             base = int(ov["base"], 0)
             text = [tuple(int(x, 0) for x in ov["text"])]
-            img = dict(words(base, path.read_bytes()))
+            data = path.read_bytes()
+            if ov.get("decrypt"):
+                # an overlay that decrypts blocks of itself: its code as it runs (the recompiler's own decryption)
+                sys.path.insert(0, str(RUNTIME / "recomp"))
+                from selfdecrypt import decrypt
+                data, _blocks = decrypt(data, base, [int(x, 0) for x in ov["decrypt"]], text[0])
+            img = dict(words(base, data))
             regions[ov["name"]] = (text, img)
-            sources += [(a, w) for a, w in img.items() if not any(lo <= a < hi for lo, hi in text)]
+            spans[ov["name"]] = (base, base + len(data))
+            # its overrides are functions too (named by the game, not <overlay>_<address> in the table)
+            starts.setdefault(ov["name"], set()).update(int(a, 0) for a in ov.get("overrides", {}))
+            sources += [(ov["name"], a, w) for a, w in img.items() if not any(lo <= a < hi for lo, hi in text)]
+
+    def together(source, target):
+        """Whether a pointer in `source` can name code in `target`: two overlays over the same addresses are never in
+        memory together"""
+        if source is None or target == "f" or source == target:
+            return True
+        (a0, a1), (b0, b1) = spans[source], spans[target]
+        return a1 <= b0 or b1 <= a0
+    cases = switch_cases(cfg, regions)
     found = {}
     for name, (text, img) in regions.items():
         have = starts.get(name, set())
-        for _a, w in sources:
+        for source, _a, w in sources:
+            if not together(source, name):
+                continue
+            # a word naming code after a JR RA is a start unless it's a case of a switch (a jump table's entry, which the
+            # data holds too): a function's prologue always is
             if w % 4 == 0 and any(lo <= w < hi for lo, hi in (text[:1] if name == "f" else text)) and w not in have \
-                    and (prologue(img.get(w, 0)) or img.get(w - 8) == 0x03E00008):
+                    and (prologue(img.get(w, 0)) or (img.get(w - 8) == 0x03E00008 and w not in cases.get(name, ()))):
                 found.setdefault(name, set()).add(w)
     # A prologue after zero padding is a start whether or not anything points at it
     for name, (text, img) in regions.items():
@@ -96,7 +138,7 @@ def main():
                 if prologue(img[a]) or 0x03E00008 in (img.get(b), img.get(b - 4)):
                     found.setdefault(name, set()).add(a)
     for name, addrs in found.items():
-        print(f"{name}: {len(addrs)} starts")
+        print(f"{name}: {len(addrs)} starts: {' '.join(hex(a) for a in sorted(addrs))}")
     if not write:
         return
     s = Path(config_path).read_text()
