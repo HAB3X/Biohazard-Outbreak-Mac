@@ -113,16 +113,25 @@ class ExePool:
         self.raw = [elf[s:elf.index(b"\0", s)] for s in self.starts]
         at = {s + base: i for i, s in enumerate(self.starts)}
         self.refs = [[] for _ in self.starts]  # (image name, offset of the u32) of every pointer to each string
+        # Empty strings: NULs of the region that pointers point at. The compiler keeps "" in another string's padding or
+        # end (File 1's NETWK.BIN: the blank line of 70 message tables is 0x5F5348, in the padding after the string at
+        # 0xB5320), so a slot ends there and the NUL stays: packed into, it showed the end of another line ('id "Your')
+        self.empties = set()
         for name, (data, first_byte, ranges) in images.items():
             for lo, hi in ranges:
                 for addr in range(lo, hi, 4):
-                    i = at.get(struct.unpack_from("<I", data, addr - first_byte)[0])
+                    value = struct.unpack_from("<I", data, addr - first_byte)[0]
+                    i = at.get(value)
                     if i is not None:
                         self.refs[i].append((name, addr - first_byte))
+                    elif region[0] <= value - base < region[1] and elf[value - base] == 0:
+                        self.empties.add(value - base)
 
     def slot_end(self, i):
-        """Where string i's slot ends: the next string's start (the NULs between are its padding)."""
-        return self.starts[i + 1] if i + 1 < len(self.starts) else self.region[1]
+        """Where string i's slot ends: the next string's start (the NULs between are its padding), or just after the first
+        empty string in its padding (that NUL is kept: a string written into the slot ends at it at the latest)."""
+        end = self.starts[i + 1] if i + 1 < len(self.starts) else self.region[1]
+        return min([e + 1 for e in self.empties if self.starts[i] < e < end] + [end])
 
     def translatable(self):
         return [i for i, raw in enumerate(self.raw) if has_japanese(raw) and (self.refs[i] or self.fixed(i))]

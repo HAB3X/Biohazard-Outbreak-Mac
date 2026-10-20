@@ -53,7 +53,17 @@ your disc image (local.json) plus `translations/<game>/*.tsv` (unit id, TAB, my 
   translations/file1 has it; File 1's own overrides are mostly shorter lines for its smaller slots and device-neutral wording
   (translations/file1/devices.tsv: save data instead of the memory card, the font's button glyphs instead of button names).
 - NETWK.BIN: the in-place strings must fit their slots; the error page at 0xA1A80 starts after 3 bytes of a binary table
-  (the region begins there). Left Japanese on purpose: the software keyboard's rows, the romaji-to-kana table, the kana
+  (the region begins there).
+- Empty strings live in other strings' padding: the compiler keeps "" in a NUL after another string, and tables point at it
+  (File 1's NETWK.BIN: 70 message tables' blank line is 0x5F5348, in the padding after the string at 0xB5320). Packing the
+  English into that padding showed the tail of another line where the game wants a blank one ('id "Your' in the "no NET
+  file" dialog). ExePool now ends a slot at an empty string a pointer points at (found in both games' pools: File 1's
+  executable 2, DEMO.BIN 1, NETWK.BIN 3; File 2's executable 8, BIN/3.DAT 3); seen fixed in play (the dialog's blank line).
+- The string at 0xBB750 ("確認･変更する接続プロバイダー設定の", the check/change screen's first line) is read from its start:
+  its only reference is the pointer in the screen's line table at 0x5EBE14, and the line drawer (0x5CB7B0) passes the
+  table's pointer unchanged to the text printer (0x5CCC90, then the executable's 0x1B6180); nothing builds 0x5FB755 (no code
+  pair, no data word in the executable or any overlay). Its second line (0x5FB780) is shared by the check/change, delete and
+  test screens, so it now says only where to load from and the first lines name the action. Left Japanese on purpose: the software keyboard's rows, the romaji-to-kana table, the kana
   dakuten tables, digit tables.
 
 ## Pictures (both games; tools/bh_pictures.py, tools/bh_sld.py, tools/tm2.py)
