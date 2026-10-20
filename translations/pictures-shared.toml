@@ -6,19 +6,19 @@ file = "romdata.afs/cockpit.tex"
 tim = 0
 note = "the status screen's button glyphs; square and circle are the pause menu's legend of the controls in play (Ad-lib, Confirm/Attack): play's keys. Cross is also the map's CANCEL: the menus' key (the legend names play's dash with the font's play glyph)"
 edit = [
-    { box = [80, 211, 97, 222], key = "leftright" },
-    { box = [99, 207, 110, 225], key = "updown" },
-    { box = [112, 209, 128, 224], key = "triangle" },
-    { box = [82, 225, 97, 240], key = "square", mode = "play" },
-    { box = [98, 225, 113, 240], key = "circle", mode = "play" },
-    { box = [113, 225, 128, 240], key = "cross" },
+    { box = [80, 213, 96, 221], key = "leftright" },
+    { box = [98, 208, 108, 224], key = "updown" },
+    { box = [114, 210, 128, 224], key = "triangle" },
+    { box = [82, 226, 96, 240], key = "square", mode = "play" },
+    { box = [98, 226, 112, 240], key = "circle", mode = "play" },
+    { box = [114, 226, 128, 240], key = "cross" },
 ]
 
 [[picture]]
 file = "romdata.afs/cockpit.tex"
 tim = 1
 note = "the map's R1 L1"
-edit = [{ box = [152, 204, 166, 216], key = "r1" }, { box = [167, 204, 182, 216], key = "l1" }]
+edit = [{ box = [152, 204, 167, 215], key = "r1" }, { box = [169, 204, 182, 215], key = "l1" }]
 
 [[picture]]
 file = "romdata.afs/cockpit.tex"
