@@ -61,9 +61,12 @@ Training Ground (menus 30 fps, the room 30 once loaded, the load ~21); File 1 to
 keyed by unit ids) and plays with it (runtime `--patch`). File 2's text is all in English: menus, dialogs, item names and
 descriptions, FILE documents, place names, room messages, subtitles, all 15,871 speech lines, the epilogue, the network
 screens and the browser's pages (22,026 of 22,206 units; the other 180 are kept Japanese on purpose: the handle-name word
-filter, the name entry's kana tables, puzzle letter grids). Wording is device-neutral (save data, Confirm/Back). Not yet:
-textures with baked Japanese (another branch), File 1 (branch translate-file1). Details, window widths and what was checked
-in play: docs/translation.md.
+filter, the name entry's kana tables, puzzle letter grids). Wording is device-neutral (save data, Confirm/Back).
+`./run.sh file1 --english` does the same for File 1 (branch translate-file1): 12,620 of 13,299 units, the other 679 kept
+Japanese on purpose (word filter, kana and keyboard tables); File 2's English is used for the lines both games share. The
+pictures with Japanese or PS2 buttons are redrawn at build time in both games, those with buttons (and the fonts' button
+glyphs) in two variants: key caps while the keyboard and mouse were used last, PS2 symbols with a gamepad (patch version 2).
+Details, window widths and what was checked in play: docs/translation.md.
 
 ## In progress
 
