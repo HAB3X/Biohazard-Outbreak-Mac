@@ -551,6 +551,10 @@ never moves, which DISPFB alone counted as no frames at all). It's counted on th
 ADDRESS` names the DNS server network play asks (docs/network.md).
 
 `--control`'s `record N FILE` records from the next vblank and `stop` ends the run as `--run-seconds` does (the VU1 counts and reports are logged).
+`poke ADDR VALUE [BYTES]` stores 1, 2 or 4 bytes into main memory (logged): a test sets the state it needs, such as a
+save's unlock flags, at the address the game's own code keeps it (`peek ADDR [WORDS]` reads words back to the log).
+In a PS2_TRACE_ENTER build `counts FILE` writes the function entry counts so far (as $PS2_TRACE_FILE has them at the end):
+the difference of two is what a stretch of play ran.
 
 `--gs-record S:N:FILE` records the GS's side for N vblanks from the game's S-th second: the GS's and the GIF's state (local
 memory made current from the GPU first), then the GIF's data and VU1's kicks in order and the PCRTC's registers at each vblank

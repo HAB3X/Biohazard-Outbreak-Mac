@@ -270,9 +270,9 @@ void ps2_trace_enter(uint32_t address)
 
 namespace Ps2
 {
-void TraceEnterDump()
+void TraceEnterDump(const char* file)
 {
-    const char* path = getenv("PS2_TRACE_FILE");
+    const char* path = file != nullptr ? file : getenv("PS2_TRACE_FILE");
     if (path == nullptr)
     {
         return;

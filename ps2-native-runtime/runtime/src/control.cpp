@@ -7,9 +7,13 @@
 //   pads                     the presses the pad server took and the frames showed (--log input has each)
 //   snap NAME                a picture, NAME.<n>.png in the --snapshots folder, at the next vblank
 //   peek ADDR [WORDS]        guest words (hex address) to the log
+//   poke ADDR VALUE [BYTES]  a guest store of 1, 2 or 4 BYTES (4) of VALUE (hex) into main memory: to set the state a test
+//                            needs (a save's unlock flags) the way the game's own store would
 //   ram FILE                 the 32 MB of main memory written to FILE (to look for what the game loaded: texts, tables)
 //   record VBLANKS FILE      --gs-record from the next vblank
 //   vu1record SECONDS FILE   VIF1's and VU1's side recorded for --vu1-replay (with VIF1 and VU1 on their own thread)
+//   counts FILE              a PS2_TRACE_ENTER build's function entry counts so far to FILE (the functions a stretch of
+//                            play runs: the difference of two)
 //   stop                     the run ends as --run-seconds ends it (the VU1 counts and reports are logged)
 //   quit                     the runtime stops at once
 #include "runtime.h"
@@ -21,6 +25,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <cstring>
 #include <sstream>
 #include <thread>
 
@@ -127,6 +132,23 @@ void Handle(const std::string& line)
         }
         Log("peek %08x:%s", at, line.c_str());
     }
+    else if (command == "poke")
+    {
+        std::string address, value, bytes = "4";
+        in >> address >> value >> bytes;
+        u32 at = static_cast<u32>(strtoul(address.c_str(), nullptr, 16)) & 0x1FFFFFFF;
+        u32 v = static_cast<u32>(strtoul(value.c_str(), nullptr, 16));
+        int size = atoi(bytes.c_str());
+        if ((size != 1 && size != 2 && size != 4) || at % static_cast<u32>(size) != 0 || at + static_cast<u32>(size) > RamSize)
+        {
+            Log("--control: poke %08x of %s bytes isn't a store into main memory", at, bytes.c_str());
+        }
+        else
+        {
+            std::memcpy(Host(at), &v, static_cast<size_t>(size));
+            Log("poke %08x = %0*x", at, size * 2, v);
+        }
+    }
     else if (command == "ram" || command == "dump")
     {
         std::string file;
@@ -154,6 +176,17 @@ void Handle(const std::string& line)
         std::string file;
         in >> seconds >> file;
         Vu1LiveRecord(file, seconds);
+    }
+    else if (command == "counts")
+    {
+        std::string file;
+        in >> file;
+#ifdef PS2_TRACE_ENTER
+        TraceEnterDump(file.c_str());
+        Log("counts written to %s", file.c_str());
+#else
+        Log("--control: counts needs a PS2_TRACE_ENTER build");
+#endif
     }
     else if (command == "stop")
     {

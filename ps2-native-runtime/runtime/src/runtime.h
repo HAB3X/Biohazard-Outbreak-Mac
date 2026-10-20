@@ -102,7 +102,8 @@ void GsLiveStop();
 void GsLiveRecord(const std::string& file, u64 vblanks);
 void ControlStart(const std::string& path);
 #ifdef PS2_TRACE_ENTER
-void TraceEnterDump();
+// The function entry counts so far to FILE ($PS2_TRACE_FILE when none is given)
+void TraceEnterDump(const char* file = nullptr);
 #endif
 // Logs a message once per key
 bool Once(const std::string& key);
