@@ -8,7 +8,8 @@ unit, and the id never needs the Japanese to be kept).
 
   ExePool(elf, region, base, images)   the executable's string pool: strings reached through tables of pointers
   MsgBin(data)                          a stage's message file (rNNN.bin, dmNNN.bin, spmNNNNNN.bin)
-Both give `texts()` ({unit id: original bytes}) and `rebuilt(new)` (the new bytes, given {unit id: English bytes}); what
+  HtmlPage(data)                        a page of the network screens' browser
+All give `texts()` ({unit id: original bytes}) and `rebuilt(new)` (the new bytes, given {unit id: English bytes}); what
 doesn't fit is a DoesNotFit error that says where.
 """
 import hashlib
@@ -16,7 +17,11 @@ import re
 import struct
 
 LINE_MARKERS = (b"\x81\xa5", b"\x81\x40")  # ▼ and the ideographic space, as Shift-JIS
-TAG = re.compile(rb"<[A-Za-z][0-9A-Za-z]*>|%[a-z]")
+# Control tags and format codes: the stage text's <p1> <c2> <I>, the network screens' markup (<BODY><SIZE=3>, HTML) and
+# printf codes (%s %2d, the network's %1 %v); <words in brackets> without an attribute's = are text. A line break in markup (<br>) is layout: the English sets its own.
+TAG = re.compile(rb"</?[A-Za-z][0-9A-Za-z-]*(?:=[^<>\s\x80-\xff]*|\s[^<>\x80-\xff]*=[^<>\x80-\xff]*)?>"
+                 rb"|%[-0-9.]*[A-Za-z]|%[0-9]")
+LAYOUT_TAG = re.compile(rb"<br>", re.I)
 
 
 def unit_id(raw):
@@ -28,7 +33,7 @@ def has_japanese(raw):
 
 
 def tags(raw):
-    return sorted(TAG.findall(raw))
+    return sorted(t for t in TAG.findall(raw) if not LAYOUT_TAG.fullmatch(t))
 
 
 class DoesNotFit(Exception):
@@ -211,3 +216,40 @@ class MsgBin:
         out[end:self.end] = b"\xff" * (self.end - end)
         struct.pack_into("<I", out, 0, end)
         return bytes(out)
+
+
+class HtmlPage:
+    """A page of the network screens' browser (File 2's rfff.afs *.HTM): Shift-JIS HTML. A unit is the text between two
+    tags, without its leading and trailing white space; a line break (<br>) belongs to the text, so the English breaks its
+    own lines. Tags and the browser's own comments (ASCII keywords it reads: <GAME-STYLE>, INPUT-SFIELD, CHG-IMG-BUTTON) stay
+    as they are; a comment with Japanese in it is a note of the page's authors, dropped in the English page to give the text
+    room. The page keeps its size: the archive's table and the sectors after it are left alone, so a shorter page is made up
+    with spaces at the end, and a longer one does not fit."""
+
+    SPLIT = re.compile(rb"<!--.*?-->|<(?!br>)[^<>]*>", re.S | re.I)
+
+    def __init__(self, data):
+        self.entry = data
+        self.units = []  # (first, last+1) offsets of the units' bytes
+        pos = 0
+        for m in [*self.SPLIT.finditer(data), None]:
+            lo, hi = pos, (m.start() if m else len(data))
+            seg = data[lo:hi]
+            lo, hi = lo + len(seg) - len(seg.lstrip()), hi - len(seg) + len(seg.rstrip())
+            if lo < hi and has_japanese(data[lo:hi]):
+                self.units.append((lo, hi))
+            pos = m.end() if m else len(data)
+
+    def texts(self):
+        return {unit_id(self.entry[lo:hi]): self.entry[lo:hi] for lo, hi in self.units}
+
+    def rebuilt(self, new):
+        out, pos = bytearray(), 0
+        for lo, hi in self.units:
+            out += self.entry[pos:lo] + new.get(unit_id(self.entry[lo:hi]), self.entry[lo:hi])
+            pos = hi
+        out += self.entry[pos:]
+        out = re.sub(rb"<!--(?:(?!-->).)*[\x80-\xff](?:(?!-->).)*-->", b"", bytes(out), flags=re.S)
+        if len(out) > len(self.entry):
+            raise DoesNotFit(f"the page needs {len(out)} bytes, it has {len(self.entry)}")
+        return bytes(out + b" " * (len(self.entry) - len(out)))

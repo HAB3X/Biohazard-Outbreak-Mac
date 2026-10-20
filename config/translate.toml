@@ -11,6 +11,85 @@ message_archives = "/NETBIO00.DAT/r0*.afs"
 message_files = '^(r\d{3}|dm\d{3}|spm\d{6})\.bin$'
 # The text fonts (tools/bh_font.py): their button glyphs drawn as the keyboard's keys for the keyboard and mouse
 fonts = ["romdata.afs/d20go04.bin", "romdata.afs/d20le04.bin"]
+# The programs' other strings, as File 1's overlay_pools (see there; "elf" is the executable). Regions found by listing the
+# strings of each data section and keeping the runs of text; left out on purpose: the network overlay's kana tables (the name
+# entry's keyboard, its romaji to kana table), its font table at 0xA4F00 and a test name at 0xB9FC0
+overlay_pools = [
+    { file = "elf", region = [0x143700, 0x1437C0], in_place = true },        # the DUALSHOCK 2 warning
+    { file = "elf", region = [0x14A9F8, 0x14AA49], in_place = true },        # the network browser's buttons
+    { file = "BIN/1.DAT", region = [0x289E0, 0x28AB8], in_place = true },    # collection: dialogs, hints
+    { file = "BIN/1.DAT", region = [0x28AC8, 0x28C00], in_place = true },    # collection: hints, movie names
+    { file = "BIN/1.DAT", region = [0x291B0, 0x292E0], in_place = true },    # collection: the stage list
+    { file = "BIN/1.DAT", region = [0x29710, 0x29A10], in_place = true },    # collection: records
+    { file = "BIN/2.DAT", region = [0x212058, 0x212068], in_place = true },  # game: clock
+    { file = "BIN/2.DAT", region = [0x212220, 0x212250], in_place = true },  # game: "used %s"
+    { file = "BIN/3.DAT", region = [0x997E0, 0x99AF0], in_place = true },    # network: menu help
+    { file = "BIN/3.DAT", region = [0x99FB8, 0x99FE0], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B1C0, 0x9B1CC], in_place = true },    # network: chat phrase labels (12 byte fields)
+    { file = "BIN/3.DAT", region = [0x9B1D0, 0x9B1DC], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B1E0, 0x9B1EC], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B1F0, 0x9B1FC], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B200, 0x9B20C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B210, 0x9B21C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B220, 0x9B22C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B230, 0x9B23C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B240, 0x9B24C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B250, 0x9B25C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B260, 0x9B26C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B270, 0x9B27C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B2C0, 0x9B2CC], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B2D0, 0x9B2DC], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B2E0, 0x9B2EC], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B2F0, 0x9B2FC], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B300, 0x9B30C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B310, 0x9B31C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B320, 0x9B32C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9B330, 0x9B33C], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9D9A0, 0x9DBC0], in_place = true },    # network: error pages
+    { file = "BIN/3.DAT", region = [0x9DC10, 0x9E430], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9E458, 0x9E498], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9E680, 0x9E860], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9E880, 0x9E960], in_place = true },
+    { file = "BIN/3.DAT", region = [0x9E980, 0x9EA00], in_place = true },
+    { file = "BIN/3.DAT", region = [0xA9138, 0xA9200], in_place = true },    # network: dialogs, lobby, memory card, connection
+    { file = "BIN/3.DAT", region = [0xA9260, 0xAAE88], in_place = true },
+    { file = "BIN/3.DAT", region = [0xAAE90, 0xABE40], in_place = true },
+    { file = "BIN/3.DAT", region = [0xABE48, 0xAC690], in_place = true },
+    { file = "BIN/3.DAT", region = [0xAC6B0, 0xAC8B8], in_place = true },
+    { file = "BIN/3.DAT", region = [0xAC8E0, 0xAC908], in_place = true },
+    { file = "BIN/3.DAT", region = [0xAC920, 0xACA18], in_place = true },
+    { file = "BIN/3.DAT", region = [0xACA38, 0xACC10], in_place = true },
+    { file = "BIN/3.DAT", region = [0xACC20, 0xAD978], in_place = true },
+    { file = "BIN/3.DAT", region = [0xAD980, 0xAD9A8], in_place = true },
+    { file = "BIN/3.DAT", region = [0xAD9C0, 0xAE020], in_place = true },
+    { file = "BIN/3.DAT", region = [0xAE040, 0xAE090], in_place = true },
+    { file = "BIN/3.DAT", region = [0xAE0C0, 0xAE120], in_place = true },
+    { file = "BIN/3.DAT", region = [0xAE3B0, 0xAE660], in_place = true },    # network: chat phrases
+    { file = "BIN/3.DAT", region = [0xAEEF0, 0xAF4E0], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB0038, 0xB0070], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB0B08, 0xB0B18], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB0B28, 0xB0B40], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB1060, 0xB3BA0], in_place = true },    # network: NET file, memory card, settings
+    { file = "BIN/3.DAT", region = [0xB3C70, 0xB3CD0], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB5D40, 0xB5D80], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB5E08, 0xB5E10], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB5F68, 0xB5FA0], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB60B0, 0xB6170], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB61E8, 0xB6200], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB6240, 0xB6260], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB6D00, 0xB6DF8], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB6E00, 0xB6E40], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB6E50, 0xB93A0], in_place = true },    # network: connection settings
+    { file = "BIN/3.DAT", region = [0xB95F8, 0xB9680], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB9688, 0xB9690], in_place = true },
+    { file = "BIN/3.DAT", region = [0xB9870, 0xB99A8], in_place = true },
+    { file = "BIN/3.DAT", region = [0xBA100, 0xBA130], in_place = true },
+    { file = "BIN/3.DAT", region = [0xBA1E0, 0xBA238], in_place = true },
+]
+# The executable's lines in inverted Shift-JIS (as in the pit files): the ending's epilogue, 46 lines in 16 to 48 byte slots
+inverted = [{ file = "SLPM_656.92", region = [0x143110, 0x143700] }]
+# The network browser's pages (*.HTM)
+html = "/NETBIO00.DAT/rfff.afs"
 
 [file1]
 executable = "SLPM_654.28"
