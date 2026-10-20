@@ -47,6 +47,15 @@ struct Layout
     uint32_t optionsState;
     int optionsItems;
     float optionsTop;
+    // Network Play's overlay (as the disc names it), the word holding the address of its screens' state (memory diffs of the
+    // NET file's Yes and No: File 2 0x24B4E4, File 1 0x23B618; its first byte the screen), the word holding the address of its
+    // lists' state (the configuration list's cursor at 0x10), and two screens' numbers: the manners screen's Next and Back,
+    // the configuration list (0: not found)
+    const char* netOverlay;
+    uint32_t netState;
+    uint32_t netList;
+    uint8_t netNextBackScreen;
+    uint8_t netConfigScreen;
     // The network browser (the KDDI browser of Network Play, its overlay `browserOverlay` as the disc names it): the word
     // (gp - 0x5D90) holding the address of its pointer's state, the pointer's x and y (16 bits each, in the 640 x 448
     // picture) at 16 and 18 there (netwk's link-focus code at 0x567370 in File 2 sets them so)
