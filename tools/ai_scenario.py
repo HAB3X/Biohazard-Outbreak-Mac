@@ -150,26 +150,33 @@ def wait_for_play(run, timeout=240):
     raise RuntimeError(f"{run.folder}: play didn't start")
 
 
+def through_menus(run, keys, tries=3):
+    """From the title menu, the keys (name, wait after) into a scenario; the menus ignore a press made during their own
+    transitions (on a loaded machine the first can be lost), so the whole sequence is tried again from the title menu while
+    the game hasn't started"""
+    for _ in range(tries):
+        to_title_menu(run)
+        for key, wait in keys:
+            run.key(key, wait=wait)
+        for _ in range(30):
+            active = tasks(run)
+            if TASKS[run.game]["game"] in active or TASKS[run.game]["cutscene"] in active:
+                return wait_for_play(run)
+            if on_title_menu(run):
+                break
+            time.sleep(2)
+    raise RuntimeError(f"{run.folder}: the menus didn't lead into the scenario")
+
+
 def to_bar(run):
     """File 1 from boot: the title, single play, scenario (Outbreak), Kevin, normal."""
-    to_title_menu(run)
-    for wait in (3, 4, 3, 3, 3, 10):
-        run.key("E", wait=wait)
-    wait_for_play(run)
+    through_menus(run, [("E", 3), ("E", 4), ("E", 3), ("E", 3), ("E", 3), ("E", 10)])
 
 
 def to_zoo(run):
     """File 2 from boot: the title, single play, new game, Wild Things (the second scenario), the first character and
     partners, easy."""
-    to_title_menu(run)
-    run.key("E", wait=4)
-    run.key("E", wait=6)
-    run.key("Right", wait=3)
-    for wait in (4, 4, 4, 3):
-        run.key("E", wait=wait)
-    run.key("Up", wait=1)
-    run.key("E", wait=10)
-    wait_for_play(run)
+    through_menus(run, [("E", 4), ("E", 6), ("Right", 3), ("E", 4), ("E", 4), ("E", 4), ("E", 3), ("Up", 1), ("E", 10)])
 
 
 def log_time(log):
