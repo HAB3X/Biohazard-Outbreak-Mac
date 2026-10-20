@@ -15,6 +15,10 @@ extern "C" void netwk_soft_keyboard_step(Ps2Cpu* c)
     netwk_00552f10(c);
 }
 
+// netwk's connection setup step: the configuration list skipped (src/network.cpp)
+extern "C" void netwk_005bfd40(Ps2Cpu* c);
+extern "C" void netwk_setup_step(Ps2Cpu* c) { Network::SetupStep(c, Network::File2Setup, netwk_005bfd40); }
+
 int main(int argc, char** argv)
 {
     static Ps2GameInfo game = {"Biohazard Outbreak File 2", "SLPM_656.92", 1356096};

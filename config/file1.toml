@@ -140,9 +140,9 @@ name = "netwk"
 file = "PROG/NETWK.BIN"
 base = "0x540000"
 text = ["0x540040", "0x5d6080"]
-# The network configuration is the Mac's (src/network.cpp): no card holds one; the software keyboard's step tells the Mac's
-# keyboard to type (src/typing.cpp)
-overrides = { "0x5d0c00" = "netwk_card_has_netcnf", "0x553820" = "netwk_soft_keyboard_step" }
+# The network configuration is the Mac's (src/network.cpp): no card holds one, and the setup screen connects with it without
+# showing its list; the software keyboard's step tells the Mac's keyboard to type (src/typing.cpp)
+overrides = { "0x5d0c00" = "netwk_card_has_netcnf", "0x553820" = "netwk_soft_keyboard_step", "0x5c88c0" = "netwk_setup_step" }
 # Entries of handler tables the game calls through pointers (data words that point at a prologue: addiu sp,sp,-N); 0x565FE0 a
 # function the executable's task system calls by a pointer made at run time (seen in DNAS's progress screen)
 extra = [
