@@ -33,6 +33,12 @@ int main(int argc, char** argv)
     // VIF1 and VU1 on a thread of their own (runtime.h's vu1Thread): its VIF1 codes have no interrupt bit, and VU1 was most of
     // the EE's time in its 3D
     game.vu1Thread = 1;
+    // Drawn by Metal at 4x unless the player chooses otherwise (OpenGL where there's no Apple GPU): Metal makes the GS's rules
+    // exactly, and its replay of the heaviest scene (the zoo with zombies) takes a quarter to two fifths of an M4's GPU at 4x, an
+    // estimated half to two thirds of a base M1's (docs/PERFORMANCE.md); a 1280 x 960 window on a Retina screen shows 4x's
+    // picture at nearly its own pixels
+    game.gsRenderer = "metal";
+    game.gsScale = 4;
     BiohazardControls::Apply(game, BiohazardControls::File1);
     game.networkDns = Network::ObsrvDns;
     game.typing = Typing::Typing;
