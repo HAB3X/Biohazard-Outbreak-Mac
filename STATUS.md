@@ -81,9 +81,10 @@ docs/network.md (the runtime's docs/network.md has the design).
 - Made with tools/make_app.py and launched with `open -a` (headless for the pictures): both reach their English title menus
   with the settings and memory cards of run.sh's folder. A windowed launch from a script stays paused at the warning screen
   until the window has the focus (the PC options' pause_in_background, on in this machine's settings).
-- Found, not changed: the in-play roles in src/controls.cpp don't match the game's own (its controller settings, type A: ○
-  confirm/attack, ✕ cancel/dash, □ ad-lib, △ map screen, L1 reload, R1 search ready, R2 forward ready, L2 appeal shift, the
-  right stick appeal): the left mouse button (□) is ad-lib, not attack, and Space (△) the map, not the partner command.
+- The in-play keys follow the game's own roles (its controller settings, type A), chosen by the owner: right mouse ready,
+  left mouse attack (○), E action, Left Shift run, R reload (L1), Q ready forward (R2), Space ad-lib (□), M map (△), F appeal
+  shift (L2), 1-4 the appeals (the right stick), O the pause menu (SELECT), Tab/Escape START (docs/controls.md). The pause
+  menu's controller readout and File 1's options legend show the menus' keys (one picture serves both).
 
 ## The Mac apps
 

@@ -19,8 +19,8 @@ a652e6060a	The sewers were searched thoroughly, of\ncourse. But there was no sig
 4ac1218e35	The police deny any link to the bizarre\ncases that have soared since the cabin\nincident, but surely there is one.\n
 eb85f0832f	\n\n* If you changed the controls, read the\n  keys and buttons accordingly.\n
 5e798db109	[Moving]\nThe <c1>direction keys<c0> or <c1>stick<c0> move the\nplayer (PC) you control.\nThe direction keys turn with the PC's\nfacing; the stick follows the screen.\n
-7e30fd1e15	[Readying and Attacking]\nThe <c1>ready control<c0> readies the equipped\nweapon; <c1>attack<c0> attacks.\nWhile ready, the directions turn you.\nUse <c1>previous item<c0> while ready to\nswitch targets.\n
-dc489d5285	[About Reloading 1]\n"<c1>Combine<c0>" ammo with its gun, or use\n<c1>previous item<c0> with the weapon\nequipped, to reload.\n
+7e30fd1e15	[Readying and Attacking]\nThe <c1>ready control<c0> readies the equipped\nweapon; <c1>attack<c0> attacks.\nWhile ready, the directions turn you.\nPress <c1>Reload<c0> while ready to\nswitch targets.\n
+dc489d5285	[About Reloading 1]\n"<c1>Combine<c0>" ammo with its gun, or press\n<c1>Reload<c0> with the weapon equipped.\n
 2cac4d8e9a	[About Reloading 2]\nReloading takes time per round loaded.\nThere are also items that refill all the\nrounds at once.\n
 a8e4b7bbbc	[Special Actions]\nBesides walking, a PC can climb steps\nand ladders.\nPress <c1>{play:circle}<c0> before a step or\nladder to do so.\n
 16970ce2a4	[Handing Over Items]\nSelect an item and "<c1>Give<c0>" to pass it\nto another PC. With an item selected,\n<c1>{square}<c0> also hands it over.\n

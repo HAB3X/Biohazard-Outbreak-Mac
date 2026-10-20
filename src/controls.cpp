@@ -22,21 +22,31 @@ const char* const Modes[] = {"Play", "Menus", "Title, movies and cutscenes"};
 // status screen's cross closes it from its top level. Arrows and WASD are the D-pad in the menus; in play WASD is the left
 // stick. Right click is the confirm in the menus (circle), as Return and E are; the left button clicks (see Steer)
 const Ps2GameControl Controls[] = {
+    // Play: the game's own roles (its controller settings, type A): circle is the action and, with the weapon ready, the
+    // attack; cross runs (and cancels); square is the ad-lib; triangle the map screen; L1 reloads; R1 readies, R2 readies
+    // forward (no aiming at a target); L2 is the appeal shift (calling a partner by name); the right stick's four ways are
+    // the appeals (seen in play: up "Go!", down "This way!", left "Help me!", right thanks or sorry, each character's own
+    // line); SELECT the pause menu (settings, quit)
     {"move_forward", "Move forward", "left_up", "W", Play},
     {"move_back", "Move back", "left_down", "S", Play},
     {"move_left", "Move left", "left_left", "A", Play},
     {"move_right", "Move right", "left_right", "D", Play},
     {"walk", "Walk", "walk", "Left Ctrl", Play},
-    {"run", "Run", "cross", "Left Shift", Play},
-    {"action", "Action", "circle", "E, Return", Play},
-    {"attack", "Fire, attack, use an item", "square", "Mouse Left", Play},
-    {"ready", "Ready or aim the weapon", "r1", "Mouse Right", Play},
-    {"command", "Command the partner", "triangle", "Space", Play},
-    {"item_previous", "Previous item", "l1", "Q", Play},
-    {"item_next", "Next item", "r2", "R", Play},
-    {"quick", "Quick action", "l2", "F", Play},
-    {"select", "Select", "select", "M", Play},
-    {"inventory", "Inventory and pause (START)", "start", "Tab, Escape", Play},
+    {"run", "Run (hold)", "cross", "Left Shift", Play},
+    {"action", "Action, check, pick up", "circle", "E, Return", Play},
+    {"attack", "Attack, fire (weapon ready)", "circle", "Mouse Left", Play},
+    {"ready", "Ready or aim the weapon (hold)", "r1", "Mouse Right", Play},
+    {"ready_forward", "Ready forward, no target (hold)", "r2", "Q", Play},
+    {"reload", "Reload", "l1", "R", Play},
+    {"adlib", "Ad-lib", "square", "Space", Play},
+    {"map", "Map", "triangle", "M", Play},
+    {"appeal_shift", "Appeal shift: call a partner (hold)", "l2", "F", Play},
+    {"appeal_go", "Appeal: Go!", "right_up", "1", Play},
+    {"appeal_come", "Appeal: This way!", "right_down", "2", Play},
+    {"appeal_help", "Appeal: Help me!", "right_left", "3", Play},
+    {"appeal_thanks", "Appeal: Thanks, sorry", "right_right", "4", Play},
+    {"options", "Pause menu: settings, quit (SELECT)", "select", "O", Play},
+    {"inventory", "Status screen, pause (START)", "start", "Tab, Escape", Play},
     {"dpad_up", "D-pad up", "up", "Up", Play},
     {"dpad_down", "D-pad down", "down", "Down", Play},
     {"dpad_left", "D-pad left", "left", "Left", Play},
@@ -47,12 +57,14 @@ const Ps2GameControl Controls[] = {
     {"menu_right", "Right", "right", "Right, D", Menus},
     {"menu_confirm", "Confirm (circle)", "circle", "E, Return, Mouse Right", Menus},
     {"menu_back", "Back, close (cross)", "cross", "Escape, Left Shift, Backspace", Menus},
-    {"menu_triangle", "Triangle", "triangle", "Space", Menus},
+    {"menu_triangle", "Triangle (info window; closes the map)", "triangle", "Space, M", Menus},
     {"menu_square", "Square", "square", "F", Menus},
     {"menu_tab_previous", "Previous tab (L1)", "l1", "Q, PageUp", Menus},
     {"menu_tab_next", "Next tab (R1)", "r1", "R, PageDown", Menus},
+    {"menu_l2", "L2 (the collection's pages)", "l2", "Z", Menus},
+    {"menu_r2", "R2 (the collection's pages)", "r2", "C", Menus},
     {"menu_start", "Close the inventory (START)", "start", "Tab", Menus},
-    {"menu_select", "Select", "select", "M", Menus},
+    {"menu_select", "Select (the options' default settings)", "select", "O", Menus},
     {"title_start", "Start, skip", "start", "Escape, Return, Space, E, Tab", Title},
 };
 
