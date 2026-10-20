@@ -1,22 +1,79 @@
 # The partners' AI: what's known
 
 Goal (the owner's): partners that fight usefully, follow and don't get stuck, heal and share items sensibly, and obey the
-ad-lib commands (Go!, This way!, Help me!, Thanks/Sorry; F with 1-4 calls one by name).
+ad-lib commands (Go!, This way!, Help me!, Thanks/Sorry; F with 1-4 calls one by name). Offline only.
 
-## Found so far (File 1, 2026-10-20)
+How it was found: the games' code read in Ghidra (the executable and the overlays loaded at their addresses in one image, gp
+set: File 1 0x241C70, File 2 0x2510F0) and checked against the recompiled C (`build/generated/*_code`, exact where Ghidra
+drops a three-operand `mult`), with memory dumps of play (`--control ram`) and the telemetry below. (An earlier note here
+said the positions weren't floats: they are, at +0x38 of the records below.)
 
-- No AI data on the disc: romdata.afs has the characters' (pl*, pc_*), enemies' (E*, e*, enemy*) and stage data, nothing
-  that reads as behaviour tables. The partners' behaviour is code, in PROG/GAME.BIN (the game overlay, 0x540000).
-- The pads: dbcman's socket 0 receives into 0x292B80 and 0x292C00 (`--log iop`: "socket 0 made ... buffers"); the SDK's
-  per-pad state is a table at 0x292D60, 24 bytes a pad, set up by the executable's f_001A51A0.
-- The ad-lib commands are the right stick's four directions (src/controls.cpp's appeal keys), so the game sees a command as
-  the player's right stick.
-- Not yet known: whether a partner is driven through a virtual pad (the way the online mode drives the other players'
-  characters would suggest it, but that's unchecked), where the characters' records are (positions aren't vec4 floats with
-  w = 1; RE games of this age keep them as integers), and the per-character update's player/CPU branch.
+## How a partner is driven: a virtual pad, written by SINGLE.BIN's think
 
-## Approach
+- No AI data on the disc: the behaviour is code. It's in **SINGLE.BIN** (File 2: BIN/8.DAT), the single-play overlay at
+  0x820000 (File 2 0x7D2000), loaded only for single play; network play loads NETAQ.BIN at the same address instead. The
+  play mode byte (File 1 0x3065C2, File 2 0x3137D2) is 0 in single play and 1 in network play; the executable's hooks
+  (File 1 0x1AEDC0-0x1AF4D0) call SINGLE's functions for 0 and NETAQ's for 1.
+- The characters' update (File 1 GAME.BIN 0x6383E0, File 2 0x63EAF0) walks the 8 character records (the player first) each
+  frame. For a record whose CPU flag is set it calls SINGLE's **think** (File 1 0x822440, File 2 0x7E99D0) first, only in
+  single play. Then 0x1AFC60 (File 2 0x1B08B0) copies a pad into the record for characters a pad drives (the player: pad 0 by
+  the table at 0x23BB38 indexed by the character's id; the partners' entries are 0xFF, so their record keeps what the think
+  wrote), and the character's update reads the record's pad as it reads the player's.
+- **The virtual pad** in each record: pressed this frame (File 1 +0xF78, File 2 +0xF88), released (+4), held (+8), three
+  frames of history, then the sticks (File 1 +0xF98..). Its bits are the game's button roles (src/partner_ai_pad.h): 1 forward,
+  2 back, 4 turn left, 8 turn right, 0x10 run (cross), 0x20 action/attack (circle), 0x40 R2, 0x80 L2, 0x100 ad-lib
+  (square), 0x200 triangle, 0x400 ready (R1), 0x800 reload (L1). The think clears it, then sets bits: back + run is the
+  quick turn, ready + attack fires.
+- The think (File 1 0x822440): clears the pad; unless the game is paused or the partner is busy, it runs
+  - **perception** 0x822520 (File 2 0x7E9AD0): the route node it's on, a wall check ahead (150 frames blocked resets the
+    plan: its own unstick), the player's commands (below), and the enemies near it (the list at 0x3840E0 + id * 0x32, enemy
+    indices ending 0xFF; File 2 0x385860);
+  - **the plan step** 0x8232F0: a plan picked by desire weights (+0x10C8, eight bytes; the highest picks plan 0, 1, 2, 4 or
+    5; others for special cases: 10 when the player's motion is 0x25, 11, 12, 13, 14 when the partner's motion is ';', 15
+    for character type 7), then the plan's routine from the table at 0x839240 (16) by the plan index (+0xFF4), repeated
+    while it returns nonzero;
+  - **the move** 0x82A6D0 (table 0x839460 by +0xFF8) or 0x82BE60 (table 0x8394D0), and the **action** routines (table
+    0x839BA0, 51, by +0x103E: attacks, item use...).
+- The AI's own work area is the record's end (File 1 +0xFF0..+0x10E0; File 2 0x1C further on for most fields): the CPU flag
+  +0xFF0 (File 2 +0xBB4), plan +0xFF4, move +0xFF8, action +0x103E, its picked enemy +0x106E (index) and +0x1068 (record),
+  target point +0x101C, wanted facing +0x1038, the blocked-ahead counter +0x10A4.
 
-Find the per-character update and its CPU branch; if partners read a virtual pad, a native AI can fill that pad from the
-game's state (characters, enemies, health, items, commands) and leave the game's code as it is; otherwise override the
-decision functions one by one. Offline only: online play has no AI partners.
+## The records
+
+| | File 1 | File 2 |
+|---|---|---|
+| Characters (8, the player first) | 0x476DD0, 0x10E0 bytes each | 0x47BD30, 0x1100 |
+| Enemies (50) | 0x3FFCA0, 0xD90 | 0x403DB0, 0xDB0 |
+| Room shown (the player's) | 0x3065AC (s16) | 0x3137BC |
+| Distances between characters | 0x386110 + id * 0x40 + other * 8 (float) | 0x387890 |
+| Distances character to enemy | 0x385490 + id * 400 + enemy's +6 * 8 (float, then two flags) | 0x386C10 |
+
+Both kinds of record: active +0, kind +2 (2 an enemy), id +3 (an enemy's own index at +6), the character it's after +0x24
+(an enemy's: a character record), position +0x38 (three floats, y up), facing +0x92 (u16, 0x10000 a turn), room +0x1E2.
+Hit points (s16, then the most): File 1 +0x544, File 2 +0x540 (Kevin 2300, Mark 3000, Cindy 1500 in File 1's bar; enemies the
+same field: zombies 700-800). The motion byte (what the character's doing): File 1 +0x54F, File 2 +0x54B. The character type
++0xB98 (File 1: 0 Kevin, 1 Mark, 7 Cindy); the weapon in hand's item number +0xCA8 (the item table at 0x6E5940, 0x44 bytes
+each).
+
+## The player's commands
+
+The appeals ("Go!", "This way!", "Help me!", thanks/sorry, and a partner's name with the appeal shift) are lines the player's
+character says. The speech code (File 1 GAME.BIN 0x687420) puts the line's command code in the speaker's record (File 1
++0x1075, File 2 +0x1091) while it's said, and 0 after. The partners' perception reads the player's: codes 2, 4, 5 and 8 set
+their response timers and pick an answer line; 9 and 10 call partner 1 and 2 by name. Which code is which appeal: being
+measured (the telemetry logs each command).
+
+## Telemetry
+
+`BH_AI_LOG=FILE` (src/partner_ai_telemetry.cpp) writes each partner's state every half second (room, distance to the player,
+hit points, motion, the AI's plan/move/action/target, the pad, the enemies in the player's room) and events (attacks with the
+weapon ready, damage to each enemy, heals, hurts, the player's commands). `tools/ai_report.py LOG` sums it up: distance
+stats, time in another room, attacks and hits, damage put to each partner (damage within half a second of its attack),
+stuck time (forward held, under 30 units a second), heals with the hit points before, the player's damage and time below 30%.
+
+## Measured: the game's own AI
+
+File 1, Outbreak (J's Bar, Kevin, normal), the player standing still from the start of play (256 s of play): Mark spent 41%
+of the time away from the player (into the next room and back, again and again) and fired his first shot at about 200 s,
+after the zombies had had the player down to 1 hit point; Cindy shoved (1-10 damage) and healed herself twice. The player
+took 3959 damage, spent 65 s below 30% and was saved from death by an item at 1 HP; one zombie killed.

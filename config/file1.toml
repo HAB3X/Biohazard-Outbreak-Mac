@@ -186,6 +186,8 @@ name = "single"
 file = "PROG/SINGLE.BIN"
 base = "0x820000"
 text = ["0x820040", "0x838800"]
+# The partners' think stood in by src/partner_ai.cpp (it runs this one, as recompiled, and measures)
+overrides = { "0x822440" = "single_partner_think" }
 extra = [
     "0x82a8a0", "0x82a8f0", "0x82ab20", "0x82ad60", "0x82ae00", "0x82af50", "0x82aff0", "0x82b070",
 ]
