@@ -5,8 +5,14 @@
 #include <mach/thread_policy.h>
 #include <mutex>
 #include <execinfo.h>
+#include <fcntl.h>
 #include <set>
 #include <unistd.h>
+
+#include <atomic>
+#include <cerrno>
+#include <ctime>
+#include <filesystem>
 
 namespace Ps2
 {
@@ -64,6 +70,87 @@ void Backtrace()
     fprintf(stderr, "[ps2] guest stack: %s\n", line.c_str());
     free(names);
 }
+
+namespace
+{
+int g_logFile = -1;
+std::atomic<size_t> g_logFileBytes{0};
+
+void WriteAll(int fd, const char* data, size_t size)
+{
+    while (size > 0)
+    {
+        const ssize_t n = write(fd, data, size);
+        if (n < 0 && errno == EINTR)
+        {
+            continue;
+        }
+        if (n <= 0)
+        {
+            return;
+        }
+        data += n;
+        size -= static_cast<size_t>(n);
+    }
+}
+
+// stderr's writes: to the terminal (or wherever stderr went) and to the log file, written as they come so a crash loses none
+int TeeWrite(void*, const char* data, int size)
+{
+    WriteAll(STDERR_FILENO, data, static_cast<size_t>(size));
+    if (g_logFile >= 0)
+    {
+        const size_t before = g_logFileBytes.fetch_add(static_cast<size_t>(size));
+        if (before + static_cast<size_t>(size) <= LogFileLimit)
+        {
+            WriteAll(g_logFile, data, static_cast<size_t>(size));
+        }
+        else if (before <= LogFileLimit)
+        {
+            static const char full[] = "\n[ps2] the log file stops here: it's at its size limit (the rest went to stderr only)\n";
+            WriteAll(g_logFile, full, sizeof(full) - 1);
+        }
+    }
+    return size;
+}
+}
+
+void LogToFile(const std::string& settingsDir)
+{
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const fs::path dir = fs::path(settingsDir) / "logs";
+    fs::create_directories(dir, ec);
+    if (fs::exists(dir / "latest.log", ec))
+    {
+        fs::rename(dir / "latest.log", dir / "previous.log", ec);
+    }
+    const int fd = open((dir / "latest.log").c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_APPEND | O_CLOEXEC, 0644);
+    if (fd < 0)
+    {
+        Log("the log file %s can't be written: %s", (dir / "latest.log").c_str(), strerror(errno));
+        return;
+    }
+    FILE* tee = funopen(nullptr, nullptr, TeeWrite, nullptr, nullptr);
+    if (tee == nullptr)
+    {
+        close(fd);
+        Log("the log file can't be set up: %s", strerror(errno));
+        return;
+    }
+    setvbuf(tee, nullptr, _IONBF, 0);
+    {
+        std::lock_guard<std::mutex> lock(g_logLock);
+        g_logFile = fd;
+        stderr = tee;
+    }
+    const time_t now = time(nullptr);
+    char when[64];
+    strftime(when, sizeof(when), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    Log("log started %s (%s)", when, (dir / "latest.log").c_str());
+}
+
+int LogFileDescriptor() { return g_logFile; }
 
 bool Once(const std::string& key)
 {

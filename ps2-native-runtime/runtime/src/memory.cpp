@@ -42,6 +42,11 @@ static void FaultHandler(int sig, siginfo_t* info, void*)
     void* frames[48];
     int n = backtrace(frames, 48);
     backtrace_symbols_fd(frames, n, 2);
+    // (stderr's writes above reached the log file too; the frames are written to fd 2 directly)
+    if (LogFileDescriptor() >= 0)
+    {
+        backtrace_symbols_fd(frames, n, LogFileDescriptor());
+    }
     signal(sig, SIG_DFL);
     raise(sig);
 }
