@@ -33,6 +33,11 @@ struct Layout
     uint32_t statusTab;     // the status screen's tab (a byte: 0 ITEM, 1 SPECIAL, 2 FILE)
     uint32_t statusCursor;  // the status screen's item cursor: a word, the address of the slot it's on (the equipped weapon's is elsewhere)
     uint32_t statusPopup;   // a byte that's nonzero while the item's actions (use, combine, give...) are up
+    // The network browser (the KDDI browser of Network Play, its overlay `browserOverlay` as the disc names it): the word
+    // (gp - 0x5D90) holding the address of its pointer's state, the pointer's x and y (16 bits each, in the 640 x 448
+    // picture) at 16 and 18 there (netwk's link-focus code at 0x567370 in File 2 sets them so)
+    const char* browserOverlay;
+    uint32_t browserPointer;
     uint32_t slotStride;    // the item slots' size: the grid's four are one after the other from where the cursor is as the screen opens
     float titleTop, titleStep; // where the title menu's six items are drawn: the first's middle and the step, as fractions of the picture's height
 };

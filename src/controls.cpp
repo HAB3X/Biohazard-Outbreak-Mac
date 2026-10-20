@@ -1,6 +1,7 @@
 #include "controls.h"
 
 #include "ps2/iop.h"
+#include "ps2/recomp.h"
 
 #include <algorithm>
 #include <cstring>
@@ -418,9 +419,68 @@ void Wheel(int kind)
     ps2_press_buttons(button, 0.05);
 }
 
+// --- the network browser: its own pointer, moved by the left stick on the console, follows the Mac's (a click is the
+// confirm, circle, where it points, as any click away from a menu's items)
+
+// Whether a code overlay (by its file on the disc) is in memory: its check words (the words no other overlay over the same
+// addresses holds) are there
+bool OverlayInMemory(const char* file)
+{
+    for (uint32_t n = 0; n < ps2_overlay_count; n++)
+    {
+        const Ps2Overlay& o = ps2_overlays[n];
+        if (std::strcmp(o.file, file) != 0)
+        {
+            continue;
+        }
+        if (o.checkCount == 0)
+        {
+            return false; // nothing to tell it from the others over its addresses: never taken for loaded
+        }
+        for (uint32_t k = 0; k < o.checkCount; k++)
+        {
+            if (Word(o.check[k].address) != o.check[k].word)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+// The browser pointer's state, 0 when the browser isn't up
+uint32_t BrowserPointer()
+{
+    if (g_layout.browserOverlay == nullptr || !OverlayInMemory(g_layout.browserOverlay))
+    {
+        return 0;
+    }
+    uint32_t state = Word(g_layout.browserPointer) & 0x1FFFFFF;
+    return state != 0 && state < 0x1FFFFE0 ? state : 0;
+}
+
+// The pointer put where the Mac's is (x and y the picture's fractions; the browser keeps it within the page's own bounds)
+void PointBrowser(uint32_t state, float x, float y)
+{
+    int16_t at[2] = {static_cast<int16_t>(std::clamp(x, 0.0f, 1.0f) * 640.0f), static_cast<int16_t>(std::clamp(y, 0.0f, 1.0f) * 448.0f)};
+    std::memcpy(Ps2::EeMemory(state + 16), at, sizeof(at));
+}
+
 // Game side, each vertical blank: the tap spacing of the menus, and the mouse
 void Vblank()
 {
+    // Each change of mode logged with what decided it (the task list and the title's state), to find screens taken for
+    // the wrong mode
+    static int lastMode = -1;
+    int mode = CurrentMode();
+    if (mode != lastMode)
+    {
+        uint32_t count = std::min<uint32_t>(Word(g_layout.taskCount), 8);
+        Ps2::Log("controls: %s (tasks %u: %08x %08x, title state %u)", Modes[mode], count, count > 0 ? Word(g_layout.taskList) : 0,
+                 count > 1 ? Word(g_layout.taskList + 4) : 0, Word(g_layout.titleState));
+        lastMode = mode;
+    }
     static bool spaced = false;
     bool menu = MenuUp();
     if (menu != spaced)
@@ -441,12 +501,21 @@ void Vblank()
     }
     float x, y;
     int kind;
+    uint32_t browser = BrowserPointer();
     if (ps2_mouse_moved(&x, &y))
     {
+        if (browser != 0)
+        {
+            PointBrowser(browser, x, y);
+        }
         Under(x, y, false);
     }
     if (ps2_take_click(&x, &y))
     {
+        if (browser != 0)
+        {
+            PointBrowser(browser, x, y);
+        }
         uint32_t step = SelectStep(x, y);
         if (CurrentMode() == Title)
         {
@@ -486,6 +555,8 @@ const Layout File2 = {.taskCount = 0x24ad3c,
                       .statusTab = 0x76a60e,
                       .statusCursor = 0x7671f4,
                       .statusPopup = 0x767210,
+                      .browserOverlay = "BIN/5.DAT",
+                      .browserPointer = 0x24b360,
                       .slotStride = 0x98,
                       .titleTop = 0.645f,
                       .titleStep = 0.0450f};
@@ -508,6 +579,8 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .statusTab = 0x723f9e,
                       .statusCursor = 0x720b84,
                       .statusPopup = 0x720ba0,
+                      .browserOverlay = "PROG/NETHTTP.BIN",
+                      .browserPointer = 0x23bee0,
                       .slotStride = 0x98,
                       .titleTop = 0.591f,
                       .titleStep = 0.0536f};
