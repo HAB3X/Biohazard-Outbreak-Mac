@@ -132,11 +132,9 @@ edit = [
 [[picture]]
 file = "romdata.afs/demo_com.tex"
 tim = 1
-note = "the ACCESS licence notice"
+note = "the ACCESS licence notice: left out (a dark screen in its place): the owner asked for the boot's licence text to go"
 edit = [
-    { box = [70, 309, 440, 342], erase = "#FFFFFF", text = "The Internet (network) functions of this product use\nAVE-TCP® by ACCESS Co., Ltd.", font = "arial", size = 10, color = "#101010", outline = "" },
-    { box = [70, 342, 440, 357], erase = "#FFFFFF", text = "AVE-TCP® is a registered trademark of ACCESS Co., Ltd. in Japan.", font = "arial", size = 10, color = "#101010", outline = "" },
-    { box = [70, 386, 440, 400], erase = "#FFFFFF", text = "Kana-kanji conversion in this product is by ACCESS Co., Ltd.", font = "arial", size = 10, color = "#101010", outline = "" },
+    { box = [0, 0, 640, 512], erase = "#000000FF" },
 ]
 
 # The network lobby (rfff.afs): its button hints, labels and messages
