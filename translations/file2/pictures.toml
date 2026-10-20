@@ -248,3 +248,19 @@ edit = [
     { box = [1, 155, 29, 167], key = "l1" },
     { box = [31, 155, 59, 167], key = "r1" },
 ]
+
+[[picture]]
+file = "rfff.afs/prize.tex"
+entry = 3
+tim = 0
+note = "the collection's button icons (the sticks stay)"
+edit = [
+    { box = [2, 1, 16, 15], key = "circle" },
+    { box = [16, 1, 31, 15], key = "triangle" },
+    { box = [32, 1, 46, 15], key = "cross" },
+    { box = [48, 1, 62, 15], key = "cross" },
+    { box = [64, 1, 89, 11], key = "l2" },
+    { box = [100, 1, 125, 11], key = "r2" },
+    { box = [1, 17, 25, 27], key = "l1" },
+    { box = [36, 17, 61, 27], key = "r1" },
+]
