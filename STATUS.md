@@ -121,13 +121,27 @@ default.
 
 ## The Mac apps
 
-`python3 tools/make_app.py both` makes "Biohazard Outbreak.app" and "Biohazard Outbreak File 2.app" on the Desktop (`--out DIR`
-elsewhere): each starts from Finder in English, with nothing else needed at run time (the program, SDL3, the English patch
-built from your disc at make time, the disc's path; signed ad hoc). They keep their settings, key bindings and saves where
-run.sh's runs do (~/Library/Application Support/PS2 Native Runtime/SLPM_654.28 and SLPM_656.92). **Make them again after a
-rebuild** (`ninja -C build`), a change to translations/, or a change of keys in the PC menus' Controls: the patch's key caps
-are drawn with the keys bound when the app is made (the patch isn't rebuilt at launch: that needs this folder's Python tools
-with Pillow and numpy, which a Finder launch doesn't have, and about a minute). Options can be passed for a test run:
+Two kinds, both from `tools/make_app.py` (each with SDL3 inside, the build's rpaths taken out, signed ad hoc):
+
+- **For this Mac** (`python3 tools/make_app.py both`, on the Desktop): the disc's path and the English patch built at make
+  time, the title logo as the icon. Make them again after a rebuild, a change to translations/, or a change of keys.
+- **The release** (branch `release`, runtime `biohazard-release`, 2026-10-20; `make_app.py file1|file2 --release --disc
+  ISO`, docs/RELEASING.md): Biohazard-Outbreak-File1-macOS.zip (32.8 MB) and -File2- (33.4 MB), with none of the disc's data.
+  The first launch asks for the disc (the runtime's `--disc-check`: the file dialog, the disc checked, a wrong one said with
+  why), then builds the English patch into the settings folder with the Python 3.13, Pillow and NumPy the app carries
+  (docs/adr/0001), behind a window with a Quit button; it's built again when the app or disc changes or `bindings.txt` is
+  newer. Checked from the zips as a new player (open -a, new settings folders): File 2 with File 1's disc (said: "it's
+  another game's disc: it starts SLPM_654.28", forgotten), then its own disc (patch in 16-17 s, the English title menu); File 1
+  with Quit pressed during the patch (no patch left, the disc kept), then the patch and the English title menu; a relaunch
+  doesn't rebuild (5 s), a key rebound in bindings.txt does (a different patch); a run with /opt/homebrew,
+  /Library/Frameworks, the repositories and the Desktop denied by sandbox-exec and only /usr/bin:/bin builds the same patch.
+  Needs macOS 26: the program and Homebrew's SDL3 are built for it (an older target needs SDL3 built for it). With the disc
+  in ~/Documents, macOS asks whether the app may access the Documents folder as the patch is built (seen, not answered: the
+  checks above used a link to the disc outside it). Not tried: Gatekeeper's approval of a downloaded copy (Open Anyway), on
+  another Mac. The repository's own copy of the runtime (`ps2-native-runtime/`) hasn't got `--disc-check` yet.
+
+Both keep their settings, key bindings and saves where run.sh's runs do (~/Library/Application Support/PS2 Native
+Runtime/SLPM_654.28 and SLPM_656.92). Options can be passed for a test run:
 `open -a "Biohazard Outbreak" --args --run-seconds 60 --snapshots DIR --snapshot-at 50`.
 
 ## English patch (branch `translate`, runtime `biohazard-translate`)
