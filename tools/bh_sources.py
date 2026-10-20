@@ -53,13 +53,32 @@ def string_pools(arc, game):
         images[ov["file"]] = (node.read(), base, [(base, tlo), (thi, base + node.size)])
         nodes[ov["file"]] = node
     pools = [("exe", text.ExePool(elf, tuple(cfg["pool"]), cfg["base"], images))]
-    # An overlay's strings are pointed at from its own data only: the overlays share load addresses, so another image's word
-    # with the same value means another overlay's byte
+    # An overlay's strings are pointed at from its own data, and from the executable's (which is there with every overlay:
+    # File 2's network screens draw their button labels through arrays at 0x24A988 in it). Another overlay's word with the
+    # same value means that overlay's byte, as the overlays share load addresses; so does the executable's, if another
+    # overlay over the same addresses has a string there too, which is checked
     for ov in cfg.get("overlay_pools", []):
         data, base, data_ranges = images[ov["file"]]
-        pools.append((ov["file"], text.ExePool(data, tuple(ov["region"]), base, {ov["file"]: images[ov["file"]]},
-                                               own=ov["file"], in_place=ov.get("in_place", False))))
+        shared = {"elf": images["elf"]} if ov["file"] != "elf" else None
+        pool = text.ExePool(data, tuple(ov["region"]), base, {ov["file"]: images[ov["file"]]}, own=ov["file"],
+                            in_place=ov.get("in_place", False), shared=shared)
+        _check_shared(pool, ov["file"], images)
+        pools.append((ov["file"], pool))
     return pools, nodes
+
+
+def _check_shared(pool, own, images):
+    """The executable's pointers to an overlay pool's strings are that overlay's only if no other overlay loaded over the same
+    addresses has a string at the address (the image's bytes there NUL-terminated text after a NUL): else an error."""
+    for i, refs in enumerate(pool.shared_refs):
+        address = pool.starts[i] + pool.base
+        for name, (data, first_byte, _) in images.items():
+            at = address - first_byte
+            if name in (own, "elf") or not 0 < at < len(data) or data[at - 1] != 0 or b"\0" not in data[at:]:
+                continue
+            if text.looks_like_text(data[at:data.index(b"\0", at)], at):
+                raise ValueError(f"the executable's pointer to {address:#x} (at {[hex(o) for _, o in refs]}) could be "
+                                 f"{own}'s string or {name}'s")
 
 
 def message_files(arc, game):

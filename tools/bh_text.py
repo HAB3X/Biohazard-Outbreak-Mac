@@ -117,9 +117,11 @@ class ExePool:
 
     elf: the image's bytes; region: (first, last+1) file offsets of the pool; base: address - file offset; images:
     {name: (bytes, address of its first byte, [(first, last+1) data ranges as addresses])}, where pointers are looked for;
-    own: the name the changes to `elf` are given under."""
+    own: the name the changes to `elf` are given under. shared: images like `images` whose pointers to the pool's strings
+    are rewritten when a string moves, but which don't decide where the strings stay (an overlay's strings pointed at from
+    the executable's data: File 2's network screens' button labels, whose arrays are in the executable)."""
 
-    def __init__(self, elf, region, base, images, own="elf", in_place=False):
+    def __init__(self, elf, region, base, images, own="elf", in_place=False, shared=None):
         self.elf, self.region, self.base, self.own, self.in_place = elf, region, base, own, in_place
         self.starts = []
         pos = region[0]
@@ -145,6 +147,14 @@ class ExePool:
                         self.refs[i].append((name, addr - first_byte))
                     elif region[0] <= value - base < region[1] and elf[value - base] == 0:
                         self.empties.add(value - base)
+
+        self.shared_refs = [[] for _ in self.starts]  # (image name, offset of the u32) in the shared images
+        for name, (data, first_byte, ranges) in (shared or {}).items():
+            for lo, hi in ranges:
+                for addr in range(lo, hi, 4):
+                    i = at.get(struct.unpack_from("<I", data, addr - first_byte)[0])
+                    if i is not None:
+                        self.shared_refs[i].append((name, addr - first_byte))
 
     def slot_end(self, i):
         """Where string i's slot ends: the next string's start (the NULs between are its padding), or just after the first
@@ -191,7 +201,7 @@ class ExePool:
                 raise DoesNotFit(f"pool string at {self.starts[i]:#x}: {len(raw)} bytes with its NUL, "
                                  f"the largest free run has {room[1] - room[0]}")
             out[self.own].append((room[0], raw))
-            for name, off in self.refs[i]:
+            for name, off in self.refs[i] + self.shared_refs[i]:
                 out.setdefault(name, []).append((off, struct.pack("<I", room[0] + self.base)))
             room[0] += len(raw)
         return out

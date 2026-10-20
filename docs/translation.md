@@ -13,8 +13,12 @@ your disc image (local.json) plus `translations/<game>/*.tsv` (unit id, TAB, my 
   executable's DUALSHOCK 2 warning (0x143700) and browser buttons (0x14A9F8); the collection overlay BIN/1.DAT (dialogs,
   viewer hints, movie names, records); the game overlay BIN/2.DAT ("used %s"); the network overlay BIN/3.DAT (netwk.bin,
   about 1,200 strings: menu help in `<BODY><SIZE=3><COLOR=6>...<END>` markup, dialogs, lobby, chat, memory card, connection
-  settings, HTML error pages). Strings pointed at from the overlay's data are packed again like the executable's pool; the
-  others (reached by code, or fields of fixed width like the chat phrase labels, 12 bytes) are rewritten in place. No netwk
+  settings, HTML error pages). Strings pointed at from the overlay's data are packed again like the executable's pool, and
+  the executable's data pointers to them are rewritten too: the executable holds some of netwk's string arrays (File 2's
+  0x249B48-0x24AAF4: the dialogs' button labels at 0x24A988, Next/Back on the caution screen; File 1's likewise), which,
+  left pointing at the old slots, drew nothing. Such a pointer is checked not to be another overlay's string over the same
+  addresses (the game overlay has code there). The others (reached by code, or fields of fixed width like the chat phrase
+  labels, 12 bytes) are rewritten in place. No netwk
   string is reached both by code and by a pointer (checked: lui/addiu pairs against data words). Left Japanese: the name
   entry's kana keyboard and romaji table, a font table, a test name.
 - The executable's inverted Shift-JIS (every byte NOT, as in the pit files) at 0x143110-0x143700: the ending's 46 epilogue
