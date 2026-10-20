@@ -186,8 +186,9 @@ name = "single"
 file = "PROG/SINGLE.BIN"
 base = "0x820000"
 text = ["0x820040", "0x838800"]
-# The partners' think stood in by src/partner_ai.cpp (it runs this one, as recompiled, and measures)
-overrides = { "0x822440" = "single_partner_think" }
+# The partners' think and its perception stood in by src/partner_ai.cpp (each runs the game's own, as recompiled; then the
+# perception's override puts its decision into the game AI's wants, plan and target, and the think's measures)
+overrides = { "0x822440" = "single_partner_think", "0x822520" = "single_partner_perceive" }
 extra = [
     "0x82a8a0", "0x82a8f0", "0x82ab20", "0x82ad60", "0x82ae00", "0x82af50", "0x82aff0", "0x82b070",
 ]

@@ -13,7 +13,13 @@ set(PS2_RUNTIME_DIR ${PS2_RUNTIME_DEFAULT} CACHE PATH "ps2-native-runtime's fold
 add_subdirectory(${PS2_RUNTIME_DIR} ps2-native-runtime)
 
 # The partners' AI (src/partner_ai.h), both games'
-set(PARTNER_AI_SOURCES src/partner_ai.cpp src/partner_ai_world.cpp src/partner_ai_telemetry.cpp)
+set(PARTNER_AI_SOURCES src/partner_ai.cpp src/partner_ai_brain.cpp src/partner_ai_world.cpp src/partner_ai_telemetry.cpp)
+
+# The partners' AI decisions' tests (no disc needed): ctest, or build/partner_ai_brain_test
+enable_testing()
+add_executable(partner_ai_brain_test tests/partner_ai_brain_test.cpp src/partner_ai_brain.cpp)
+target_include_directories(partner_ai_brain_test PRIVATE src ${PS2_RUNTIME_DIR}/runtime/include)
+add_test(NAME partner_ai_brain COMMAND partner_ai_brain_test)
 
 # Your own disc images (Japan), either or both: each game is its own program
 set(FILE1_DISC "" CACHE FILEPATH "Your Biohazard Outbreak (Japan, SLPM-65428) disc image")

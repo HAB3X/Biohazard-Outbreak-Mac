@@ -23,6 +23,15 @@ uint64_t g_lastEnemyFrame = ~0ull;
 std::array<Remembered, CharacterCount> g_characters;
 std::array<Remembered, EnemyCount> g_enemies;
 uint8_t g_lastSpeech = 0;
+struct Noted
+{
+    Intent intent = Intent::Free;
+    int target = -1;
+    bool gun = false, spare = false, melee = false;
+    uint32_t pad = 0;
+};
+std::array<Noted, CharacterCount> g_noted;
+const char* const IntentNames[] = {"free", "follow", "fight", "guard"};
 
 FILE* Log()
 {
@@ -139,10 +148,36 @@ void Measure(const World& world, int partner, uint64_t frame)
     RoomEnemies near = EnemiesIn(world, player.room, player.position);
     RoomEnemies mine = EnemiesIn(world, p.room, p.position);
     std::fprintf(log,
-                 "S t=%.2f c=%d room=%d proom=%d d=%.0f hp=%d/%d m=%d plan=%d move=%d act=%d tgt=%d pad=%x x=%.0f z=%.0f "
-                 "php=%d/%d pm=%d en=%d ehp=%d pnear=%.0f mynear=%.0f\n",
+                 "S t=%.2f c=%d room=%d proom=%d d=%.0f hp=%d/%d m=%d plan=%d move=%d act=%d tgt=%d pad=%x x=%.0f z=%.0f f=%d "
+                 "php=%d/%d pm=%d en=%d ehp=%d pnear=%.0f mynear=%.0f hand=%d/%d%s pack=%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
                  Seconds(frame), partner, p.room, player.room, Distance(p.position, player.position), p.hp, p.hpMax, p.motion,
-                 p.plan, p.move, p.action, p.target, p.padHeld, p.position.x, p.position.z, player.hp, player.hpMax,
-                 player.motion, near.count, near.hp, near.nearest, mine.nearest);
+                 p.plan, p.move, p.action, p.target, p.padHeld, p.position.x, p.position.z, p.facing, player.hp, player.hpMax,
+                 player.motion, near.count, near.hp, near.nearest, mine.nearest, p.hand.id, p.hand.rounds, p.hand.fires ? "g" : "",
+                 p.pack[0].id, p.pack[1].id, p.pack[2].id, p.pack[3].id, p.pack[4].id, p.pack[5].id, p.pack[6].id, p.pack[7].id,
+                 p.pack[8].id);
+}
+
+void NoteEvent(int partner, const char* what, uint64_t frame)
+{
+    if (FILE* log = Log())
+    {
+        std::fprintf(log, "E t=%.2f c=%d did %s\n", Seconds(frame), partner, what);
+    }
+}
+
+void Note(int partner, const Decision& decision, const Abilities& abilities, uint64_t frame)
+{
+    FILE* log = Log();
+    Noted& noted = g_noted[static_cast<size_t>(partner)];
+    const Noted now{decision.intent, decision.target, abilities.gun, abilities.spareGun, abilities.melee, decision.pad};
+    if (log == nullptr || (noted.intent == now.intent && noted.target == now.target && noted.gun == now.gun &&
+                           noted.spare == now.spare && noted.melee == now.melee && (noted.pad != 0) == (now.pad != 0)))
+    {
+        return;
+    }
+    noted = now;
+    std::fprintf(log, "E t=%.2f c=%d decide %s target=%d why=%s gun=%d spare=%d melee=%d pad=%x\n", Seconds(frame), partner,
+                 IntentNames[static_cast<int>(decision.intent)], decision.target, decision.why, abilities.gun,
+                 abilities.spareGun, abilities.melee, decision.pad);
 }
 }

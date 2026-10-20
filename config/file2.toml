@@ -181,8 +181,9 @@ name = "single"
 file = "BIN/8.DAT"
 base = "0x7d2000"
 text = ["0x7d2040", "0x7ee200"]
-# The partners' think stood in by src/partner_ai.cpp (it runs this one, as recompiled, and measures)
-overrides = { "0x7e99d0" = "single_partner_think" }
+# The partners' think and its perception stood in by src/partner_ai.cpp (each runs the game's own, as recompiled; then the
+# perception's override puts its decision into the game AI's wants, plan and target, and the think's measures)
+overrides = { "0x7e99d0" = "single_partner_think", "0x7e9ad0" = "single_partner_perceive" }
 # Entries of handler tables the game calls through pointers (data words that point at a prologue: addiu sp,sp,-N)
 extra = [
     "0x7d3790", "0x7d5540", "0x7d5c60", "0x7da860", "0x7da8b0", "0x7daae0", "0x7dad40", "0x7dade0",
