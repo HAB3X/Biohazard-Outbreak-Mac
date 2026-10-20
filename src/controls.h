@@ -30,10 +30,11 @@ struct Layout
     uint32_t taskCount, taskList;
     uint32_t gameTask;      // the in-game loop (play)
     uint32_t cutsceneTask;  // the game's loop while a cutscene plays (0: not found)
-    // A byte that's 0 while the game's loop plays a scene of its own with no cutscene task (File 1's opening credits) and
-    // nonzero while the player has control (0: none; found by memory diffs: the credits and a cutscene against two stretches
-    // of play)
-    uint32_t playControl;
+    // The game overlay's own state byte (0: none), which its main function switches on (File 1's GAME.BIN at 0x5CD67C: 2
+    // in play), and its value while that function plays the opening credits itself with no cutscene task (14, handled at
+    // 0x5D2A90): a scene there is the title's
+    uint32_t playState;
+    uint32_t openingState;
     uint32_t baseTask;      // the executable's own loop (movies, the title and loading, and under the game)
     uint32_t selectTask;    // the character, partner and difficulty selects
     uint32_t scenarioTask;  // the scenario select (0: not found)
