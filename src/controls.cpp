@@ -256,7 +256,10 @@ bool Under(float x, float y, bool click)
 {
     if (TitleMenu() && g_layout.titleCursor != 0)
     {
-        for (int n = 0; n < 6; n++)
+        // The title menu's items: 6 with a hard disk (HDD INSTALL last), 5 without, the runtime's case (the title's word 0x20C,
+        // 512 bytes after its cursor, as the game counts them)
+        int items = static_cast<int>(std::min<uint32_t>(Word(g_layout.titleCursor + 512), 6));
+        for (int n = 0; n < items; n++)
         {
             if (Inside({0.5f, g_layout.titleTop + g_layout.titleStep * static_cast<float>(n), 0.14f, g_layout.titleStep / 2}, x, y))
             {
