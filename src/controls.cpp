@@ -150,7 +150,7 @@ int CurrentMode()
         }
         // a scene the game plays itself in its play loop (File 1's opening credits) is the title's: Escape skips it
         bool scene = HasTask(g_layout.cutsceneTask) ||
-                     (g_layout.playControl != 0 && *Ps2::EeMemory(g_layout.playControl) == 0);
+                     (g_layout.playState != 0 && *Ps2::EeMemory(g_layout.playState) == g_layout.openingState);
         return scene ? Title : Play;
     }
     if (HasTask(g_layout.cutsceneTask))
@@ -961,7 +961,8 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .taskList = 0x29b0d0,
                       .gameTask = 0x341b80,
                       .cutsceneTask = 0x341af0,
-                      .playControl = 0x27794d,
+                      .playState = 0x48bf60,
+                      .openingState = 14,
                       .baseTask = 0x1b3400,
                       .selectTask = 0,
                       .scenarioTask = 0,

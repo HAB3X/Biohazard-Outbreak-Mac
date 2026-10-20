@@ -82,7 +82,8 @@ The pointer over a slot (the four and the equipped weapon's) moves the cursor th
 ## Title, movies and cutscenes
 
 Escape, Return, Space, E or Tab is START: it skips movies and cutscenes (File 2's cutscene task 0x344C10, File 1's
-opening credits by its play-control byte 0x27794D) and starts from the title.
+opening credits by the game overlay's state byte 0x48BF60 at 14; a byte of a pooled object, 0x27794D, was used before
+and read 0 all through Decisions, Decisions' play, where the keys then didn't move the player) and starts from the title.
 
 ## Rules worth knowing
 
