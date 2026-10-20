@@ -22,7 +22,8 @@ struct Layout
     uint32_t gameTask;      // the in-game loop (play)
     uint32_t cutsceneTask;  // the game's loop while a cutscene plays (0: not found)
     uint32_t baseTask;      // the executable's own loop (movies, the title and loading, and under the game)
-    uint32_t selectTask;    // the scenario, character, partner and difficulty selects
+    uint32_t selectTask;    // the character, partner and difficulty selects
+    uint32_t scenarioTask;  // the scenario select (0: not found)
     uint32_t titleState;    // a word: 0 a movie, 2 the title's "PRESS START", 3 its menu (single play, collection, options...)
     uint32_t statusTask;    // the status screen
     uint32_t titleCursor;   // the title menu's item (a word, 0 the first)
