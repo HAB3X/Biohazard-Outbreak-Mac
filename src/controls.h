@@ -43,8 +43,7 @@ struct Layout
     uint32_t titleState;    // a word saying where the title is: a movie, its "PRESS START", its menus
     uint32_t titleMenus;    // titleState's value on the title menu (File 2 3: 0 a movie, 2 PRESS START; File 1 1: 0 the logos
                             // and movies, 6 5 4 3 PRESS START; its other menus (character log, the options' screens) read 0 too)
-    uint32_t titleObjects;  // File 1: a count of the title's live objects, 3 on the title menu itself (2 the options list, 4 the
-                            // collection, which read titleMenus as well); 0 where titleState alone says it
+    bool titleZeroInMenus;  // File 1: titleState reads 0 in the title menu's own screens (brightness, the character log) too
     uint32_t statusTask;    // the status screen
     uint32_t titleCursor;   // the title menu's item (a word, 0 the first)
     uint32_t statusTab;     // the status screen's tab (a byte: 0 ITEM, 1 SPECIAL, 2 FILE)

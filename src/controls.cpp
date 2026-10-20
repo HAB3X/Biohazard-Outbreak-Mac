@@ -105,10 +105,16 @@ bool HasTask(uint32_t task)
 }
 
 // The title's menu: the executable's loop alone, with the title's state at its menu
+// The title menus' state: its first byte 1 on the title menu itself, 2 in one of its submenus (its second byte which: 1 the
+// options, 2 single play or the collection), its cursor at 12 (Layout::titleCursor). The same in both games (memory dumps of
+// the title menu, the options, the collection, single play's NEW GAME/CONTINUE, PRESS START)
+constexpr uint32_t TitleMenuState = 12;
+constexpr uint8_t TitleMenuItself = 1;
+
 bool TitleMenu()
 {
     return Word(g_layout.taskCount) == 1 && HasTask(g_layout.baseTask) && Word(g_layout.titleState) == g_layout.titleMenus &&
-           (g_layout.titleObjects == 0 || Word(g_layout.titleObjects) == 3);
+           *Ps2::EeMemory(g_layout.titleCursor - TitleMenuState) == TitleMenuItself;
 }
 
 // The executable's loop alone is the title (movies, PRESS START: START skips and starts) or a menu reached from the title
@@ -122,7 +128,7 @@ bool TitleMovie()
     {
         lastSet = state;
     }
-    bool menus = state == g_layout.titleMenus || (g_layout.titleObjects != 0 && state == 0 && lastSet == g_layout.titleMenus);
+    bool menus = state == g_layout.titleMenus || (g_layout.titleZeroInMenus && state == 0 && lastSet == g_layout.titleMenus);
     return !menus;
 }
 
@@ -822,7 +828,7 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .screenState = 0x3065fc,
                       .titleState = 0x200d5c,
                       .titleMenus = 1,
-                      .titleObjects = 0x23ba68,
+                      .titleZeroInMenus = true,
                       .statusTask = 0x6b9450,
                       .titleCursor = 0x90d1cc,
                       .statusTab = 0x723f9e,
