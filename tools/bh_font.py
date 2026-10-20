@@ -24,9 +24,6 @@ import bh_sources as sources
 CELL, GLYPH = 20, 100
 SYMBOLS = {"circle": 0x217B, "cross": 0x215F, "triangle": 0x2224, "square": 0x2222}  # ○ × △ □ in JIS X 0208
 PLAY_SYMBOLS = {"circle": 0x223A, "cross": 0x223B, "triangle": 0x223C, "square": 0x223D}  # ∈ ∋ ⊆ ⊇
-# Keys whose name doesn't fit a cell, drawn as the symbol their key caps have: Shift's arrow (a polygon in the 4x cell: drawn
-# from a font its outline is too thin to survive the scaling down)
-SHIFT_ARROW = [(40, 20), (60, 42), (49, 42), (49, 60), (31, 60), (31, 42), (20, 42)]
 
 
 def index(jis):
@@ -45,17 +42,19 @@ def encode(img):
 
 
 def key_glyph(label):
-    """A key cap in a cell: a rounded frame at the middle level and the key's name at full brightness, drawn 4x and scaled
-    down (the 4 levels give it some smoothing)."""
+    """A key cap in a cell: a solid rounded cap at full brightness with the key's name (or its symbol) cut out of it, drawn
+    4x and scaled down. A frame with the name inside reads poorly in a 20 pixel cell of 4 levels (the frame's thin lines and
+    the name's strokes blur together, and the text's colour tints both); a solid cap keeps its shape and its letters stay
+    sharp edges against it."""
     big = Image.new("L", (CELL * 4, CELL * 4), 0)
     d = ImageDraw.Draw(big)
-    d.rounded_rectangle([2, 10, CELL * 4 - 3, CELL * 4 - 7], radius=12, outline=150, width=5)
-    if label == "Shift":
-        d.polygon(SHIFT_ARROW, fill=255)
+    d.rounded_rectangle([2, 8, CELL * 4 - 6, CELL * 4 - 8], radius=16, fill=255)
+    if label in pictures.KEY_SYMBOLS:
+        d.polygon(pictures.KEY_SYMBOLS[label], fill=0)
         return big.resize((CELL, CELL), Image.LANCZOS)
-    rgba = pictures.draw_text(Image.new("RGBA", big.size, (0, 0, 0, 0)), (10, 18, CELL * 4 - 10, CELL * 4 - 14), label,
+    rgba = pictures.draw_text(Image.new("RGBA", big.size, (0, 0, 0, 0)), (10, 16, CELL * 4 - 14, CELL * 4 - 16), label,
                               "arialnarrow" if len(label) > 1 else "arial", None, (255, 255, 255, 255), None, "center")
-    big.paste(255, (0, 0), rgba.split()[3].point(lambda a: 255 if a > 100 else 0))
+    big.paste(0, (0, 0), rgba.split()[3].point(lambda a: 255 if a > 100 else 0))
     return big.resize((CELL, CELL), Image.LANCZOS)
 
 

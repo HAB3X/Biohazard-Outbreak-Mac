@@ -222,17 +222,40 @@ def draw_text(image, box, text, name="din", size=None, color=(255, 255, 255, 255
     return Image.alpha_composite(image, clipped)
 
 
+# Keys whose name doesn't fit a small cap, drawn as the symbol their key caps have (polygons in an 80 x 80 square): Shift's
+# arrow, Return's bent arrow
+KEY_SYMBOLS = {
+    "Shift": [(40, 18), (61, 41), (49, 41), (49, 62), (31, 62), (31, 41), (19, 41)],
+    "Enter": [(54, 20), (64, 20), (64, 52), (36, 52), (36, 62), (16, 46), (36, 30), (36, 40), (54, 40)],
+}
+KEY_FACE, KEY_EDGE, KEY_INK = (238, 238, 244, 255), (70, 70, 84, 255), (24, 24, 32, 255)
+SUPERSAMPLE = 4
+
+
 def draw_key(image, box, label):
-    """A key cap filling the box: a light rounded frame on a dark face, the key's name in it as large as fits."""
+    """A key cap filling the box: a light face over a darker edge (the key's side, below it), the key's name or symbol in
+    dark ink on the face. Drawn 4x and scaled down: the caps are 16 to 26 pixels, where a font's own small sizes and a
+    one-pixel frame look rough, and the games tint the pictures, so dark ink on a light face keeps its contrast."""
     x0, y0, x1, y1 = box
+    w, h, s = x1 - x0, y1 - y0, SUPERSAMPLE
+    big = Image.new("RGBA", (w * s, h * s), (0, 0, 0, 0))
+    d = ImageDraw.Draw(big)
+    radius = min(w, h) * s // 4
+    d.rounded_rectangle([0, s, w * s - 1, h * s - 1], radius=radius, fill=KEY_EDGE)
+    d.rounded_rectangle([0, 0, w * s - 1, h * s - 1 - 2 * s], radius=radius, fill=KEY_FACE)
+    face = (2 * s, s, w * s - 2 * s, h * s - 3 * s)
+    if label in KEY_SYMBOLS:
+        side = min(face[2] - face[0], face[3] - face[1])
+        left, top = (face[0] + face[2] - side) / 2, (face[1] + face[3] - side) / 2
+        d.polygon([(left + x * side / 80, top + y * side / 80) for x, y in KEY_SYMBOLS[label]], fill=KEY_INK)
+    else:
+        name = "unicode" if any(ord(c) > 0x7F for c in label) else "arialnarrow" if len(label) > 1 else "arial"
+        # Two keys in a tall cap (W S for up and down) stand one over the other, as large as the cap allows
+        text = label.replace(" ", "\n") if h > w * 1.3 else label
+        big = draw_text(big, face, text, name, None, KEY_INK, None, "center")
     layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    d.rounded_rectangle([x0, y0, x1 - 1, y1 - 1], radius=max(1, min(x1 - x0, y1 - y0) // 4), fill=(30, 30, 40, 255),
-                        outline=(225, 225, 235, 255))
-    image = Image.alpha_composite(image, layer)
-    inner = (x0 + 1, y0 + 1, x1 - 1, y1 - 1)
-    name = "unicode" if any(ord(c) > 0x7F for c in label) else "arialnarrow" if len(label) > 1 else "arial"
-    return draw_text(image, inner, label, name, None, (255, 255, 255, 255), None, "center")
+    layer.paste(big.resize((w, h), Image.LANCZOS), (x0, y0))
+    return Image.alpha_composite(image, layer)
 
 
 def apply_edits(image, edits, variant, keys):

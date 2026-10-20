@@ -346,7 +346,7 @@ edit = [
 file = "rfff.afs/netwk.tex"
 tim = 2
 note = "the network menus' circle and cross"
-edit = [{ box = [193, 97, 223, 127], key = "circle" }, { box = [227, 97, 256, 127], key = "cross" }]
+edit = [{ box = [193, 97, 223, 127], key = "circle" }, { box = [225, 97, 255, 127], key = "cross" }]
 
 [[picture]]
 file = "rfff.afs/netwk.tex"
