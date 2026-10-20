@@ -164,8 +164,14 @@ edit = [{ box = [0, 386, 230, 414], text = "Starting the game.", font = "arial",
 [[picture]]
 file = "rfff.afs/prize01.tm2"
 tim = 0
-note = "the collection's Available label"
-edit = [{ box = [165, 62, 249, 81], erase = "bg", text = "AVAILABLE", font = "din", size = 16, color = "#E8E8E8", outline = "", align = "center" }]
+note = "the collection's Available label and button icons"
+edit = [
+    { box = [165, 62, 249, 81], erase = "bg", text = "AVAILABLE", font = "din", size = 16, color = "#E8E8E8", outline = "", align = "center" },
+    { box = [417, 81, 432, 96], key = "circle" },
+    { box = [432, 81, 447, 96], key = "cross" },
+    { box = [336, 136, 351, 151], key = "l1" },
+    { box = [353, 136, 368, 151], key = "r1" },
+]
 
 # The lobby's scenario pictures (rfff.afs/scrNN_NN.tm2, two cards each): the scenario's name on the bar at each card's
 # top, and the captions over the picture, inpainted away and drawn in English
@@ -321,4 +327,49 @@ edit = [
     { box = [328, 428, 498, 455], erase = "keep", text = "A Raccoon-born sculptor's work.", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
     { box = [28, 458, 328, 502], erase = "inpaint", threshold = 190 },
     { box = [28, 458, 328, 502], erase = "keep", text = "Art from around the world collected by the\ncurrent president. Some are said to be museum-grade...", font = "helvetica", size = 12, color = "#FFFFFF", outline = "#101010" },
+]
+
+[[picture]]
+file = "rfff.afs/BS_SKIN.TM2"
+tim = 0
+note = "the network browser's button icons"
+edit = [
+    { box = [129, 1, 159, 31], key = "circle" },
+    { box = [161, 1, 191, 31], key = "cross" },
+    { box = [193, 1, 223, 31], key = "triangle" },
+    { box = [225, 1, 255, 31], key = "square" },
+    { box = [129, 37, 159, 59], key = "l1" },
+    { box = [161, 37, 191, 59], key = "r1" },
+    { box = [193, 37, 223, 59], key = "l2" },
+    { box = [225, 37, 255, 59], key = "r2" },
+]
+
+[[picture]]
+file = "rfff.afs/netwk.tex"
+tim = 2
+note = "the network menus' circle and cross"
+edit = [{ box = [193, 97, 223, 127], key = "circle" }, { box = [227, 97, 256, 127], key = "cross" }]
+
+[[picture]]
+file = "rfff.afs/netwk.tex"
+tim = 6
+note = "the network menus' small button icons"
+edit = [
+    { box = [1, 129, 21, 149], key = "circle" },
+    { box = [23, 129, 43, 149], key = "cross" },
+    { box = [45, 129, 65, 149], key = "triangle" },
+    { box = [67, 129, 87, 149], key = "square" },
+    { box = [1, 155, 29, 167], key = "l1" },
+    { box = [31, 155, 59, 167], key = "r1" },
+]
+
+[[picture]]
+file = "romdata.afs/demo_com.tex"
+tim = 5
+note = "the options' button icons (the controller picture and its labels stay: they show the gamepad)"
+edit = [
+    { box = [298, 450, 312, 464], key = "square" },
+    { box = [314, 450, 328, 464], key = "circle" },
+    { box = [298, 466, 312, 480], key = "cross" },
+    { box = [314, 466, 328, 480], key = "triangle" },
 ]

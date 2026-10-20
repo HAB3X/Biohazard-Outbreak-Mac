@@ -103,6 +103,8 @@ fallback = "file2"
 # The item and message files (tools/bh_itemmsg.py)
 item_msg = true
 fonts = ["romdata.afs/d20go04.bin", "romdata.afs/s20le04.bin"]
+# The network browser's pages (*.HTM), as File 2's
+html = "/NETBIO00.DAT/rfff.afs"
 # The overlays' own pools (file offsets in the overlay; each region runs from its first string to the next data that isn't
 # a string, found by listing the strings of the overlay's data). Many of their strings are reached by code, not pointers:
 # those are translated in place

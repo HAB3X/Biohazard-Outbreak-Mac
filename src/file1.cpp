@@ -18,6 +18,9 @@ extern "C" void netwk_soft_keyboard_step(Ps2Cpu* c)
 int main(int argc, char** argv)
 {
     static Ps2GameInfo game = {"Biohazard Outbreak", "SLPM_654.28", 1294104};
+    // Its 3D masks red's lowest bit (FBMSK 1), which nothing reads back or shows: replays of File 1's bar, File 2's Training
+    // Ground and its zoo drew every picture the same without it, 3 to 35 times faster (runtime.h's gsLooseFrameMasks)
+    game.gsLooseFrameMasks = 1;
     BiohazardControls::Apply(game, BiohazardControls::File1);
     game.networkDns = Network::ObsrvDns;
     game.typing = Typing::Typing;
