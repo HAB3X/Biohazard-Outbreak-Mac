@@ -76,6 +76,18 @@ dispatcher 2-3%, `ps2_call`'s overlay lookups 2%.
 | | File 1's bar with the zombies in, beside 30 busy processes | | 30 steady |
 | File 1: a missing function start (game a7db74b) | | the bar with the zombies in stopped after ~2 minutes ("not a function start" 0x66F430) | plays on |
 
+| 4 bit image transfers written a block's row at a time (runtime 871a21a) | File 2's zoo with zombies, its GS replay's render thread | 3.78 ms a vblank | 3.60 (load 8-9); six recordings' pictures the same |
+| `--control vu1record S FILE` / `--vu1-replay FILE:PASSES` (runtime 87c7ce9) | VIF1 and VU1 alone on a recording, what they give the GIF hashed | | the tool for VU1 changes: same hash = same output |
+| VIF1's V4-32 unpack copied whole (runtime 264926c) | the zoo's VU1 recording, fastest of 8 passes | 1.30, 1.25 s | 1.25, 1.17 s; hash the same |
+
+### File 2's zoo with zombies
+
+From the zoo gate, walked back toward the camera (8 s): three or four zombies come in and attack. 30 frames a second; EE 3.6
+ms a frame, VU1 thread 6.6-7.4, render 5.2-9 (it rises while they grab the player: more characters, more texture uploads).
+Its GS replay: 3.6 ms a vblank of render thread CPU, the GPU keeping up, no destination copies. The render thread's time is
+spread over the GS front end (21%), the GPU renderer's CPU side (22%), the OpenGL driver (21%) and local memory writes (20%):
+no single cause left. The zoo's inside wasn't reached (the gate stays shut; the route on isn't known to the scripts).
+
 ### File 1's bar with the zombies in (the owner's 14 frames a second)
 
 Reached by `to_zbar` (the bar, the intro skipped, walk to the door: the zombies' cutscene, then play). On the M4 alone it holds
@@ -85,6 +97,11 @@ agents building on the same Mac. The time constraint policy keeps it at 30 under
 `biohazard` (a 32 bit depth cleared to 0) costs nothing: the replays' times are the same or lower.
 
 ## Looked at and not kept
+
+- The time constraint policy's own cost: a thread kept busy under it computes about 10% slower for its first seconds, then the
+  kernel puts it back to the ordinary policy (measured with a 6 s busy loop: 100,000 against 112,000 steps a half second, then
+  115,000); the game's frame threads wait every frame, so they keep it. Not a reason to leave it out: under load it's 30 against
+  11-20 frames a second.
 
 - `glTextureBarrierNV` in place of the destination copies (the shader reads the frame itself): the same pictures, but the driver
   submits a command buffer at each barrier too: the partner select's replay went from 23.8 to 16.6 vblanks a second.
