@@ -42,20 +42,25 @@ def encode(img):
 
 
 def key_glyph(label):
-    """A key cap in a cell: a solid rounded cap at full brightness with the key's name (or its symbol) cut out of it, drawn
-    4x and scaled down. A frame with the name inside reads poorly in a 20 pixel cell of 4 levels (the frame's thin lines and
-    the name's strokes blur together, and the text's colour tints both); a solid cap keeps its shape and its letters stay
-    sharp edges against it."""
+    """A key cap in a cell: a solid rounded cap at full brightness, the cell's whole width, with the key's name (or its
+    symbol) cut out of it, drawn 4x and averaged down. The games show these cells at about 16 pixels: a frame with the name
+    inside, or margins around the cap, leave a three-letter name (Esc, Spc, Tab) too few pixels to read, and a sharper
+    filter than the plain average turns the letters' edges into the 4 levels' noise."""
     big = Image.new("L", (CELL * 4, CELL * 4), 0)
     d = ImageDraw.Draw(big)
-    d.rounded_rectangle([2, 8, CELL * 4 - 6, CELL * 4 - 8], radius=16, fill=255)
+    # A pixel left clear at each side: the games sample a column past a glyph's cell, so a cap to the cell's edge showed a
+    # sliver of the next glyph's cap beside it and lost its own right corners (seen in File 2's pause menu)
+    d.rounded_rectangle([4, 6, CELL * 4 - 5, CELL * 4 - 7], radius=12, fill=255)
     if label in pictures.KEY_SYMBOLS:
         d.polygon(pictures.KEY_SYMBOLS[label], fill=0)
-        return big.resize((CELL, CELL), Image.LANCZOS)
-    rgba = pictures.draw_text(Image.new("RGBA", big.size, (0, 0, 0, 0)), (10, 16, CELL * 4 - 14, CELL * 4 - 16), label,
+        return big.resize((CELL, CELL), Image.BOX)
+    # A single letter keeps clear of the cap's sides (a stroke near the edge leaves a sliver of cap that reads as a separate
+    # bar); a longer name needs the whole width
+    box = (6, 10, CELL * 4 - 6, CELL * 4 - 10) if len(label) > 1 else (16, 12, CELL * 4 - 16, CELL * 4 - 12)
+    rgba = pictures.draw_text(Image.new("RGBA", big.size, (0, 0, 0, 0)), box, label,
                               "arialnarrow" if len(label) > 1 else "arial", None, (255, 255, 255, 255), None, "center")
     big.paste(0, (0, 0), rgba.split()[3].point(lambda a: 255 if a > 100 else 0))
-    return big.resize((CELL, CELL), Image.LANCZOS)
+    return big.resize((CELL, CELL), Image.BOX)
 
 
 def fonts(arc, game):
