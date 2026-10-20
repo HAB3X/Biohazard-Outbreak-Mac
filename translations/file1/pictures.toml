@@ -108,7 +108,7 @@ edit = [
 file = "romdata.afs/result.tex"
 tim = 4
 note = "the ATTENTION screen's EXIT button"
-edit = [{ box = [0, 32, 13, 45], key = "circle" }]
+edit = [{ box = [1, 32, 16, 47], key = "circle" }]
 
 [[picture]]
 file = "romdata.afs/demo_com.tex"
@@ -168,7 +168,7 @@ edit = [
     { box = [417, 81, 432, 96], key = "circle" },
     { box = [432, 81, 447, 96], key = "cross" },
     { box = [336, 136, 351, 151], key = "l1" },
-    { box = [353, 136, 368, 151], key = "r1" },
+    { box = [353, 136, 368, 152], key = "r1" },
 ]
 
 # The lobby's scenario pictures (rfff.afs/scrNN_NN.tm2, two cards each): the scenario's name on the bar at each card's

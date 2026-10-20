@@ -174,7 +174,7 @@ file = "romdata.afs/result.tex"
 entry = 4
 tim = 0
 note = "the ATTENTION screen's EXIT button"
-edit = [{ box = [0, 32, 13, 45], key = "circle" }]
+edit = [{ box = [1, 32, 16, 47], key = "circle" }]
 
 [[picture]]
 file = "romdata.afs/init.tex"
@@ -253,10 +253,10 @@ entry = 3
 tim = 0
 note = "the collection's button icons (the sticks stay)"
 edit = [
-    { box = [2, 1, 16, 15], key = "circle" },
+    { box = [0, 1, 15, 15], key = "circle" },
     { box = [16, 1, 31, 15], key = "triangle" },
-    { box = [32, 1, 46, 15], key = "cross" },
-    { box = [48, 1, 62, 15], key = "cross" },
+    { box = [32, 1, 47, 15], key = "cross" },
+    { box = [48, 1, 63, 15], key = "cross" },
     { box = [64, 1, 89, 11], key = "l2" },
     { box = [100, 1, 125, 11], key = "r2" },
     { box = [1, 17, 25, 27], key = "l1" },
