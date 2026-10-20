@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """The games' text fonts and their PS2 button glyphs: the text's ○ × △ □ (in menus, messages and the English's {circle}
 {cross} {triangle} {square}, see bh_text.english_bytes) are characters of the font, so for the keyboard and mouse the font's
-cells for them show the keys instead (a variant-1 range of the disc patch; the gamepad's variant 2 keeps the PS2 symbols).
+cells for them show the menus' keys instead (a variant-1 range of the disc patch; the gamepad's variant 2 keeps the PS2
+symbols). A button can mean another key in play (✕ is Esc, back, in the menus but Left Shift, run, in play), so the English's
+{play:circle}... are four other cells (∈ ∋ ⊆ ⊇, which the games' text never uses) drawn as play's keys, or as the PS2's
+symbols for the gamepad.
 
-    bh_font.py GAME show OUT.png      the four glyphs of each font, as they are and with the keys (8x)
+    bh_font.py GAME show OUT.png      each font's button glyphs as they are, with the menus' keys, with play's keys (8x)
 
 The fonts (config/translate.toml's `fonts`, romdata.afs members): 7808 glyphs of 20x20 pixels, 2 bits each (4 levels, the
 first pixel in a byte's top bits), 100 bytes a glyph, in JIS X 0208 order (row - 1) * 94 + (cell - 1); evidence: glyph 84 is
@@ -20,6 +23,10 @@ import bh_sources as sources
 
 CELL, GLYPH = 20, 100
 SYMBOLS = {"circle": 0x217B, "cross": 0x215F, "triangle": 0x2224, "square": 0x2222}  # ○ × △ □ in JIS X 0208
+PLAY_SYMBOLS = {"circle": 0x223A, "cross": 0x223B, "triangle": 0x223C, "square": 0x223D}  # ∈ ∋ ⊆ ⊇
+# Keys whose name doesn't fit a cell, drawn as the symbol their key caps have: Shift's arrow (a polygon in the 4x cell: drawn
+# from a font its outline is too thin to survive the scaling down)
+SHIFT_ARROW = [(40, 20), (60, 42), (49, 42), (49, 60), (31, 60), (31, 42), (20, 42)]
 
 
 def index(jis):
@@ -43,6 +50,9 @@ def key_glyph(label):
     big = Image.new("L", (CELL * 4, CELL * 4), 0)
     d = ImageDraw.Draw(big)
     d.rounded_rectangle([2, 10, CELL * 4 - 3, CELL * 4 - 7], radius=12, outline=150, width=5)
+    if label == "Shift":
+        d.polygon(SHIFT_ARROW, fill=255)
+        return big.resize((CELL, CELL), Image.LANCZOS)
     rgba = pictures.draw_text(Image.new("RGBA", big.size, (0, 0, 0, 0)), (10, 18, CELL * 4 - 10, CELL * 4 - 14), label,
                               "arialnarrow" if len(label) > 1 else "arial", None, (255, 255, 255, 255), None, "center")
     big.paste(255, (0, 0), rgba.split()[3].point(lambda a: 255 if a > 100 else 0))
@@ -54,16 +64,19 @@ def fonts(arc, game):
 
 
 def patches(arc, game):
-    """[(disc offset, bytes, variant)]: each font's four button glyphs, the keyboard's keys (1) and the original (2)."""
+    """[(disc offset, bytes, variant)]: each font's button glyphs, the keyboard's keys (1) and the PS2's symbols (2): the four
+    symbols' own cells with the menus' keys, PLAY_SYMBOLS's with play's."""
     keys = pictures.key_names(game)
     out = []
     for name, node in fonts(arc, game):
         if node.size != 7808 * GLYPH:
             raise ValueError(f"{name}: {node.size} bytes, not a 7808-glyph font")
         for button, jis in SYMBOLS.items():
-            at = index(jis) * GLYPH
-            out.append((node.offset + at, encode(key_glyph(keys[("menus", button)])), 1))
-            out.append((node.offset + at, node.read(at, GLYPH), 2))
+            symbol = node.read(index(jis) * GLYPH, GLYPH)
+            for mode, cell in (("menus", jis), ("play", PLAY_SYMBOLS[button])):
+                at = node.offset + index(cell) * GLYPH
+                out.append((at, encode(key_glyph(keys[(mode, button)])), 1))
+                out.append((at, symbol, 2))
     return out
 
 
@@ -74,13 +87,13 @@ def main(argv):
     arc = archive.Archive(argv[1])
     keys = pictures.key_names(argv[1])
     found = fonts(arc, argv[1])
-    sheet = Image.new("L", (CELL * 8 * 8, CELL * 8 * len(found)), 40)
+    sheet = Image.new("L", (CELL * 8 * 12, CELL * 8 * len(found)), 40)
     for row, (name, node) in enumerate(found):
         for col, (button, jis) in enumerate(SYMBOLS.items()):
             original = decode(node.read(index(jis) * GLYPH, GLYPH))
-            keyed = decode(encode(key_glyph(keys[("menus", button)])))
-            for k, img in enumerate((original, keyed)):
-                sheet.paste(img.resize((CELL * 8, CELL * 8), Image.NEAREST), ((col * 2 + k) * CELL * 8, row * CELL * 8))
+            menus, play = (decode(encode(key_glyph(keys[(mode, button)]))) for mode in ("menus", "play"))
+            for k, img in enumerate((original, menus, play)):
+                sheet.paste(img.resize((CELL * 8, CELL * 8), Image.NEAREST), ((col * 3 + k) * CELL * 8, row * CELL * 8))
     sheet.save(argv[3])
     print(f"{len(found)} fonts -> {argv[3]}")
     return 0

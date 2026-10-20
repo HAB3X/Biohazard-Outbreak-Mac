@@ -53,7 +53,17 @@ your disc image (local.json) plus `translations/<game>/*.tsv` (unit id, TAB, my 
   translations/file1 has it; File 1's own overrides are mostly shorter lines for its smaller slots and device-neutral wording
   (translations/file1/devices.tsv: save data instead of the memory card, the font's button glyphs instead of button names).
 - NETWK.BIN: the in-place strings must fit their slots; the error page at 0xA1A80 starts after 3 bytes of a binary table
-  (the region begins there). Left Japanese on purpose: the software keyboard's rows, the romaji-to-kana table, the kana
+  (the region begins there).
+- Empty strings live in other strings' padding: the compiler keeps "" in a NUL after another string, and tables point at it
+  (File 1's NETWK.BIN: 70 message tables' blank line is 0x5F5348, in the padding after the string at 0xB5320). Packing the
+  English into that padding showed the tail of another line where the game wants a blank one ('id "Your' in the "no NET
+  file" dialog). ExePool now ends a slot at an empty string a pointer points at (found in both games' pools: File 1's
+  executable 2, DEMO.BIN 1, NETWK.BIN 3; File 2's executable 8, BIN/3.DAT 3); seen fixed in play (the dialog's blank line).
+- The string at 0xBB750 ("確認･変更する接続プロバイダー設定の", the check/change screen's first line) is read from its start:
+  its only reference is the pointer in the screen's line table at 0x5EBE14, and the line drawer (0x5CB7B0) passes the
+  table's pointer unchanged to the text printer (0x5CCC90, then the executable's 0x1B6180); nothing builds 0x5FB755 (no code
+  pair, no data word in the executable or any overlay). Its second line (0x5FB780) is shared by the check/change, delete and
+  test screens, so it now says only where to load from and the first lines name the action. Left Japanese on purpose: the software keyboard's rows, the romaji-to-kana table, the kana
   dakuten tables, digit tables.
 
 ## Pictures (both games; tools/bh_pictures.py, tools/bh_sld.py, tools/tm2.py)
@@ -65,7 +75,16 @@ picture is quantised back to its own palette (unchanged pixels keep their bytes)
 A picture with PS2 buttons gets two variants (disc patch version 2: variant 1 laid while the keyboard and mouse were used last,
 2 while a gamepad was): the gamepad's keeps the PS2 symbols, the keyboard's draws key caps with the keys of bindings.txt (or
 src/controls.cpp's defaults). The text fonts' four symbol glyphs (in-text ○ × △ □, and the English's {circle} {cross}
-{triangle} {square}) get the same two variants (tools/bh_font.py: E, Esc, Spc, F by default).
+{triangle} {square}) get the same two variants (tools/bh_font.py: E, Esc, Spc, F by default): those are the menus' keys.
+A button can mean another key in play: ✕ is Esc (back) in the menus but Left Shift (the game's Cancel/Dash) in play, □ is F
+in the menus but the left mouse button (Ad-lib) in play. So a line about play writes {play:cross} (and {play:circle}...):
+four other font cells, ∈ ∋ ⊆ ⊇ (no unit of either disc uses them), drawn with play's keys (E, a Shift arrow, Spc, LMB by
+default) or, for the gamepad, the PS2 symbols. Where ✕ appears (from both discs' units): in menus, File 1's DEMO.BIN hints
+("○: start ×: back") and NETWK.BIN's (cancel, end); in play texts, File 1's FILE documents (file001: "Lending a Shoulder",
+stop with ×; file028: × while ready) and the map and ad-lib ones (△, □, ○), which now use the play glyphs; File 2's
+documents name the game's actions instead (Action, Cancel, Ad-lib, Ready, Map: the controller settings' own labels), and
+its two lines that said "X" say Cancel. Checked in play (File 1, a test line on the scenario select): the play cells show
+the play keys (work/file1-glyph-test.png on the machine that made it).
 - Both: cockpit.tex (status screen button glyphs, the map's R1/L1, the item categories and map controls), Error.tm2 (network
   error), lobby_00/03/05 (lobby buttons and hints, keys), Softkey.tm2, BS_SKIN.TM2 (browser button icons, keys), netwk.tex
   (network menus' button icons, keys).

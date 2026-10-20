@@ -2,7 +2,8 @@
 
 Biohazard Outbreak (File 1, SLPM-65428) and Biohazard Outbreak File 2 (SLPM-65692), the Japanese discs, recompiled to native
 Mac code on the shared PS2 runtime (`../ps2-native-runtime`; this work is on its `biohazard` branch, in the worktree
-`~/Documents/woc-agents/biohazard/ps2-native-runtime`, not merged into its main yet).
+`~/Documents/woc-agents/biohazard/ps2-native-runtime`, merged into the runtime's main on 2026-10-20 (WoC and CTTR rebuilt and
+run on it); the rumble is on `biohazard-polish`, not merged yet).
 
 ## The plan (the owner's decisions)
 
@@ -63,6 +64,37 @@ the KDDI browser over HTTPS, all on the Mac's sockets. The Mac's keyboard types 
 game's USB keyboard, while the keyboard is up): checked with test text in the login form, nothing submitted. Logging in
 needs the player's own obsrv.org forum account; after login is untested. How to, what stands in for what, what's left:
 docs/network.md (the runtime's docs/network.md has the design).
+
+## Polish, 2026-10-20 (branch `polish`, runtime `biohazard-polish`)
+
+- Rumble: the DualShock 2 driver's actuator command (ds2's SendData) rumbles the first gamepad through SDL (big motor low
+  frequency, small motor high), off with the PC menus open. The game sends it (both games: a confirm on the title menu rumbles
+  big then small); `--log input` shows it. Not felt: no gamepad was connected here.
+- File 1's scenario and character selects step with the wheel and with clicks beside the card or on the arrows (the title
+  overlay's screen byte says which select is up). File 1's options list and collection still get no menu keys from the
+  keyboard (docs/controls.md says why).
+- The font's ✕ means Esc in the menus and Left Shift in play: texts about play use other font cells drawn with play's keys
+  ({play:cross}..., docs/translation.md).
+- The English patch kept a blank line blank: empty strings in a pool's padding are kept (File 1's "no NET file" dialog
+  showed 'id "Your'); the network settings' shared second line no longer says "check or change" on the delete and test
+  screens. The suspected clipped line at NETWK.BIN 0xBB750 is read from its start (docs/translation.md).
+- Made with tools/make_app.py and launched with `open -a` (headless for the pictures): both reach their English title menus
+  with the settings and memory cards of run.sh's folder. A windowed launch from a script stays paused at the warning screen
+  until the window has the focus (the PC options' pause_in_background, on in this machine's settings).
+- Found, not changed: the in-play roles in src/controls.cpp don't match the game's own (its controller settings, type A: ○
+  confirm/attack, ✕ cancel/dash, □ ad-lib, △ map screen, L1 reload, R1 search ready, R2 forward ready, L2 appeal shift, the
+  right stick appeal): the left mouse button (□) is ad-lib, not attack, and Space (△) the map, not the partner command.
+
+## The Mac apps
+
+`python3 tools/make_app.py both` makes "Biohazard Outbreak.app" and "Biohazard Outbreak File 2.app" on the Desktop (`--out DIR`
+elsewhere): each starts from Finder in English, with nothing else needed at run time (the program, SDL3, the English patch
+built from your disc at make time, the disc's path; signed ad hoc). They keep their settings, key bindings and saves where
+run.sh's runs do (~/Library/Application Support/PS2 Native Runtime/SLPM_654.28 and SLPM_656.92). **Make them again after a
+rebuild** (`ninja -C build`), a change to translations/, or a change of keys in the PC menus' Controls: the patch's key caps
+are drawn with the keys bound when the app is made (the patch isn't rebuilt at launch: that needs this folder's Python tools
+with Pillow and numpy, which a Finder launch doesn't have, and about a minute). Options can be passed for a test run:
+`open -a "Biohazard Outbreak" --args --run-seconds 60 --snapshots DIR --snapshot-at 50`.
 
 ## English patch (branch `translate`, runtime `biohazard-translate`)
 

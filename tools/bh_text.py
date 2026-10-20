@@ -63,15 +63,19 @@ def cells(raw):
 
 
 # The PS2 buttons the English may name as the font's own symbols (Shift-JIS ○ × △ □), which show the keyboard's keys when the
-# keyboard is used (bh_font.py): written {circle} {cross} {triangle} {square} in the translations
-BUTTON_GLYPHS = {"{circle}": b"\x81\x9b", "{cross}": b"\x81\x7e", "{triangle}": b"\x81\xa2", "{square}": b"\x81\xa0"}
+# keyboard is used (bh_font.py): written {circle} {cross} {triangle} {square} in the translations. Those are the menus' keys
+# (✕ is Esc, back); a line about play names the button as play has it, {play:cross} (✕ is Left Shift, run): four symbols the
+# games' text never uses (∈ ∋ ⊆ ⊇, checked over every unit of both discs) drawn as play's keys, or as the PS2's symbols
+BUTTON_GLYPHS = {"{circle}": b"\x81\x9b", "{cross}": b"\x81\x7e", "{triangle}": b"\x81\xa2", "{square}": b"\x81\xa0",
+                 "{play:circle}": b"\x81\xb8", "{play:cross}": b"\x81\xb9", "{play:triangle}": b"\x81\xba",
+                 "{play:square}": b"\x81\xbb"}
 
 
 def english_bytes(text, original):
     """The bytes of an English line: plain ASCII (and the button symbols of BUTTON_GLYPHS), with the control tags and the end
     marker of the Japanese it replaces. A Japanese line that ends in spaces (a field's width: the choices' place, a column)
     keeps its width: the English is padded to it."""
-    parts = re.split(r"(\{(?:circle|cross|triangle|square)\})", text.replace("\\n", "\n"))
+    parts = re.split(r"(\{(?:play:)?(?:circle|cross|triangle|square)\})", text.replace("\\n", "\n"))
     raw = b"".join(BUTTON_GLYPHS[p] if p in BUTTON_GLYPHS else p.encode("ascii") for p in parts)
     if tags(raw) != tags(original):
         raise ValueError(f"control tags {tags(raw)} differ from the original's {tags(original)}")
@@ -109,16 +113,25 @@ class ExePool:
         self.raw = [elf[s:elf.index(b"\0", s)] for s in self.starts]
         at = {s + base: i for i, s in enumerate(self.starts)}
         self.refs = [[] for _ in self.starts]  # (image name, offset of the u32) of every pointer to each string
+        # Empty strings: NULs of the region that pointers point at. The compiler keeps "" in another string's padding or
+        # end (File 1's NETWK.BIN: the blank line of 70 message tables is 0x5F5348, in the padding after the string at
+        # 0xB5320), so a slot ends there and the NUL stays: packed into, it showed the end of another line ('id "Your')
+        self.empties = set()
         for name, (data, first_byte, ranges) in images.items():
             for lo, hi in ranges:
                 for addr in range(lo, hi, 4):
-                    i = at.get(struct.unpack_from("<I", data, addr - first_byte)[0])
+                    value = struct.unpack_from("<I", data, addr - first_byte)[0]
+                    i = at.get(value)
                     if i is not None:
                         self.refs[i].append((name, addr - first_byte))
+                    elif region[0] <= value - base < region[1] and elf[value - base] == 0:
+                        self.empties.add(value - base)
 
     def slot_end(self, i):
-        """Where string i's slot ends: the next string's start (the NULs between are its padding)."""
-        return self.starts[i + 1] if i + 1 < len(self.starts) else self.region[1]
+        """Where string i's slot ends: the next string's start (the NULs between are its padding), or just after the first
+        empty string in its padding (that NUL is kept: a string written into the slot ends at it at the latest)."""
+        end = self.starts[i + 1] if i + 1 < len(self.starts) else self.region[1]
+        return min([e + 1 for e in self.empties if self.starts[i] < e < end] + [end])
 
     def translatable(self):
         return [i for i, raw in enumerate(self.raw) if has_japanese(raw) and (self.refs[i] or self.fixed(i))]

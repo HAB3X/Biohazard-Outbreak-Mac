@@ -88,7 +88,7 @@ fe28027168	If an AIPC keeps refusing your\norders, try giving them again after\n
 07a1b7746b	A file dropped by newspaper reporter\nBen Marked "Secret"
 087e3124d2	\nKitebros Railway (KBS)\n        Guide Pamphlet\n\n      April, 1989\n
 08a55a70f3	[About Herbs 1]\nUsing herbs restores your condition.\n  Green Herb (green)... restores\nhealth\n  Blue Herb (blue) ... cures poison\n  Red Herb (red)   ... boosts the\neffect\n
-09546a1832	You can also move while pulling a\npartner you're lending a shoulder\nto. Press X to release the hold.\n
+09546a1832	You can also move while pulling a\npartner you're lending a shoulder\nto. Press Cancel to let go.\n
 095b2d0eea	<c1>[Special Action 3:\n                  Elbow Tackle]<c0>\n(Press Action while holding Ready\nwith nothing equipped)\nAn enhanced tackle. With good timing\nit can even knock enemies down.\n
 0978726d18	To release it the biosensor must go\nOFF... that is, the test subject\nmust die. Of course, they'd never\nkill themselves.\n
 099961a509	Junk Parts:\n  The item command <c1>"Combine"<c0> repairs\n  broken items.\nVinyl Tape:\n  Combine items to create new\nweapons.\n
@@ -545,7 +545,7 @@ fe28027168	If an AIPC keeps refusing your\norders, try giving them again after\n
 9195a1d8b9	Forest 4
 929c9664e0	Notice: repairs done, general check\nA prospect of finishing repairs on\nthe park's power trouble has\nappeared. At 9:30 tomorrow morning,\nrepaired spots get a power check.\n
 92d5663afd	Guard Room
-9304fea141	Reloading continues until the\nmagazine is full or all your rounds\nare loaded. You can't move from the\nspot unless you cancel with X or the\nreload ends.\n
+9304fea141	Reloading continues until the\nmagazine is full or all your rounds\nare loaded. You can't move from the\nspot until it ends, unless you\npress Cancel.\n
 932f779574	Emergency Storage Space
 936197aed1	Rubber Sheet
 937d8aed71	Inside the Herb Case:\nSelect the herb case in the item\nlist, then show its contents and\noperate.\n
