@@ -43,8 +43,7 @@ struct Layout
     uint32_t titleState;    // a word saying where the title is: a movie, its "PRESS START", its menus
     uint32_t titleMenus;    // titleState's value on the title menu (File 2 3: 0 a movie, 2 PRESS START; File 1 1: 0 the logos
                             // and movies, 6 5 4 3 PRESS START; its other menus (character log, the options' screens) read 0 too)
-    uint32_t titleObjects;  // File 1: a count of the title's live objects, 3 on the title menu itself (2 the options list, 4 the
-                            // collection, which read titleMenus as well); 0 where titleState alone says it
+    bool titleZeroInMenus;  // File 1: titleState reads 0 in the title menu's own screens (brightness, the character log) too
     uint32_t statusTask;    // the status screen
     uint32_t titleCursor;   // the title menu's item (a word, 0 the first)
     uint32_t statusTab;     // the status screen's tab (a byte: 0 ITEM, 1 SPECIAL, 2 FILE)
@@ -67,6 +66,16 @@ struct Layout
     uint32_t netList;
     uint8_t netNextBackScreen;
     uint8_t netConfigScreen;
+    // The collection's grid: its task (File 2; 0 for File 1, told by its state), its state's address (File 2 0x8C0068, the title
+    // menus' state block; File 1 0x5A4420 in the title overlay's data) and the cursor's and the tab's bytes there
+    // (memory diffs of the grid's moves and tabs)
+    uint32_t collectionTask;
+    uint32_t collectionState;
+    uint32_t collectionCursor;
+    uint32_t collectionTab;
+    uint32_t collectionTopTask; // File 2: the collection's first screen (COLLECTION, DATA CONVERT); 0 none
+    uint32_t charLogCursor;     // the character log's cursor (a byte: 0 single play's data, 1 network play's)
+    uint32_t collectionFirst; // the first cell the view shows (File 2 0x28, File 1 0x10; dumps of the view scrolled 0, 1, 2 rows)
     // The network browser (the KDDI browser of Network Play, its overlay `browserOverlay` as the disc names it): the word
     // (File 2 0x24B360, File 1 0x23C094) holding the address of its pointer's state, the pointer's x and y (16 bits each, in the 640 x 448
     // picture) at 16 and 18 there (netwk's link-focus code at 0x567370 in File 2 sets them so)

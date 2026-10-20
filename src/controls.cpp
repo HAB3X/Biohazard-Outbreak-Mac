@@ -105,10 +105,16 @@ bool HasTask(uint32_t task)
 }
 
 // The title's menu: the executable's loop alone, with the title's state at its menu
+// The title menus' state: its first byte 1 on the title menu itself, 2 in one of its submenus (its second byte which: 1 the
+// options, 2 single play or the collection), its cursor at 12 (Layout::titleCursor). The same in both games (memory dumps of
+// the title menu, the options, the collection, single play's NEW GAME/CONTINUE, PRESS START)
+constexpr uint32_t TitleMenuState = 12;
+constexpr uint8_t TitleMenuItself = 1;
+
 bool TitleMenu()
 {
     return Word(g_layout.taskCount) == 1 && HasTask(g_layout.baseTask) && Word(g_layout.titleState) == g_layout.titleMenus &&
-           (g_layout.titleObjects == 0 || Word(g_layout.titleObjects) == 3);
+           *Ps2::EeMemory(g_layout.titleCursor - TitleMenuState) == TitleMenuItself;
 }
 
 // The executable's loop alone is the title (movies, PRESS START: START skips and starts) or a menu reached from the title
@@ -122,7 +128,7 @@ bool TitleMovie()
     {
         lastSet = state;
     }
-    bool menus = state == g_layout.titleMenus || (g_layout.titleObjects != 0 && state == 0 && lastSet == g_layout.titleMenus);
+    bool menus = state == g_layout.titleMenus || (g_layout.titleZeroInMenus && state == 0 && lastSet == g_layout.titleMenus);
     return !menus;
 }
 
@@ -190,6 +196,9 @@ enum class Goal
     PauseRow, // a row of SELECT's pause menu
     OptionsRow, // a row of the title's OPTIONS list
     DialogRow,  // a choice of Network Play's dialogs (Yes, No)
+    GridCell,   // a cell of the collection's grid (its index)
+    GridTab,    // a tab of the collection (GALLERY, COSTUME, MOVIE, SOUND, EXTRA)
+    SubRow,     // a row of a two-row title submenu (single play's, the character log, File 2's collection)
 };
 
 struct Steer
@@ -355,6 +364,80 @@ int NetCursorNow()
 }
 
 
+// The collection's grid: 8 cells a row, two rows shown, five tabs over it; the cursor (the cell's index on its tab), the tab
+// and the first cell shown are bytes of its state (Layout::collection*). Where it's drawn: the same in
+// both games (pictures of the screen)
+constexpr int GridColumns = 8;
+constexpr float GridLeft = 0.081f, GridStepX = 0.1125f, GridTop = 0.348f, GridStepY = 0.161f, GridHalfX = 0.045f,
+                GridHalfY = 0.055f;
+const Box GridTabs[5] = {{0.094f, 0.234f, 0.055f, 0.02f}, {0.211f, 0.234f, 0.047f, 0.02f}, {0.313f, 0.234f, 0.035f, 0.02f},
+                         {0.442f, 0.234f, 0.038f, 0.02f}, {0.558f, 0.234f, 0.032f, 0.02f}};
+
+// The collection's state, 0 when its grid isn't up
+uint32_t CollectionState()
+{
+    if (Word(g_layout.taskCount) == 0 || !HasTask(g_layout.baseTask))
+    {
+        return 0;
+    }
+    if (g_layout.collectionTask != 0)
+    {
+        return HasTask(g_layout.collectionTask) ? g_layout.collectionState : 0;
+    }
+    // File 1: its state at a fixed address of the title's overlay, its byte 1 2 while the grid is up (3 once it has been
+    // left), with the title menus' state in a submenu
+    if (g_layout.collectionState == 0 || *Ps2::EeMemory(g_layout.titleCursor - TitleMenuState) != 2 ||
+        *Ps2::EeMemory(g_layout.collectionState + 1) != 2)
+    {
+        return 0;
+    }
+    return g_layout.collectionState;
+}
+
+int GridCursor(uint32_t state) { return *Ps2::EeMemory(state + g_layout.collectionCursor); }
+
+// The first cell the view shows (a multiple of 8: the view scrolls by rows)
+int GridFirstRow(uint32_t state) { return *Ps2::EeMemory(state + g_layout.collectionFirst) / GridColumns; }
+
+// The title menu's two-row submenus, told by the title menus' state (its first byte 2 in a submenu, its second 1 for the
+// options and the character log (the title row it came from, at 12, saying which: 3 the character log), 2 for single play
+// and the collection, whose third byte is 2 for a two-row list): where their rows are drawn (fractions of the picture's
+// height, seen in pictures of each) and where their cursor is
+struct SubMenu
+{
+    float y[2];
+    float halfWidth;
+    uint32_t cursor;
+};
+
+bool TitleSubMenu(SubMenu& menu)
+{
+    // (the title's state word differs in them: File 2's single play reads 5, File 1's character log 0; the network screens'
+    // overlay doesn't use the title menus' state)
+    if (!HasTask(g_layout.baseTask) || HasTask(g_layout.gameTask) ||
+        (g_layout.netOverlay != nullptr && OverlayInMemory(g_layout.netOverlay)))
+    {
+        return false;
+    }
+    const uint8_t* state = Ps2::EeMemory(g_layout.titleCursor - TitleMenuState);
+    if (state[0] != 2)
+    {
+        return false;
+    }
+    if (state[1] == 1 && state[12] == 3)
+    {
+        menu = {{0.427f, 0.517f}, 0.25f, g_layout.charLogCursor};
+        return true;
+    }
+    if (state[1] == 2 && state[2] == 2)
+    {
+        bool collection = g_layout.collectionTopTask != 0 && HasTask(g_layout.collectionTopTask);
+        menu = collection ? SubMenu{{0.691f, 0.736f}, 0.14f, g_layout.titleCursor} : SubMenu{{0.646f, 0.692f}, 0.14f, g_layout.titleCursor};
+        return true;
+    }
+    return false;
+}
+
 bool OptionsListUp()
 {
     uint32_t state = OptionsState();
@@ -373,6 +456,13 @@ int CursorNow()
     case Goal::PauseRow: return CurrentMode() == Pause ? static_cast<int>(*Ps2::EeMemory(PauseCursor())) : -1;
     case Goal::OptionsRow: return OptionsListUp() ? static_cast<int>(*Ps2::EeMemory(OptionsState() + 4)) : -1;
     case Goal::DialogRow: return NetCursorNow();
+    case Goal::SubRow:
+    {
+        SubMenu menu;
+        return TitleSubMenu(menu) ? static_cast<int>(*Ps2::EeMemory(menu.cursor)) : -1;
+    }
+    case Goal::GridCell: return CollectionState() != 0 ? GridCursor(CollectionState()) : -1;
+    case Goal::GridTab: return CollectionState() != 0 ? *Ps2::EeMemory(CollectionState() + g_layout.collectionTab) : -1;
     default: return -1;
     }
 }
@@ -388,8 +478,16 @@ uint32_t NextButton(int now)
     case Goal::Action:
     case Goal::PauseRow:
     case Goal::OptionsRow:
-    case Goal::DialogRow: return to > now ? Down : Up;
-    case Goal::Tab: return to > now ? R1 : L1;
+    case Goal::DialogRow:
+    case Goal::SubRow: return to > now ? Down : Up;
+    case Goal::Tab:
+    case Goal::GridTab: return to > now ? R1 : L1;
+    case Goal::GridCell:
+        if (to / GridColumns != now / GridColumns)
+        {
+            return to > now ? Down : Up;
+        }
+        return to > now ? Right : Left;
     case Goal::Slot:
     {
         if (to == 4)
@@ -487,6 +585,42 @@ bool Under(float x, float y, bool click)
                 return true;
             }
         }
+    }
+    SubMenu sub;
+    if (TitleSubMenu(sub))
+    {
+        for (int n = 0; n < 2; n++)
+        {
+            if (Inside({0.5f, sub.y[n], sub.halfWidth, 0.022f}, x, y))
+            {
+                Aim(Goal::SubRow, n, click);
+                return true;
+            }
+        }
+        return false;
+    }
+    if (uint32_t state = CollectionState())
+    {
+        for (int n = 0; n < 5 && click; n++)
+        {
+            if (Inside(GridTabs[n], x, y))
+            {
+                Aim(Goal::GridTab, n, false);
+                return true;
+            }
+        }
+        for (int r = 0; r < 2; r++)
+        {
+            for (int c = 0; c < GridColumns; c++)
+            {
+                if (Inside({GridLeft + GridStepX * static_cast<float>(c), GridTop + GridStepY * static_cast<float>(r), GridHalfX, GridHalfY}, x, y))
+                {
+                    Aim(Goal::GridCell, (GridFirstRow(state) + r) * GridColumns + c, click);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     uint32_t netCursor = 0;
     NetRows rows = NetScreenRows(netCursor);
@@ -628,12 +762,27 @@ void Step()
     ps2_press_buttons(NextButton(now), 0.05);
 }
 
+// The browser pointer's state, 0 when the browser isn't up
+uint32_t BrowserPointer()
+{
+    if (g_layout.browserOverlay == nullptr || !OverlayInMemory(g_layout.browserOverlay))
+    {
+        return 0;
+    }
+    uint32_t state = Word(g_layout.browserPointer) & 0x1FFFFFF;
+    return state != 0 && state < 0x1FFFFE0 ? state : 0;
+}
+
 // The wheel turns the status screen's tabs, the selects' pages (they run sideways) and the other menus' lists
 void Wheel(int kind)
 {
     bool up = kind == PS2_MOUSE_WHEEL_UP;
     uint32_t button;
-    if (CurrentMode() == Pause)
+    if (BrowserPointer() != 0)
+    {
+        button = up ? L1 : R1; // the browser scrolls its page with L1 and R1
+    }
+    else if (CurrentMode() == Pause)
     {
         button = up ? Right : Left; // over a setting: its value (the cursor goes there as the pointer does)
     }
@@ -659,16 +808,6 @@ void Wheel(int kind)
 // --- the network browser: its own pointer, moved by the left stick on the console, follows the Mac's (a click is the
 // confirm, circle, where it points, as any click away from a menu's items)
 
-// The browser pointer's state, 0 when the browser isn't up
-uint32_t BrowserPointer()
-{
-    if (g_layout.browserOverlay == nullptr || !OverlayInMemory(g_layout.browserOverlay))
-    {
-        return 0;
-    }
-    uint32_t state = Word(g_layout.browserPointer) & 0x1FFFFFF;
-    return state != 0 && state < 0x1FFFFE0 ? state : 0;
-}
 
 // The pointer put where the Mac's is (x and y the picture's fractions; the browser keeps it within the page's own bounds)
 void PointBrowser(uint32_t state, float x, float y)
@@ -794,6 +933,13 @@ const Layout File2 = {.taskCount = 0x24ad3c,
                       .pauseRows = File2PauseRows,
                       .pauseRowCount = 10,
                       .optionsState = 0x24b08c,
+                      .collectionTask = 0x549da0,
+                      .collectionTopTask = 0x551330,
+                      .charLogCursor = 0x8c006c,
+                      .collectionState = 0x8c0068,
+                      .collectionCursor = 0x18,
+                      .collectionTab = 0x10,
+                      .collectionFirst = 0x28,
                       .optionsItems = 7,
                       .optionsTop = 0.295f,
                       .netOverlay = "BIN/3.DAT",
@@ -822,7 +968,7 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .screenState = 0x3065fc,
                       .titleState = 0x200d5c,
                       .titleMenus = 1,
-                      .titleObjects = 0x23ba68,
+                      .titleZeroInMenus = true,
                       .statusTask = 0x6b9450,
                       .titleCursor = 0x90d1cc,
                       .statusTab = 0x723f9e,
@@ -832,6 +978,11 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .pauseRows = File1PauseRows,
                       .pauseRowCount = 11,
                       .optionsState = 0x23be40,
+                      .collectionState = 0x5a4420,
+                      .charLogCursor = 0x90d3e8,
+                      .collectionCursor = 6,
+                      .collectionTab = 4,
+                      .collectionFirst = 0x10,
                       .optionsItems = 6,
                       .optionsTop = 0.339f,
                       .netOverlay = "PROG/NETWK.BIN",

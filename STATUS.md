@@ -93,9 +93,12 @@ docs/network.md (the runtime's docs/network.md has the design).
 - The status screen's slots: hover moves the cursor, one click opens that item's actions; the actions, the pause menu's rows
   (per game), OPTIONS' list, Network Play's dialogs, manners screen and connection list, and the browser's pointer follow the
   mouse (both games). File 1's options and collection get the menus' keys (its title state is 0x200D5C).
-- Left open: hover on the character log's rows and the collection's grid (the wheel and a click on the current row work),
-  hiding SCREEN ADJUST / EDIT NETWORK CONFIGURATION, the wheel scrolling a browser page (it moves between links), File 2's
-  scenario-select hint strip (the white patch over 'title' wasn't reproduced in the headless pictures).
+- Since: the title's submenus (single play, character log, File 2's collection list), the collection's grid and tabs, and
+  the browser's wheel scrolling take the mouse; File 1's title menu is told by the title menus' own state (the object count
+  used before was 4 after a submenu, and the pointer was ignored).
+- Left open: the status screen's SPECIAL and FILE lists' hover; File 2's scenario-select hint strip's white patch over
+  'title' (not reproduced in any run here, headless or windowed, with a copy of the owner's save: a picture of it is
+  needed); SCREEN ADJUST / EDIT NETWORK CONFIGURATION stay (docs/controls.md says why).
 
 ## The Mac apps
 
