@@ -762,12 +762,27 @@ void Step()
     ps2_press_buttons(NextButton(now), 0.05);
 }
 
+// The browser pointer's state, 0 when the browser isn't up
+uint32_t BrowserPointer()
+{
+    if (g_layout.browserOverlay == nullptr || !OverlayInMemory(g_layout.browserOverlay))
+    {
+        return 0;
+    }
+    uint32_t state = Word(g_layout.browserPointer) & 0x1FFFFFF;
+    return state != 0 && state < 0x1FFFFE0 ? state : 0;
+}
+
 // The wheel turns the status screen's tabs, the selects' pages (they run sideways) and the other menus' lists
 void Wheel(int kind)
 {
     bool up = kind == PS2_MOUSE_WHEEL_UP;
     uint32_t button;
-    if (CurrentMode() == Pause)
+    if (BrowserPointer() != 0)
+    {
+        button = up ? L1 : R1; // the browser scrolls its page with L1 and R1
+    }
+    else if (CurrentMode() == Pause)
     {
         button = up ? Right : Left; // over a setting: its value (the cursor goes there as the pointer does)
     }
@@ -793,16 +808,6 @@ void Wheel(int kind)
 // --- the network browser: its own pointer, moved by the left stick on the console, follows the Mac's (a click is the
 // confirm, circle, where it points, as any click away from a menu's items)
 
-// The browser pointer's state, 0 when the browser isn't up
-uint32_t BrowserPointer()
-{
-    if (g_layout.browserOverlay == nullptr || !OverlayInMemory(g_layout.browserOverlay))
-    {
-        return 0;
-    }
-    uint32_t state = Word(g_layout.browserPointer) & 0x1FFFFFF;
-    return state != 0 && state < 0x1FFFFE0 ? state : 0;
-}
 
 // The pointer put where the Mac's is (x and y the picture's fractions; the browser keeps it within the page's own bounds)
 void PointBrowser(uint32_t state, float x, float y)
