@@ -30,9 +30,8 @@ struct Layout
     uint32_t statusTab;     // the status screen's tab (a byte: 0 ITEM, 1 SPECIAL, 2 FILE)
     uint32_t statusCursor;  // the status screen's item cursor: a word, the address of the slot it's on (the equipped weapon's is elsewhere)
     uint32_t statusPopup;   // a byte that's nonzero while the item's actions (use, combine, give...) are up
-    uint32_t slotStride;
+    uint32_t slotStride;    // the item slots' size: the grid's four are one after the other from where the cursor is as the screen opens
     float titleTop, titleStep; // where the title menu's six items are drawn: the first's middle and the step, as fractions of the picture's height
-    uint32_t slotStrideUnused;    // the item slots' size: the grid's four are one after the other from where the cursor is as the screen opens
 };
 
 extern const Layout File1;

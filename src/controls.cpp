@@ -436,14 +436,42 @@ void Vblank()
 }
 }
 
-const Layout File2 = {0x24ad3c, 0x2aa890, 0x344cb0, 0, 0x1b3fa0, 0x554870, 0x553420, 0x24ac70, 0x6c8fa0,
-                      0x8bfe4c, 0x76a60e, 0x7671f4, 0x767210, 0x98, 0.645f, 0.0450f};
+const Layout File2 = {.taskCount = 0x24ad3c,
+                      .taskList = 0x2aa890,
+                      .gameTask = 0x344cb0,
+                      .cutsceneTask = 0,
+                      .baseTask = 0x1b3fa0,
+                      .selectTask = 0x554870,
+                      .scenarioTask = 0x553420,
+                      .titleState = 0x24ac70,
+                      .statusTask = 0x6c8fa0,
+                      .titleCursor = 0x8bfe4c,
+                      .statusTab = 0x76a60e,
+                      .statusCursor = 0x7671f4,
+                      .statusPopup = 0x767210,
+                      .slotStride = 0x98,
+                      .titleTop = 0.645f,
+                      .titleStep = 0.0450f};
 
 // File 1's (found by memory diffs: the title menu's cursor stepping 0-1-2-1, the status screen's tab 0-1-2-1-0, its item cursor
 // moving by the slots' stride with Right and Down, the item popup's byte 0x1C after it as in File 2: 1 while the actions are up).
 // Its selects aren't a task of the list (the list is empty there), so the wheel turns them as a list
-const Layout File1 = {0x23bb30, 0x29b0d0, 0x341b80, 0x341af0, 0x1b3400, 0, 0, 0x23ba68, 0x6b9450, 0x90d1cc, 0x723f9e, 0x720b84, 0x720ba0, 0x98,
-                      0.591f, 0.0536f};
+const Layout File1 = {.taskCount = 0x23bb30,
+                      .taskList = 0x29b0d0,
+                      .gameTask = 0x341b80,
+                      .cutsceneTask = 0x341af0,
+                      .baseTask = 0x1b3400,
+                      .selectTask = 0,
+                      .scenarioTask = 0,
+                      .titleState = 0x23ba68,
+                      .statusTask = 0x6b9450,
+                      .titleCursor = 0x90d1cc,
+                      .statusTab = 0x723f9e,
+                      .statusCursor = 0x720b84,
+                      .statusPopup = 0x720ba0,
+                      .slotStride = 0x98,
+                      .titleTop = 0.591f,
+                      .titleStep = 0.0536f};
 
 void Apply(Ps2GameInfo& game, const Layout& layout)
 {
