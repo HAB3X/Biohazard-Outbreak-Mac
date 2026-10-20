@@ -196,6 +196,8 @@ enum class Goal
     PauseRow, // a row of SELECT's pause menu
     OptionsRow, // a row of the title's OPTIONS list
     DialogRow,  // a choice of Network Play's dialogs (Yes, No)
+    GridCell,   // a cell of the collection's grid (its index)
+    GridTab,    // a tab of the collection (GALLERY, COSTUME, MOVIE, SOUND, EXTRA)
 };
 
 struct Steer
@@ -361,6 +363,41 @@ int NetCursorNow()
 }
 
 
+// The collection's grid: 8 cells a row, two rows shown, five tabs over it; the cursor (the cell's index on its tab), the tab
+// and the first cell shown are bytes of its state (Layout::collection*). Where it's drawn: the same in
+// both games (pictures of the screen)
+constexpr int GridColumns = 8;
+constexpr float GridLeft = 0.081f, GridStepX = 0.1125f, GridTop = 0.348f, GridStepY = 0.161f, GridHalfX = 0.045f,
+                GridHalfY = 0.055f;
+const Box GridTabs[5] = {{0.094f, 0.234f, 0.055f, 0.02f}, {0.211f, 0.234f, 0.047f, 0.02f}, {0.313f, 0.234f, 0.035f, 0.02f},
+                         {0.442f, 0.234f, 0.038f, 0.02f}, {0.558f, 0.234f, 0.032f, 0.02f}};
+
+// The collection's state, 0 when its grid isn't up
+uint32_t CollectionState()
+{
+    if (Word(g_layout.taskCount) == 0 || !HasTask(g_layout.baseTask))
+    {
+        return 0;
+    }
+    if (g_layout.collectionTask != 0)
+    {
+        return HasTask(g_layout.collectionTask) ? g_layout.collectionState : 0;
+    }
+    // File 1: its state at a fixed address of the title's overlay, its byte 1 2 while the grid is up (3 once it has been
+    // left), with the title menus' state in a submenu
+    if (g_layout.collectionState == 0 || *Ps2::EeMemory(g_layout.titleCursor - TitleMenuState) != 2 ||
+        *Ps2::EeMemory(g_layout.collectionState + 1) != 2)
+    {
+        return 0;
+    }
+    return g_layout.collectionState;
+}
+
+int GridCursor(uint32_t state) { return *Ps2::EeMemory(state + g_layout.collectionCursor); }
+
+// The first cell the view shows (a multiple of 8: the view scrolls by rows)
+int GridFirstRow(uint32_t state) { return *Ps2::EeMemory(state + g_layout.collectionFirst) / GridColumns; }
+
 bool OptionsListUp()
 {
     uint32_t state = OptionsState();
@@ -379,6 +416,8 @@ int CursorNow()
     case Goal::PauseRow: return CurrentMode() == Pause ? static_cast<int>(*Ps2::EeMemory(PauseCursor())) : -1;
     case Goal::OptionsRow: return OptionsListUp() ? static_cast<int>(*Ps2::EeMemory(OptionsState() + 4)) : -1;
     case Goal::DialogRow: return NetCursorNow();
+    case Goal::GridCell: return CollectionState() != 0 ? GridCursor(CollectionState()) : -1;
+    case Goal::GridTab: return CollectionState() != 0 ? *Ps2::EeMemory(CollectionState() + g_layout.collectionTab) : -1;
     default: return -1;
     }
 }
@@ -395,7 +434,14 @@ uint32_t NextButton(int now)
     case Goal::PauseRow:
     case Goal::OptionsRow:
     case Goal::DialogRow: return to > now ? Down : Up;
-    case Goal::Tab: return to > now ? R1 : L1;
+    case Goal::Tab:
+    case Goal::GridTab: return to > now ? R1 : L1;
+    case Goal::GridCell:
+        if (to / GridColumns != now / GridColumns)
+        {
+            return to > now ? Down : Up;
+        }
+        return to > now ? Right : Left;
     case Goal::Slot:
     {
         if (to == 4)
@@ -493,6 +539,29 @@ bool Under(float x, float y, bool click)
                 return true;
             }
         }
+    }
+    if (uint32_t state = CollectionState())
+    {
+        for (int n = 0; n < 5 && click; n++)
+        {
+            if (Inside(GridTabs[n], x, y))
+            {
+                Aim(Goal::GridTab, n, false);
+                return true;
+            }
+        }
+        for (int r = 0; r < 2; r++)
+        {
+            for (int c = 0; c < GridColumns; c++)
+            {
+                if (Inside({GridLeft + GridStepX * static_cast<float>(c), GridTop + GridStepY * static_cast<float>(r), GridHalfX, GridHalfY}, x, y))
+                {
+                    Aim(Goal::GridCell, (GridFirstRow(state) + r) * GridColumns + c, click);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     uint32_t netCursor = 0;
     NetRows rows = NetScreenRows(netCursor);
@@ -800,6 +869,11 @@ const Layout File2 = {.taskCount = 0x24ad3c,
                       .pauseRows = File2PauseRows,
                       .pauseRowCount = 10,
                       .optionsState = 0x24b08c,
+                      .collectionTask = 0x549da0,
+                      .collectionState = 0x8c0068,
+                      .collectionCursor = 0x18,
+                      .collectionTab = 0x10,
+                      .collectionFirst = 0x28,
                       .optionsItems = 7,
                       .optionsTop = 0.295f,
                       .netOverlay = "BIN/3.DAT",
@@ -838,6 +912,10 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .pauseRows = File1PauseRows,
                       .pauseRowCount = 11,
                       .optionsState = 0x23be40,
+                      .collectionState = 0x5a4420,
+                      .collectionCursor = 6,
+                      .collectionTab = 4,
+                      .collectionFirst = 0x10,
                       .optionsItems = 6,
                       .optionsTop = 0.339f,
                       .netOverlay = "PROG/NETWK.BIN",

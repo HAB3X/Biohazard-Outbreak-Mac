@@ -66,6 +66,14 @@ struct Layout
     uint32_t netList;
     uint8_t netNextBackScreen;
     uint8_t netConfigScreen;
+    // The collection's grid: its task (File 2; 0 for File 1, told by its state), its state's address (File 2 0x8C0068, the title
+    // menus' state block; File 1 0x5A4420 in the title overlay's data) and the cursor's and the tab's bytes there
+    // (memory diffs of the grid's moves and tabs)
+    uint32_t collectionTask;
+    uint32_t collectionState;
+    uint32_t collectionCursor;
+    uint32_t collectionTab;
+    uint32_t collectionFirst; // the first cell the view shows (File 2 0x28, File 1 0x10; dumps of the view scrolled 0, 1, 2 rows)
     // The network browser (the KDDI browser of Network Play, its overlay `browserOverlay` as the disc names it): the word
     // (File 2 0x24B360, File 1 0x23C094) holding the address of its pointer's state, the pointer's x and y (16 bits each, in the 640 x 448
     // picture) at 16 and 18 there (netwk's link-focus code at 0x567370 in File 2 sets them so)
