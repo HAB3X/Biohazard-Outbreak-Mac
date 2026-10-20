@@ -78,7 +78,10 @@ Fredoka/Luckiest Guy). File 1's .tex are LZ-compressed TIM2 streams (bh_sld), Fi
 picture is quantised back to its own palette (unchanged pixels keep their bytes) and recompressed, and must not grow.
 A picture with PS2 buttons gets two variants (disc patch version 2: variant 1 laid while the keyboard and mouse were used last,
 2 while a gamepad was): the gamepad's keeps the PS2 symbols, the keyboard's draws key caps with the keys of bindings.txt (or
-src/controls.cpp's defaults). The text fonts' four symbol glyphs (in-text ○ × △ □, and the English's {circle} {cross}
+src/controls.cpp's defaults). A cap is a solid key with its name in dark ink (⇧ and ↵ for Shift and Return), drawn 4x and
+scaled down, so it stays sharp at 16-30 pixels and under the games' tints; its box must cover exactly the button it replaces
+(measure the original's pixels in `bh_pictures.py GAME render`: a box off by a pixel or two leaves part of the old button
+showing and gets the cap cut at the sprite's edge). The text fonts' four symbol glyphs (in-text ○ × △ □, and the English's {circle} {cross}
 {triangle} {square}) get the same two variants (tools/bh_font.py: E, Esc, Spc, F by default): those are the menus' keys.
 A button can mean another key in play: ✕ is Esc (back) in the menus but Left Shift (the game's Cancel/Dash) in play, □ is F
 in the menus but the left mouse button (Ad-lib) in play. So a line about play writes {play:cross} (and {play:circle}...):
