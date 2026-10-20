@@ -62,3 +62,7 @@ state (its address at 0x3065FC; DEMO.BIN's dispatcher at 0x543050 switches on it
 9 on the character select, so the wheel and the side and arrow clicks step them as in File 2 (the cards and arrows are where
 File 2 has them). The word File 1's layout calls titleState (0x23BA68) is a count of the title's live objects (the code at
 0x19E140 counts a pool of 512), 3 on the title menu: it tells the title menu apart only because that count is 3 there.
+So File 1's options list (2 objects) and collection (4) are taken for the title and have no menu keys (only START): open, they
+need a gamepad. Not fixed yet: 0x200D5C looks like the title's own state (sampled from boot: 0 the logos, then 6, 5 PRESS
+START, 4, 3; 1 in the title menu, the options list and the collection) but reads 0 in the options' screens (brightness...)
+as in the logos, so the controls keyed on it alone let the keyboard into the brightness screen and not out of it.
