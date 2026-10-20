@@ -2,7 +2,7 @@
 """Functions a game calls only through pointers: the recompiler starts functions at calls, jumps and the config's extra
 starts, so a handler reached only through a table of function pointers is part of the function before it, and the run stops at
 the first call of one ("call to ...: not a function start"). A data word pointing at a prologue (addiu sp,sp,-N), or at code right after a JR RA and its delay slot, in the text
-is such a start. This finds them in the executable's data and the overlays' (a pointer may be in either, to either) and
+is such a start (never a zero word: padding before a function isn't its start). This finds them in the executable's data and the overlays' (a pointer may be in either, to either) and
 prints (or with --write puts into the config) the `extra` lists. Code after zero padding that follows a JR RA is taken as a start as well.
 
 usage: pointer_functions.py CONFIG ELF TABLE.c DISC [--write]
@@ -121,6 +121,7 @@ def main():
             # a word naming code after a JR RA is a start unless it's a case of a switch (a jump table's entry, which the
             # data holds too): a function's prologue always is
             if w % 4 == 0 and any(lo <= w < hi for lo, hi in (text[:1] if name == "f" else text)) and w not in have \
+                    and img.get(w, 0) != 0 \
                     and (prologue(img.get(w, 0)) or (img.get(w - 8) == 0x03E00008 and w not in cases.get(name, ()))):
                 found.setdefault(name, set()).add(w)
     # A prologue after zero padding is a start whether or not anything points at it

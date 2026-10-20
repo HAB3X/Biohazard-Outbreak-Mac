@@ -546,7 +546,7 @@ e05e51a7f8	<p1>Looks like the underground shutter can be opened
 6d034b98e7	<p1>Operate it?
 334d27ec7f	<p1>"Underground shutter released
 f221575303	<p1>It will close after a set time"
-2b0e94b673	<p1>There's a release switch for the underground shutter
+2b0e94b673	<p1>A release switch for the underground shutter
 8a5aa88b5f	<p1>It can't be operated now
 4f2e5e157b	<p1>A cabinet with a number lock
 a665fdd64e	<p1>There's a unicorn medal on the pedestal
@@ -853,9 +853,9 @@ b1adc7b47c	<p1>I'm taking a rest here...
 d4fd9cb26f	<p1>A switch blocked by a cover
 c662477f1f	<p1>...There's a small keyhole below
 a23fde96a1	<p1>Used the rusty key
-65a0f54b57	<p1>Something seems to be between the plant and the wall
+65a0f54b57	<p1>Something seems to be behind the plant
 43f866ebfd	<p1>It's too dark to tell
-37471c3206	<p1>...Something is caught between the plant and the wall
+37471c3206	<p1>...Something is caught behind the plant
 16bd39d694	<p1>Something seems to be in the door gap
 137a8ffce4	<p1>...Something is caught between the doors
 834316c8dd	<p1>Something seems to be in the gap of the roots
@@ -1144,3 +1144,181 @@ c490bc72ad	<p1>Damn...
 61e3fa2673	<p1>take this along
 c10ffa46f0	<p1>Still... what on earth
 1b13d0f411	<p1>happened to this place?
+be7cacea43	<p1>A note is stuck to the map
+9d3b4cfb5a	<p1>A notebook lies on the counter
+5447d7352e	<p1>Some papers are lying here
+98e6ce3df0	<p1>A diary lies on the equipment
+3c2ad68f6d	<p1>There's a note in the jacket pocket
+2b33158b5b	<p1>A floor plan of the zoo
+1d504060e1	<p1>A big table and chairs
+9531a7ba90	<p1>An Asian-style design
+860a1210ce	<p1>A vintage cash register counter
+f658c66ac4	<p1>A commercial sink
+3ceac8d56d	<p1>The water's been cut off
+de55f8d72c	<p1>Behind the counter, a door
+de890b2a2e	<p1>leads into the kitchen
+93abc8ead4	<p1>A restroom
+9fa901e57f	<p1>No need to go in there
+a1889fdc13	<p1>Only darkness outside the window
+a0efddc13c	<p1>A big commercial refrigerator
+e072cada24	<p1>A high wall
+a5a11e9718	<p1>No way to climb over it
+54b4afbd87	<p1>A well-kept hedge
+d83057fa98	<p1>A gate to the parking lot
+285c565f8d	<p1>It's shut tight...
+f449ebbd13	<p1>The high wall goes on
+14e8e6241f	<p1>Looks like a service gate, but
+3350acab23	<p1>it's completely shut
+e2ae1e3151	<p1>Looks like kitchen garbage
+ffff914257	<p1>The stench is awful
+61080f51bc	<p1>An ordinary trash can
+f19c7ac8d9	<p1>Probably nothing but trash inside
+a7c8b44f23	<p1>There's a bench, but
+c024fd7463	<p1>no time to rest
+a2e4374e0b	<p1>A wrecked car blocks the road
+adfbb3258f	<p1>Looks like I can't go further
+86cc6ed1fd	<p1>Can't see inside the shop...
+b61c9d3dc9	<p1>A newspaper is propped up here
+daf706072b	<p1>It looks very old
+a773417afc	<p1>A fallen sign blocks the way
+73ef76b5b1	<p1>A trailer, wrecked it seems,
+ea69da31b6	<p1>is blocking the road...
+467622669a	<p1>"Admissions Office"
+bd23b90e1f	<p1>Around the entrance gate,
+ce53495d60	<p1>torn ticket stubs are scattered
+9e7565d2b6	<p1>What's past the hedge
+8c459df072	<p1>is hidden by thick leaves
+4c9cd70c35	<p1>A map of the whole zoo
+936f8a2100	<p1>It's too grimy to read well
+1fd5a2d174	<p1>The monkey cage, it seems, but
+ed84184fae	<p1>there's no sign of them anywhere
+d65bff4cfd	<p1>A cage for small carnivores
+7b771f95cd	<p1>It's dead quiet now
+66cdcedfda	<p1>A grimy cage
+e453515ce2	<p1>Grazing animals roam free
+06f5d35559	<p1>in this area, it seems
+83a7547311	<p1>Zoo buildings beyond the fence
+32fe3f060f	<p1>A stream running through the zoo
+95984b3002	<p1>Its bed is dark and stagnant
+a4dfcb1617	<p1>"Welcome to the Elephant Stage!"
+8403c53ec8	<p1>"Zoo Office"
+9c7a9aaf9c	<p1>The zoo at night... this silence
+e1548275d6	<p1>only makes it creepier
+012d0704a6	<p1>The sturdy iron cage
+4a53b48903	<p1>has been broken open by something...
+145d7d44a0	<p1>A leather sofa
+046896a409	<p1>Toys for lost children
+25c079b599	<p1>...No time for play
+4dfa9e0cd2	<p1>A painting of an elephant
+a04b8bb43f	<p1>"My Friend Oscar"
+dda062740c	<p1>A copy machine
+dbea568e62	<p1>It says "Out of toner"
+556cb8c6a7	<p1>Seats for watching the shows
+01eda644fa	<p1>Empty now
+7b836111fb	<p1>The office desk is tidy;
+a4ece3ca24	<p1>it's hardly been used
+f0380392a9	<p1>Tropical plants grow thick here
+a0fb6b369c	<p1>The desk area is a mess
+d70ddab854	<p1>Nothing but useless junk
+c214dfd87c	<p1>A mascot costume, cast off
+1023685b33	<p1>...There's a peculiar smell
+63d3300ead	<p1>A staff work uniform
+c5bc115080	<p1>Nothing worth taking
+7d23831c83	<p1>Nothing odd about the sink
+9babbc9a92	<p1>A guide board
+d7fbfcf9ba	<p1>It describes the plants' ecology
+dfd0473f83	<p1>It seems well looked after
+cf4147c4b9	<p1>"Jungle Trail ^"
+e690b68525	<p1>"Exhibit Trail v"
+774b59d6dd	<p1>Nothing on the desk
+49761c8ee2	<p1>Lurid-colored flowers bloom here
+ff56e2b38b	<p1>The smell is choking...
+3a80ca85e7	<p1>"Welcome to the Jungle Dome!
+41cdabd098	<p1>Discover the jungle's wonders!"
+aec6478182	<p1>"The Life of the Alligator"
+649c5edb9c	<p1>An information board
+8f0aadf47e	<p1>A rotting totem pole
+2b8ef111c0	<p1>The bridge has been smashed...
+d4e3101f1f	<p1>Did the animals do this too?
+525ff0ff38	<p1>The writing on the signboard
+d2a187d88d	<p1>is too smudged to read
+b92d003db5	<p1>Looks like a generator, but
+f5a3c6e5bc	<p1>it's completely broken
+7b42fe472c	<p1>Good view from atop the tower
+37b7b7e3a5	<p1>I can probably see the whole zoo
+b970e48c77	<p1>A dead tiger...
+6c78adc9ec	<p1>Torn apart by sharp claws
+59ad7df3dc	<p1>There's a calendar, but
+fbe1f0431f	<p1>look closer: it's last year's
+67db972d9c	<p1>Half-eaten soup
+bfbd1f44a0	<p1>It's gone completely cold
+b2563490f9	<p1>All kinds of machines are
+298e9d58b6	<p1>crammed in here
+fa196ac4c6	<p1>The plants are carefully trimmed
+e92c45e363	<p1>A tractor lies on its side
+850378d292	<p1>Looks like I can't go on
+5ba5eab881	<p1>The channel goes on, but
+cf75640f78	<p1>I can't get over the fence
+f471a6651c	<p1>A statue of the zoo's mascot
+591598d7d0	<p1>"Forever with Mr. Raccoon"
+8a229133dd	<p1>Before boarding the tram,
+c8a2d9f3e7	<p1>I have to make sure it's safe...
+059b65e126	<p1>Scrap is in the way;
+c3add08590	<p1>I can't get through
+54166481b2	<p1>The forklift is broken
+26408bdec5	<p1>The iron cage has been broken
+6791053087	<p1>What could have done this...
+a7c7843b7b	<p1>Sound equipment, it seems,
+e9b351e1c9	<p1>for staging the shows
+f6e591981c	<p1>All kinds of gear here, but
+fa6e6b911b	<p1>nothing I need for now
+dea2406fd1	<p1>Show props and animal feed
+7b3fef2924	<p1>Nothing here worth taking
+69127b5904	<p1>Seats for children
+a31c36a5a0	<p1>A stage set for the shows
+8878a11a36	<p1>It's seen a lot of use
+bdd6fcc5fb	<p1>The night sky shines on the water
+0696f4fb3e	<p1>The shutter is down
+1ce2ec9cd2	<p1>Can't get through like this
+59f78584b0	<p1>Nobody at the open-air cafe
+2ab0202116	<p1>Too dark to see inside
+82e2b8d63d	<p1>In front of the gift shop,
+d9918c0e31	<p1>stuffed animals are lined up
+1b638a318e	<p1>The grassland area lies ahead
+bc75a0af8d	<p1>The gate's shut; can't go on
+c49285c655	<p1>The zoo's signboard, it seems
+6fd2ebcd3d	<p1>A fence surrounds the zoo
+d502c6164a	<p1>Very tall and sturdy
+16417c2ee0	<p1>The door is locked
+e0134d9692	<p1>The knob has <c2>an elephant<c7> on it
+6e90c594b6	<p1>The knob has <c2>an alligator<c7> on it
+7af67ff1d3	<p1>The knob has <c2>a lion<c7> on it
+006535e395	<p1>A chain is wrapped around the knob...
+f6313954d2	<p1>It won't open like this
+3b65cd45d0	<p1>Cut the chain...
+58dcc7664e	<p1>The door is shut tight...
+556a61b522	<p1>The office is locked...
+4ed0322cfe	<p1>It needs its own key
+2742512000	<p1>"Playing Manual: Controls"
+bd0c26ffd2	<p1>A recipe note is stuck here
+27e3b4796d	<p1>Something like a recipe
+ca6d2c75d5	<p1>is stuck here
+3c19c7768a	<p1>"Playing Manual: Knowledge"
+50f3aec176	<p1>A flyer is lying here
+af10a5a2c1	<p1>A flyer I already checked
+09cc2922e1	<p1>"Guide to Single Play"
+b377082437	<p1>A scrap of paper is stuck to the wall
+08d53f1bd9	<p1>A note fell behind the desk
+4ef5fb63c4	<p1>A newspaper I already read
+4727322d28	<p1>A broken desk
+b9b17fb9df	<p1>Nothing I need
+63d94f77f7	<p1>Some papers are lying here
+543dbb6e4e	<p1>A flyer lies between the seats
+3183fd18a9	<p1>A newspaper is lying here
+ab2d464d30	<p1>Old newspapers litter the ground
+1674cdcf9c	<p1>A bloodstained jacket
+3ce12ef2c4	<p1>Was he attacked by an animal...?
+a1735d587f	<p1>A scrap of paper I already checked
+39c919ec5f	<p1>Dead...
+395f6a7a52	<p1>No time for this...
+b9dba90631	<p1>...I have to get out of here fast...
