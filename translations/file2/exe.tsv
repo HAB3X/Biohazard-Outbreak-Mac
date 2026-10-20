@@ -1,7 +1,7 @@
 c4ea855bf1	-
 5512e504a2	-
 ac6e50716e	-
-0c23b61cc3	-
+0c23b61cc3	NET File
 448c248f59	-
 5b1561cb9e	<p1>This...
 04bf69d127	<p1>...Something is holding it down
@@ -130,35 +130,35 @@ c1dac39c9a	  Defeat the bosses that attack one after another!\n
 cfca2df832	-
 c1b0a21423	-
 5f6cd3e4ab	-
-4d399fc67d	Save slot 1
+4d399fc67d	Save data
 bc4ae29ae5	-
-7221dbe22b	Which save slot will you use?
-33d3608de8	Save slot %s:
-fd74d67239	From the save file:
+7221dbe22b	Which save data will you use?
+33d3608de8	{drop}
+fd74d67239	{drop}
 8d67b0b10b	Loading main data...%t
 4403e6d07b	An error occurred.
 da9473bc27	It could not be loaded correctly.%r
-672bd899c1	Save slot %s:
-0edb9abc15	Save file
-753ccc4a44	is missing.%r
-86839ccb4e	Save file
-6cd2a4437c	is not formatted.%r
-c339ab7317	Save file
-fadf602d46	has no main data.%r
-a3eb792332	Save file
-3bd02f7cfb	is being accessed...%t
-fdef08a275	Save file
-ee5320c372	could not be accessed.%r
+672bd899c1	{drop}
+0edb9abc15	{drop}
+753ccc4a44	The save data is missing.%r
+86839ccb4e	{drop}
+6cd2a4437c	The save data is not formatted.%r
+c339ab7317	{drop}
+fadf602d46	There is no main data.%r
+a3eb792332	{drop}
+3bd02f7cfb	Accessing the save data...%t
+fdef08a275	{drop}
+ee5320c372	The save data could not be accessed.%r
 55d9f15737	There is no main data.
 046bfb454a	Create it now?
 341711fb2b	Creating new main data...%t
 520d35942e	The main data is corrupted.
 6860d1e665	It could not be created.%r
-e6a26b56b2	It is not formatted.
+e6a26b56b2	The save data is not formatted.
 c89b1ce1f4	Format it?
-6adbe4ab11	Save file
-84de6ea6c2	Formatting...%t
-96600fecbb	It could not be formatted.%r
+6adbe4ab11	{drop}
+84de6ea6c2	Formatting the save data...%t
+96600fecbb	The save data could not be formatted.%r
 19c51b8a54	Which file will you load?
 a60ce1fedd	Which file will you save to?
 b344688bed	Main data already exists.
@@ -172,10 +172,10 @@ d7d34255a2	To save this game's main data,
 82931f128d	-
 299e8aeaf8	  Continue the game with the following data?
 495ba5c189	-
-de6e83ea0c	Save slot %s
+de6e83ea0c	{drop}
 ab09364f4e	Testing the save data...
 279d825605	Main data loaded.
-e6e311ab70	No save data in slot %s.
+e6e311ab70	The save data could not be found.{without %s}
 6e383f1550	%a KB or more of free space is needed.
 8892bb7766	Start the game like this?
 2f7a1e838f	\nPress Confirm.
@@ -187,10 +187,10 @@ f55aaa4e3e	Save complete.
 d1316ca0cb	is being loaded...%t
 9f2c7d7a7c	Loading failed.
 f6fe842748	No main data of the previous game "OUTBREAK".
-aa543c3ef4	Slot %s: save data with the main
-8c1a24b5d4	data of the previous game OUTBREAK
-022003a2ce	is needed.%r
-d9899e97ef	is missing.
+aa543c3ef4	The main data of the previous game{without %s}
+8c1a24b5d4	"OUTBREAK" is needed in the save data.
+022003a2ce	%r
+d9899e97ef	The save data is missing.
 dfc8751c6d	The main data of the previous game "OUTBREAK"
 7e39a80399	is corrupted.
 b8898c7d01	Saving...%t
@@ -203,11 +203,11 @@ c50a3941e5	Stop connecting to the network.
 f8e3f70d9c	Main data was not found.
 76a3613310	Because the game version was updated,
 aea93b4b1f	online play is impossible without main data.
-9197a46999	was removed and reinserted.%r
+9197a46999	The save data was changed.%r
 1b5e2d8a62	Without saving the main data,
 34fe590d16	are you sure you want to quit the game?
 e8218d1370	-
-471a75dd1f	Access failed.
+471a75dd1f	The save data could not be accessed.
 1c89c30d1c	Are you sure you want to quit?
 f02b11377c	-
 7f6025b621	Without loading the main data,
@@ -227,7 +227,7 @@ ceda706add	Character     :
 37cfe4d876	FILE 2's COLLECTION mode data
 e080732ca7	to the previous "OUTBREAK" data
 9e5d623bcd	was carried over.%r
-6ece9a4603	The card was removed or inserted.
+6ece9a4603	The save data was changed.
 f41329728f	Data carry-over cancelled.%r
 cad5bf7200	Record (save) your progress so far?
 4a74066ce6	* Saving will overwrite your scenario

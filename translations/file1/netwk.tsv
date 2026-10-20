@@ -135,13 +135,9 @@ d2db4b6d05	but there is no response,
 bd9caeff37	Please wait a while
 1e31742f40	Check that the modem settings
 14de86d294	are correct
-264f9eee64	Choose the save slot to use
-61c8199f23	for saving game data
 f2dfd54c9c	Your online records can be seen
 00413d695a	on the status screen
 4b94bea662	{cross} = Cancel
-ad47b48529	Save slot 1
-c9a241268b	Save slot 2
 306bf40117	Looking for an opponent
 2aaca46b1b	Please wait
 09b44f0d3b	Download complete
@@ -172,9 +168,8 @@ f96889983f	server, the fee is 10 yen per 3 minutes
 7a8bbc9432	the fee is 13 yen per minute
 f46d1ee246	Connect to the Multi Matching
 f426a99b0a	server?
-aa480ce921	Save slot  :
-e3ec2fe28e	The save data 
-dfc07c07db	is being checked...
+aa480ce921	{drop}
+e3ec2fe28e	{drop}
 4ce09284de	Do not turn off the system 
 acf9133848	or quit the game
 8bfcf2b1d0	Could not load correctly
@@ -194,8 +189,8 @@ f163830f71	: register this ID?
 2b50b0e1be	Returning to the game
 7bca6ea30e	Disconnect from the line?
 a4b3f696c0	Autosaving the system file
-e8ddd0bf05	In the save data, 
-2664db7ba3	the NET file
+e8ddd0bf05	{drop}
+2664db7ba3	The NET file:
 4db3efc6c5	could not be saved correctly
 4fccbb6f84	Press {circle}
 e7444e830a	Talking to the Capcom server
@@ -222,10 +217,9 @@ ef28a9c450	under maintenance
 6297b9e8cf	the line was disconnected
 d5e0223dd4	A communication fault occurred
 e6358d89a4	Ending the match, back to the lobby
-494a962d6f	Save slot  :
-337847e973	The save data 
+494a962d6f	{drop}
+337847e973	{drop}
 49dd812ed0	is not available
-ac1476dedc	Insert the save data
 1c32deaf77	with the NET file
 efd0f014d4	{circle} = Don't save
 0e162cdf14	with 123KB or more free
@@ -254,9 +248,6 @@ c27be264f6	Load the NET file?
 3777aa2bca	never quit the game or 
 490c2598d7	turn off the system
 c0e9c9c30d	Leave the network?
-a01cc01305	In port A-1,
-7e649b768a	with 9 or more free blocks
-83e35d596d	insert the save data 
 f742767b11	was found
 71d610c92d	Online play is available
 d2e2caabc0	From now on, do not connect
@@ -265,7 +256,7 @@ dbae009719	or disconnect the modem
 9ee54d129e	Your ID, your contacts' IDs
 565c02219a	and all registered information 
 caad3492b0	will be erased. All right?
-22541fd394	Insert the original save data 
+22541fd394	Use the original save data 
 32f73e3f2b	It will not be saved correctly,
 92982d9e23	so you can't go on
 94363d1cae	The original save data is missing, 
@@ -277,10 +268,6 @@ f5aef8ad69	Not registered
 6da9739a6d	and try again
 90448b9b8a	No response from the modem
 5ec4fc301a	Loading data
-90d654f413	Put the save data in the extra socket 
-0f2cfc37b5	please
-ad21625301	                      A-1
-1ec6645331	                      A-1 or 2
 68fc8df2c7	NET file      =
 e69179cc90	System file   =
 a940f2d077	When you're ready,
@@ -293,9 +280,6 @@ ea9436e039	The server may be busy
 9a4164bd3d	Check the modem settings
 be772de6e6	and dial again
 437be09795	There is no system file
-50dd211cf6	A-1 or 2
-2bf420d74d	          insert the save data
-40a45ec51b	with the system file 
 333773d29b	The modem settings are wrong, or
 4d3976448f	the line is very busy, so
 e6350e3ee2	the call can't be made
@@ -327,7 +311,7 @@ b5f64c679f	: refuse their messages from now on?
 bde6a06c67	Searching
 9862fb13b8	 is
 928bf1da3f	 here
-29cc73223c	The save data 
+29cc73223c	{drop}
 1f271c4c0c	is not formatted
 989718413e	Format it?
 24c1ac666c	Formatting...
@@ -340,7 +324,7 @@ fa33f8a247	Game data saved
 fa608dc503	The NET file
 62d3b6cebf	was not found
 8fab40b127	If you don't create the file,
-11cac224c0	The save data 
+11cac224c0	{drop}
 7dc8a92019	has no game data
 2dd16ded14	Create a new one?
 742d790adb	Game data
@@ -674,19 +658,19 @@ efa06b75fe	please save under OPTIONS on the menu.
 d23f04e5db	or quit the game.
 a520d0073e	The NET file was found.
 63d71ad318	Load it?
-96f8f4950c	Save slot %1:
-4c456442ae	no save data is available.
+96f8f4950c	{drop}
+4c456442ae	No save data is available.
 6b80a74f97	Go back to the menu screen?
 8e28d98a2d	The NET file was not found.
 79510d2fcc	Without the file, other players'
 e8b60b4f7b	info etc. can't be saved. Create a new one?
 fdd036c112	The save data was removed.
-d43067406c	From now on, while online, it will be
+d43067406c	From now on, while online, the NET file
 31dc28e1cd	Do not quit the game.
 6d734b3f33	The NET file has been saved.
-adadecdb11	Please insert it.
+adadecdb11	in the save data.
 4d7765c8a6	There is no NET file.
-b6a5fc6bfc	Please connect.
+b6a5fc6bfc	in the save data.
 c2dbf75bbd	Connecting by broadband.
 bf58d18dab	Broadband connection is unavailable.
 539d40b50d	To connect by broadband,
@@ -765,8 +749,6 @@ d8eff84a74	Outside line number
 173eb097c5	Initializing the device.
 b1a4f0ce8b	Hold START for over a second
 8f9d41e4e7	to cancel.
-2b478f3575	Connect a USB keyboard
-75b200f451	to a USB port.
 dbf8106efc	You will play and talk with strangers.
 3900378144	Mind your manners and etiquette.
 d981b2422a	Many people can see the chat.
@@ -793,35 +775,29 @@ f9916d1679	Device information error.
 005e597064	Communication error.
 85ee928564	Unique ID error.
 ce56e1c48b	"DNAS" authentication cancelled.
-2af07e1453	In the save data,
-e03721ac9c	system data of game version      
+2af07e1453	{drop}
+e03721ac9c	System data of game version      
 0c3bb35763	was found.
 69123cb498	The game version has been updated
 7da2b1d022	to      .
 e6809b3578	To play online, save the main data of game version      
 7577062fdb	in the save data.
 18601b52d2	Please save it.
-d02fdb00fb	Save to save slot %s? 
+d02fdb00fb	Save it now?{without %s} 
 86261a0f0c	Checking the save data.
 8c019b62d7	go back to the menu screen?
-3db0c9e7ea	was removed.
 44bbeff980	Saving the main data...
 3ec6fde215	The main data has been saved.
 a88c46a5d9	The main data
 e17dab71e9	Press {circle}.
 2c38b5596d	Loading from the save data...
 1dbf5cbb91	Loaded from the save data.
-b27e17614e	Choose the save slot to use
-c0ac9134ea	for saving the NET file.
-a37e217e69	In the save data,
-8db0104498	create a new NET file?
+a37e217e69	{drop}
 c519a8a4e3	Stop creating the NET file?
-5f87d63f8c	The save data in save slot %s
-3b69334906	does not have enough free space.
+5f87d63f8c	{drop}
 2b584a7f26	To create a new NET file,
 d32d748b6e	%yKB or more must be free. 
-6287cda276	The save data
-e45dcc0329	already has a NET file.
+6287cda276	{drop}
 09bf0f4ef0	Overwrite it?
 21ac41eea4	The NET file could not be saved correctly.
 b8995ffc7f	The save data is not formatted.
@@ -833,42 +809,38 @@ f4908dcf4e	Formatting the save data...
 e660d1124f	Choose where to save.
 35544b80a1	Return to the network menu without saving.
 5a61e92d8a	Return to the network menu without saving?
-28dea2699c	The save data
-9e751a9b64	could not be formatted correctly.
-4e1f9f3c94	The save data in save slot %s 
-3c3ce317d0	has no system data.
-14757b7b99	In the save data in save slot %s, 
-25478da3cd	create a new one?
+28dea2699c	{drop}
+9e751a9b64	The save data could not be formatted.
+4e1f9f3c94	{drop}
+3c3ce317d0	There is no system data.
+14757b7b99	{drop}
 315d241ac2	To save the system data,
 2a8431e978	Stop saving the system data?
 d799b2969e	The system data could not be saved correctly.
 f04f11967b	Save the current state (and pilot name)?
-0be6b9005b	The save data in save slot %s
-31a5853343	could not be accessed.
+0be6b9005b	{drop}
 de3ef2e203	No pilot name has been entered.
 dff5274551	Be sure to enter a pilot name
 5bf47a82c8	for online matches.
 e47aaadfc7	"     " and "DNAS" are
 c2feaf92d9	trademarks of Sony Computer Entertainment Inc.
-74dba876ae	Save slot %1:
+74dba876ae	{drop}
 44e7f7819f	Autoloading the main data...
 2ced018617	The main data has been autoloaded.
 ba34f890fb	Until the game version update ends,
-4359ca42a9	The main data in save slot %s
-acf3f13486	no save data is available.
-e8a91d390f	Choose the save slot to use
-6f7ca60a28	was replaced.
+4359ca42a9	The main data{without %s}
+acf3f13486	No save data is available.
 930c61dcdd	The save data has been formatted.
 459b6e205e	Enter the outside line number
 1b743c9ae9	Return to the menu without saving.
 639d7448f8	Stop saving the NET file?
 4e2f5966b1	Stop loading the NET file?
 49de59464b	Load from the save data?
-a391264584	The save data
-91d5334f33	The save data's
-ec357ca448	saved data is corrupted.
-8d740b7b01	The save data in save slot %s
-7e4639ae74	already has system data.
+a391264584	{drop}
+91d5334f33	{drop}
+ec357ca448	The save data is corrupted.
+8d740b7b01	{drop}
+7e4639ae74	System data already exists.
 041f88b6bb	Same as last time
 d7b7d72e3d	Change pilot name
 f1a1ddb44d	Network connection
@@ -881,8 +853,6 @@ aabe16efa5	Erase
 e7dced4e03	Don't erase
 e80b7e0727	Re-enter
 ea1117915e	Read the Online Game Terms
-747ca21482	Save slot 1
-74ae9e26a9	Save slot 2
 208f51b103	turn the system off once 
 527f63a46d	the provider settings'
 a119cdc6b1	PPPoE user ID 
@@ -1552,17 +1522,17 @@ bfd0fd8f6f	There is no device for broadband,
 ba72f89304	or there are no provider settings.
 0e8e36f454	Check the device and the
 b23fd09350	provider settings.
-4158d1578c	Please insert the save data.
+4158d1578c	Please check the save data.
 6d7933a1db	The save data in use was removed.
 2cdb685552	Returning to the network settings menu.
 90e2c1dcc4	Not enough free space to save. Saving
 c8bf34b8f0	needs 94KB or more free space.
-2e79ed71b6	Delete some saved data in save slot %d
+2e79ed71b6	Delete some other save data{without %d}
 6b1326d9a4	and then
 9236780f10	try again.
-f5b8115a99	The save data in save slot %d
+f5b8115a99	{drop}
 63b0f65a22	Format it?
-fa274fa419	Do not remove the save data in slot %d.
+fa274fa419	Do not turn off the power.{without %d}
 4b93a28090	Do not quit the game.
 9c197cde37	The save data has been
 ac35c56c21	formatted.
@@ -1592,18 +1562,18 @@ af3ceafba6	End now?
 9f4947ac41	do not quit the game while ending.
 ecc1e08765	A provider with the same name already exists.
 36d81a19dc	Please change the settings name.
-ba7669f0b6	The save data in save slot %d:
-8db3bbbf70	the "Your Network Configuration File" in it
+ba7669f0b6	In the save data,{without %d}
+8db3bbbf70	the "Your Network Configuration File"
 2f5cc00a24	could not be read.
-9c2053f504	was made on another "PlayStation 2" system,
+9c2053f504	was made on another system,
 953a3f2a40	so it cannot be used.
 45ae20c151	AOL settings can't be edited or deleted.
 b37f9a1686	needs 122KB or more free space.
-d5ea5930ec	Save slot %d:
+d5ea5930ec	{drop}
 20732dc374	Saving to the save data...
 93d3b7d3be	Deleting settings from the save data...
-64347e98c6	Save slot %d:
-dd46d542ba	no save data is available.
+64347e98c6	{drop}
+dd46d542ba	No save data is available.
 0e92ba8151	Starting the connection test.
 2a97d8114e	Press {circle}.
 0daef6f5ec	Start connection test
@@ -1644,7 +1614,7 @@ bdb820a118	Delete it?
 cd0be60497	Registered.
 e736901dd6	The provider settings or device
 6d9810836e	are not set, so they couldn't be read.
-a63ece1529	From save slot %d,
+a63ece1529	From the save data,{without %d}
 92e834d331	"Your Network Configuration File"
 50f74c4c3a	has been loaded.
 fe20cda6d7	An unlinked provider settings
@@ -1655,7 +1625,7 @@ fe20cda6d7	An unlinked provider settings
 8f25fb3a7c	Set up the network?
 c150be0884	(Setting up the network loses
 25d0cd39d7	all unsaved data)
-25403f8e60	From the save data in save slot 1,
+25403f8e60	From the save data,
 a7f57c0ec5	loading the network settings
 11ca2d27f6	...
 4c0f568c54	To play online,

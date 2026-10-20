@@ -97,18 +97,54 @@ the play keys (work/file1-glyph-test.png on the machine that made it).
 - Left as they are: the options' controller picture and its button-name labels (they show the gamepad), the analog stick
   icons, English art (PRESS START BUTTON, NOW LOADING, costume and gallery pictures).
 
+## Save dialogs without the PS2's memory card (both games)
+A Mac has one save location (the runtime's one card, port0.ps2), so no line names a memory card slot, a port or "the
+"PlayStation 2" memory card (8MB)". The save dialogs are built from separate lines (a table of string pointers per dialog,
+ending in 0): "MEMORY CARD slot %s" + "the PS2 memory card (8MB)" + the message (from, to, has, is...), so these lines are
+shared by dozens of dialogs. They are left out instead of reworded:
+- `{drop}` as a line's English: bh_build_patch takes every pointer to it out of the dialog tables of config `message_rows`
+  (tools/bh_text.py drop_lines; the lines after it move up, the table ends in one more 0) and writes it empty wherever else it
+  is drawn (tables read by index or with placed lines, which must keep their places). A table that would be left empty, or a
+  pointer from elsewhere into a table past a dropped line, stops the build. The message lines left are written as whole
+  sentences ("The save data is not formatted.", "Formatting the save data...").
+- The slot number: the printers look for its code in the line, so a line without it is drawn as it is (File 2's message box
+  0x1C6200 and File 1's 0x1C3150: strstr for "%s", then "<C2>1<C7>"; the network screens' printer, File 2 netwk 0x592EE0 and
+  File 1 netwk 0x596360: strchr for '%', then the letter); a line that stays may leave it out with `{without %s}` (or %d,
+  %1). A wait code (%r, %t) can't be left out. File 1's network configuration screens' four %d lines ("Delete some other
+  save data", "In the save data,", "From the save data,", "Do not turn off the power.") are assumed to be formatted
+  printf-style (an unused argument ignored): not traced, and those screens were not reached in play.
+- Lines dropped: File 2 17 (the slot lines `MEMORY CARD差込口%sの/に`, `%1の/に`, `ＭＥＭＯＲＹ ＣＡＲＤ差込口%sの`, the
+  seven "PS2 memory card (8MB)" + particle lines, the "slot %s of the PS2 memory card" network lines); taken out of 218 table
+  entries. File 1 34 (the same, File 1's "(PS2)" card lines and its network screens' slot lines); 180 entries.
+- The choice between two slots (`どちらのＭＥＭＯＲＹ ＣＡＲＤ差込口を使用しますか？`, the NET file's "choose the slot", the
+  labels `メモリーカード差込口１/２`): the runtime has one card (mc2 connects port 2 slot 0 only, port0.ps2), and with one
+  card the games never asked: in play (both games, a new card and one with data) OPTIONS > SAVE/LOAD, saving,
+  loading, autosave (File 1) and Network Play's NET file (found, not found, formatting, creating) all went straight to the
+  one card, no choice shown. The lines are reworded anyway ("Which save data will you use?", "Save data" / "Other save
+  data") in case a path not seen shows them.
+- The NET file screens' header, ＮＥＴファイル (File 2's network overlay at 0x5F5408, named by the executable's line table at
+  0x24A8E8): now "NET File". It is the same unit as the second line of the NET file's icon.sys title (executable 0x21CE04),
+  which the Mac never shows; a NET file saved with the Japanese title still loads (checked in play).
+- Not changed: "Format it?" (a new card image is blank and the game formats it), the network adapter's name in File 1's
+  configuration screens ("PlayStation BB Unit", a device type), "Port" (the network's).
+- Checked in play (headless, 2026-10-20): File 2 Network Play with a new card (NET file not found, the save data not
+  formatted, formatting, saving the NET file, its autosave notice) and with an old card (NET file found and loaded), OPTIONS
+  > SAVE/LOAD (no main data, create, overwrite, load); File 1 Network Play with a new card (not found, format, saved),
+  OPTIONS > SAVE/LOAD (create, load) and AUTO SAVE. Every dialog table the drop touches was read through in English
+  (both executables' and both network overlays').
+
 ## Tools
 - `bh_archive.py GAME ls|get|dump|where` : nested AFS access straight from the ISO.
 - `bh_extract.py GAME work/f2/extract` : all units to units.jsonl (work/ only).
 - `bh_batch.py`, `bh_merge_translation.py` : cut batches of untranslated units; add English (`prefix TAB english`).
-- `bh_build_patch.py GAME out.patch` : checks (ASCII, same control tags, fits), builds the patch and prints the coverage per
-  kind of container.
+- `bh_build_patch.py GAME out.patch` : checks (ASCII, same control tags, fits), builds the patch (dropping the `{drop}` lines
+  from the dialog tables) and prints the coverage per kind of container.
 - Trace aids in the runtime: `--control` `ram FILE`, `PS2_TRACE_WATCH_SKIP/MAX`.
 
 ## Coverage (File 2, units translated / total, from bh_build_patch.py)
 | kind | 2026-10-20 start | now |
 |---|---|---|
-| exe pool | 523 / 641 (118 kept) | 523 / 641 (118 kept: the handle-name word filter) |
+| exe pool | 523 / 641 (118 kept) | 524 / 641 (117 kept: the handle-name word filter) |
 | rooms | 1213 / 1391 | 1391 / 1391 |
 | subtitles | 1302 / 1302 | 1302 / 1302 |
 | speech | 1279 / 15871 | 15871 / 15871 |
@@ -116,12 +152,12 @@ the play keys (work/file1-glyph-test.png on the machine that made it).
 | programs' other strings (elf, BIN/1, BIN/2) | not extracted | 48 / 54 (6 kept: percent formats with the full-width ％) |
 | network overlay BIN/3.DAT | not extracted | 1177 / 1182 (5 kept: the name entry's kana and digit tables) |
 | browser pages (html) | not extracted | 146 / 146 |
-| total | 20825 units extracted | 22026 / 22206 (180 kept on purpose, none left untranslated) |
+| total | 20825 units extracted | 22027 / 22206 (179 kept on purpose, none left untranslated) |
 
 ## Coverage (File 1, units translated / total, from bh_build_patch.py)
 | kind | translated |
 |---|---|
-| exe pool | 222 / 331 (109 kept: the handle-name word filter, save-data titles, full-width floor labels) |
+| exe pool | 223 / 331 (108 kept: the handle-name word filter, save-data titles, full-width floor labels) |
 | elf (outside the pool) | 8 / 8 |
 | overlays DEMO, GAME, SINGLE, NETAQ | 445/446 (1 kept), 34/34, 1/1, 56/56 |
 | network overlay NETWK.BIN | 1157 / 1725 (568 kept: kana, keyboard and digit tables) |
@@ -130,7 +166,7 @@ the play keys (work/file1-glyph-test.png on the machine that made it).
 | subtitles | 675 / 675 |
 | speech | 7034 / 7034 |
 | browser pages (html) | 146 / 146 (File 2's English) |
-| total | 12620 / 13299 (679 kept on purpose, none left untranslated) |
+| total | 12621 / 13299 (678 kept on purpose, none left untranslated) |
 
 Kept Japanese on purpose (`-` in the TSVs) is counted apart; everything else has English.
 
