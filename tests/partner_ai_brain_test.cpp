@@ -73,7 +73,8 @@ void FightsWhatIsOnThePlayer()
     Decision d = DecideOnce(w, true, m);
     CHECK(d.intent == Intent::Fight);
     CHECK(d.target == 46);
-    // bare hands too: shoving it off the player is worth it
+    // bare hands too: shoving it off the player is worth it (with nothing else at the partner's elbow)
+    w.enemies[47].position = {1600, 0, 1300};
     Memory bare;
     d = DecideOnce(w, false, bare);
     CHECK(d.intent == Intent::Fight);
@@ -271,13 +272,98 @@ void BacksAwayWithoutAGun()
     Decision bare = DecideOnce(w, false, m);
     CHECK(bare.pad != 0);
     Memory armed;
-    CHECK(DecideOnce(w, true, armed).pad == 0);  // a loaded gun: it fights it
+    CHECK(DecideOnce(w, true, armed).pad == Pad::Ready); // a loaded gun: it fights it (readied, aiming), no backing off
     w.characters[Partner].hp = 500;              // badly hurt: backs off even with a gun
     Memory hurt;
     CHECK(DecideOnce(w, true, hurt).pad != 0);
     w.enemies[10].position = {1050, 0, 1000};    // on the player: not backed away from
     Memory rescue;
     CHECK(DecideOnce(w, false, rescue).pad == 0);
+}
+
+void KeepsBackingAwayUntilClear()
+{
+    World w = Bar();
+    AddEnemy(w, 10, 1200, 1150, PartnerRecord); // 150 from the partner
+    Memory m;
+    CHECK(DecideOnce(w, false, m, 100).pad != 0);
+    w.enemies[10].position = {1200, 0, 1250};    // 250: past the space, within the slack: still going
+    CHECK(DecideOnce(w, false, m, 101).pad != 0);
+    w.enemies[10].position = {1200, 0, 1350};    // 350: clear
+    CHECK(DecideOnce(w, false, m, 102).pad == 0);
+}
+
+void BareHandsOnlyWhenNothingElseIsClose()
+{
+    World w = Bar();
+    AddEnemy(w, 46, 1080, 1000, PlayerRecord);   // on the player
+    AddEnemy(w, 47, 1250, 1150, PartnerRecord);  // and another at the partner's elbow
+    Memory m;
+    Decision d = DecideOnce(w, false, m);
+    CHECK(d.intent != Intent::Fight);
+    CHECK(d.pad != 0);
+}
+
+void AimsThenFires()
+{
+    Character me{};
+    me.position = {0, 0, 0};
+    me.facing = 0x4000;                       // facing +x
+    const Vec north{0, 0, 500};               // the enemy toward +z: heading 0, the facing must fall: Right
+    Buttons b = Aim(me, north, 10, Defaults);
+    CHECK(b.held == Pad::Right);              // turning with the weapon down
+    CHECK(b.pressed == 0);
+    me.facing = 0x0100;                       // on target, not yet in the aiming stance
+    b = Aim(me, north, 10, Defaults);
+    CHECK(b.held == Pad::Ready);
+    me.motion = 0x80;                         // aiming: fires on the cadence's frames only
+    CHECK(Aim(me, north, 10, Defaults).pressed == Pad::Attack);
+    CHECK(Aim(me, north, 11, Defaults).pressed == 0);
+}
+
+void ShootsItsTargetItself()
+{
+    World w = Bar();
+    AddEnemy(w, 10, 1500, 1000, PlayerRecord);
+    Memory m;
+    Decision d = DecideOnce(w, true, m);
+    CHECK(d.intent == Intent::Fight);
+    CHECK(d.pad == Pad::Left);                // facing +z, the enemy toward +x: turning to it, the weapon down
+    w.enemies[10].position = {3000, 0, 1000}; // out of range: the game's own attack routine
+    AddEnemy(w, 11, 1800, 1000, OtherPartnerRecord);
+    Memory far;
+    w.enemies[11].position = {2700, 0, 1000};
+    Decision d2 = Decide(w, Partner, Abilities{.gun = true}, far, 100, Defaults);
+    CHECK(d2.pad == 0);
+}
+
+void StopsShootingWhatItCantHit()
+{
+    World w = Bar();
+    Character& me = w.characters[Partner];
+    AddEnemy(w, 10, 1200, 1500, PlayerRecord); // straight ahead (+z) of the partner, 500 off the player
+    me.motion = 0x80;
+    Memory m;
+    int presses = 0;
+    for (uint64_t frame = 0; frame < 200; frame++)
+    {
+        Decision d = Decide(w, Partner, Abilities{.gun = true}, m, frame, Defaults);
+        presses += d.pressed != 0;
+    }
+    CHECK(presses == static_cast<int>(Defaults.missedShots) + 1); // then it holds fire
+    // hits keep it going
+    Memory hitting;
+    presses = 0;
+    for (uint64_t frame = 0; frame < 200; frame++)
+    {
+        Decision d = Decide(w, Partner, Abilities{.gun = true}, hitting, frame, Defaults);
+        if (d.pressed != 0)
+        {
+            presses++;
+            w.enemies[10].hp -= 10;
+        }
+    }
+    CHECK(presses == 20);
 }
 
 void ADownedPartnerDecidesNothing()
@@ -308,6 +394,11 @@ int main()
     GuardingLooksAtItemsNowAndThen();
     StepsAwayFacingTheRightWay();
     BacksAwayWithoutAGun();
+    KeepsBackingAwayUntilClear();
+    BareHandsOnlyWhenNothingElseIsClose();
+    AimsThenFires();
+    ShootsItsTargetItself();
+    StopsShootingWhatItCantHit();
     ADownedPartnerDecidesNothing();
     if (g_failures != 0)
     {

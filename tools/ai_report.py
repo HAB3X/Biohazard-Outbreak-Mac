@@ -61,6 +61,19 @@ def distance_stats(rows):
     }
 
 
+def rounds_used(rows):
+    """Rounds gone from the gun in hand between samples (the same item, fewer rounds: shots; a reload adds, not counted)"""
+    used = 0
+    for a, b in zip(rows, rows[1:]):
+        if "hand" not in a or "hand" not in b:
+            continue
+        ia, ra = a["hand"].rstrip("g").split("/")
+        ib, rb = b["hand"].rstrip("g").split("/")
+        if ia == ib and ia != "0" and int(rb) < int(ra):
+            used += int(ra) - int(rb)
+    return used
+
+
 def stuck_seconds(rows):
     stuck = 0.0
     for a, b in zip(rows, rows[1:]):
@@ -114,6 +127,7 @@ def report(samples, events):
         stats.update({
             "attacks": len(mine),
             "hits": sum(1 for a in mine if id(a) in hits),
+            "rounds_used": rounds_used(rows),
             "damage_dealt": credited.get(c, 0),
             "damage_taken": sum(int(e["from"]) - int(e["to"]) for e in hurts),
             "heals": [f'{e["from"]}->{e["to"]}/{e["max"]}' for e in heals],
@@ -135,13 +149,16 @@ def report(samples, events):
     threat = next((s["t"] for s in samples if 0 <= float(s["pnear"]) < THREAT), None)
     answer = next((a["t"] for a in attacks if threat is not None and a["t"] >= threat), None)
     out["response_seconds"] = round(answer - threat, 1) if answer is not None else None
+    # The player's damage in the two minutes from that first threat: the partners' doing more than the zombies' numbers
+    out["player"]["damage_2min"] = sum(int(e["from"]) - int(e["to"]) for e in player_hurt
+                                       if threat is not None and threat <= e["t"] <= threat + 120)
     out["commands"] = [command_response(samples, e) for e in events if e["what"] == "command"]
     return out
 
 
 # The numbers worth comparing between runs: a run's in one line, and the mean of several
-KEYS = [("player", "damage_taken"), ("player", "seconds_below_30pct"), ("player", "lowest_hp"), ("enemies", "kills")]
-PARTNER_KEYS = ["far_share", "median_distance", "attacks", "hits", "damage_dealt", "damage_taken", "stuck_seconds"]
+KEYS = [("player", "damage_taken"), ("player", "damage_2min"), ("player", "seconds_below_30pct"), ("player", "lowest_hp"), ("enemies", "kills")]
+PARTNER_KEYS = ["far_share", "median_distance", "attacks", "hits", "rounds_used", "damage_dealt", "damage_taken", "stuck_seconds"]
 
 
 def flat(r):

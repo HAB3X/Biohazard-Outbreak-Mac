@@ -141,11 +141,11 @@ Threat PickThreat(const World& world, int partner, const Memory& memory, const T
 
 // The nearest enemy within the partner's personal space that isn't on the player (one on the player is the partner's to
 // shove off, not to back away from)
-const Enemy* TooClose(const World& world, const Character& me, const Tunables& tunables)
+const Enemy* TooClose(const World& world, const Character& me, float space, const Tunables& tunables)
 {
     const Character& player = world.player();
     const Enemy* nearest = nullptr;
-    float best = tunables.personalSpace;
+    float best = space;
     for (const Enemy& enemy : world.enemies)
     {
         if (!enemy.alive() || enemy.room != me.room)
@@ -170,7 +170,9 @@ Decision Intend(const World& world, int partner, const Abilities& abilities, Mem
     const Character& me = world.characters[partner];
     const Character& player = world.player();
     const Threat threat = PickThreat(world, partner, memory, tunables);
-    if (threat.index >= 0 && (abilities.gun || threat.onPlayer))
+    // bare hands only against what's on the player, and only with no other enemy at the partner's elbow
+    const bool bareHanded = threat.onPlayer && TooClose(world, me, tunables.personalSpace * tunables.evadeSlack, tunables) == nullptr;
+    if (threat.index >= 0 && (abilities.gun || bareHanded))
     {
         memory.target = threat.index;
         return {Intent::Fight, threat.index, threat.onPlayer ? "on the player" : "threat"};
@@ -226,6 +228,31 @@ void AskForItems(Decision& d, const Character& me, const Abilities& abilities, b
 }
 }
 
+// The motion the game's fire routine waits for before it fires (File 1's 0x830D30: the motion byte at 0x80)
+constexpr uint8_t MotionAiming = 0x80;
+
+Buttons Aim(const Character& me, const Vec& target, uint64_t frame, const Tunables& tunables)
+{
+    // Turning is done with the weapon down: with it readied, left and right move the game's own aim from enemy to enemy
+    // instead of turning (measured: the facing jumped between two headings and never reached the one wanted)
+    Buttons b;
+    const uint16_t wanted = Heading(me.position, target);
+    const int16_t off = static_cast<int16_t>(static_cast<uint16_t>(wanted - me.facing));
+    const int16_t tolerance = static_cast<int16_t>(tunables.aimTolerance);
+    if (off > tolerance || off < -tolerance)
+    {
+        b.held = static_cast<uint16_t>(me.facing - wanted) <= 0x8000 ? Pad::Right : Pad::Left;
+        return b;
+    }
+    b.held = Pad::Ready;
+    if (me.motion == MotionAiming && frame % tunables.fireFrames == 0)
+    {
+        b.held |= Pad::Attack;
+        b.pressed |= Pad::Attack;
+    }
+    return b;
+}
+
 uint32_t StepAway(const Vec& position, uint16_t facing, const Vec& from)
 {
     const uint16_t away = Heading(from, position);
@@ -241,6 +268,30 @@ uint32_t StepAway(const Vec& position, uint16_t facing, const Vec& from)
         return Pad::Back;
     }
     return static_cast<uint16_t>(facing - away) <= 0x8000 ? Pad::Right : Pad::Left;
+}
+
+namespace
+{
+// The partner's own shots at its target, kept honest: shots that don't hurt it (another enemy in the line, a wall, the
+// game's aim gone elsewhere) are counted, and after missFrames' worth the shooting is left to the game's own attack routine
+// for a while rather than the clip emptied into nothing
+void Shoot(Decision& d, const Character& me, const Enemy& target, Memory& memory, uint64_t frame, const Tunables& tunables)
+{
+    if (d.target != memory.shotTarget || target.hp < memory.shotTargetHp)
+    {
+        memory.shotTarget = d.target;
+        memory.shotsMissed = 0;
+    }
+    memory.shotTargetHp = target.hp;
+    const Buttons aim = Aim(me, target.position, frame, tunables);
+    d.pad = aim.held;
+    d.pressed = aim.pressed;
+    if (aim.pressed != 0 && ++memory.shotsMissed > tunables.missedShots)
+    {
+        memory.holdFireUntil = frame + tunables.holdFireFrames;
+        memory.shotsMissed = 0;
+    }
+}
 }
 
 Abilities AbilitiesOf(const Character& character)
@@ -268,10 +319,22 @@ Decision Decide(const World& world, int partner, const Abilities& abilities, Mem
     Decision d = Intend(world, partner, abilities, memory, tunables);
     AskForItems(d, me, abilities, EnemiesAbout(world, me), memory, frame, tunables);
     const bool canFight = abilities.gun && me.hp >= me.hpMax * tunables.badlyHurt;
-    if (const Enemy* close = TooClose(world, me, tunables); close != nullptr && !canFight)
+    // stepping away goes on until the enemy is farther than the space with some slack, so it doesn't stop and start
+    const float space = tunables.personalSpace * (memory.evading ? tunables.evadeSlack : 1.0f);
+    const Character& player = world.player();
+    const bool rescuing = d.intent == Intent::Fight &&
+                          Distance(world.enemies[d.target].position, player.position) < tunables.closeQuarters;
+    const Enemy* close = canFight || rescuing ? nullptr : TooClose(world, me, space, tunables);
+    memory.evading = close != nullptr;
+    if (close != nullptr)
     {
         d.pad = StepAway(me.position, me.facing, close->position);
         d.why = "too close";
+    }
+    else if (d.intent == Intent::Fight && abilities.gun && frame >= memory.holdFireUntil &&
+             Distance(world.enemies[d.target].position, me.position) < tunables.shootRange)
+    {
+        Shoot(d, me, world.enemies[d.target], memory, frame, tunables);
     }
     return d;
 }

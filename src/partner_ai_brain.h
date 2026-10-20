@@ -27,6 +27,13 @@ struct Tunables
     float hurt = 0.5f;           // below this share of its hit points, a partner carrying a recovery item stops to use it
     float personalSpace = 200;   // an enemy this close to a partner that can't fight it (no loaded gun, or badly hurt) is
     float badlyHurt = 0.3f;      // stepped away from, unless it's on the player
+    float evadeSlack = 1.6f;     // and on until it's this many times as far
+    float shootRange = 1300;     // a partner with a loaded gun shoots its enemy itself within this (the game's attack
+                                 // routines wander and wait first)
+    uint16_t aimTolerance = 0x0B00; // facing within this of the enemy (about 15 degrees) is on target
+    uint32_t fireFrames = 10;    // a shot every this many frames at most (the gun's own pace holds it back further)
+    uint32_t missedShots = 6;    // presses of the attack without the target losing hit points before the partner stops
+    uint32_t holdFireFrames = 30 * 8; // shooting itself, for this long (the game's own attack routine instead)
     uint32_t lookFrames = 90;    // how often a guarding partner's items are looked at (the game's plans do it on arriving)
     uint32_t retryFrames = 15;   // how soon the gun carried is asked for again (the game refuses while the partner's busy)
     float keepTarget = 0.7f;     // the enemy being fought is kept while it's worth this much of the worst one's score (a
@@ -76,7 +83,18 @@ struct Decision
     ItemCheck items = ItemCheck::None;
     bool urgent = false;      // the item check may cut a fight short (hurt, with a recovery item)
     uint32_t pad = 0;         // buttons held this frame instead of the game AI's (src/partner_ai_pad.h; 0: the game's)
+    uint32_t pressed = 0;     // and pressed this frame (an attack)
 };
+
+// Shooting an enemy with the gun in hand: the partner turned to face it with the weapon down (right lowers the facing), then
+// the weapon readied, and in the aiming stance the attack pressed every fireFrames frames
+struct Buttons
+{
+    uint32_t held = 0, pressed = 0;
+};
+
+
+Buttons Aim(const Character& me, const Vec& target, uint64_t frame, const Tunables& tunables);
 
 // The buttons that take a character away from a point: run off when facing away from it, step back when facing it, turn
 // away in between (the game's own turning rule: right lowers the facing, File 1's 0x82BB30)
@@ -91,6 +109,11 @@ struct Memory
     bool following = false;   // coming back to the player (until followNear)
     int target = -1;          // the enemy being fought
     uint64_t lastLook = 0;    // the last item check asked for
+    bool evading = false;     // stepping away from an enemy
+    int shotTarget = -1;      // the enemy being shot at, its hit points last frame, the presses since it last lost some
+    int shotTargetHp = 0;
+    uint32_t shotsMissed = 0;
+    uint64_t holdFireUntil = 0;
 };
 
 // What the partner has: a gun with rounds in it fights what threatens the player; anything else (a knife, a pipe, an empty

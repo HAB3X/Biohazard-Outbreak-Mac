@@ -93,14 +93,19 @@ The game is deterministic for the same input: runs of a scenario differ only by 
 seeds have the player take a few steps first). Measured with `tools/ai_scenario.py bar-idle MODE --seeds 3`, 240 s of play
 each (the means):
 
-| | Original | Director (2026-10-21) |
-|---|---|---|
-| First partner attack after an enemy is within 600 of the player | 31.6 s | 6.8 s |
-| Mark's time away from the player (another room or farther than 1500) | 24% | 0% |
-| Mark's damage to the zombies | 1568 | 1816 |
-| Damage the player took / time below 30% / downed | 2871 / 36 s / 1 of 3 | 2510 / 42 s / 1 of 3 |
-| Mark's damage taken / downed | 1270 / 0 of 3 | 2463 / 0 of 3 |
-| Cindy downed | 1 of 3 | 3 of 3 |
+| | Original | Director, first (0e71ce1) | Director now |
+|---|---|---|---|
+| First partner attack after an enemy is within 600 of the player | 31.6 s | 6.8 s | 0.2 s |
+| Mark's time away from the player (another room or farther than 1500) | 24% | 0% | 0% |
+| Mark's damage to the zombies (15 rounds) | 1568 | 1816 | 1665 |
+| Damage the player took (in the 2 minutes from the first threat) | 2871 (1703) | 2510 (763) | 1970 (1283) |
+| The player's time below 30% / downed | 36 s / 1 of 3 | 42 s / 1 of 3 | 6 s / 0 of 3 |
+| Mark's damage taken / downed | 1270 / 0 of 3 | 2463 / 0 of 3 | 1133 / 1 of 3 |
+| Cindy's damage taken / downed | 1900 / 1 of 3 | 1500 / 3 of 3 | 1320 / 1 of 3 |
 
-Cindy (no weapon) stays by the player in the mob and dies; that's the next thing to fix.
-
+What changed after the first: a partner without a loaded gun steps away from an enemy within 200 (on until 320) unless it's
+on the player, and shoves one off the player only with nothing else at its elbow; a partner with a loaded gun shoots its
+target itself within 1300 (turning to it with the weapon down: readied, left and right move the game's own aim between
+enemies instead, and the first try at turning with it readied emptied a clip into nothing), and leaves it to the game's
+attack routine for 8 s after 6 presses that don't hurt the target. The game's own routine is still the better shot (about
+120 damage a round against 111), but it walks and waits before firing.

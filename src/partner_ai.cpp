@@ -139,6 +139,7 @@ struct PartnerState
     Memory memory;
     uint64_t lastReplan = 0;
     uint32_t pad = 0;        // this frame's buttons instead of the game AI's (the perception decides, the think's end applies)
+    uint32_t pressed = 0;
     uint64_t padFrame = 0;
 };
 std::array<PartnerState, CharacterCount> g_partners;
@@ -285,8 +286,8 @@ void Think(Ps2Cpu* c, const Layout& layout, Ps2Function original)
     const PartnerState& state = g_partners[static_cast<size_t>(partner)];
     if (state.pad != 0 && state.padFrame == g_frame)
     {
-        // the director's buttons this frame, held, in place of the game AI's (nothing pressed: no actions)
-        wr32(record + layout.padPressed, 0);
+        // the director's buttons this frame in place of the game AI's
+        wr32(record + layout.padPressed, state.pressed);
         wr32(record + layout.padPressed + PadHeld, state.pad);
     }
     if (Measuring())
@@ -312,6 +313,7 @@ void Perceive(Ps2Cpu* c, const Layout& layout, Ps2Function original)
     const Decision decision = Decide(world, partner, abilities, state.memory, g_frame, g_tunables);
     Apply(c, layout, record, decision, state);
     state.pad = decision.pad;
+    state.pressed = decision.pressed;
     state.padFrame = g_frame;
     if (Measuring())
     {
