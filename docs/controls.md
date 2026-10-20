@@ -9,20 +9,30 @@ selects, the status screen and its item actions) and **title / movies / cutscene
 
 ## Play
 
+The game's own roles (its controller settings, type A), on the keys of the PC releases of Resident Evil 4 and 5.
+
 | Key | Does | (PS2) |
 |---|---|---|
 | W A S D | move | left stick |
-| Left Shift (hold) | run | ✕ |
+| Left Shift (hold) | run; cancel (stop lending a shoulder, a reload) | ✕ |
 | Left Ctrl | walk (toggle) | stick at half |
 | E, Return | action, check, pick up, open | ○ |
 | Right mouse (hold) | ready the weapon; while held, **the mouse aims**: across turns toward targets, up and down aims high and low | R1 + left stick |
-| Left mouse | fire, attack, use | □ |
-| Space | command the partner (ad-lib) | △ |
-| Q / R | previous / next item | L1 / R2 |
-| F | quick action | L2 |
+| Left mouse | attack, fire (with the weapon ready; unarmed, a tackle); the action otherwise | ○ |
+| Q (hold) | ready forward (no target picked) | R2 |
+| R | reload | L1 |
+| Space | ad-lib (the character speaks to suit the moment; hands over the item under the cursor in the status screen) | □ |
+| M | the map screen (M or Space closes it) | △ |
+| F (hold) | appeal shift: with 1-4, call a partner by name | L2 |
+| 1 2 3 4 | the appeals: 1 "Go!", 2 "This way!", 3 "Help me!", 4 thanks or sorry (each character says it their way) | right stick up, down, left, right |
+| O | the pause menu (settings, quit the game) | SELECT |
 | Tab, Escape | the status screen (inventory, SPECIAL, FILE), the game's own pause | START |
-| M | select | SELECT |
 | Arrows | the D-pad | D-pad |
+
+Checked in File 2's Training Ground (Kevin, unarmed there): the right mouse readies and the left mouse tackles, Space
+ad-libs ("What's going on?"), M opens the map, 1-4 say "Go!", "This way!", "Help me!", "Sorry"/"...You saved me", F with 1
+calls the partner's name ("Jim"), O opens the pause menu, R and Q reach the game (L1, R2). Firing a gun and reloading weren't
+seen (no gun there).
 
 ## Menus
 
@@ -34,6 +44,9 @@ selects, the status screen and its item actions) and **title / movies / cutscene
 | Space | △ (information windows) |
 | F | □ |
 | Q, PageUp / R, PageDown | previous / next tab (L1 / R1) |
+| Z / C | L2 / R2 (the collection's pages) |
+| M | closes the map (△) |
+| O | SELECT (the options' default settings) |
 | Tab | close the status screen (START) |
 | Mouse | pointing at a title menu item or an item slot moves the cursor there; a click chooses it; clicking a tab (ITEM, SPECIAL, FILE) opens it; the wheel turns tabs, select pages and lists |
 
