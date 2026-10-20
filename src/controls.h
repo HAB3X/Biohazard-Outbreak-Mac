@@ -16,6 +16,15 @@ namespace BiohazardControls
 // Where one game's memory keeps what the controls read (the executable's data and the game overlay's, at the addresses the
 // game loads them to). The game keeps its active tasks (the game's loop, the title, a menu, the status screen...) in a list of
 // up to 8 entries, each the address of the task's function, with the count in a word of its own: a task's function says what's up
+// A row of SELECT's pause menu: its cursor's value there, its middle (a fraction of the picture's height), and whether it's a
+// setting (the left and right keys, and the wheel, change it; a click doesn't choose it)
+struct PauseItem
+{
+    int value;
+    float y;
+    bool setting;
+};
+
 struct Layout
 {
     uint32_t taskCount, taskList;
@@ -42,13 +51,24 @@ struct Layout
     uint32_t statusCursor;  // the status screen's item cursor: a word, the address of the slot it's on (the equipped weapon's is elsewhere)
     uint32_t statusPopup;   // a byte that's nonzero while the item's actions (use, combine, give...) are up
     uint32_t statusKind;    // a byte: what the status task shows (1 the status screen, 2 the map, 4 SELECT's pause menu)
+    const PauseItem* pauseRows; // the pause menu's rows
+    int pauseRowCount;
     // The title's OPTIONS: the word holding the address of its state while it's up (found by memory diffs of the list's cursor:
     // File 2 gp - 0x6064, File 1 0x23BE40), its rows, and the first row's middle as a fraction of the picture's height
     uint32_t optionsState;
     int optionsItems;
     float optionsTop;
+    // Network Play's overlay (as the disc names it), the word holding the address of its screens' state (memory diffs of the
+    // NET file's Yes and No: File 2 0x24B4E4, File 1 0x23B618; its first byte the screen), the word holding the address of its
+    // lists' state (the configuration list's cursor at 0x10; File 2 0x24B4D0, File 1 0x23C224), and two screens' numbers: the manners screen's Next and Back,
+    // the configuration list (0: not found)
+    const char* netOverlay;
+    uint32_t netState;
+    uint32_t netList;
+    uint8_t netNextBackScreen;
+    uint8_t netConfigScreen;
     // The network browser (the KDDI browser of Network Play, its overlay `browserOverlay` as the disc names it): the word
-    // (gp - 0x5D90) holding the address of its pointer's state, the pointer's x and y (16 bits each, in the 640 x 448
+    // (File 2 0x24B360, File 1 0x23C094) holding the address of its pointer's state, the pointer's x and y (16 bits each, in the 640 x 448
     // picture) at 16 and 18 there (netwk's link-focus code at 0x567370 in File 2 sets them so)
     const char* browserOverlay;
     uint32_t browserPointer;

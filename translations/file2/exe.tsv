@@ -404,7 +404,7 @@ b203543c31	the save data of the current scenario\n
 820dcddc9e	Resume the game from the point of the\n
 0798a2394d	currently saved scenario.\n
 4e350d6634	: Ad-lib
-5cbeb17076	: Cancel/Dash
+5cbeb17076	: Cancel  {play:cross} Dash
 4552599b1f	: Confirm/Attack
 fb769149c0	Quit Game
 5f461b4ee6	Record your progress so far?

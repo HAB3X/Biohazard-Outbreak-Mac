@@ -61,6 +61,18 @@ closes it.
 The pointer over a slot (the four and the equipped weapon's) moves the cursor there, a click opens that item's actions
 (Use, Equip, Combine, Give...), and the pointer and a click choose among them.
 
+## Title menus and Network Play
+
+- OPTIONS: the pointer over a row moves the cursor there, a click opens it. CONTROLLER SETTINGS opens the PC menus' Controls
+  while the keyboard and mouse were used last (the game's own screen with a gamepad). SCREEN ADJUST and EDIT NETWORK
+  CONFIGURATION are still listed (no count of the list's rows was found to hide them by).
+- Network Play: the yes/no dialogs (the NET file, formatting, saving), the manners screen's Next and Back and the connection
+  list follow the pointer and take a click; a click on a screen with nothing to choose is the confirm. In the KDDI browser
+  (obsrv's pages) the browser's own pointer goes where the Mac's is, and a click selects there (a field opens the software
+  keyboard, a link or button is followed); the wheel moves between links.
+- The title menu, the selects, the character log and the collection: as before (the title menu's rows and the selects by
+  pointer; elsewhere the wheel moves the cursor and a click confirms the current row).
+
 ## Title, movies and cutscenes
 
 Escape, Return, Space, E or Tab is START: it skips movies and cutscenes (File 2's cutscene task 0x344C10, File 1's

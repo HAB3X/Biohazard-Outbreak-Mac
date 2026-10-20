@@ -189,6 +189,7 @@ enum class Goal
     Action,   // a row of the item's actions (use, equip, combine, give...)
     PauseRow, // a row of SELECT's pause menu
     OptionsRow, // a row of the title's OPTIONS list
+    DialogRow,  // a choice of Network Play's dialogs (Yes, No)
 };
 
 struct Steer
@@ -227,18 +228,16 @@ int SlotOf(uint32_t cursor)
 bool ActionsUp() { return HasTask(g_layout.statusTask) && (Word(g_layout.statusPopup) & 0xFF) != 0; }
 uint32_t ActionCursor() { return g_layout.statusCursor - 2; }
 
-// SELECT's pause menu: its cursor a byte 3 before the status task's screen word. Its rows by the cursor's value: 0 the
-// controller type, 1 vibration, 3 and 4 the volumes, 5 brightness, 6 and 7 the screen's position, 8 default settings, 9 quit
-// the game, 10 EXIT (2 isn't used); where they're drawn, as fractions of the picture's height (seen in play, both games)
-struct PauseItem
-{
-    int value;
-    float y;
-    bool setting; // a value the left and right keys change (the wheel turns it)
-};
-const PauseItem PauseItems[] = {{0, 0.200f, true},  {1, 0.379f, true},  {3, 0.468f, true},  {4, 0.513f, true},
-                                {5, 0.602f, true},  {6, 0.691f, true},  {7, 0.736f, true},  {8, 0.780f, false},
-                                {9, 0.825f, false}, {10, 0.870f, false}};
+// SELECT's pause menu: its cursor a byte 3 before the status task's screen word, its rows (Layout::pauseRows) by the cursor's
+// value with where they're drawn (fractions of the picture's height, seen in play: File 2 0 the controller type, 1 vibration,
+// 3 and 4 the volumes, 5 brightness, 6 and 7 the screen's position, 8 default settings, 9 quit the game, 10 EXIT; File 1 has
+// STEREO as its 2 and a third volume)
+const PauseItem File2PauseRows[] = {{0, 0.200f, true},  {1, 0.379f, true},  {3, 0.468f, true},  {4, 0.513f, true},
+                                    {5, 0.602f, true},  {6, 0.691f, true},  {7, 0.736f, true},  {8, 0.780f, false},
+                                    {9, 0.825f, false}, {10, 0.870f, false}};
+const PauseItem File1PauseRows[] = {{0, 0.200f, true},  {1, 0.379f, true},  {2, 0.468f, true},  {3, 0.513f, true},
+                                    {4, 0.557f, true},  {5, 0.646f, true},  {6, 0.736f, true},  {7, 0.780f, true},
+                                    {8, 0.825f, false}, {9, 0.870f, false}, {10, 0.914f, false}};
 constexpr float PauseLeft = 0.19f, PauseRight = 0.81f, PauseRowHalf = 0.0223f;
 uint32_t PauseCursor() { return g_layout.statusKind - 3; }
 
@@ -258,6 +257,104 @@ uint32_t OptionsState()
     return state != 0 && state < 0x1FFFFF0 ? state : 0;
 }
 
+// Whether a code overlay (by its file on the disc) is in memory: its check words (the words no other overlay over the same
+// addresses holds) are there
+bool OverlayInMemory(const char* file)
+{
+    for (uint32_t n = 0; n < ps2_overlay_count; n++)
+    {
+        const Ps2Overlay& o = ps2_overlays[n];
+        if (std::strcmp(o.file, file) != 0)
+        {
+            continue;
+        }
+        if (o.checkCount == 0)
+        {
+            return false; // nothing to tell it from the others over its addresses: never taken for loaded
+        }
+        for (uint32_t k = 0; k < o.checkCount; k++)
+        {
+            if (Word(o.check[k].address) != o.check[k].word)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+// Network Play's screens (the network overlay's): a state the word netState points at, its first byte the screen. Each
+// screen with rows the pointer can choose has its cursor in that state or in a list's state (netList points at it), and
+// its rows where they're drawn (fractions of the picture's height; seen in pictures of each screen). A yes/no dialog's
+// rows are counted in the state (0x2C, 0 with no dialog up), the last drawn at 0.745, 0.098 apart
+constexpr float DialogBottom = 0.745f, DialogStep = 0.098f;
+
+struct NetRows
+{
+    int count;
+    const float* y;
+    float halfWidth;
+    float x;
+    bool direct;    // the cursor may be set directly (the screen draws its highlight from it)
+    uint32_t at;    // the cursor's byte in the state
+};
+
+uint32_t NetState(uint32_t word)
+{
+    if (g_layout.netOverlay == nullptr || !OverlayInMemory(g_layout.netOverlay))
+    {
+        return 0;
+    }
+    uint32_t state = Word(word) & 0x1FFFFFF;
+    return state != 0 && state < 0x1FFFF00 ? state : 0;
+}
+
+// The rows of the network screen up now (count 0: none), and where its cursor is
+NetRows NetScreenRows(uint32_t& cursor)
+{
+    static const float dialog2[] = {DialogBottom - DialogStep, DialogBottom};
+    static const float dialog3[] = {DialogBottom - 2 * DialogStep, DialogBottom - DialogStep, DialogBottom};
+    static const float nextBack[] = {0.743f, 0.841f};
+    static const float configs[] = {0.336f, 0.393f, 0.479f};
+    uint32_t state = NetState(g_layout.netState);
+    if (state == 0)
+    {
+        return {};
+    }
+    uint8_t screen = *Ps2::EeMemory(state);
+    uint8_t count = *Ps2::EeMemory(state + 0x2C);
+    if (count == 2 || count == 3)
+    {
+        cursor = state + 0x29;
+        return {count, count == 2 ? dialog2 : dialog3, 0.13f, 0.5f, true, 0};
+    }
+    if (screen == g_layout.netNextBackScreen)
+    {
+        cursor = state + 8;
+        return {2, nextBack, 0.13f, 0.5f, false, 0};
+    }
+    if (screen == g_layout.netConfigScreen)
+    {
+        uint32_t list = NetState(g_layout.netList);
+        if (list == 0)
+        {
+            return {};
+        }
+        cursor = list + 0x10;
+        return {3, configs, 0.42f, 0.47f, false, 0};
+    }
+    return {};
+}
+
+int NetCursorNow()
+{
+    uint32_t cursor = 0;
+    NetRows rows = NetScreenRows(cursor);
+    return rows.count != 0 ? *Ps2::EeMemory(cursor) : -1;
+}
+
+
 bool OptionsListUp()
 {
     uint32_t state = OptionsState();
@@ -275,6 +372,7 @@ int CursorNow()
     case Goal::Action: return ActionsUp() ? static_cast<int>(*Ps2::EeMemory(ActionCursor())) : -1;
     case Goal::PauseRow: return CurrentMode() == Pause ? static_cast<int>(*Ps2::EeMemory(PauseCursor())) : -1;
     case Goal::OptionsRow: return OptionsListUp() ? static_cast<int>(*Ps2::EeMemory(OptionsState() + 4)) : -1;
+    case Goal::DialogRow: return NetCursorNow();
     default: return -1;
     }
 }
@@ -289,7 +387,8 @@ uint32_t NextButton(int now)
     case Goal::TitleItem:
     case Goal::Action:
     case Goal::PauseRow:
-    case Goal::OptionsRow: return to > now ? Down : Up;
+    case Goal::OptionsRow:
+    case Goal::DialogRow: return to > now ? Down : Up;
     case Goal::Tab: return to > now ? R1 : L1;
     case Goal::Slot:
     {
@@ -389,6 +488,20 @@ bool Under(float x, float y, bool click)
             }
         }
     }
+    uint32_t netCursor = 0;
+    NetRows rows = NetScreenRows(netCursor);
+    if (rows.count != 0)
+    {
+        for (int n = 0; n < rows.count; n++)
+        {
+            if (Inside({rows.x, rows.y[n], rows.halfWidth, 0.03f}, x, y))
+            {
+                Aim(Goal::DialogRow, n, click);
+                return true;
+            }
+        }
+        return false;
+    }
     if (OptionsListUp())
     {
         for (int n = 0; n < g_layout.optionsItems; n++)
@@ -403,8 +516,9 @@ bool Under(float x, float y, bool click)
     }
     if (CurrentMode() == Pause)
     {
-        for (const PauseItem& item : PauseItems)
+        for (int n = 0; n < g_layout.pauseRowCount; n++)
         {
+            const PauseItem& item = g_layout.pauseRows[n];
             if (x >= PauseLeft && x < PauseRight && std::abs(y - item.y) < PauseRowHalf)
             {
                 Aim(Goal::PauseRow, item.value, click && !item.setting);
@@ -475,6 +589,15 @@ void Step()
         *Ps2::EeMemory(OptionsState() + 4) = static_cast<uint8_t>(g_steer.target);
         return;
     }
+    if (g_steer.goal == Goal::DialogRow && now != g_steer.target)
+    {
+        uint32_t cursor = 0;
+        if (NetScreenRows(cursor).direct)
+        {
+            *Ps2::EeMemory(cursor) = static_cast<uint8_t>(g_steer.target);
+            return;
+        }
+    }
     if (g_steer.pressed)
     {
         if (now == g_steer.last && ++g_steer.waited < StepTimeout)
@@ -535,33 +658,6 @@ void Wheel(int kind)
 
 // --- the network browser: its own pointer, moved by the left stick on the console, follows the Mac's (a click is the
 // confirm, circle, where it points, as any click away from a menu's items)
-
-// Whether a code overlay (by its file on the disc) is in memory: its check words (the words no other overlay over the same
-// addresses holds) are there
-bool OverlayInMemory(const char* file)
-{
-    for (uint32_t n = 0; n < ps2_overlay_count; n++)
-    {
-        const Ps2Overlay& o = ps2_overlays[n];
-        if (std::strcmp(o.file, file) != 0)
-        {
-            continue;
-        }
-        if (o.checkCount == 0)
-        {
-            return false; // nothing to tell it from the others over its addresses: never taken for loaded
-        }
-        for (uint32_t k = 0; k < o.checkCount; k++)
-        {
-            if (Word(o.check[k].address) != o.check[k].word)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
-}
 
 // The browser pointer's state, 0 when the browser isn't up
 uint32_t BrowserPointer()
@@ -695,9 +791,16 @@ const Layout File2 = {.taskCount = 0x24ad3c,
                       .statusCursor = 0x7671f4,
                       .statusPopup = 0x767210,
                       .statusKind = 0x767254,
+                      .pauseRows = File2PauseRows,
+                      .pauseRowCount = 10,
                       .optionsState = 0x24b08c,
                       .optionsItems = 7,
                       .optionsTop = 0.295f,
+                      .netOverlay = "BIN/3.DAT",
+                      .netState = 0x24b4e4,
+                      .netList = 0x24b4d0,
+                      .netNextBackScreen = 5,
+                      .netConfigScreen = 6,
                       .browserOverlay = "BIN/5.DAT",
                       .browserPointer = 0x24b360,
                       .slotStride = 0x98,
@@ -726,11 +829,18 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .statusCursor = 0x720b84,
                       .statusPopup = 0x720ba0,
                       .statusKind = 0x720be4,
+                      .pauseRows = File1PauseRows,
+                      .pauseRowCount = 11,
                       .optionsState = 0x23be40,
                       .optionsItems = 6,
                       .optionsTop = 0.339f,
+                      .netOverlay = "PROG/NETWK.BIN",
+                      .netState = 0x23b618,
+                      .netList = 0x23c224,
+                      .netNextBackScreen = 5,
+                      .netConfigScreen = 6,
                       .browserOverlay = "PROG/NETHTTP.BIN",
-                      .browserPointer = 0x23bee0,
+                      .browserPointer = 0x23c094,
                       .slotStride = 0x98,
                       .titleTop = 0.591f,
                       .titleStep = 0.0536f};

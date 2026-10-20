@@ -86,6 +86,17 @@ docs/network.md (the runtime's docs/network.md has the design).
   shift (L2), 1-4 the appeals (the right stick), O the pause menu (SELECT), Tab/Escape START (docs/controls.md). The pause
   menu's controller readout and File 1's options legend show the menus' keys (one picture serves both).
 
+## Controls pass, 2026-10-20 (branch `polish`)
+
+- Escape in play is the game's own pause (SELECT's menu: game time stops; checked by a frame counter and in a window), Tab
+  the status screen (START, the game runs on behind it). Scenes the game plays itself still take Escape as skip.
+- The status screen's slots: hover moves the cursor, one click opens that item's actions; the actions, the pause menu's rows
+  (per game), OPTIONS' list, Network Play's dialogs, manners screen and connection list, and the browser's pointer follow the
+  mouse (both games). File 1's options and collection get the menus' keys (its title state is 0x200D5C).
+- Left open: hover on the character log's rows and the collection's grid (the wheel and a click on the current row work),
+  hiding SCREEN ADJUST / EDIT NETWORK CONFIGURATION, the wheel scrolling a browser page (it moves between links), File 2's
+  scenario-select hint strip (the white patch over 'title' wasn't reproduced in the headless pictures).
+
 ## The Mac apps
 
 `python3 tools/make_app.py both` makes "Biohazard Outbreak.app" and "Biohazard Outbreak File 2.app" on the Desktop (`--out DIR`
