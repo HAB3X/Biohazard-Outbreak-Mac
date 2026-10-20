@@ -34,7 +34,7 @@ void Usage(const char* program)
             "          [--run-seconds S] [--log kernel,syscall,io,dma,sif,iop,gs,call,thread,irq,ipu]\n"
             "          [--watch ADDR[:WORDS],... [--watch-every S]] [--memcards DIR] [--settings DIR]\n"
             "          [--press S:BUTTON[+BUTTON][:HOLD],...] [--key S:KEY[+KEY][:HOLD],...]\n"
-            "          [--control FIFO] [--patch FILE] [--dns ADDRESS]\n"
+            "          [--control FIFO] [--patch FILE] [--dns ADDRESS] [--disc-check]\n"
             "          [--type S:TEXT] [--click S:X,Y] [--ui S:KEY,KEY,...]\n"
             "          [--fps] [--gs hardware|software] [--scale 1-8] [--texture-upscale 0|2|4] [--mute] [--audio-dump FILE.wav]\n"
             "          [--gs-record S:VBLANKS:FILE] [--gs-replay FILE[:PASSES]] [--vu1-replay FILE[:PASSES]]\n",
@@ -75,17 +75,59 @@ std::string AskForDisc(const Ps2GameInfo* game)
     return pick.path;
 }
 
-// A disc that isn't the game's: said in a window when it was just chosen (and forgotten, to be asked for again)
-void WrongDisc(const Ps2GameInfo* game, bool asked, const std::string& discFile)
+// What's wrong with the disc image for this game, in a sentence; empty when it's the game's: it opens as a PS2 disc, its
+// SYSTEM.CNF boots the game's executable, and that is the size the build is for. The disc is left open
+std::string DiscProblem(const Ps2GameInfo* game)
 {
+    if (!DiscOpen(g_options.disc))
+    {
+        return "it can't be read as a PS2 disc image (an .iso, or a .cue with its .bin).";
+    }
+    std::vector<u8> cnf;
+    if (DiscReadFile("SYSTEM.CNF", cnf))
+    {
+        std::string text(cnf.begin(), cnf.end());
+        size_t b = text.find("BOOT2");
+        if (b != std::string::npos)
+        {
+            size_t colon = text.find(':', b);
+            size_t end = text.find_first_of(";\r\n", colon);
+            std::string path = text.substr(colon + 1, end - colon - 1);
+            while (!path.empty() && (path[0] == '\\' || path[0] == '/'))
+            {
+                path.erase(0, 1);
+            }
+            if (path != game->executable)
+            {
+                return "it's another game's disc: it starts " + path + ".";
+            }
+        }
+    }
+    std::vector<u8> elf;
+    if (!DiscReadFile(game->executable, elf))
+    {
+        return std::string(game->executable) + " isn't on it.";
+    }
+    if (game->executableSize != 0 && elf.size() != game->executableSize)
+    {
+        return "it's another version of the game: its " + std::string(game->executable) + " is " +
+               std::to_string(elf.size()) + " bytes, not " + std::to_string(game->executableSize) + ".";
+    }
+    return "";
+}
+
+// A disc that isn't the game's: logged, and said in a window when it was just chosen (and forgotten, to be asked for again)
+void WrongDisc(const Ps2GameInfo* game, bool asked, const std::string& discFile, const std::string& problem)
+{
+    Log("%s isn't %s (%s): %s", g_options.disc.c_str(), game->title, game->executable, problem.c_str());
     if (!asked)
     {
         return;
     }
     std::error_code ec;
     std::filesystem::remove(discFile, ec);
-    std::string message = std::string("That isn't ") + game->title + " (" + game->executable +
-                          "). Open the app again to choose your disc image.";
+    std::string message = std::string("That disc image isn't ") + game->title + " (" + game->executable + "): " + problem +
+                          "\n\nOpen the app again to choose your disc image.";
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, WindowTitle().c_str(), message.c_str(), nullptr);
 }
 
@@ -176,6 +218,10 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         else if (a == "--patch")
         {
             g_options.patch = next();
+        }
+        else if (a == "--disc-check")
+        {
+            g_options.discCheck = true;
         }
         else if (a == "--headless")
         {
@@ -456,7 +502,7 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         }
     }
     bool asked = false;
-    if (g_options.disc.empty() && !g_options.headless)
+    if (g_options.disc.empty() && (!g_options.headless || g_options.discCheck))
     {
         g_options.disc = AskForDisc(game);
         asked = true;
@@ -474,54 +520,34 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
     // The PC menus' settings (options.txt), before what they set starts
     Ui::MenusInit();
     MemoryInit();
-    if (!DiscOpen(g_options.disc))
+    const std::string problem = DiscProblem(game);
+    if (!problem.empty())
     {
-        WrongDisc(game, asked, discFile);
-        return 1;
-    }
-    if (!g_options.patch.empty() && !DiscLoadPatch(g_options.patch))
-    {
-        return 1;
-    }
-    std::vector<u8> cnf;
-    std::string boot = game->executable;
-    if (DiscReadFile("SYSTEM.CNF", cnf))
-    {
-        std::string text(cnf.begin(), cnf.end());
-        size_t b = text.find("BOOT2");
-        if (b != std::string::npos)
-        {
-            size_t colon = text.find(':', b);
-            size_t end = text.find_first_of(";\r\n", colon);
-            std::string path = text.substr(colon + 1, end - colon - 1);
-            while (!path.empty() && (path[0] == '\\' || path[0] == '/'))
-            {
-                path.erase(0, 1);
-            }
-            if (path != game->executable)
-            {
-                Log("this disc boots %s; this build is for %s (%s)", path.c_str(), game->executable, game->title);
-                WrongDisc(game, asked, discFile);
-                return 1;
-            }
-        }
-    }
-    std::vector<u8> elf;
-    if (!DiscReadFile(boot, elf))
-    {
-        Log("%s isn't on the disc", boot.c_str());
-        return 1;
-    }
-    if (game->executableSize != 0 && elf.size() != game->executableSize)
-    {
-        Log("%s is %zu bytes; this build is for the %u byte one (%s)", boot.c_str(), elf.size(), game->executableSize,
-            game->title);
-        WrongDisc(game, asked, discFile);
+        // A disc remembered but no longer the game's (its file replaced) is said too when the launcher checks it: the app
+        // would otherwise just not open
+        WrongDisc(game, asked || g_options.discCheck, discFile, problem);
         return 1;
     }
     if (asked)
     {
         std::ofstream(discFile) << g_options.disc << '\n';
+    }
+    if (g_options.discCheck)
+    {
+        InputInit(); // bindings.txt with the defaults, if there's none: the patch's key caps are drawn from it
+        printf("%s\n%s\n", g_options.disc.c_str(), g_options.settingsDir.c_str());
+        fflush(stdout);
+        return 0;
+    }
+    if (!g_options.patch.empty() && !DiscLoadPatch(g_options.patch))
+    {
+        return 1;
+    }
+    // Read again with the patch laid over it: the executable's own text is translated
+    std::vector<u8> elf;
+    if (!DiscReadFile(game->executable, elf))
+    {
+        Fatal("%s can't be read again with the patch laid over it", game->executable);
     }
     g_entryPoint = LoadElf(elf);
     if (game->init != nullptr)
@@ -599,7 +625,7 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         ControlStart(g_options.controlPath);
     }
     DmacInit();
-    KernelInit(g_entryPoint, 0, {std::string("cdrom0:\\") + boot + ";1"});
+    KernelInit(g_entryPoint, 0, {std::string("cdrom0:\\") + game->executable + ";1"});
     Log("starting %s at %08x", game->title, g_entryPoint);
 
     std::thread ee([] {

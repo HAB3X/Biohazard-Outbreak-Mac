@@ -222,6 +222,10 @@ struct Options
 {
     std::string disc;
     std::string patch;          // --patch FILE: byte ranges laid over the disc (disc.cpp)
+    // --disc-check: the disc found (asked for with a window, even headless, when none is known), checked and remembered, the
+    // bindings' defaults written if there are none, then the disc's path and the settings folder printed and the game not
+    // started: an app's launcher, which builds what it lays over the disc from both before the game starts
+    bool discCheck = false;
     bool headless = false;
     std::string snapshotDir;
     double snapshotEvery = 0;   // seconds of game time (vblanks / 59.94) between saved pictures (0: none); --snapshot-at too

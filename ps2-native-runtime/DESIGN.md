@@ -514,6 +514,12 @@ actions, going back from them goes back to the game, and the game just waits whi
   the program) baked into atlases per size with stb_truetype. The mouse's places are hit regions recorded as each frame is drawn.
 - The settings: the display's in `graphics.txt` (as before, with the new ones added), the rest and the game's own in
   `options.txt`. `--settings DIR` uses another folder (tests).
+- The disc: `--disc`, else `$PS2_DISC`, else the one remembered in the settings folder's `disc_image.txt`, else (with a window)
+  asked for with the system's file dialog and remembered once it's checked to be the game's (its SYSTEM.CNF boots the game's
+  executable, of the size the recompiled code is for); a wrong one is said with what's wrong, and forgotten. `--disc-check`
+  does only that (asking even with `--headless`), writes `bindings.txt`'s defaults if there's none, prints the disc's path
+  and the settings folder (a line each) and exits: an app's launcher builds what it lays over the disc (`--patch`) from both
+  before it starts the game.
 - The game's prompt (`ps2_show_prompt`) is drawn near the picture's bottom in the menus' style while the game plays, fading
   in as it's shown (a quarter of a second) and out as it's taken down (half a second); headless pictures show it as it stands.
 - `--ui S:KEY,...` drives the menus from a time of the game's: keys (esc, enter, up, down, left, right, tab, prevtab, q, e,
