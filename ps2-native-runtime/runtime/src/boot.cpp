@@ -37,7 +37,7 @@ void Usage(const char* program)
             "          [--control FIFO] [--patch FILE] [--dns ADDRESS]\n"
             "          [--type S:TEXT] [--click S:X,Y] [--ui S:KEY,KEY,...]\n"
             "          [--fps] [--gs hardware|software] [--scale 1-8] [--texture-upscale 0|2|4] [--mute] [--audio-dump FILE.wav]\n"
-            "          [--gs-record S:VBLANKS:FILE] [--gs-replay FILE[:PASSES]]\n",
+            "          [--gs-record S:VBLANKS:FILE] [--gs-replay FILE[:PASSES]] [--vu1-replay FILE[:PASSES]]\n",
             program);
 }
 
@@ -255,17 +255,19 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
             g_options.gsRecordVblanks = strtoull(item.c_str() + c1 + 1, nullptr, 10);
             g_options.gsRecordFile = item.substr(c2 + 1);
         }
-        else if (a == "--gs-replay")
+        else if (a == "--gs-replay" || a == "--vu1-replay")
         {
             std::string item = next();
+            u32 passes = 1;
             size_t colon = item.rfind(':');
             if (colon != std::string::npos && colon + 1 < item.size() &&
                 item.find_first_not_of("0123456789", colon + 1) == std::string::npos)
             {
-                g_options.gsReplayPasses = static_cast<u32>(std::max(1, atoi(item.c_str() + colon + 1)));
+                passes = static_cast<u32>(std::max(1, atoi(item.c_str() + colon + 1)));
                 item.resize(colon);
             }
-            g_options.gsReplayFile = item;
+            (a == "--gs-replay" ? g_options.gsReplayFile : g_options.vu1ReplayFile) = item;
+            (a == "--gs-replay" ? g_options.gsReplayPasses : g_options.vu1ReplayPasses) = passes;
         }
         else if (a == "--fps")
         {
@@ -527,6 +529,37 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         game->init();
     }
     GsInit();
+    if (!g_options.vu1ReplayFile.empty())
+    {
+        // A recording of VIF1's and VU1's side played back in place of the game (vu1record.cpp), on a thread of its own: nothing
+        // else touches them
+        std::thread replay([] {
+            ThreadOnPerformanceCores();
+            std::vector<u8> file;
+            if (FILE* f = fopen(g_options.vu1ReplayFile.c_str(), "rb"))
+            {
+                fseek(f, 0, SEEK_END);
+                file.resize(static_cast<size_t>(ftell(f)));
+                fseek(f, 0, SEEK_SET);
+                file.resize(fread(file.data(), 1, file.size(), f));
+                fclose(f);
+            }
+            else
+            {
+                Log("vu1 replay: can't read %s", g_options.vu1ReplayFile.c_str());
+            }
+            bool ok = !file.empty();
+            for (u32 pass = 0; ok && pass < g_options.vu1ReplayPasses; pass++)
+            {
+                ok = Vu1Replay(*Hw().vu1, *Hw().vif1, *Hw().gif, file, pass);
+            }
+            PresenterStop();
+        });
+        replay.detach();
+        PresenterRun();
+        fflush(stderr);
+        _exit(0);
+    }
     if (!g_options.gsReplayFile.empty())
     {
         // A recording of the GS's side played back in place of the game (gsrecord.cpp)
@@ -570,7 +603,7 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
     Log("starting %s at %08x", game->title, g_entryPoint);
 
     std::thread ee([] {
-        ThreadOnPerformanceCores();
+        ThreadOnFrameDeadline();
         ThreadCounted(ThreadRole::Ee);
         KernelRunMain();
         PresenterStop();

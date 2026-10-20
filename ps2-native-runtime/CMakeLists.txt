@@ -48,6 +48,7 @@ add_library(ps2runtime STATIC
     runtime/src/log.cpp
     runtime/src/memory.cpp
     runtime/src/render.cpp
+    runtime/src/vu1record.cpp
     runtime/src/mmi.c
     runtime/src/iop/dbcman.cpp
     runtime/src/iop/dnas.cpp

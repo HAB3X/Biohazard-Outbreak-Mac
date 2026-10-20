@@ -375,8 +375,12 @@ DMA transfer and whenever the game reads CSR, and the game's thread stays at mos
 waits for the render thread after the blank's handlers, the blanks going on meanwhile (above), and a blank taken where no
 game thread runs drops its picture instead when the render thread is that far behind. Every working thread
 asks macOS for the performance cores: left to the default class, about a third of the time ran on the efficiency cores.
-With both, WoC's 3D scenes went from 16-20 frames a second to the full 60. `PS2_RENDER_THREAD=0` keeps the GS on the
-game's thread.
+With both, WoC's 3D scenes went from 16-20 frames a second to the full 60. The threads with a frame's work each vblank (the
+EE's, VU1's, the render thread, the timer) are scheduled with macOS's time constraint policy besides (a vblank's period, half of
+it the work, preemptible), as audio threads are: with the interactive class alone, other programs' busy threads (a build's
+compilers) took the cores from them, and Biohazard Outbreak's zoo beside 40 busy processes ran at 11-20 frames a second; now 30.
+A thread that runs on past its share (a loading screen's decompression) is put back to the ordinary policy by the kernel for a
+while. `PS2_REALTIME=0` leaves the policy out, `PS2_RENDER_THREAD=0` keeps the GS on the game's thread.
 
 A game can have VIF1 and VU1 on a thread of their own too (`Ps2GameInfo::vu1Thread`): a queue of the same form in front of the
 render thread's takes VIF1's DMA data and the EE's VU1 starts (CMSAR1) with everything the render thread's took, and the VU1
@@ -404,7 +408,10 @@ addresses and the micro address it's uploaded at): CTTR's ten, 3,961 instruction
 park (10 frames a second to 30). FCSET is translated (its clip flag through the FMAC pipeline, as CLIP's), and a branch with
 the E bit (the run ends after its delay slot; the next starts where it branched, an entry of its own). A block has up to 64
 variants: CTTR's main program's loops settle at 49 pipeline states, and with 32 the rest ran interpreted (its park's
-instructions 98.5% translated then, 99.3% now).
+instructions 98.5% translated then, 99.3% now). The status flag's sticky bits (ZS, SS, US, OS) are kept only when one of the game's
+programs reads them (FSAND of them, FSEQ, FSOR; `g_StickyKept` in the tables): each arithmetic result goes into them, a fifth of
+VU1's time in Biohazard Outbreak's 3D, whose programs read none. Not kept, the interpreter stops a program that reads them (one
+the translation didn't know), and `PS2_VU1=verify` leaves them out of its comparison.
 
 EFU instructions (ERSQRT, ERLENG and the rest, MFP, WAITP) are translated too: P and the result in flight (its ready cycle,
 like the division's) are part of the signature, and the math is `EfuResult` (vu.cpp), the interpreter's own function, so the two
@@ -528,6 +535,11 @@ logging how long its vblanks took to draw; with `--snapshots` it writes each vbl
 saves the pictures `--snapshot-at`/`--snapshot-every` name by the recording's own times. The same recording drawn by two builds
 gives the same hashes when nothing that shows changed (a game's own pictures differ from run to run with the frames it skips),
 and the renderer's speed is measured without the game's.
+
+With VIF1 and VU1 on their own thread, `--control`'s `vu1record SECONDS FILE` records what that thread is given (VIF1's data,
+the EE's VU1 starts, in order) with VU1's and VIF1's state at its start (`vu1record.cpp`), and `--vu1-replay FILE[:PASSES]`
+plays it through VIF1 and VU1 alone, logging each pass's time and a hash of what they handed the GIF: a change to the VU1
+translation or to VIF1 is checked by the same hash, and timed without the game's frame-to-frame variation.
 
 ### The trace build
 

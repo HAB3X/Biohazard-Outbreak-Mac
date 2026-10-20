@@ -151,6 +151,20 @@ u32 PixelAddress8(u32 x, u32 y, u32 bp, u32 bw)
     return block << 8 | Column8(x, y);
 }
 
+void WriteBlockRow4(u8* vm, u32 address, u32 x, u32 y, const u8* data, u32 first, u32 count)
+{
+    u8* block = vm + ((address >> 1) & ~0xFFu);
+    const u16* columns = Column4Table.value[y & 15];
+    for (u32 i = 0; i < count; i++)
+    {
+        u32 n = first + i;
+        u32 value = (data[n >> 1] >> ((n & 1) * 4)) & 0xF;
+        u32 nibble = columns[(x + i) & 31];
+        u8& byte = block[nibble >> 1];
+        byte = (nibble & 1) ? static_cast<u8>((byte & 0x0F) | value << 4) : static_cast<u8>((byte & 0xF0) | value);
+    }
+}
+
 void WriteBlockRow8(u8* vm, u32 address, u32 x, u32 y, const u8* pixels, u32 count)
 {
     u8* block = vm + (address & ~0xFFu);

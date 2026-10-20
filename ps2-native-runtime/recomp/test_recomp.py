@@ -13,9 +13,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import recomp  # noqa: E402
 import selfdecrypt  # noqa: E402
+import vutranslate  # noqa: E402
 from analysis import Program  # noqa: E402
 from codegen import FunctionEmitter  # noqa: E402
 from image import CodeImage  # noqa: E402
+from vudecode import decode  # noqa: E402
 
 NOP = 0x00000000
 JR_RA = 0x03E00008
@@ -41,6 +43,35 @@ def overlay(code):
     """An overlay file: a 0x40 byte header, then code at BASE + 0x40"""
     data = HEADER + code
     return CodeImage.from_overlay(data, BASE, (BASE + 0x40, BASE + len(data)))
+
+
+class VuStickyReadTest(unittest.TestCase):
+    """Which VU instructions read the status flag's sticky bits (the translation keeps them only for a game that has one)"""
+
+    @staticmethod
+    def pair(op7, imm12=0, ibit=False):
+        lower = (op7 << 25) | ((imm12 >> 11) & 1) << 21 | (imm12 & 0x7FF)
+        upper = 0x2FF | ((1 << 31) if ibit else 0)
+        return upper << 32 | lower
+
+    def reads(self, *args, **kwargs):
+        return vutranslate.reads_sticky(decode(0, self.pair(*args, **kwargs)))
+
+    def test_fsand_of_sticky_bits_reads_them(self):
+        self.assertTrue(self.reads(0x16, 0x040))
+        self.assertTrue(self.reads(0x16, 0x200))
+
+    def test_fsand_of_other_bits_doesnt(self):
+        self.assertFalse(self.reads(0x16, 0x00F))
+        self.assertFalse(self.reads(0x16, 0xC00))
+
+    def test_fseq_and_fsor_read_them(self):
+        self.assertTrue(self.reads(0x14))
+        self.assertTrue(self.reads(0x17))
+
+    def test_fsset_and_an_immediate_dont(self):
+        self.assertFalse(self.reads(0x15, 0xFC0))
+        self.assertFalse(self.reads(0x16, 0x040, ibit=True))
 
 
 class OverlayTest(unittest.TestCase):

@@ -298,7 +298,7 @@ void StartHostThread(Thread* t)
 
 void ThreadMain(Thread* t)
 {
-    ThreadOnPerformanceCores();
+    ThreadOnFrameDeadline();
     ThreadCounted(ThreadRole::Ee);
     {
         std::unique_lock<std::mutex> lock(g_lock);
@@ -566,7 +566,7 @@ double g_vblankRate = 59.94;
 
 void TimerThread()
 {
-    ThreadOnPerformanceCores();
+    ThreadOnFrameDeadline();
     ThreadCounted(ThreadRole::Timer);
     using clock = std::chrono::steady_clock;
     auto next = clock::now();

@@ -475,6 +475,9 @@ u32 PixelAddress16SZ(u32 x, u32 y, u32 bp, u32 bw);
 // 8 bit pixels along a row, from x to at most the end of its block's row (16 pixels), written into local memory in the block
 // holding them (address: PixelAddress8 of the first): the block's place found once for the run
 void WriteBlockRow8(u8* vm, u32 address, u32 x, u32 y, const u8* pixels, u32 count);
+// The same for 4 bit pixels (a block's row is 32 of them; address: PixelAddress4 of the first, in nibbles), taken from data at
+// its nibble first on (two to a byte, the low one first)
+void WriteBlockRow4(u8* vm, u32 address, u32 x, u32 y, const u8* data, u32 first, u32 count);
 
 // The 8 KB page of local memory a pixel of a format is in
 u32 PixelPage(u32 psm, u32 x, u32 y, u32 bp, u32 bw);

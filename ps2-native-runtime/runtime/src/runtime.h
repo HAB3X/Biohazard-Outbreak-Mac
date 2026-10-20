@@ -41,6 +41,13 @@ inline void ThreadOnPerformanceCores()
 #endif
 }
 
+// The calling thread scheduled as one that has a frame's work to do each vblank (macOS's time constraint policy, as audio and
+// games' threads are), on the performance cores besides: the EE's, VU1's, the render thread and the timer. With only the
+// interactive class, other programs' busy threads (a compiler's) took the cores from them: with 20 such threads beside it,
+// Biohazard Outbreak File 2's zoo went from 30 frames a second to 13-21; with this, 30. A thread that runs on past its share
+// (a loading screen's decompression) is put back to the ordinary policy by the kernel for a while. $PS2_REALTIME=0: not done
+void ThreadOnFrameDeadline();
+
 // The runtime's working threads by what they do, for their CPU time (--fps): the EE's (the game's threads, with VIF1 and VU1
 // unless they have a thread of their own), the render thread (the GS), VIF1's and VU1's, the sound's and the timer's
 enum class ThreadRole
@@ -279,6 +286,10 @@ struct Options
     u64 gsRecordVblanks = 0;
     std::string gsReplayFile;
     u32 gsReplayPasses = 1;
+    // A recording of VIF1's and VU1's side played back in place of the game, so many times (--vu1-replay FILE[:PASSES];
+    // vu1record.cpp)
+    std::string vu1ReplayFile;
+    u32 vu1ReplayPasses = 1;
 };
 extern Options g_options;
 
@@ -306,6 +317,13 @@ void Vu1Sync();
 void GsRecordData(u32 path, const u8* data, u32 quadwords, bool kick);
 void GsRecordVblank(Gs::Gs& gs, Ee::Gif& gif, u64 vblank);
 bool GsReplay(Gs::Gs& gs, Ee::Gif& gif, const std::vector<u8>& file, u32 pass);
+
+// --- vu1record.cpp: VIF1's and VU1's side recorded (on the VU1 thread: VIF1's data and the EE's VU1 starts in order, from the
+// state at a chunk's start, for so many seconds) and played back through VIF1 and VU1 alone, what they give the GIF hashed
+void Vu1LiveRecord(const std::string& file, double seconds);
+void Vu1RecordChunk(Ee::Vu& vu1, Ee::Vif& vif1);
+void Vu1RecordData(u32 kind, u32 value, const u32* words, u32 count);
+bool Vu1Replay(Ee::Vu& vu1, Ee::Vif& vif1, Ee::Gif& gif, const std::vector<u8>& file, u32 pass);
 
 // --- display.cpp: the window (OpenGL) and the picture's way from the GS to it
 // The window and the GPU's contexts made (the main thread, before RenderStart): the window, or null when headless

@@ -273,6 +273,20 @@ void UnpackStraight(u8* memory, u32 memoryQuadwords, u32 address, const u8* byte
         }
     };
 
+    if constexpr (Vn == 3 && Vl == 0)
+    {
+        if (mode == 0 && cycleLength == wl)
+        {
+            // V4-32 with no mode and no skipping (the most common): the quadwords copied as they are, in at most two runs
+            // (micro memory's end wraps)
+            u32 start = address % memoryQuadwords;
+            u32 first = std::min(count, memoryQuadwords - start);
+            std::memcpy(memory + start * 16, bytes, static_cast<size_t>(first) * 16);
+            std::memcpy(memory, bytes + static_cast<size_t>(first) * 16, static_cast<size_t>(count - first) * 16);
+            return;
+        }
+    }
+
     u32 cycle = 0;
     const u8* at = bytes;
     for (u32 written = 0; written < count; written++, at += elementSize)

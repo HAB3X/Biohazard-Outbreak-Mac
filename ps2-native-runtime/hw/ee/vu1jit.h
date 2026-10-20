@@ -461,9 +461,12 @@ extern const Signature g_Signatures[];
 extern const u32 g_SignatureCount;
 extern const Program g_Programs[];
 extern const u32 g_ProgramCount;
+// Whether the translations keep the status flag's sticky bits (ZS, SS, US, OS): not when none of the game's programs reads them
+extern const bool g_StickyKept;
 // VU0's (empty: its microprograms aren't translated)
 extern const Signature g_SignaturesVu0[];
 extern const u32 g_SignatureCountVu0;
 extern const Program g_ProgramsVu0[];
 extern const u32 g_ProgramCountVu0;
+extern const bool g_StickyKeptVu0;
 }

@@ -1585,6 +1585,17 @@ bool Vu::StepMicro(VuMicroState& state)
         return static_cast<s16>(vi[reg]);
     };
 
+    // A read of the status flag's sticky bits (FSEQ, FSOR, FSAND of them): stale when the translated programs don't keep them
+    auto readSticky = [&](bool reads) {
+        if (reads && stickyUnkept)
+        {
+            std::fprintf(stderr, "graphics: a VU%u program at %#x reads its status flag's sticky bits, which the translation "
+                                 "doesn't keep (none of the game's programs read them: vutranslate.py): stopped\n",
+                         index_, state.pc * 8);
+            std::abort();
+        }
+    };
+
     // An integer register written; the integer ALU's instructions (IADD, ISUB, IAND, IOR, IADDI, IADDIU, ISUBIU) and the
     // increments and decrements of LQI, LQD, SQI and SQD keep its old value for the branch rule, the others (flag reads, MTIR,
     // XTOP...) don't. (ps2-native-runtime: the increments too. Wrath of Cortex's model program counts its vertexes with LQI's
@@ -2136,12 +2147,15 @@ bool Vu::StepMicro(VuMicroState& state)
                 writeVi(it, static_cast<u16>(clipFlag & 0xFFF));
                 break;
             case Lower::Fseq:
+                readSticky(true);
                 writeVi(it, (statusFlag & 0xFFF) == imm12 ? 1 : 0);
                 break;
             case Lower::Fsand:
+                readSticky((imm12 & 0x3C0) != 0);
                 writeVi(it, static_cast<u16>((statusFlag & 0xFFF) & imm12));
                 break;
             case Lower::Fsor:
+                readSticky(true);
                 writeVi(it, static_cast<u16>((statusFlag & 0xFFF) | imm12));
                 break;
             case Lower::Fsset:

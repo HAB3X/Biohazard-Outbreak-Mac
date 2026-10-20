@@ -9,6 +9,7 @@
 //   peek ADDR [WORDS]        guest words (hex address) to the log
 //   ram FILE                 the 32 MB of main memory written to FILE (to look for what the game loaded: texts, tables)
 //   record VBLANKS FILE      --gs-record from the next vblank
+//   vu1record SECONDS FILE   VIF1's and VU1's side recorded for --vu1-replay (with VIF1 and VU1 on their own thread)
 //   stop                     the run ends as --run-seconds ends it (the VU1 counts and reports are logged)
 //   quit                     the runtime stops at once
 #include "runtime.h"
@@ -146,6 +147,13 @@ void Handle(const std::string& line)
         std::string file;
         in >> vblanks >> file;
         GsLiveRecord(file, vblanks);
+    }
+    else if (command == "vu1record")
+    {
+        double seconds = 0;
+        std::string file;
+        in >> seconds >> file;
+        Vu1LiveRecord(file, seconds);
     }
     else if (command == "stop")
     {

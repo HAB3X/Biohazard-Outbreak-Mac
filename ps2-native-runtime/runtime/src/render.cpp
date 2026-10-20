@@ -309,7 +309,7 @@ private:
 
     void Run()
     {
-        ThreadOnPerformanceCores();
+        ThreadOnFrameDeadline();
         ThreadCounted(ThreadRole::Render);
         DisplayRenderThreadStart();
         Ee::Gif& gif = *Hw().gif;
@@ -342,18 +342,20 @@ private:
     // queue, handed over at each chunk's end
     void RunVu1()
     {
-        ThreadOnPerformanceCores();
+        ThreadOnFrameDeadline();
         ThreadCounted(ThreadRole::Vu1);
         t_onVu1Thread = true;
         Ee::Vif& vif1 = *Hw().vif1;
         for (;;)
         {
             Chunk* chunk = vu1_->Next();
+            Vu1RecordChunk(*Hw().vu1, vif1);
             ForEachRecord(*chunk, [&](const Header& header, const u8* data) {
                 switch (header.kind)
                 {
                 case RecordVif1:
                 {
+                    Vu1RecordData(1, 0, reinterpret_cast<const u32*>(data), header.words);
                     u32 taken = vif1.Process(reinterpret_cast<const u32*>(data), header.words);
                     if (taken < header.words || vif1.stalled())
                     {
@@ -363,6 +365,7 @@ private:
                     break;
                 }
                 case RecordVu1Start:
+                    Vu1RecordData(2, header.value, nullptr, 0);
                     Hw().vu1->Run(header.value);
                     break;
                 case RecordTransfer:

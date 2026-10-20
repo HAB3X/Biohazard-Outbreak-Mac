@@ -192,6 +192,9 @@ public:
     // The instructions of a program the interpreter doesn't know (an address each, upper or lower), for the tests
     std::vector<u32> UnknownInstructions(u32 start, u32 count);
 
+    // The status flag's sticky bits (ZS, SS, US, OS) aren't kept by the translated programs this VU runs (none of the game's
+    // programs reads them: vutranslate.py), so they're stale: an instruction that reads them stops the program
+    bool stickyUnkept = false;
     // Instructions run (statistics), and the address the running program started at (for traces)
     u64 executed = 0;
     // With timing on (TWIN_FRAME_STATS): the time in programs, and the part of it in XGKICK's packets (the GIF and the GS)

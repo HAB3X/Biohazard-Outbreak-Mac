@@ -1,6 +1,8 @@
 #include "runtime.h"
 
 #include <mach/mach.h>
+#include <mach/mach_time.h>
+#include <mach/thread_policy.h>
 #include <mutex>
 #include <execinfo.h>
 #include <set>
@@ -82,6 +84,37 @@ struct CountedThread
 };
 std::mutex g_countedLock;
 std::vector<CountedThread> g_counted;
+}
+
+void ThreadOnFrameDeadline()
+{
+    ThreadOnPerformanceCores();
+    static const bool wanted = [] {
+        const char* setting = getenv("PS2_REALTIME");
+        return setting == nullptr || std::strcmp(setting, "0") != 0;
+    }();
+    if (!wanted)
+    {
+        return;
+    }
+    // A vblank's period; half of it the work, done within the period, and the thread preemptible
+    mach_timebase_info_data_t timebase;
+    mach_timebase_info(&timebase);
+    const double period = 1e9 / 59.94 * timebase.denom / timebase.numer;
+    thread_time_constraint_policy_data_t policy;
+    policy.period = static_cast<uint32_t>(period);
+    policy.computation = static_cast<uint32_t>(period / 2);
+    policy.constraint = static_cast<uint32_t>(period);
+    policy.preemptible = TRUE;
+    mach_port_t self = mach_thread_self();
+    kern_return_t result = thread_policy_set(self, THREAD_TIME_CONSTRAINT_POLICY, reinterpret_cast<thread_policy_t>(&policy),
+                                             THREAD_TIME_CONSTRAINT_POLICY_COUNT);
+    mach_port_deallocate(mach_task_self(), self);
+    if (result != KERN_SUCCESS && Once("realtime"))
+    {
+        // (Logged and gone on with: the thread keeps the interactive class)
+        Log("threads: the time constraint policy wasn't given (%d): the interactive class only", result);
+    }
 }
 
 void ThreadCounted(ThreadRole role)

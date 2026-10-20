@@ -653,7 +653,7 @@ public:
         {
             what = "Q, P, I or R";
         }
-        else if (shadow_.statusFlag != vu_.statusFlag)
+        else if ((shadow_.statusFlag ^ vu_.statusFlag) & ~(vu_.stickyUnkept ? 0x3C0u : 0u))
         {
             what = "the status flag";
         }
@@ -995,6 +995,8 @@ void AttachVu1Translation(Vu& vu1)
     }
 
     auto dispatcher = std::make_shared<Dispatcher>(Vu1Table);
+    // (the sticky bits aren't compared by the check then: the interpreter's are kept)
+    vu1.stickyUnkept = !g_StickyKept;
     if (mode == "verify")
     {
         std::fprintf(stderr, "graphics: VU1 translated and checked against the interpreter (PS2_VU1=verify)\n");

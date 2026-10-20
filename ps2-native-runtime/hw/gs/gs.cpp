@@ -775,23 +775,26 @@ void Gs::WriteImage(const u8* data, u32 bytes)
         }
         else
         {
-            auto put4 = [&](u32 value) {
-                if (transferY_ >= height)
-                {
-                    return;
-                }
-
-                u32 a = PixelAddress4((left + transferX_) & 2047, (top + transferY_) & 2047, bp, bw);
-                u8& byte = vm_[a >> 1];
-                byte = (a & 1) ? static_cast<u8>((byte & 0x0F) | value << 4) : static_cast<u8>((byte & 0xF0) | value);
-                mark(a >> 14);
-                advance();
-            };
-            for (; offset < size; offset++)
+            // A run at a time as for 8 bits (32 across), the data two pixels to a byte, the low nibble first
+            u32 nibble = offset * 2;
+            const u32 nibbles = size * 2;
+            while (nibble < nibbles && transferY_ < height)
             {
-                put4(at[offset] & 0xF);
-                put4(at[offset] >> 4);
+                u32 x = (left + transferX_) & 2047;
+                u32 run = std::min({32 - (x & 31), width - transferX_, nibbles - nibble});
+                u32 y = (top + transferY_) & 2047;
+                u32 a = PixelAddress4(x, y, bp, bw);
+                WriteBlockRow4(vm_, a, x, y, at, nibble, run);
+                mark(a >> 14);
+                nibble += run;
+                transferX_ += run;
+                if (transferX_ == width)
+                {
+                    transferX_ = 0;
+                    transferY_++;
+                }
             }
+            offset = size;
         }
 
         // Past the rectangle's end the data is dropped, as put drops it (a part pixel at the data's end waits for the next)

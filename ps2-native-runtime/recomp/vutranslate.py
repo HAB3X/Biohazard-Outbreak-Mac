@@ -43,6 +43,10 @@ CODE = '0x7FF'
 DATA = '0x3FF0'
 NAME = 'Program'
 TABLE = ''
+# Whether the status flag's sticky bits (ZS, SS, US, OS) are kept: set by translate_all, off when none of the game's VU1 programs
+# reads them (FSAND of those bits, FSEQ, FSOR) and nothing else can (VU0's status is the EE's, CFC2). Kept, each arithmetic
+# result goes into them: about a fifth of VU1's time in Biohazard Outbreak's 3D
+KEEP_STICKY = True
 # At most this many variants of a block (more: the interpreter runs it). CTTR's main program's loops settle at 49 states;
 # at 32 the rest ran interpreted, about a third of VU1's time in its park
 MAX_VARIANTS = 64
@@ -612,7 +616,7 @@ class Sim:
         # The FMAC pipeline's entry
         if upper_fmac or lower_fmac:
             sets_status = lower_fmac and d.lower == 'fsset'
-            if not self.any_entry and not mac_changed and not sets_status:
+            if KEEP_STICKY and not self.any_entry and not mac_changed and not sets_status:
                 # The run's first entry (or the first since FSSET) carries the MAC flag it started with: its bits go into the
                 # sticky ones
                 out.append('    sticky_bits |= StatusLow(MacOf(%s));' % self.pmac)
@@ -662,7 +666,8 @@ class Sim:
             out.append('    const V4u %s = AsU(AsF(%s) %s %s);' % (raw, accv, '+' if d.op == 'madd' else '-', p))
         m = t.new('m')
         out.append('    const V4u %s = Blend<%d>(Splat(0x3F800000u), %s);' % (m, dest, raw))
-        out.append('    AccumulateResults(sticky, %s);' % m)
+        if KEEP_STICKY:
+            out.append('    AccumulateResults(sticky, %s);' % m)
         self.pmac = m
         if d.to_acc or d.fd != 0:
             res = t.new('u')
@@ -683,7 +688,8 @@ class Sim:
         m = t.new('m')
         # The w lane's MAC bits stay as they were
         out.append('    const V4u %s = Blend<7>(%s, %s);' % (m, self.pmac, raw))
-        out.append('    Accumulate(sticky, %s);' % m)
+        if KEEP_STICKY:
+            out.append('    Accumulate(sticky, %s);' % m)
         self.pmac = m
         res = t.new('u')
         out.append('    const V4u %s = Clamp(%s);' % (res, raw))
@@ -930,11 +936,22 @@ class Sim:
         out.append('    vu.Kick(%s & 0x3FF);' % vi(is_))
 
 
+def reads_sticky(d):
+    """Whether an instruction reads the status flag's sticky bits (vu.cpp's interpreter stops at one when they aren't kept)."""
+    if d.ibit:
+        return False
+    if d.lower == 'fsand':
+        return (((d.lower_word >> 21) & 1) << 11 | (d.lower_word & 0x7FF)) & 0x3C0 != 0
+    return d.lower in ('fseq', 'fsor')
+
+
 def translate_all(root, config_path=None):
+    global KEEP_STICKY
     programs = read_programs(root, config_path)
     translators = []
     for index, (start, words) in enumerate(programs):
         translators.append(Translator(index, start, words))
+    KEEP_STICKY = VU0 or any(reads_sticky(d) for tr in translators for d in tr.ins)
 
     # Where programs are entered: their starts and after their E bits (a new run: nothing in flight), and with whatever a
     # program leaves with at its indirect exits (or with nothing in flight), their starts, the places a call (BAL, JALR)
@@ -1269,16 +1286,19 @@ def generate(root, output, config_path=None):
                                                                        len(tr.variants)))
     out.append('};')
     out.append('const u32 g_ProgramCount%s = %d;' % (TABLE, len(translators)))
+    out.append('const bool g_StickyKept%s = %s;' % (TABLE, 'true' if KEEP_STICKY else 'false'))
     # VU0's microprograms aren't translated: its tables are empty
     out.append('const Signature g_SignaturesVu0[1] = {};')
     out.append('const u32 g_SignatureCountVu0 = 0;')
     out.append('const Program g_ProgramsVu0[1] = {};')
     out.append('const u32 g_ProgramCountVu0 = 0;')
+    out.append('const bool g_StickyKeptVu0 = true;')
     out.append('}')
     write_if_changed(output, '\n'.join(out) + '\n')
     total = sum(len(tr.variants) for tr in translators)
     instructions = sum(tr.size for tr in translators)
-    print('vu1_translate: %d programs, %d instructions, %d variants' % (len(translators), instructions, total))
+    print('vu1_translate: %d programs, %d instructions, %d variants%s' % (len(translators), instructions, total,
+                                                                        '' if KEEP_STICKY else ', no sticky status bits'))
 
 
 def main():
