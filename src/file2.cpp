@@ -26,6 +26,9 @@ int main(int argc, char** argv)
     // steps of 255 different (the replays of the character and partner selects: at most 4, on 3% of the pixels, all on the
     // text) and nothing else; the selects went from 7-22 frames a second to 30 (runtime.h's gsRoundedRegionBlends)
     game.gsRoundedRegionBlends = 1;
+    // VIF1 and VU1 on a thread of their own (runtime.h's vu1Thread): its VIF1 codes have no interrupt bit, and VU1 was most of
+    // the EE's time in its 3D
+    game.vu1Thread = 1;
     BiohazardControls::Apply(game, BiohazardControls::File2);
     game.networkDns = Network::ObsrvDns;
     game.typing = Typing::Typing;
