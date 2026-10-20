@@ -16,6 +16,15 @@ namespace BiohazardControls
 // Where one game's memory keeps what the controls read (the executable's data and the game overlay's, at the addresses the
 // game loads them to). The game keeps its active tasks (the game's loop, the title, a menu, the status screen...) in a list of
 // up to 8 entries, each the address of the task's function, with the count in a word of its own: a task's function says what's up
+// A row of SELECT's pause menu: its cursor's value there, its middle (a fraction of the picture's height), and whether it's a
+// setting (the left and right keys, and the wheel, change it; a click doesn't choose it)
+struct PauseItem
+{
+    int value;
+    float y;
+    bool setting;
+};
+
 struct Layout
 {
     uint32_t taskCount, taskList;
@@ -42,6 +51,8 @@ struct Layout
     uint32_t statusCursor;  // the status screen's item cursor: a word, the address of the slot it's on (the equipped weapon's is elsewhere)
     uint32_t statusPopup;   // a byte that's nonzero while the item's actions (use, combine, give...) are up
     uint32_t statusKind;    // a byte: what the status task shows (1 the status screen, 2 the map, 4 SELECT's pause menu)
+    const PauseItem* pauseRows; // the pause menu's rows
+    int pauseRowCount;
     // The title's OPTIONS: the word holding the address of its state while it's up (found by memory diffs of the list's cursor:
     // File 2 gp - 0x6064, File 1 0x23BE40), its rows, and the first row's middle as a fraction of the picture's height
     uint32_t optionsState;

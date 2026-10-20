@@ -228,18 +228,16 @@ int SlotOf(uint32_t cursor)
 bool ActionsUp() { return HasTask(g_layout.statusTask) && (Word(g_layout.statusPopup) & 0xFF) != 0; }
 uint32_t ActionCursor() { return g_layout.statusCursor - 2; }
 
-// SELECT's pause menu: its cursor a byte 3 before the status task's screen word. Its rows by the cursor's value: 0 the
-// controller type, 1 vibration, 3 and 4 the volumes, 5 brightness, 6 and 7 the screen's position, 8 default settings, 9 quit
-// the game, 10 EXIT (2 isn't used); where they're drawn, as fractions of the picture's height (seen in play, both games)
-struct PauseItem
-{
-    int value;
-    float y;
-    bool setting; // a value the left and right keys change (the wheel turns it)
-};
-const PauseItem PauseItems[] = {{0, 0.200f, true},  {1, 0.379f, true},  {3, 0.468f, true},  {4, 0.513f, true},
-                                {5, 0.602f, true},  {6, 0.691f, true},  {7, 0.736f, true},  {8, 0.780f, false},
-                                {9, 0.825f, false}, {10, 0.870f, false}};
+// SELECT's pause menu: its cursor a byte 3 before the status task's screen word, its rows (Layout::pauseRows) by the cursor's
+// value with where they're drawn (fractions of the picture's height, seen in play: File 2 0 the controller type, 1 vibration,
+// 3 and 4 the volumes, 5 brightness, 6 and 7 the screen's position, 8 default settings, 9 quit the game, 10 EXIT; File 1 has
+// STEREO as its 2 and a third volume)
+const PauseItem File2PauseRows[] = {{0, 0.200f, true},  {1, 0.379f, true},  {3, 0.468f, true},  {4, 0.513f, true},
+                                    {5, 0.602f, true},  {6, 0.691f, true},  {7, 0.736f, true},  {8, 0.780f, false},
+                                    {9, 0.825f, false}, {10, 0.870f, false}};
+const PauseItem File1PauseRows[] = {{0, 0.200f, true},  {1, 0.379f, true},  {2, 0.468f, true},  {3, 0.513f, true},
+                                    {4, 0.557f, true},  {5, 0.646f, true},  {6, 0.736f, true},  {7, 0.780f, true},
+                                    {8, 0.825f, false}, {9, 0.870f, false}, {10, 0.914f, false}};
 constexpr float PauseLeft = 0.19f, PauseRight = 0.81f, PauseRowHalf = 0.0223f;
 uint32_t PauseCursor() { return g_layout.statusKind - 3; }
 
@@ -518,8 +516,9 @@ bool Under(float x, float y, bool click)
     }
     if (CurrentMode() == Pause)
     {
-        for (const PauseItem& item : PauseItems)
+        for (int n = 0; n < g_layout.pauseRowCount; n++)
         {
+            const PauseItem& item = g_layout.pauseRows[n];
             if (x >= PauseLeft && x < PauseRight && std::abs(y - item.y) < PauseRowHalf)
             {
                 Aim(Goal::PauseRow, item.value, click && !item.setting);
@@ -792,6 +791,8 @@ const Layout File2 = {.taskCount = 0x24ad3c,
                       .statusCursor = 0x7671f4,
                       .statusPopup = 0x767210,
                       .statusKind = 0x767254,
+                      .pauseRows = File2PauseRows,
+                      .pauseRowCount = 10,
                       .optionsState = 0x24b08c,
                       .optionsItems = 7,
                       .optionsTop = 0.295f,
@@ -828,6 +829,8 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .statusCursor = 0x720b84,
                       .statusPopup = 0x720ba0,
                       .statusKind = 0x720be4,
+                      .pauseRows = File1PauseRows,
+                      .pauseRowCount = 11,
                       .optionsState = 0x23be40,
                       .optionsItems = 6,
                       .optionsTop = 0.339f,
