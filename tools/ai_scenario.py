@@ -8,8 +8,6 @@ SCENARIO  bar-idle      File 1, Outbreak (J's Bar), Kevin, normal: the player st
                         the zombies come in; the partners alone stand between them and the player
           bar-commands  the same, the player running off and back and giving each command in turn (This way!, Mark and
                         Cindy by name, Go!, Help me!), 12 s apart, then standing still
-          bar-leave     the same, the player walking out to the back room and back before the zombies come (do the
-                        partners come along?)
           zoo-idle      File 2, Wild Things (the zoo), the first character and partners, easy: the player standing still
 MODE      New or Original (the PC menus' Gameplay: Partner AI)
 --seconds the game time measured from the start of play (240); a run ends early when the partners stop thinking (the
@@ -40,6 +38,7 @@ class Run:
     def __init__(self, game, folder, env):
         self.game, self.folder = game, folder
         self.fifo, self.log = folder / "c", folder / "game.log"
+        self.fifo.unlink(missing_ok=True)  # a FIFO left by an earlier run would be taken for this game's
         disc = os.environ.get(f"{game.upper()}_DISC") or json.loads((ROOT / "local.json").read_text())[game]
         cmd = [str(ROOT / "build" / f"biohazard-{game}"), "--disc", disc, "--patch", str(ROOT / "build" / f"english-{game}.patch"),
                "--headless", "--run-seconds", "6000", "--fps", "--control", str(self.fifo), "--snapshots", str(folder / "shots"),
@@ -229,56 +228,7 @@ def commands(run, log, seconds, seed):
     return start
 
 
-# The player's record (src/partner_ai.cpp's Layouts): position +0x38 (three floats), facing +0x92 (0x10000 a turn, 0 toward
-# +z, 0x4000 toward +x), room +0x1E2
-PLAYER = {"file1": 0x476DD0, "file2": 0x47BD30}
-
-
-def player(run):
-    """(x, z, facing, room) of the player's character"""
-    import struct
-    base = PLAYER[run.game]
-    x, _, z = struct.unpack("<3f", struct.pack("<3I", *run.peek(base + 0x38, 3)))
-    facing = run.peek(base + 0x90)[0] >> 16
-    room = run.peek(base + 0x1E0)[0] >> 16
-    return x, z, facing, room
-
-
-def walk_to(run, x, z, near=120, timeout=40):
-    """Turns the player toward (x, z) and walks there (A/D turn: left raises the facing, as the game's own turning rule)."""
-    import math
-    start = time.time()
-    while time.time() - start < timeout:
-        px, pz, facing, _ = player(run)
-        if math.hypot(x - px, z - pz) < near:
-            return True
-        wanted = int(math.atan2(x - px, z - pz) * 65536 / (2 * math.pi)) & 0xFFFF
-        off = (wanted - facing + 0x8000) % 0x10000 - 0x8000
-        if abs(off) > 0x1400:
-            run.key("A" if off > 0 else "D", 0.12, 0.05)
-        else:
-            run.key("W", 0.5, 0)
-    return False
-
-
-def leave(run, log, seconds, seed):
-    """File 1's bar before the zombies come: the player walks out through the door to the back (room 4), waits there 20 s,
-    walks back into the bar and waits again; then stands still. The partners should come along each time"""
-    start = log_time(log)
-    for (x, z), door in (((9300, 12900), True), ((9700, 12900), False)):
-        walk_to(run, x, z)
-        if door:
-            run.key("E", 0.3, 3)
-    wait_game(log, 20)
-    for (x, z), door in (((9450, 12900), True), ((8400, 13150), False)):
-        walk_to(run, x, z)
-        if door:
-            run.key("E", 0.3, 3)
-    play_until(run, log, start + seconds)
-    return start
-
-
-SCENARIOS = {"bar-idle": ("file1", to_bar, idle), "bar-commands": ("file1", to_bar, commands), "bar-leave": ("file1", to_bar, leave),
+SCENARIOS = {"bar-idle": ("file1", to_bar, idle), "bar-commands": ("file1", to_bar, commands),
              "zoo-idle": ("file2", to_zoo, idle)}
 
 
