@@ -1,6 +1,7 @@
 // Biohazard Outbreak for Mac: the recompiled executable and its overlays on the PS2 runtime
 #include "controls.h"
 #include "network.h"
+#include "partner_ai.h"
 #include "ps2/runtime.h"
 #include "tsnd.h"
 #include "typing.h"
@@ -18,6 +19,10 @@ extern "C" void netwk_soft_keyboard_step(Ps2Cpu* c)
 // netwk's connection setup step: the configuration list skipped (src/network.cpp)
 extern "C" void netwk_005c88c0(Ps2Cpu* c);
 extern "C" void netwk_setup_step(Ps2Cpu* c) { Network::SetupStep(c, Network::File1Setup, netwk_005c88c0); }
+
+// The partners' think, SINGLE.BIN's (src/partner_ai.cpp)
+extern "C" void single_00822440(Ps2Cpu* c);
+extern "C" void single_partner_think(Ps2Cpu* c) { PartnerAi::Think(c, PartnerAi::File1, single_00822440); }
 
 int main(int argc, char** argv)
 {
