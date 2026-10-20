@@ -9,6 +9,11 @@ int main(int argc, char** argv)
     // Its 3D masks red's lowest bit (FBMSK 1), which nothing reads back or shows: replays of File 1's bar, File 2's Training
     // Ground and its zoo drew every picture the same without it, 3 to 35 times faster (runtime.h's gsLooseFrameMasks)
     game.gsLooseFrameMasks = 1;
+    // Its text is drawn a glyph at a time, each a region of its texture (REGION_CLAMP) blended over its shadow: each one a
+    // shader blend on a copy of the frame, a command buffer of its own. GL's blending draws it with the text's edges a few
+    // steps of 255 different (the replays of the character and partner selects: at most 4, on 3% of the pixels, all on the
+    // text) and nothing else; the selects went from 7-22 frames a second to 30 (runtime.h's gsRoundedRegionBlends)
+    game.gsRoundedRegionBlends = 1;
     BiohazardControls::Apply(game, BiohazardControls::File2);
     Tsnd::Register();
     return ps2_main(argc, argv, &game);
