@@ -3,12 +3,24 @@
 #include "network.h"
 #include "ps2/runtime.h"
 #include "tsnd.h"
+#include "typing.h"
+
+#include "ps2/recomp.h"
+
+// netwk's software keyboard's step (src/typing.cpp), its body as recompiled
+extern "C" void netwk_00553820(Ps2Cpu* c);
+extern "C" void netwk_soft_keyboard_step(Ps2Cpu* c)
+{
+    Typing::SoftKeyboardStep();
+    netwk_00553820(c);
+}
 
 int main(int argc, char** argv)
 {
     static Ps2GameInfo game = {"Biohazard Outbreak", "SLPM_654.28", 1294104};
     BiohazardControls::Apply(game, BiohazardControls::File1);
     game.networkDns = Network::ObsrvDns;
+    game.typing = Typing::Typing;
     Tsnd::Register();
     Network::RegisterLoadHigh();
     Network::RegisterUsbSearcher();
