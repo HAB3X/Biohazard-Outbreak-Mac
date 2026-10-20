@@ -73,6 +73,8 @@ struct Layout
     uint32_t collectionState;
     uint32_t collectionCursor;
     uint32_t collectionTab;
+    uint32_t collectionTopTask; // File 2: the collection's first screen (COLLECTION, DATA CONVERT); 0 none
+    uint32_t charLogCursor;     // the character log's cursor (a byte: 0 single play's data, 1 network play's)
     uint32_t collectionFirst; // the first cell the view shows (File 2 0x28, File 1 0x10; dumps of the view scrolled 0, 1, 2 rows)
     // The network browser (the KDDI browser of Network Play, its overlay `browserOverlay` as the disc names it): the word
     // (File 2 0x24B360, File 1 0x23C094) holding the address of its pointer's state, the pointer's x and y (16 bits each, in the 640 x 448
