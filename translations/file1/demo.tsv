@@ -414,3 +414,6 @@ c993a376f6	: Hide window
 6f231ef54d	OK
 9d37226027	Back
 3515d3b51c	BGM playing
+# The brightness screen's box is narrower in File 1 than File 2's: about 32 cells a line
+f60dd499aa	Adjust the brightness until the
+81ee28b677	bar's bottom colors disappear.

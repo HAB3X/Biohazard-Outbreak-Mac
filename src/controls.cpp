@@ -105,7 +105,26 @@ bool HasTask(uint32_t task)
 }
 
 // The title's menu: the executable's loop alone, with the title's state at its menu
-bool TitleMenu() { return Word(g_layout.taskCount) == 1 && HasTask(g_layout.baseTask) && Word(g_layout.titleState) == 3; }
+bool TitleMenu()
+{
+    return Word(g_layout.taskCount) == 1 && HasTask(g_layout.baseTask) && Word(g_layout.titleState) == g_layout.titleMenus &&
+           (g_layout.titleObjects == 0 || Word(g_layout.titleObjects) == 3);
+}
+
+// The executable's loop alone is the title (movies, PRESS START: START skips and starts) or a menu reached from the title
+// menu. The title's state says which: the menus' value, or (File 1, whose other menus read 0 as its movies do) 0 with the last
+// value other than 0 the menus': the player came from them
+bool TitleMovie()
+{
+    static uint32_t lastSet = 0;
+    uint32_t state = Word(g_layout.titleState);
+    if (state != 0)
+    {
+        lastSet = state;
+    }
+    bool menus = state == g_layout.titleMenus || (g_layout.titleObjects != 0 && state == 0 && lastSet == g_layout.titleMenus);
+    return !menus;
+}
 
 // The game's loop with nothing on top of it is play; the executable's own loop alone (a movie, the title's "PRESS START", a load)
 // is the title and movies; anything else (the title menu, a select, the status screen over the game) is a menu
@@ -132,7 +151,7 @@ int CurrentMode()
     {
         return Title;
     }
-    return count == 1 && HasTask(g_layout.baseTask) && !TitleMenu() ? Title : Menus;
+    return count == 1 && HasTask(g_layout.baseTask) && TitleMovie() ? Title : Menus;
 }
 
 int MenuUp() { return CurrentMode() != Play; }
@@ -596,6 +615,7 @@ const Layout File2 = {.taskCount = 0x24ad3c,
                       .scenarioTask = 0x553420,
                       .screenState = 0,
                       .titleState = 0x24ac70,
+                      .titleMenus = 3,
                       .statusTask = 0x6c8fa0,
                       .titleCursor = 0x8bfe4c,
                       .statusTab = 0x76a60e,
@@ -621,7 +641,9 @@ const Layout File1 = {.taskCount = 0x23bb30,
                       .selectTask = 0,
                       .scenarioTask = 0,
                       .screenState = 0x3065fc,
-                      .titleState = 0x23ba68,
+                      .titleState = 0x200d5c,
+                      .titleMenus = 1,
+                      .titleObjects = 0x23ba68,
                       .statusTask = 0x6b9450,
                       .titleCursor = 0x90d1cc,
                       .statusTab = 0x723f9e,
