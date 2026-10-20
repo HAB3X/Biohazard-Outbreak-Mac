@@ -65,7 +65,16 @@ picture is quantised back to its own palette (unchanged pixels keep their bytes)
 A picture with PS2 buttons gets two variants (disc patch version 2: variant 1 laid while the keyboard and mouse were used last,
 2 while a gamepad was): the gamepad's keeps the PS2 symbols, the keyboard's draws key caps with the keys of bindings.txt (or
 src/controls.cpp's defaults). The text fonts' four symbol glyphs (in-text ○ × △ □, and the English's {circle} {cross}
-{triangle} {square}) get the same two variants (tools/bh_font.py: E, Esc, Spc, F by default).
+{triangle} {square}) get the same two variants (tools/bh_font.py: E, Esc, Spc, F by default): those are the menus' keys.
+A button can mean another key in play: ✕ is Esc (back) in the menus but Left Shift (the game's Cancel/Dash) in play, □ is F
+in the menus but the left mouse button (Ad-lib) in play. So a line about play writes {play:cross} (and {play:circle}...):
+four other font cells, ∈ ∋ ⊆ ⊇ (no unit of either disc uses them), drawn with play's keys (E, a Shift arrow, Spc, LMB by
+default) or, for the gamepad, the PS2 symbols. Where ✕ appears (from both discs' units): in menus, File 1's DEMO.BIN hints
+("○: start ×: back") and NETWK.BIN's (cancel, end); in play texts, File 1's FILE documents (file001: "Lending a Shoulder",
+stop with ×; file028: × while ready) and the map and ad-lib ones (△, □, ○), which now use the play glyphs; File 2's
+documents name the game's actions instead (Action, Cancel, Ad-lib, Ready, Map: the controller settings' own labels), and
+its two lines that said "X" say Cancel. Checked in play (File 1, a test line on the scenario select): the play cells show
+the play keys (work/file1-glyph-test.png on the machine that made it).
 - Both: cockpit.tex (status screen button glyphs, the map's R1/L1, the item categories and map controls), Error.tm2 (network
   error), lobby_00/03/05 (lobby buttons and hints, keys), Softkey.tm2, BS_SKIN.TM2 (browser button icons, keys), netwk.tex
   (network menus' button icons, keys).

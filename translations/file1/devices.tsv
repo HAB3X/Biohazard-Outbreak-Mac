@@ -15,6 +15,6 @@ fdef08a275	The save file (8MB)
 ab09364f4e	Test-writing the save data...
 e6e311ab70	No save file in slot %s.
 096e82cecc	Do not turn off or reset the system
-666343bef5	[About the Map 1]\nOpen the map screen with <c1>{triangle}<c0>\nto see rooms you've already visited.\nWith a map in hand, you can see info on\nall rooms.\n
-3bcdffbf42	[About the Map 3]\nIf you hold <c1>{triangle}<c0> while opening the\nmap screen, you can move the PC while\nthe map is shown.\n
+666343bef5	[About the Map 1]\nOpen the map screen with <c1>{play:triangle}<c0>\nto see rooms you've already visited.\nWith a map in hand, you can see info on\nall rooms.\n
+3bcdffbf42	[About the Map 3]\nIf you hold <c1>{play:triangle}<c0> while opening the\nmap screen, you can move the PC while\nthe map is shown.\n
 9a996be8a7	Normally an order is answered by the AIPC\nnear the PC. Call an AIPC's <c1>name<c0> with\n<c1>Appeal Shift<c0> and then give an order to\norder that AIPC.\n

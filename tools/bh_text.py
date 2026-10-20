@@ -63,15 +63,19 @@ def cells(raw):
 
 
 # The PS2 buttons the English may name as the font's own symbols (Shift-JIS ○ × △ □), which show the keyboard's keys when the
-# keyboard is used (bh_font.py): written {circle} {cross} {triangle} {square} in the translations
-BUTTON_GLYPHS = {"{circle}": b"\x81\x9b", "{cross}": b"\x81\x7e", "{triangle}": b"\x81\xa2", "{square}": b"\x81\xa0"}
+# keyboard is used (bh_font.py): written {circle} {cross} {triangle} {square} in the translations. Those are the menus' keys
+# (✕ is Esc, back); a line about play names the button as play has it, {play:cross} (✕ is Left Shift, run): four symbols the
+# games' text never uses (∈ ∋ ⊆ ⊇, checked over every unit of both discs) drawn as play's keys, or as the PS2's symbols
+BUTTON_GLYPHS = {"{circle}": b"\x81\x9b", "{cross}": b"\x81\x7e", "{triangle}": b"\x81\xa2", "{square}": b"\x81\xa0",
+                 "{play:circle}": b"\x81\xb8", "{play:cross}": b"\x81\xb9", "{play:triangle}": b"\x81\xba",
+                 "{play:square}": b"\x81\xbb"}
 
 
 def english_bytes(text, original):
     """The bytes of an English line: plain ASCII (and the button symbols of BUTTON_GLYPHS), with the control tags and the end
     marker of the Japanese it replaces. A Japanese line that ends in spaces (a field's width: the choices' place, a column)
     keeps its width: the English is padded to it."""
-    parts = re.split(r"(\{(?:circle|cross|triangle|square)\})", text.replace("\\n", "\n"))
+    parts = re.split(r"(\{(?:play:)?(?:circle|cross|triangle|square)\})", text.replace("\\n", "\n"))
     raw = b"".join(BUTTON_GLYPHS[p] if p in BUTTON_GLYPHS else p.encode("ascii") for p in parts)
     if tags(raw) != tags(original):
         raise ValueError(f"control tags {tags(raw)} differ from the original's {tags(original)}")
