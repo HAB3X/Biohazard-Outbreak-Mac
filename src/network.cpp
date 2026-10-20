@@ -6,7 +6,7 @@
 
 #include "ps2/recomp.h"
 
-// netwk's check of the chosen card for the BWNETCNF directory (0x5C84F0, called in state 4 of the Network Play
-// setup's step, 0x5C0410): -2 while libmc2 is asked, -1 when the directory is there (the setup goes on to read the configurations), any
-// other value an error of the card's
+// netwk's check of the chosen card for the BWNETCNF directory (File 2's 0x5C84F0, called in state 4 of the Network Play
+// setup's step, 0x5C0410; File 1's 0x5D0C00, the same code): -2 while libmc2 is asked, -1 when the directory is there (the
+// setup goes on to read the configurations), any other value an error of the card's
 extern "C" void netwk_card_has_netcnf(Ps2Cpu* c) { c->r[2].sd[0] = -1; }

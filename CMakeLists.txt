@@ -22,7 +22,8 @@ endif()
 if(FILE1_DISC)
     ps2_recompile(file1_code CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/config/file1.toml DISC ${FILE1_DISC} EXECUTABLE SLPM_654.28
                   FILES 64)
-    add_executable(biohazard-file1 src/file1.cpp src/controls.cpp src/tsnd.cpp)
+    add_executable(biohazard-file1 src/file1.cpp src/controls.cpp src/tsnd.cpp src/network.cpp src/loadhigh.cpp src/usbsrch.cpp
+                   src/avewrap.cpp)
     target_link_libraries(biohazard-file1 PRIVATE file1_code ps2runtime)
 endif()
 
