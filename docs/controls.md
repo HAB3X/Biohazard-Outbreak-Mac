@@ -48,36 +48,81 @@ seen (no gun there).
 | M | closes the map (△) |
 | O | SELECT (the options' default settings) |
 | Tab | close the status screen (START) |
-| Mouse | pointing at a title menu item or an item slot moves the cursor there; a click chooses it; clicking a tab (ITEM, SPECIAL, FILE) opens it; the wheel turns tabs, select pages and lists |
+| Mouse | the pointer over an item moves the game's cursor there, a click chooses it, arrows and key hints press their keys, the wheel moves through lists and values: [The mouse in the menus](#the-mouse-in-the-menus) |
 
-## The pause menu (Escape in play)
+## The mouse in the menus
 
-The pointer over a row moves the cursor there, the wheel turns the setting under it (volumes, brightness, the screen's
-position), a click on DEFAULT SETTINGS, Quit Game or EXIT chooses it. Arrows and WASD move, E or Return chooses, Escape
-closes it.
+Every menu of both games is pointed at the same way (src/pointer.h; each area's menus in src/menus_*.cpp):
 
-## The status screen's items
+- **Nothing is steered.** The pointer over an item writes the menu's own cursor (the byte or word the game's up and down
+  move, with whatever the game's own move writes with it), so the game draws the highlight, help text and sound from it the
+  next frame: the cursor follows the pointer within a frame or two (25-75 ms measured through the control FIFO, its own
+  polling included). A click sets the cursor and presses the menu's confirm (○); arrows, tabs and key hints press the
+  button they show; the wheel presses the menu's up and down (or left and right, or the value's arrows over a setting).
+- **Nothing is remembered.** Each vertical blank the menus are found again from the game's memory (the first finder whose
+  menu is up wins; dialogs come before the screens under them), so a menu left and come back to, or one that changes under
+  the pointer, is simply found again. The pointer shows while a menu is up and is hidden in play.
+- **Places come from the game.** Items' places are read from what the game draws them with: its sprite records (the
+  selects), its frame tables (the options' screens, the character log), its drawn text (src/text_map.h: where each string was
+  drawn last frame; the questions' Yes and No, the difficulty), its parts pool (the lobby), or the positions its drawing code
+  uses; a few hints were measured in pictures where nothing in memory holds them (noted in the code).
+- **Moves that animate** (the selects' cards and portraits, the collection's tabs) are pressed, one press a step, each
+  waiting until the menu takes input again.
 
-The pointer over a slot (the four and the equipped weapon's) moves the cursor there, a click opens that item's actions
-(Use, Equip, Combine, Give...), and the pointer and a click choose among them.
+The menus' engines, and what reads them:
 
-## Title menus and Network Play
+| Engine | Screens | Read from |
+|---|---|---|
+| Title menus' state (File 2 0x24B070, File 1 0x23BE34) and the options' and character log's own (0x24B08C / 0x23BE40) | title menu, single play, character log list and pages, options, sound, brightness, screen position, save/load, network configuration's question | the state's sprites, the overlay's frame tables |
+| Save data's engine (File 2 0x24AE14, File 1 0x23BBE0) | every YES/NO about the memory card | its texts' table, found where drawn |
+| Selects' sprite records (File 2 0x24B080, File 1 0x3065FC) | scenario, character, partners, File 1's difficulty | the records' pictures |
+| Collection (File 2 0x24B074, File 1 0x5A4420) | grid, tabs, scroll arrows, hints, its questions | the state's cursor, tab and first cell |
+| Status task (File 2 GAME 0x6C8FA0, File 1 0x6B9450) | status screen (ITEM cells, weapon, actions, give, SPECIAL, FILE, file reader), pause menu, its quit question, map | the task's state and work area |
+| Network setup's two menu layers (File 2 0x6AE220, File 1 0x68C5F0) | caution, NET file dialogs, broadband menu, manners, messages | its 13 layouts and bar places |
+| KDDI browser (nethttp) | obsrv's pages | its own pointer, moved with the Mac's |
+| Software keyboard (File 2 0x24B314, File 1 0x23C050) | every text entry | its key table and places |
+| Lobby parts pool (File 2 0x6358A0, File 1 0x639AF0) | SELECT CAPCOM ID, SELECT SERVER, the area menu, room list, RULE, a room, their dialogs and hints | the parts' graphics, item numbers and cursors; the cursors the game's engines move each frame |
 
-- OPTIONS: the pointer over a row moves the cursor there, a click opens it. CONTROLLER SETTINGS opens the PC menus' Controls
-  while the keyboard and mouse were used last (the game's own screen with a gamepad). SCREEN ADJUST and EDIT NETWORK
-  CONFIGURATION stay: the options' rows come from one of two layout tables (File 2's demo overlay at 0x56A520 and 0x56A570),
-  the shorter one, without EDIT NETWORK CONFIGURATION, only while the game finds no network adaptor (0x3137B1 below 2, set
-  at boot by 0x1BDC10, which Network Play reads too); SCREEN ADJUST is in both. Neither is safe to change for the menu alone.
-- Single play's NEW GAME/CONTINUE (File 1's SCENARIO), the character log and File 2's COLLECTION/DATA CONVERT: the pointer
-  over a row moves the cursor, a click chooses it.
-- The collection's grid: the pointer over a cell moves the cursor, a click chooses it, a click on a tab switches to it, the
-  wheel scrolls the rows (the grid's own first shown cell tells which cells are on screen).
-- Network Play: the yes/no dialogs (the NET file, formatting, saving), the manners screen's Next and Back and the connection
-  list follow the pointer and take a click; a click on a screen with nothing to choose is the confirm. In the KDDI browser
-  (obsrv's pages) the browser's own pointer goes where the Mac's is, a click selects there (a field opens the software
-  keyboard, a link or button is followed), and the wheel scrolls the page (the browser's L1 and R1).
-- Not yet with the mouse: the status screen's SPECIAL and FILE lists (no run with two or more entries to find their cursor),
-  File 1's horizontal "Return to the top menu?" in the collection (the keys work).
+### Checklist
+
+Checked through `--control` in hidden-window runs (`mouse X Y`, `tap Mouse_Left`, `wheel N`), the cursor read back with
+`peek` and pictures taken with `snap`; latency is from the `mouse` command to the cursor's new value, through the FIFO.
+
+| Screen | File 2 | File 1 |
+|---|---|---|
+| Title menu: hover, click | ✓ 24-71 ms | ✓ 32-72 ms |
+| Single play (NEW GAME / LOAD) | ✓ | ✓ |
+| Character log list; pages' tabs, scroll arrows, wheel, hints | ✓ (3 tabs) | ✓ (5 tabs) |
+| Options list | ✓ | ✓ 24-72 ms |
+| Sound: rows, volume bars, output arrows, wheel, Exit and Default hints | ✓ | ✓ |
+| Brightness: slider, wheel, Default, Exit | ✓ | ✓ |
+| Screen position: arrows, Default, Exit | ✓ | ✓ |
+| Save/load rows, Exit | ✓ | ✓ 54 ms |
+| Memory card YES/NO (hover, wheel, click) | ✓ | not seen |
+| Collection: grid, tabs, scroll arrows, hints | grid ✓ 45-76 ms; tabs ✗ (File 2's tab byte isn't 0x10: its tab targets are wrong) | ✓ |
+| Collection's "Return to the top menu?" Yes/No | not run | ✓ |
+| Scenario select: cards, wheel, hints | ✓ | ✓ (one scenario open on a new card) |
+| Character select: arrows, portraits (steps), big portrait, wheel | ✓ | ✓ |
+| Difficulty (File 1) | - | ✓ hover 24-46 ms, click starts |
+| Partner select | ✓ | not seen (File 1 started the scenario after the difficulty) |
+| Status screen: cells, weapon, actions, tabs, FILE | ✓ | ✓ cells, weapon |
+| Pause menu: rows, settings' wheel, quit question | ✓ | ✓ |
+| Map: Cancel hint | ✓ | ✓ |
+| Map, status screen, pause each opened and left 5 times by key and mouse | ✓ every time | ✓ (a map key lost once in the game's own event) |
+| Network: caution, NET file dialogs, messages, broadband menu, manners | ✓ mouse alone to the login page | ✓ mouse alone to the login page |
+| Browser's pointer, wheel | ✓ 56 ms | ✓ reached |
+| Software keyboard: hover, click types | ✓ ("l6" typed, nothing sent) | not run |
+| Lobby (after login) | built from the code, not run | built from the code, not run |
+
+Not done with the mouse: the map's scrolling and zooming (the sticks' keys), File 2's DATA CONVERT, the results screen.
+
+### What the owner's run needs to check
+
+Logging in can't be done here, so the lobby is built from the game's code alone. With `BH_POINTER_LOG=1` set, each menu's
+targets (their places, cursors and keys) and the strings drawn are written to the log when a menu comes up and every three
+seconds: a run through SELECT CAPCOM ID, SELECT SERVER, the area menu (ROOM LIST / DATABASE / PERSONAL RANK), the room list,
+RULE, a room and the hints (Sub-window, Soft keyboard, Chat log) shows whether each is found where it's drawn. A room's own
+screen (its member slots and buttons) is File 2's only: File 1's step for it wasn't found.
 
 ## Title, movies and cutscenes
 
@@ -99,14 +144,8 @@ and read 0 all through Decisions, Decisions' play, where the keys then didn't mo
 
 ## Addresses (in src/controls.cpp's Layout)
 
-Found by memory diffs during play (`--control ram`): the task list and its count, the game, cutscene, title, select and status
-screen tasks, the title menu's cursor, the status screen's tab, item cursor (moving by a slot's 0x98 bytes) and item-actions
-flag (0x1C after the cursor). File 1's select screens aren't a task of the list (it's empty there): the title overlay's
-state (its address at 0x3065FC; DEMO.BIN's dispatcher at 0x543050 switches on its byte 4) says 8 on the scenario select and
-9 on the character select, so the wheel and the side and arrow clicks step them as in File 2 (the cards and arrows are where
-File 2 has them). The word File 1's layout calls titleState (0x23BA68) is a count of the title's live objects (the code at
-0x19E140 counts a pool of 512), 3 on the title menu: it tells the title menu apart only because that count is 3 there.
-So File 1's options list (2 objects) and collection (4) are taken for the title and have no menu keys (only START): open, they
-need a gamepad. Not fixed yet: 0x200D5C looks like the title's own state (sampled from boot: 0 the logos, then 6, 5 PRESS
-START, 4, 3; 1 in the title menu, the options list and the collection) but reads 0 in the options' screens (brightness...)
-as in the logos, so the controls keyed on it alone let the keyboard into the brightness screen and not out of it.
+What the controls follow is read each update, nothing kept between: the game's task (play, the status screen and its pause
+menu: the status task's byte saying what it shows, 4 the pause), the cutscene task, and, before play, whether a menu finder
+found a menu (the pointer's menus are the controls' menus); with no game running, the title (its state at PRESS START or
+the attract movies) is START's. The task list, its count and the tasks were found by memory diffs during play (`--control
+ram`).
