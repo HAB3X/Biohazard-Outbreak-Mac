@@ -3,6 +3,10 @@
 // and read with stb_truetype, and the window's points mapped into the 1280 x 720 reference space. From the Crash Twinsanity
 // native port's ui/overlay.cpp (same author)
 #include "overlayinternal.h"
+#include "menutheme.h"
+
+#include <fstream>
+#include <iterator>
 
 #include "../runtime.h"
 
@@ -46,12 +50,30 @@ struct FontFile
 FontFile g_fonts[static_cast<u32>(OverlayFont::Count)];
 std::once_flag g_fontsLoaded;
 
+// A theme's font read from the Mac's own fonts (menutheme.h), kept for as long as the program runs; empty when it isn't there
+std::vector<unsigned char> g_themeFonts[static_cast<u32>(OverlayFont::Count)];
+
 void LoadFonts()
 {
     const unsigned char* data[static_cast<u32>(OverlayFont::Count)] = {ps2_font_luckiest_guy, ps2_font_fredoka_semibold,
                                                                         ps2_font_fredoka_bold};
     for (u32 face = 0; face < static_cast<u32>(OverlayFont::Count); face++)
     {
+        const char* file = Theme().fontFiles[face];
+        if (file != nullptr)
+        {
+            std::ifstream in(file, std::ios::binary);
+            g_themeFonts[face].assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+            if (!g_themeFonts[face].empty())
+            {
+                data[face] = g_themeFonts[face].data();
+            }
+            else
+            {
+                // A Mac without it: the bundled font in its place, so the menus still read
+                Log("overlay: the theme's font %s isn't there: the bundled one", file);
+            }
+        }
         FontFile& font = g_fonts[face];
         if (!stbtt_InitFont(&font.info, data[face], stbtt_GetFontOffsetForIndex(data[face], 0)))
         {

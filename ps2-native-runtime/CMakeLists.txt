@@ -83,6 +83,7 @@ add_library(ps2runtime STATIC
     runtime/src/sound/spu2.cpp
     runtime/src/ui/menus.cpp
     runtime/src/ui/menuview.cpp
+    runtime/src/ui/menutheme.cpp
     runtime/src/ui/mouseart.cpp
     runtime/src/ui/overlay.cpp
     runtime/src/ui/overlaygl.cpp

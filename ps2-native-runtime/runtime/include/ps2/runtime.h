@@ -124,6 +124,9 @@ typedef struct Ps2GameInfo
     // Optional. The share of a stick's push (0-1) the game itself ignores, measured: the PC menus then offer Compensate game
     // deadzone, which makes a gamepad stick's smallest push past its own rest count (0: not offered)
     float stickDeadzone;
+    // Optional. The PC menus' look: "crash" (NULL: the Crash Twinsanity port's options screen) or "outbreak" (Biohazard
+    // Outbreak's own menus' look: ui/menutheme.h)
+    const char* menuTheme;
 } Ps2GameInfo;
 
 // A prompt shown over the picture near its bottom (the PC menus' style: e.g. "Hold any button to skip"), NULL to take it down

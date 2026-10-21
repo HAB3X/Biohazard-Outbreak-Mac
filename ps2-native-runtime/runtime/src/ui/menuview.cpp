@@ -5,6 +5,7 @@
 // of keycaps (or the gamepad's buttons) at the bottom. The pause menu is the same tabs' buttons over the game's picture, dimmed.
 // Its parts are recorded as hit regions for the mouse. The game's prompt and the scripted pictures' cursor are drawn here too
 #include "menusinternal.h"
+#include "menutheme.h"
 
 #include "../runtime.h"
 
@@ -17,18 +18,9 @@ namespace Ps2::Ui
 namespace
 {
 // ------------------------------------------------------------------------------------------------------------- the design's values
-constexpr Rgba32 Orange = Hex(0xff9a1f);
-constexpr Rgba32 DeepOrange = Hex(0xff8a00);
-constexpr Rgba32 Lip = Hex(0xffb43a);
-constexpr Rgba32 Brown = Hex(0x3a1200);
-constexpr Rgba32 TabBrown = Hex(0x4a1800);
-constexpr Rgba32 Ink = Hex(0x173a6b);
-constexpr Rgba32 PillBlue = Hex(0x1b6fd0);
-constexpr Rgba32 PillFill = Hex(0xeaf2ff);
-constexpr Rgba32 Separator = Hex(0xeef3fa);
+// The colours and styles are the game's theme's (menutheme.h); the layout is the design's
 constexpr Rgba32 White = Hex(0xffffff);
-constexpr Rgba32 KeyInk = Hex(0x1b2340);
-constexpr Rgba32 Muted = Hex(0x6b86a8);
+const MenuTheme& T() { return Theme(); }
 
 constexpr f32 PanelX = 360.0f;
 constexpr f32 PanelY = 170.0f;
@@ -131,21 +123,14 @@ f32 KeycapWidth(const Prompt& prompt)
     {
         return 44.0f;
     }
-    return std::max(44.0f, OverlayTextWidth(Capitals(prompt.text), Body(15.0f, KeyInk, true)) + 24.0f);
+    return std::max(44.0f, OverlayTextWidth(Capitals(prompt.text), Body(15.0f, T().keyInk, true)) + 24.0f);
 }
 
 f32 Keycap(OverlayFrame& frame, const Prompt& prompt, f32 x, f32 middle)
 {
     f32 width = KeycapWidth(prompt);
     f32 height = 34.0f;
-    BoxStyle box;
-    box.fill = Hex(0xfdfdfd);
-    box.fillBottom = Hex(0xcfd6e3);
-    box.radius = 8.0f;
-    box.border = 2.0f;
-    box.borderColour = KeyInk;
-    box.lip = 4.0f;
-    box.lipColour = KeyInk;
+    BoxStyle box = T().keycap;
     f32 top = middle - height * 0.5f - 2.0f;
     frame.Box(x, top, width, height, box);
     if (prompt.image != OverlayImage::Count)
@@ -156,7 +141,7 @@ f32 Keycap(OverlayFrame& frame, const Prompt& prompt, f32 x, f32 middle)
         frame.Image(prompt.image, x + (width - iconWidth) * 0.5f, top + (height - iconHeight) * 0.5f, iconWidth, iconHeight);
         return width;
     }
-    frame.Text(Capitals(prompt.text), x + width * 0.5f, top + height * 0.5f, Body(15.0f, KeyInk, true), OverlayAlign::Centre);
+    frame.Text(Capitals(prompt.text), x + width * 0.5f, top + height * 0.5f, Body(15.0f, T().keyInk, true), OverlayAlign::Centre);
     return width;
 }
 
@@ -248,11 +233,9 @@ void Footer(OverlayFrame& frame, const std::vector<FooterItem>& items, PromptSty
     f32 top = ReferenceHeight - 58.0f;
     f32 middle = top + 29.0f;
     BoxStyle bar;
-    bar.fill = Hex(0x000000, 0.45f);
+    bar.fill = T().footer;
     frame.Box(-1000.0f, top, ReferenceWidth + 2000.0f, 58.0f + 1000.0f, bar);
-    TextStyle word = Body(19.0f, White);
-    word.dropY = 2.0f;
-    word.dropColour = Hex(0x000000);
+    TextStyle word = T().footerWord;
     f32 width = 0.0f;
     for (size_t i = 0; i < items.size(); i++)
     {
@@ -284,45 +267,24 @@ void Footer(OverlayFrame& frame, const std::vector<FooterItem>& items, PromptSty
 // The title (Luckiest Guy, orange, a brown outline and drop) and the game's name under it
 void Title(OverlayFrame& frame, const std::string& text)
 {
-    TextStyle title = Display(66.0f, Orange);
-    title.outline = 2.0f;
-    title.outlineColour = Brown;
-    title.dropY = 4.0f;
-    title.dropColour = Brown;
-    frame.Text(text, 64.0f, 40.0f + OverlayLineHeight(title) * 0.5f, title);
-    TextStyle sub = Body(18.0f, Hex(0xbcd9ff));
-    sub.letterSpacing = 3.0f;
-    sub.dropY = 1.0f;
-    sub.dropColour = Hex(0x000000, 0.35f);
-    frame.Text(GameTitle(), 68.0f, 118.0f + OverlayLineHeight(sub) * 0.5f, sub);
+    const TextStyle& title = T().title;
+    frame.Text(text, T().titleX, T().titleTop + OverlayLineHeight(title) * 0.5f, title);
+    const TextStyle& sub = T().subtitle;
+    frame.Text(GameTitle(), T().subtitleX, T().subtitleTop + OverlayLineHeight(sub) * 0.5f, sub);
 }
 
 // A button down the left (the tabs' look): white with an orange lip when it's the one selected
 void SideButton(OverlayFrame& frame, const std::string& label, f32 y, f32 width, f32 height, bool selected, bool enabled,
                 f32 textSize)
 {
-    BoxStyle box;
-    box.radius = 16.0f;
-    box.border = 2.0f;
+    frame.Box(60.0f, y, width, height, selected ? T().tabSelected : T().tab);
+    TextStyle text = Display(textSize, Faded(T().tabInk, enabled ? 1.0f : 0.4f));
+    text.font = T().tabFont;
     if (selected)
     {
-        box.fill = White;
-        box.borderColour = White;
-        box.lip = 6.0f;
-        box.lipColour = Lip;
-    }
-    else
-    {
-        box.fill = Hex(0xffffff, 0.08f);
-        box.borderColour = Hex(0xffffff, 0.15f);
-    }
-    frame.Box(60.0f, y, width, height, box);
-    TextStyle text = Display(textSize, Hex(0xdbe9ff, enabled ? 1.0f : 0.4f));
-    if (selected)
-    {
-        text.colour = Faded(DeepOrange, enabled ? 1.0f : 0.5f);
-        text.outline = 1.2f;
-        text.outlineColour = TabBrown;
+        text.colour = Faded(T().tabInkSelected, enabled ? 1.0f : 0.5f);
+        text.outline = T().tabOutlineSelected;
+        text.outlineColour = T().tabOutlineColour;
     }
     frame.Text(Capitals(label), 86.0f, y + height * 0.5f + 2.0f, text);
 }
@@ -331,34 +293,19 @@ void SideButton(OverlayFrame& frame, const std::string& label, f32 y, f32 width,
 void QuestionBox(OverlayFrame& frame, const std::string& question, const std::string& detail, const std::string& yes,
                  const std::string& no, int chosen, std::vector<HitRegion>& regions)
 {
-    BoxStyle panel;
-    panel.fill = White;
-    panel.radius = 22.0f;
-    panel.lip = 10.0f;
-    panel.lipColour = Lip;
-    panel.shadowOffset = 26.0f;
-    panel.shadowBlur = 50.0f;
-    panel.shadowColour = Hex(0x000000, 0.4f);
-    frame.Box(390.0f, 255.0f, 500.0f, 190.0f, panel);
-    frame.Text(question, 640.0f, detail.empty() ? 315.0f : 300.0f, Body(23.0f, Ink, true), OverlayAlign::Centre);
+    frame.Box(390.0f, 255.0f, 500.0f, 190.0f, T().panel);
+    frame.Text(question, 640.0f, detail.empty() ? 315.0f : 300.0f, Body(23.0f, T().questionInk, true), OverlayAlign::Centre);
     if (!detail.empty())
     {
-        frame.Text(detail, 640.0f, 334.0f, Body(17.0f, Muted), OverlayAlign::Centre);
+        frame.Text(detail, 640.0f, 334.0f, Body(17.0f, T().questionDetail), OverlayAlign::Centre);
     }
     const f32 xs[2] = {470.0f, 670.0f};
     const std::string labels[2] = {yes, no};
     for (int i = 0; i < 2; i++)
     {
-        BoxStyle button;
-        button.fill = i == chosen ? Orange : PillFill;
-        button.radius = 20.0f;
-        if (i == chosen)
-        {
-            button.lip = 3.0f;
-            button.lipColour = Hex(0xd86f00);
-        }
-        frame.Box(xs[i], 375.0f, 140.0f, 42.0f, button);
-        frame.Text(labels[i], xs[i] + 70.0f, 396.0f, Body(21.0f, i == chosen ? White : PillBlue), OverlayAlign::Centre);
+        frame.Box(xs[i], 375.0f, 140.0f, 42.0f, i == chosen ? T().buttonChosen : T().button);
+        frame.Text(labels[i], xs[i] + 70.0f, 396.0f, Body(21.0f, i == chosen ? T().buttonTextChosen : T().buttonText),
+                   OverlayAlign::Centre);
         regions.push_back({i == 0 ? HitKind::BoxYes : HitKind::BoxNo, xs[i], 375.0f, 140.0f, 42.0f, -1, -1, -1});
     }
 }
@@ -428,26 +375,18 @@ void SliderValue(OverlayFrame& frame, const Row& row, f32 left, f32 middle, cons
     f32 fraction = static_cast<f32>(value - row.minimum) / static_cast<f32>(row.maximum - row.minimum);
     f32 width = 220.0f;
     BoxStyle track;
-    track.fill = Hex(0xdbe7f7);
+    track.fill = T().track;
     track.radius = 8.0f;
     frame.Box(left, middle - 6.0f, width, 12.0f, track);
     BoxStyle fill;
-    fill.fill = Hex(0xffc04d);
-    fill.fillBottom = DeepOrange;
+    fill.fill = T().trackFill;
+    fill.fillBottom = T().trackFillBottom;
     fill.radius = 8.0f;
     if (fraction > 0.0f)
     {
         frame.Box(left, middle - 6.0f, std::max(12.0f, width * fraction), 12.0f, fill);
     }
-    BoxStyle knob;
-    knob.fill = Hex(0xffb347);
-    knob.fillBottom = Hex(0xe8650a);
-    knob.radius = 13.0f;
-    knob.border = 2.0f;
-    knob.borderColour = Brown;
-    knob.lip = 2.0f;
-    knob.lipColour = Hex(0x000000, 0.25f);
-    frame.Box(left + width * fraction - 13.0f, middle - 13.0f, 26.0f, 26.0f, knob);
+    frame.Box(left + width * fraction - 13.0f, middle - 13.0f, 26.0f, 26.0f, T().knob);
     char number[8];
     std::snprintf(number, sizeof(number), "%d", value);
     frame.Text(number, left + width + 34.0f, middle, Body(21.0f, colours.label), OverlayAlign::Centre);
@@ -463,12 +402,12 @@ void BindingCells(OverlayFrame& frame, const MenuView& view, const Row& row, int
         bool cell = index == view.row && column == view.column;
         f32 cellHeight = 32.0f;
         BoxStyle pill;
-        pill.fill = Faded(cell ? Orange : PillFill, fade);
+        pill.fill = Faded(cell ? T().cellSelected : T().cell, fade);
         pill.radius = 16.0f;
         f32 left = ColumnMiddle[column] - CellWidth * 0.5f;
         frame.Box(left, middle - cellHeight * 0.5f, CellWidth, cellHeight, pill);
         regions.push_back({HitKind::Cell, left, middle - cellHeight * 0.5f, CellWidth, cellHeight, index, column, -1});
-        TextStyle style = Body(17.0f, Faded(cell ? White : PillBlue, fade));
+        TextStyle style = Body(17.0f, Faded(cell ? T().cellTextSelected : T().cellText, fade));
         std::string text;
         OverlayImage image = OverlayImage::Count;
         if (column == ColumnPad)
@@ -520,11 +459,30 @@ void BindingCells(OverlayFrame& frame, const MenuView& view, const Row& row, int
 }
 
 // ---------------------------------------------------------------------------------------------------------------- the screens
+// The game's picture dimmed, a wash from the left under the buttons
+void DimGame(OverlayFrame& frame)
+{
+    BoxStyle dim;
+    dim.fill = T().dim;
+    frame.Box(-1000.0f, -1000.0f, ReferenceWidth + 2000.0f, ReferenceHeight + 2000.0f, dim);
+    BoxStyle wash;
+    wash.fill = T().washTop;
+    wash.fillBottom = T().washBottom;
+    frame.Box(-1000.0f, -1000.0f, 1000.0f + 440.0f, ReferenceHeight + 2000.0f, wash);
+}
+
 void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>& regions)
 {
     const std::vector<Page>& pages = *view.pages;
     f32 now = Seconds();
-    frame.Backdrop(now);
+    if (T().backdrop == MenuBackdrop::Spiral)
+    {
+        frame.Backdrop(now);
+    }
+    else
+    {
+        DimGame(frame);
+    }
     Title(frame, view.screen == Screen::Extras ? "EXTRAS" : "OPTIONS");
 
     // The tabs (closer together when there are many)
@@ -539,16 +497,8 @@ void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
         regions.push_back({HitKind::Tab, 60.0f, y, 250.0f, tabHeight, -1, -1, tab});
     }
 
-    // The panel: white, rounded, its orange lip and its soft shadow
-    BoxStyle panel;
-    panel.fill = White;
-    panel.radius = 22.0f;
-    panel.lip = 10.0f;
-    panel.lipColour = Lip;
-    panel.shadowOffset = 26.0f;
-    panel.shadowBlur = 50.0f;
-    panel.shadowColour = Hex(0x000000, 0.4f);
-    frame.Box(PanelX, PanelY, PanelWidth, PanelHeight, panel);
+    // The panel (the Crash look's: white, rounded, its orange lip and its soft shadow)
+    frame.Box(PanelX, PanelY, PanelWidth, PanelHeight, T().panel);
 
     // The page's cross-fade, the list's scroll (smooth) and the selection bar's slide
     Animation& a = g_animation;
@@ -623,7 +573,7 @@ void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
 
     if (rows.empty())
     {
-        frame.Text("Nothing here yet", PanelX + PanelWidth * 0.5f, PanelY + PanelHeight * 0.5f, Body(21.0f, Muted),
+        frame.Text("Nothing here yet", PanelX + PanelWidth * 0.5f, PanelY + PanelHeight * 0.5f, Body(21.0f, T().heading),
                    OverlayAlign::Centre);
     }
 
@@ -641,8 +591,8 @@ void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
     if (selectedRow != nullptr && selectedRow->kind != RowHeader && selectedRow->kind != RowHeading)
     {
         BoxStyle bar;
-        bar.fill = Faded(selectedRow->kind == RowBinding ? Hex(0xfff0dc) : Orange, fade);
-        bar.radius = 12.0f;
+        bar.fill = Faded(selectedRow->kind == RowBinding ? T().barBinding : T().bar, fade);
+        bar.radius = T().barRadius;
         frame.Box(rowLeft, barTop, rowWidth, RowHeight, bar);
     }
 
@@ -662,14 +612,14 @@ void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
         if (line > 0 && index != view.row)
         {
             BoxStyle separator;
-            separator.fill = Faded(Separator, fade);
+            separator.fill = Faded(T().separator, fade);
             frame.Box(rowLeft, top, rowWidth, 2.0f, separator);
         }
         if ((index == view.flashRows[0] || index == view.flashRows[1]) && view.flashOn)
         {
             BoxStyle flash;
-            flash.fill = Faded(Lip, fade * 0.8f);
-            flash.radius = 12.0f;
+            flash.fill = Faded(T().flash, fade * 0.8f);
+            flash.radius = T().barRadius;
             frame.Box(rowLeft, top, rowWidth, RowHeight, flash);
         }
         if (row.kind == RowHeader)
@@ -680,17 +630,17 @@ void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
         if (row.kind == RowHeading)
         {
             // A group's heading: small capitals in the muted blue, on the panel's white
-            TextStyle heading = Body(15.0f, Faded(Muted, fade), true);
+            TextStyle heading = Body(15.0f, Faded(T().heading, fade), true);
             heading.letterSpacing = 1.5f;
             frame.Text(Capitals(row.label), rowLeft + RowPad, middle + 4.0f, heading);
             continue;
         }
         RowColours colours;
         f32 alpha = fade * (enabled ? 1.0f : 0.45f);
-        colours.label = Faded(selected ? White : Ink, alpha);
-        colours.pillFill = Faded(selected ? Hex(0xffffff, 0.25f) : PillFill, alpha);
-        colours.pillText = Faded(selected ? White : PillBlue, alpha);
-        colours.chevron = Faded(selected ? White : Orange, alpha);
+        colours.label = Faded(selected ? T().labelSelected : T().label, alpha);
+        colours.pillFill = Faded(selected ? T().pillSelected : T().pill, alpha);
+        colours.pillText = Faded(selected ? T().pillTextSelected : T().pillText, alpha);
+        colours.chevron = Faded(selected ? T().chevronSelected : T().chevron, alpha);
         regions.push_back({HitKind::Row, rowLeft, std::max(top, rowsTop), rowWidth, RowHeight, index, -1, -1});
         TextStyle label = Body(21.0f, colours.label);
         f32 labelRoom = (row.kind == RowBinding ? ColumnMiddle[0] - CellWidth * 0.5f - 12.0f
@@ -727,13 +677,13 @@ void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
         if (headerTop < rowsTop + rowsHeight)
         {
             BoxStyle backing;
-            backing.fill = Faded(White, fade);
+            backing.fill = Faded(T().headerBacking, fade);
             frame.Box(rowLeft, headerTop, rowWidth, RowHeight, backing);
             BoxStyle divider;
-            divider.fill = Faded(Separator, fade);
+            divider.fill = Faded(T().separator, fade);
             frame.Box(rowLeft, headerTop + RowHeight - 2.0f, rowWidth, 2.0f, divider);
             f32 middle = headerTop + RowHeight * 0.5f;
-            TextStyle header = Body(15.0f, Faded(Muted, fade), true);
+            TextStyle header = Body(15.0f, Faded(T().heading, fade), true);
             frame.Text("Action", rowLeft + RowPad, middle, header);
             const char* const Headers[BindingColumns] = {"Key", "Alt key", "Controller"};
             for (int column = 0; column < BindingColumns; column++)
@@ -751,7 +701,7 @@ void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
         f32 thumbHeight = std::max(30.0f, trackHeight * rowsHeight / contentHeight);
         f32 thumbTop = rowsTop + 4.0f + (trackHeight - thumbHeight) * (a.scroll / maxScroll);
         BoxStyle thumb;
-        thumb.fill = Orange;
+        thumb.fill = T().scrollbar;
         thumb.radius = 3.0f;
         frame.Box(PanelX + PanelWidth - 9.0f, thumbTop, 5.0f, thumbHeight, thumb);
     }
@@ -761,9 +711,7 @@ void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
                               : selectedRow == nullptr ? ""
                               : selectedRow->enabled && !selectedRow->enabled() ? "Not now"
                                                                                 : selectedRow->description;
-    TextStyle describe = Body(19.0f, Hex(0xd6e8ff));
-    describe.dropY = 1.0f;
-    describe.dropColour = Hex(0x000000, 0.3f);
+    const TextStyle& describe = T().description;
     frame.Text(description, 360.0f, 612.0f + OverlayLineHeight(describe) * 0.5f, describe);
 
     // The countdown: keep these display settings?
@@ -791,14 +739,7 @@ void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
 
 void DrawPause(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>& regions)
 {
-    // The game's picture dimmed, a blue wash from the left under the buttons
-    BoxStyle dim;
-    dim.fill = Hex(0x04122a, 0.55f);
-    frame.Box(-1000.0f, -1000.0f, ReferenceWidth + 2000.0f, ReferenceHeight + 2000.0f, dim);
-    BoxStyle wash;
-    wash.fill = Hex(0x0a3b7a, 0.55f);
-    wash.fillBottom = Hex(0x071f45, 0.55f);
-    frame.Box(-1000.0f, -1000.0f, 1000.0f + 440.0f, ReferenceHeight + 2000.0f, wash);
+    DimGame(frame);
     Title(frame, "PAUSED");
     f32 y = 170.0f;
     for (size_t i = 0; i < view.pauseItems.size(); i++)
