@@ -33,6 +33,13 @@ not = []
 "0x1b7130" = "text_draw_net"
 # The main loop's frame: after it, the sounds the pointer's moves owe the menus are played (src/pointer.h)
 "0x1ba1d0" = "game_frame"
+# The Modern camera (src/modern_camera.cpp): the game frame's end and the button mapper (File 1's 0x19ecb0 and 0x1afc60,
+# matched by their code: docs/mods.md)
+"0x19f390" = "mods_frame_end"
+"0x1b08b0" = "mods_pad_map"
+# The cheats (src/cheats.cpp): "is this single play" (File 1's 0x1af4d0: the same code over the play mode at 0x3137D2; the
+# death path calls it from 0x6335B0)
+"0x1afb10" = "cheat_single_play"
 
 # The code overlays: BIN/n.DAT, each a 0x40 byte "MWo3" header (its number, load address, code size, data size, bss size)
 # then its code and data, loaded whole at the address the executable's table at 0x217740 gives for its slot. The code runs
@@ -57,6 +64,8 @@ name = "game"
 file = "BIN/2.DAT"
 base = "0x543000"
 text = ["0x543040", "0x715b80"]
+# The Modern camera and the cheats, as in File 1 (config/file1.toml's game overlay), at File 2's matching functions (docs/mods.md)
+overrides = { "0x595410" = "game_camera_fixed_cut", "0x595520" = "game_camera_rail_cut", "0x5959c0" = "game_camera_spline_cut", "0x5aa6c0" = "game_camera_follow", "0x557b30" = "game_gun_elevation", "0x586500" = "cheat_ammo", "0x5867a0" = "cheat_item_use", "0x63b1f0" = "cheat_gauge_over_time", "0x633950" = "cheat_gauge_bite", "0x615a40" = "cheat_enemy_damage", "0x634720" = "cheat_player_damage", "0x634350" = "cheat_death_check", "0x6318e0" = "cheat_movement", "0x66bc20" = "cheat_timers", "0x637630" = "cheat_collision" }
 # Entries of handler tables the game calls through pointers (data words that point at a prologue: addiu sp,sp,-N)
 extra = [
     "0x547430", "0x547460", "0x5477a0", "0x547910", "0x547ad0", "0x547c30", "0x548290", "0x548330",

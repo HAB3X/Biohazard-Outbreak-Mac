@@ -1,6 +1,9 @@
 // Biohazard Outbreak File 2 for Mac: the recompiled executable and its overlays on the PS2 runtime
+#include "cheats.h"
 #include "controls.h"
 #include "menus.h"
+#include "modern_camera.h"
+#include "mods.h"
 #include "network.h"
 #include "partner_ai.h"
 #include "pointer.h"
@@ -58,6 +61,27 @@ extern "C" void single_partner_perceive(Ps2Cpu* c) { PartnerAi::Perceive(c, Part
 extern "C" void single_007e3aa0(Ps2Cpu* c);
 extern "C" void single_partner_pick_item(Ps2Cpu* c) { PartnerAi::PickItem(c, PartnerAi::File2, single_007e3aa0); }
 
+// The cameras and the cheats at File 2's functions matching File 1's (src/file1.cpp, docs/mods.md). The collection's and the
+// scenario select's cheats aren't offered here (File 2's save data is laid out otherwise: src/cheats.cpp)
+MOD_OVERRIDE(mods_frame_end, Mods::FrameEnd, f_0019f390)
+MOD_OVERRIDE(mods_pad_map, ModernCamera::PadMap, f_001b08b0)
+MOD_OVERRIDE(game_camera_fixed_cut, ModernCamera::FixedCut, game_00595410)
+MOD_OVERRIDE(game_camera_rail_cut, ModernCamera::RailCut, game_00595520)
+MOD_OVERRIDE(game_camera_spline_cut, ModernCamera::RailCut, game_005959c0)
+MOD_OVERRIDE(game_camera_follow, ModernCamera::Follow, game_005aa6c0)
+MOD_OVERRIDE(game_gun_elevation, ModernCamera::GunElevation, game_00557b30)
+MOD_OVERRIDE(cheat_single_play, Cheats::SinglePlay, f_001afb10)
+MOD_OVERRIDE(cheat_ammo, Cheats::Ammo, game_00586500)
+MOD_OVERRIDE(cheat_item_use, Cheats::ItemUse, game_005867a0)
+MOD_OVERRIDE(cheat_gauge_over_time, Cheats::GaugeOverTime, game_0063b1f0)
+MOD_OVERRIDE(cheat_gauge_bite, Cheats::GaugeBite, game_00633950)
+MOD_OVERRIDE(cheat_enemy_damage, Cheats::EnemyDamage, game_00615a40)
+MOD_OVERRIDE(cheat_player_damage, Cheats::PlayerDamage, game_00634720)
+MOD_OVERRIDE(cheat_death_check, Cheats::DeathCheck, game_00634350)
+MOD_OVERRIDE(cheat_movement, Cheats::Movement, game_006318e0)
+MOD_OVERRIDE(cheat_timers, Cheats::Timers, game_0066bc20)
+MOD_OVERRIDE(cheat_collision, Cheats::Collision, game_00637630)
+
 // The executable's text functions: where each string is drawn is kept for the pointer (src/text_map.h)
 extern "C" void f_001b5090(Ps2Cpu* c);
 extern "C" void f_001b7130(Ps2Cpu* c);
@@ -97,6 +121,7 @@ int main(int argc, char** argv)
     game.settings = PartnerAi::Settings;
     game.settingCount = PartnerAi::SettingCount;
     game.typing = Typing::Typing;
+    Mods::Install(game, ModernCamera::File2, BiohazardControls::File2, Cheats::File2);
     Tsnd::Register();
     Network::RegisterLoadHigh();
     Network::RegisterUsbSearcher();

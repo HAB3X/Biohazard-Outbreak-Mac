@@ -54,7 +54,7 @@ const Layout File1 = {.name = "file1",
                                 .wallsA = 0xCB0,
                                 .wallsB = 0xCCC}};
 
-// File 2 (SLPM-65692), NOT WIRED YET (not checked in play; src/file2.cpp doesn't install the mods): each function and field matched to File 1's by the code that uses it (docs/mods.md). Its save data,
+// File 2 (SLPM-65692): each function and field matched to File 1's by the code that uses it (docs/mods.md). Its save data,
 // results and scenario select are laid out otherwise (their cheats aren't offered), and so are the flags word's bits
 const Layout File2 = {.name = "file2",
                       .playMode = 0x3137D2,

@@ -102,10 +102,11 @@ DEMO.BIN's collection check (0x554EC0) and scenario select readers. Addresses: r
 Not ported: the master codes (device hooks), item slot codes, Number Of Players (no address found), the codes Raccoon marks
 as not working.
 
-## File 2 (not wired)
+## File 2
 
 Matched by masking addresses and field offsets in File 1's functions and aligning them with File 2's: frame 0x19F390, mapper
 0x1B08B0, handlers 0x595410/0x595520/0x5959C0, follow 0x5AA6C0, gun 0x557B30, ammo 0x586500, item 0x5867A0, gauge 0x63B1F0,
 bite 0x633950, enemy damage 0x615A40, character damage 0x634720, death check 0x634350, death path's single-play return 0x6335B8,
 movement 0x6318E0 (zombie update return 0x674EB0), timers 0x66BC20, collision 0x637630; fields in src/modern_camera_game.cpp's
-File2Fields and src/cheats.cpp's File2. Not installed in src/file2.cpp until checked in play.
+File2Fields and src/cheats.cpp's File2. The single-play check is 0x1AFB10 (File 1's 0x1AF4D0's code over the play mode at
+0x3137D2; the death path calls it from 0x6335B0). Installed in src/file2.cpp; what's been seen in play is in STATUS.md.

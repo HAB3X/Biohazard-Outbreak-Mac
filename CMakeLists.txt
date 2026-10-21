@@ -50,6 +50,6 @@ if(FILE2_DISC)
     ps2_recompile(file2_code CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/config/file2.toml DISC ${FILE2_DISC} EXECUTABLE SLPM_656.92
                   FILES 64)
     add_executable(biohazard-file2 src/file2.cpp ${CONTROL_SOURCES} src/tsnd.cpp src/network.cpp src/loadhigh.cpp src/usbsrch.cpp src/avewrap.cpp src/lobbytrace.cpp src/typing.cpp
-                   ${PARTNER_AI_SOURCES})
+                   ${PARTNER_AI_SOURCES} ${MODS_SOURCES})
     target_link_libraries(biohazard-file2 PRIVATE file2_code ps2runtime)
 endif()

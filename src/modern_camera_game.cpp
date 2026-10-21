@@ -48,7 +48,7 @@ const Layout File1 = {.name = "file1",
                       .roomNow = 0x3065AC,
                       .field = File1Fields};
 
-// File 2 (SLPM-65692), NOT WIRED YET (not checked in play; src/file2.cpp doesn't install the mods). Snippy's ro_addresses_f2.py for the camera block, the cuts, the objects, the walls, the hide radii, the
+// File 2 (SLPM-65692). Snippy's ro_addresses_f2.py for the camera block, the cuts, the objects, the walls, the hide radii, the
 // light, the button map and the raw pad; the rest found by matching File 1's code in File 2's (the camera block and the pad
 // block are File 1's + 0xD210 there: the fixed-cut handler's stores, the button mapper's loads) and checked in play
 const Layout File2 = {.name = "file2",
@@ -617,6 +617,7 @@ const std::vector<Wall>& Game::Walls(float dt)
     m_wallsBase = base;
     m_wallsAge = 0;
     m_walls.clear();
+    m_slabs.clear();
     if (!(base > 0x100000 && base < 0x2000000))
     {
         return m_walls;
@@ -639,9 +640,14 @@ const std::vector<Wall>& Game::Walls(float dt)
             corners[k] = F32(rec + 4 + 4 * k);
         }
         Wall wall;
+        Slab slab;
         if (WallFromRecord(flags, corners, F32(rec + 0x2C), &wall))
         {
             m_walls.push_back(wall);
+        }
+        else if (SlabFromRecord(corners, F32(rec + 0x2C), &slab))
+        {
+            m_slabs.push_back(slab);
         }
     }
     return m_walls;
