@@ -50,6 +50,11 @@ struct Layout
     uint32_t speech;          // u8 field: the code of the line the character is saying (0 none): the player's commands
     uint32_t setPlan;         // the AI's function starting a plan (a0 the record, a1 the plan; 0 has the next picked)
     uint32_t setMove;         // its function starting a move (a0 the record, a1 the move; 0 stops)
+    uint32_t roomNodes;       // the rooms' route nodes, 0xA4 bytes a room: the count, then the nodes (0x40 bytes each: +0 in use,
+                              // +4 the position)
+    uint32_t route;           // the AI's route code (a0 the record, a1 the point, a2 its room; -1: no way there)
+    uint32_t routeGoal;       // three float fields: where the route goes (the route code copies its point there)
+    uint32_t planLock;        // u16 field: frames before the plan may be cut short by the game's own events
 };
 
 extern const Layout File1;

@@ -109,22 +109,28 @@ The game is deterministic for the same input: two runs of a scenario are the sam
 by the input's timing (tools/ai_scenario.py's seeds have the player take a few steps first; on a loaded machine the presses
 land on other frames and the same seed can differ too). The results vary a lot from seed to seed (the player's damage from
 0 to 6300 in one configuration): one zombie more or less on the player decides it. So compare means over 6 seeds or more,
-not single runs. `tools/ai_scenario.py bar-idle MODE --seeds 6`, 240 s each, the means (2026-10-21):
+not single runs. `tools/ai_scenario.py bar-idle MODE --seeds 6 --parallel 2`, 240 s each, the means (2026-10-21):
 
 | | Original | New |
 |---|---|---|
-| First partner attack after an enemy is within 600 of the player | 45 s | 0.2 s |
+| First partner attack after an enemy is within 600 of the player | 45 s | 0.8 s |
 | Partners' time away from the player (another room or farther than 1500) | Mark 30%, Cindy 19% | 0%, 0% |
-| Damage the player took (in the 2 minutes from the first threat) | 3258 (2323) | 2098 (1555) |
-| The player's time below 30% / downed | 67 s / 0.83 | 33 s / 0.17 |
-| Mark's damage to the zombies (15 rounds) / taken / downed | 1446 / 930 / 0 | 1565 / 363 / 0 |
-| Cindy's damage taken / downed | 1160 / 0.17 | 1500 / 0.67 |
+| Damage the player took (in the 2 minutes from the first threat) | 3258 (2323) | 2135 (1650) |
+| The player's time below 30% / lowest hit points / downed | 67 s / 383 / 0.83 | 7 s / 639 / 0.17 |
+| Zombies killed | 0.83 | 1.33 |
+| Mark's damage to the zombies / rounds used / damage taken / downed | 1446 / 13.8 / 930 / 0 | 1729 / 15 / 880 / 0 |
+| Cindy's damage taken / downed | 1160 / 0.17 | 443 / 0 |
+| Cindy's damage to the zombies (shoves) | 59 | 13 |
+| Partners' stuck time (forward held, no progress) | 2.3 s, 1.7 s | 0.5 s, 0 s |
 | Items taken that aren't weapons, ammunition or recovery items | 0 | 0 (none lies in the bar) |
 
-Cindy (no weapon) is the open problem: she stays near the player as the others do, backs off and turns to run when a zombie
-is within 280, but in the small bar she is cornered and caught (downed in 4 of 6, and 3 of 3 with the quick turn). A fix
-needs a place to go: the room's route nodes (the game's 0x8264F0 picks nodes by weight) scored away from the zombies and
-sent through the game's route code (0x826850), rather than running straight off.
+Cindy shoves less (she keeps clear of the zombies instead of wrestling them, 1-10 damage a shove): the one measure where the
+new AI's number is lower, by design. How Cindy was fixed: running straight off from a zombie within 280 (the quick turn and
+a run) got her cornered in the small bar (downed in 4 of 6, and 3 of 3); now a partner without a gun with an enemy within 450
+that isn't on the player is sent to a node of the room's route graph (the rooms' node tables, File 1 0x84E2B8, File 2
+0x805858) at least 600 from every enemy and within 1100 of the player, by the game's own route code (File 1 0x826850, File 2
+0x7D6770) inside its plan 2 (the game's own moves round the counters and tables); the choice is kept 3 s unless an enemy comes
+near it. 37-56 routes a run, the game's route code refusing about 1 in 25 (the straight run is the fallback then).
 
 File 2, Wild Things (the zoo gate), the player standing still 10 minutes (1 run each): the game's partners away 85% and 75%
 of the time and the player killed at 504 s; the new partners within 400 all the time, Mark shot the one enemy that came,

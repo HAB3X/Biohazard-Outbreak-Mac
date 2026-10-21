@@ -437,6 +437,32 @@ void DecidesNoPuzzleActions()
     }
 }
 
+void RetreatsToTheSafestNodeNearThePlayer()
+{
+    World w = Bar();
+    // the room's route nodes: by the player, by the enemy, a far corner off the leash, and one clear of the enemy
+    const Vec nodes[] = {{1000, 0, 1100}, {1300, 0, 1300}, {3000, 0, 3000}, {500, 0, 600}};
+    for (const Vec& n : nodes)
+    {
+        w.nodes[static_cast<size_t>(w.nodeCount++)] = n;
+    }
+    AddEnemy(w, 10, 1300, 1250, PartnerRecord); // 270 from the partner (at 1300, 1000), not on the player
+    w.characters[Partner].position = {1300, 0, 1000};
+    Memory m;
+    Decision d = DecideOnce(w, false, m, 100);
+    CHECK(d.retreat);
+    CHECK(d.newRoute);
+    CHECK(d.pad == 0);                             // the game's route moves it, not the pad
+    CHECK(d.retreatTo.x == 500 && d.retreatTo.z == 600);
+    Decision again = DecideOnce(w, false, m, 101);
+    CHECK(again.retreat && !again.newRoute);       // the same choice, no new route
+    Memory armed;
+    CHECK(!DecideOnce(w, true, armed, 100).retreat); // a loaded gun: it fights
+    w.enemies[10].position = {1300, 0, 1600};      // 600 off: no need
+    Memory calm;
+    CHECK(!DecideOnce(w, false, calm, 100).retreat);
+}
+
 void ADownedPartnerDecidesNothing()
 {
     World w = Bar();
@@ -472,6 +498,7 @@ int main()
     ShootsItsTargetItself();
     StopsShootingWhatItCantHit();
     TakesOnlyConsumables();
+    RetreatsToTheSafestNodeNearThePlayer();
     DecidesNoPuzzleActions();
     ADownedPartnerDecidesNothing();
     if (g_failures != 0)

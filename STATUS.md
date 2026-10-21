@@ -142,8 +142,10 @@ Measured with `tools/ai_scenario.py SCENARIO New|Original --seeds N` (headless, 
 tools/ai_report.py; docs/research/partner-ai.md has the tables):
 
 - File 1, the bar, the player standing still while the zombies come (6 seeds, 240 s, means, Original / New): first partner
-  attack after a threat 45 s / 0.2 s; the player's damage 3258 / 2098, below 30% 67 s / 33 s, downed 0.83 / 0.17; Mark
-  never away from the player (the game's: 30% of the time), never downed, damage taken 930 / 363.
+  attack after a threat 45 s / 0.8 s; the player's damage 3258 / 2135, below 30% 67 s / 7 s, downed 0.83 / 0.17; zombies
+  killed 0.83 / 1.33; Mark never away from the player (the game's: 30% of the time), never downed; Cindy downed 0.17 / 0,
+  her damage taken 1160 / 443 (she's sent to a safe node of the room by the game's own route code when a zombie comes; she
+  shoves less: 59 / 13 damage, the one lower number, by design).
 - File 2, the zoo, the player standing still 10 minutes: the game's partners wander off (85% and 75% of the time away) and
   the player is killed at 504 s; the new partners stay within 400, Mark kills the enemy that comes, the player untouched.
 - Commands: with the new AI both partners are within 300 of the player 0.1-3 s after "This way!" or their name, in both
@@ -151,9 +153,7 @@ tools/ai_report.py; docs/research/partner-ai.md has the tables):
 - Partners never took an item that isn't a weapon, ammunition or a recovery item (the pick-up chooser is overridden).
 - No fatal in any run since the sweep's function starts were merged (about 80 runs, 2-10 minutes, both games, both modes).
 
-Left (next): Cindy (no weapon) is cornered and downed in most bar runs (4 of 6; the game's own Cindy wanders off and
-survives more often): she needs a place to go (the room's route nodes scored away from the zombies, through the game's
-route code) rather than running straight off. Results vary a lot by seed: compare means over 6 or more. Not measured by a
+Left (next): Results vary a lot by seed: compare means over 6 or more. Not measured by a
 scenario: following into another room (the game's follow plan routes to the player's room; the bar's back door walk ran
 into a cutscene), healing the player when asked with "Help me!" (the game's own trade and heal plans run as they are), the
 other File 2 scenarios. The director's own shots are less accurate than the game's attack routine (it can't see what's in

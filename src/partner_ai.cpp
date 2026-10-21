@@ -7,6 +7,7 @@
 #include <array>
 #include <atomic>
 #include <cstdio>
+#include <cstring>
 
 namespace PartnerAi
 {
@@ -23,7 +24,8 @@ namespace PartnerAi
 // (rounds +0x24, class +0x2B; the executable's 0x583EA0 reads a class's flags from the classes at 0x716980); the pack +0xC84
 // (four, then the own item: Mark's handgun, item 82, 15 rounds at the start of the bar; then the four in the own item: Cindy's
 // herb case holds her herbs there; 0x836BD0 and 0x835300 list them); the item check
-// 0x823780, which swaps to a better weapon (0x835300) for bit 4 of +0x1096
+// 0x823780, which swaps to a better weapon (0x835300) for bit 4 of +0x1096. The rooms' route nodes at 0x84E2B8 (0x827130
+// and 0x8264F0 read them so), the route code 0x826850 (it copies its point to +0x1010), the plan's lock +0x1070
 const Layout File1 = {.name = "file1",
                       .characters = 0x476DD0,
                       .characterSize = 0x10E0,
@@ -53,7 +55,11 @@ const Layout File1 = {.name = "file1",
                       .checkItems = 0x823780,
                       .speech = 0x1075,
                       .setPlan = 0x823340,
-                      .setMove = 0x82A690};
+                      .setMove = 0x82A690,
+                      .roomNodes = 0x84E2B8,
+                      .route = 0x826850,
+                      .routeGoal = 0x1010,
+                      .planLock = 0x1070};
 
 // File 2 (SLPM-65692): the same code with the fields moved: the update 0x63EAF0 (records at 0x47BD30, 0x1100 bytes; the
 // think, SINGLE's 0x7E99D0, for the CPU flag at +0xBB4; play mode 0x3137D2), enemies at 0x403DB0, 0xDB0 bytes (SINGLE's
@@ -93,7 +99,11 @@ const Layout File2 = {.name = "file2",
                       .checkItems = 0x7EB0C0,
                       .speech = 0x1091,
                       .setPlan = 0x7EA9E0,
-                      .setMove = 0x7DA650};
+                      .setMove = 0x7DA650,
+                      .roomNodes = 0x805858,
+                      .route = 0x7D6770,
+                      .routeGoal = 0x102C,
+                      .planLock = 0x108C};
 
 namespace
 {
@@ -111,6 +121,7 @@ void SetMode(int mode) { g_mode.store(mode == ModeOriginal ? ModeOriginal : Mode
 // The game AI's plans (its plan table's order, both games: docs/research/partner-ai.md) and the wants that pick them
 constexpr uint16_t PlanPick = 0;    // nothing: the next plan is picked by the wants
 constexpr uint16_t PlanWait = 1;    // stand facing the player (its move 1) for 15 s, then off to a node (want 4)
+constexpr uint16_t PlanWander = 2;  // to a node of the room by its route, then a wait (want 2)
 constexpr uint16_t PlanFollow = 3;  // to the player (want 0)
 constexpr uint16_t PlanFight = 5;   // the action routines against the picked enemy (want 3)
 constexpr int WantFollow = 0;
@@ -192,6 +203,38 @@ bool CheckItems(Ps2Cpu* c, const Layout& layout, uint32_t record, uint16_t what)
 constexpr uint16_t LookForBetterWeapon = 4;
 constexpr uint16_t LookAtEverything = 0xF;
 
+// The partner sent to a point of the room the game's way: its plan 2 (to a node by its route) started, the route set to the
+// point by the game's own route code, the route-following move started and the plan put at its following step, as plan 2's
+// own first step does for a node of its choosing (File 1 0x823FF0)
+bool RouteTo(Ps2Cpu* c, const Layout& layout, uint32_t record, const Vec& point, int16_t room)
+{
+    constexpr uint16_t MoveAlongRoute = 2;
+    constexpr uint8_t WanderFollowing = 1;
+    constexpr uint16_t PlanLockFrames = 60;
+    CallGame(c, layout.setMove, record, 0);
+    CallGame(c, layout.setPlan, record, PlanWander);
+    const float xyz[3] = {point.x, point.y, point.z};
+    for (uint32_t n = 0; n < 3; n++)
+    {
+        uint32_t bits;
+        std::memcpy(&bits, &xyz[n], 4);
+        wr32(record + layout.routeGoal + 4 * n, bits);
+    }
+    c->r[4].sd[0] = static_cast<int32_t>(record);
+    c->r[5].sd[0] = static_cast<int32_t>(record + layout.routeGoal);
+    c->r[6].sd[0] = room;
+    ps2_call(c, layout.route);
+    if (c->r[2].sw[0] == -1)
+    {
+        CallGame(c, layout.setPlan, record, PlanPick);
+        return false;
+    }
+    CallGame(c, layout.setMove, record, MoveAlongRoute);
+    wr8(record + layout.planStep, WanderFollowing);
+    wr16(record + layout.planLock, PlanLockFrames);
+    return true;
+}
+
 // A decision put into the game's AI: the wants that pick its next plan, the enemy to fight, and the plan cut short when it
 // isn't the one wanted (as the game cuts its own: the move stopped, then the plan started)
 void Apply(Ps2Cpu* c, const Layout& layout, uint32_t record, const Decision& decision, PartnerState& state)
@@ -217,6 +260,19 @@ void Apply(Ps2Cpu* c, const Layout& layout, uint32_t record, const Decision& dec
         {
             return;
         }
+    }
+    if (decision.retreat)
+    {
+        if ((decision.newRoute || plan != PlanWander) && mayCut)
+        {
+            state.lastReplan = g_frame;
+            const bool routed = RouteTo(c, layout, record, decision.retreatTo, rd16(layout.currentRoom));
+            if (Measuring())
+            {
+                NoteEvent(PartnerIndex(layout, record), routed ? "retreat: routed" : "retreat: no route", g_frame);
+            }
+        }
+        return;
     }
     if (decision.intent == Intent::Free)
     {

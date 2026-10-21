@@ -43,9 +43,12 @@ Cindy's herbs) carry it out:
   (`Tunables`).
 - `BH_AI_LOG` telemetry and `tools/ai_scenario.py` / `tools/ai_report.py` measure both AIs the same way. The game is
   deterministic for the same input, so the same seed in both modes is the same game until the AIs differ.
-- The pad is taken over only where the game's skills are too slow or unsafe: shooting an enemy within 500 of the player
-  (turned to it with the weapon down, readied, fired in the aiming stance; given back to the game after 6 presses that
-  don't hurt it), and a partner without a gun turning away and running from an enemy within 280 that isn't on the player.
+- The pad is taken over only where the game's skills are too slow: shooting an enemy within 500 of the player (turned to
+  it with the weapon down, readied, fired in the aiming stance; given back to the game after 6 presses that don't hurt it).
+- A partner without a gun with an enemy within 450 (not one on the player) is sent to a node of the room clear of the enemies
+  and near the player through the game's own route code inside its plan 2, so it goes round the furniture; running straight
+  off (the pad) is only the fallback when the route code refuses. Running straight off was tried first: the unarmed partner
+  got cornered and was downed more often than with the game's own AI.
 - The PC menus' **Gameplay: Partner AI** setting chooses **New** (the default) or **Original** (the game's own, untouched:
   the overrides run the game's functions and add nothing).
 

@@ -74,6 +74,18 @@ World ReadWorld(const Layout& layout)
 {
     World world{};
     world.currentRoom = static_cast<int16_t>(rd16(layout.currentRoom));
+    constexpr uint32_t RoomSize = 0xA4, NodeSize = 0x40, NodeInUse = 0, NodePosition = 4;
+    const uint32_t room = layout.roomNodes + RoomSize * static_cast<uint16_t>(world.currentRoom);
+    const uint32_t count = rd32(room), nodes = rd32(room + 4);
+    constexpr uint32_t MainMemory = 32u << 20; // a room not set up: no table (its word 0) or not one in main memory
+    const bool table = nodes != 0 && nodes < MainMemory && count <= MainMemory / NodeSize;
+    for (uint32_t n = 0; table && n < count && world.nodeCount < MaxNodes; n++)
+    {
+        if (rd8(nodes + NodeSize * n + NodeInUse) != 0)
+        {
+            world.nodes[static_cast<size_t>(world.nodeCount++)] = ReadVec(nodes + NodeSize * n + NodePosition);
+        }
+    }
     for (int n = 0; n < CharacterCount; n++)
     {
         uint32_t at = layout.characters + layout.characterSize * static_cast<uint32_t>(n);

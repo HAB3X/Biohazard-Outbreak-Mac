@@ -28,6 +28,10 @@ struct Tunables
     float personalSpace = 280;   // an enemy this close to a partner that can't fight it (no loaded gun, or badly hurt) is
     float badlyHurt = 0.3f;      // stepped away from, unless it's on the player
     float evadeSlack = 1.6f;     // and on until it's this many times as far
+    float retreatTrigger = 450;  // an enemy this close to a partner without a gun (not on the player) sends it to a node of
+    float safeDistance = 600;    // the room this far from every enemy, within retreatLeash of the player, by the game's
+    float retreatLeash = 1100;   // route code; the choice is kept retreatFrames unless an enemy comes near it
+    uint32_t retreatFrames = 90;
     float rescueHealth = 0.5f;   // a partner without a gun shoves an enemy off the player only above this share of its
                                  // hit points (measured: Cindy downed in 3 of 6 runs, most of it wrestling zombies)
     uint32_t evadeCheckFrames = 30; // stepping away that gets less than evadeMinProgress in this long is given up for
@@ -90,6 +94,9 @@ struct Decision
     bool urgent = false;      // the item check may cut a fight short (hurt, with a recovery item)
     uint32_t pad = 0;         // buttons held this frame instead of the game AI's (src/partner_ai_pad.h; 0: the game's)
     uint32_t pressed = 0;     // and pressed this frame (an attack)
+    bool retreat = false;     // go to retreatTo by the game's route code (a partner without a gun, an enemy coming)
+    bool newRoute = false;    // retreatTo is a new choice: the route is set again
+    Vec retreatTo{};
 };
 
 // Shooting an enemy with the gun in hand: the partner turned to face it with the weapon down (right lowers the facing), then
@@ -124,6 +131,9 @@ struct Memory
     int shotTargetHp = 0;
     uint32_t shotsMissed = 0;
     uint64_t holdFireUntil = 0;
+    bool retreating = false;  // going to a safer node, which, since when
+    Vec retreatTo{};
+    uint64_t retreatChosen = 0;
 };
 
 // What the partner has: a gun with rounds in it fights what threatens the player; anything else (a knife, a pipe, an empty

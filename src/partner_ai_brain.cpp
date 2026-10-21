@@ -295,6 +295,79 @@ void Shoot(Decision& d, const Character& me, const Enemy& target, Memory& memory
 }
 }
 
+namespace
+{
+float NearestEnemy(const World& world, int16_t room, const Vec& at)
+{
+    float best = std::numeric_limits<float>::max();
+    for (const Enemy& enemy : world.enemies)
+    {
+        if (enemy.alive() && enemy.room == room)
+        {
+            best = std::min(best, Distance(enemy.position, at));
+        }
+    }
+    return best;
+}
+
+// The node of the room farthest from the enemies that's clear of them (safeDistance), better than where the partner is,
+// within the leash of the player, and not where it stands already
+bool SafeNode(const World& world, const Character& me, const Tunables& tunables, Vec& out)
+{
+    const Character& player = world.player();
+    const float here = NearestEnemy(world, me.room, me.position);
+    float best = std::max(tunables.safeDistance, here + 150);
+    bool found = false;
+    for (int n = 0; n < world.nodeCount; n++)
+    {
+        const Vec& node = world.nodes[static_cast<size_t>(n)];
+        if (Distance(node, me.position) < 150 ||
+            (player.room == me.room && Distance(node, player.position) > tunables.retreatLeash))
+        {
+            continue;
+        }
+        const float clear = NearestEnemy(world, me.room, node);
+        if (clear >= best)
+        {
+            best = clear;
+            out = node;
+            found = true;
+        }
+    }
+    return found;
+}
+
+// A partner without a gun with an enemy coming (not one on the player: that one it's to shove off) goes to a safer node of
+// the room by the game's own route code, round the counters and tables, instead of running straight off into a corner
+bool Retreat(Decision& d, const World& world, const Character& me, Memory& memory, uint64_t frame, const Tunables& tunables)
+{
+    if (me.room != world.currentRoom || TooClose(world, me, tunables.retreatTrigger, tunables) == nullptr)
+    {
+        memory.retreating = false;
+        return false;
+    }
+    const bool keep = memory.retreating && frame < memory.retreatChosen + tunables.retreatFrames &&
+                      NearestEnemy(world, me.room, memory.retreatTo) >= tunables.safeDistance * 0.6f;
+    Vec node{};
+    if (!keep)
+    {
+        if (!SafeNode(world, me, tunables, node))
+        {
+            memory.retreating = false;
+            return false;
+        }
+        memory.retreating = true;
+        memory.retreatTo = node;
+        memory.retreatChosen = frame;
+        d.newRoute = true;
+    }
+    d.retreat = true;
+    d.retreatTo = memory.retreatTo;
+    d.why = "retreat";
+    return true;
+}
+}
+
 Abilities AbilitiesOf(const Character& character)
 {
     Abilities a;
@@ -325,6 +398,11 @@ Decision Decide(const World& world, int partner, const Abilities& abilities, Mem
     const Character& player = world.player();
     const bool rescuing = d.intent == Intent::Fight &&
                           Distance(world.enemies[d.target].position, player.position) < tunables.closeQuarters;
+    if (!canFight && !rescuing && Retreat(d, world, me, memory, frame, tunables))
+    {
+        memory.evading = false;
+        return d;
+    }
     const Enemy* close = canFight || rescuing || frame < memory.evadeBlockedUntil ? nullptr : TooClose(world, me, space, tunables);
     if (close != nullptr && !memory.evading)
     {
