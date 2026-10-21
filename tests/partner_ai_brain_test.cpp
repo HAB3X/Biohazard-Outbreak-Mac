@@ -256,12 +256,13 @@ void StepsAwayFacingTheRightWay()
     const Vec north{0, 0, 100}; // toward +z: heading 0
     CHECK(Heading(me, north) == 0);
     CHECK(Heading(me, Vec{100, 0, 0}) == 0x4000);
-    // the enemy to the north: facing it, step back; facing south (away), run; facing east, turn toward south
-    CHECK(StepAway(me, 0x0000, north) == Pad::Back);
-    CHECK(StepAway(me, 0x8000, north) == (Pad::Forward | Pad::Run));
+    // the enemy to the north: facing it, the quick turn; facing south (away), run; facing east, turn toward south
+    CHECK(StepAway(me, 0x0000, north).held == (Pad::Back | Pad::Run)); // the quick turn
+    CHECK(StepAway(me, 0x0000, north).pressed == Pad::Run);
+    CHECK(StepAway(me, 0x8000, north).held == (Pad::Forward | Pad::Run));
     // away is 0x8000; from 0x4000 the facing must rise: Left (Right lowers it)
-    CHECK(StepAway(me, 0x4000, north) == Pad::Left);
-    CHECK(StepAway(me, 0xC000, north) == Pad::Right);
+    CHECK(StepAway(me, 0x4000, north).held == Pad::Left);
+    CHECK(StepAway(me, 0xC000, north).held == Pad::Right);
 }
 
 void BacksAwayWithoutAGun()
@@ -287,9 +288,9 @@ void KeepsBackingAwayUntilClear()
     AddEnemy(w, 10, 1200, 1150, PartnerRecord); // 150 from the partner
     Memory m;
     CHECK(DecideOnce(w, false, m, 100).pad != 0);
-    w.enemies[10].position = {1200, 0, 1250};    // 250: past the space, within the slack: still going
+    w.enemies[10].position = {1200, 0, 1400};    // 400: past the space, within the slack: still going
     CHECK(DecideOnce(w, false, m, 101).pad != 0);
-    w.enemies[10].position = {1200, 0, 1350};    // 350: clear
+    w.enemies[10].position = {1200, 0, 1500};    // 500: clear
     CHECK(DecideOnce(w, false, m, 102).pad == 0);
 }
 
@@ -316,6 +317,14 @@ void BareHandsOnlyWhenNothingElseIsClose()
     Decision d = DecideOnce(w, false, m);
     CHECK(d.intent != Intent::Fight);
     CHECK(d.pad != 0);
+    w.enemies[47].position = {1200, 0, 1320};    // 320 off: not at its elbow, the rescue goes on (it stood idle before)
+    Memory rescue;
+    Decision r = DecideOnce(w, false, rescue);
+    CHECK(r.intent == Intent::Fight);
+    CHECK(r.target == 46);
+    w.characters[Partner].hp = 900;              // under half: it doesn't wrestle zombies bare-handed
+    Memory hurt;
+    CHECK(DecideOnce(w, false, hurt).intent != Intent::Fight);
 }
 
 void AimsThenFires()
@@ -338,11 +347,16 @@ void AimsThenFires()
 void ShootsItsTargetItself()
 {
     World w = Bar();
-    AddEnemy(w, 10, 1500, 1000, PlayerRecord);
+    AddEnemy(w, 10, 1400, 1000, PlayerRecord); // 400 from the player: urgent
     Memory m;
     Decision d = DecideOnce(w, true, m);
     CHECK(d.intent == Intent::Fight);
     CHECK(d.pad == Pad::Left);                // facing +z, the enemy toward +x: turning to it, the weapon down
+    w.enemies[10].position = {1700, 0, 1000};  // 700 from the player: the game's own attack routine
+    Memory notUrgent;
+    Decision later = DecideOnce(w, true, notUrgent);
+    CHECK(later.intent == Intent::Fight);
+    CHECK(later.pad == 0);
     w.enemies[10].position = {3000, 0, 1000}; // out of range: the game's own attack routine
     AddEnemy(w, 11, 1800, 1000, OtherPartnerRecord);
     Memory far;
@@ -355,7 +369,7 @@ void StopsShootingWhatItCantHit()
 {
     World w = Bar();
     Character& me = w.characters[Partner];
-    AddEnemy(w, 10, 1200, 1500, PlayerRecord); // straight ahead (+z) of the partner, 500 off the player
+    AddEnemy(w, 10, 1200, 1350, PlayerRecord); // straight ahead (+z) of the partner, 400 off the player
     me.motion = 0x80;
     Memory m;
     int presses = 0;

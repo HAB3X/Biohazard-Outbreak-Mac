@@ -48,6 +48,10 @@ said the positions weren't floats: they are, at +0x38 of the records below.)
 | Distances between characters | 0x386110 + id * 0x40 + other * 8 (float) | 0x387890 |
 | Distances character to enemy | 0x385490 + id * 400 + enemy's +6 * 8 (float, then two flags) | 0x386C10 |
 
+Cross-checked against RaccoonRecomp's REO-GreatestHits-Cheats (MIT, the USA File 1 disc, src/partners.c): its character
+blocks are 0x4A5C30 there with the same 0x10E0 stride, type +0xB98 (0-7 Kevin, Mark, Jim, George, David, Alyssa, Yoko,
+Cindy) and the most hit points +0x546, as found here on the Japanese disc.
+
 Both kinds of record: active +0, kind +2 (2 an enemy), id +3 (an enemy's own index at +6), the character it's after +0x24
 (an enemy's: a character record), position +0x38 (three floats, y up), facing +0x92 (u16, 0x10000 a turn), room +0x1E2.
 Hit points (s16, then the most): File 1 +0x544, File 2 +0x540 (Kevin 2300, Mark 3000, Cindy 1500 in File 1's bar; enemies the

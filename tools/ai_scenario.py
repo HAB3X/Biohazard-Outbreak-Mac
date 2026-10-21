@@ -142,12 +142,15 @@ def wait_for_play(run, timeout=240):
         if in_play(run):
             return
         active = tasks(run)
+        state = byte(run, t["play_state"]) if t["play_state"] and t["game"] in active else None
         if t["status"] in active:
             run.key("Tab")  # a skip that landed as the scene ended opened the status screen (START): closed again
-        elif t["cutscene"] in active or (t["game"] in active and t["play_state"] and byte(run, t["play_state"]) == 14):
+        elif t["cutscene"] in active or state == 14 or (state is not None and time.time() - start > 60):
+            # (a scene of the game overlay's own that isn't the credits, seen once on a loaded machine: Escape too)
             run.key("Escape")
         time.sleep(2)
-    raise RuntimeError(f"{run.folder}: play didn't start")
+    raise RuntimeError(f"{run.folder}: play didn't start (tasks {[hex(a) for a in tasks(run)]}, play state "
+                       f"{byte(run, t['play_state']) if t['play_state'] else '-'})")
 
 
 def through_menus(run, keys, tries=3):

@@ -25,14 +25,17 @@ struct Tunables
     float goThreat = 2000;       // while told "Go!": an enemy this close to the partner is fair game
     uint32_t orderFrames = 30 * 25; // how long a command holds
     float hurt = 0.5f;           // below this share of its hit points, a partner carrying a recovery item stops to use it
-    float personalSpace = 200;   // an enemy this close to a partner that can't fight it (no loaded gun, or badly hurt) is
+    float personalSpace = 280;   // an enemy this close to a partner that can't fight it (no loaded gun, or badly hurt) is
     float badlyHurt = 0.3f;      // stepped away from, unless it's on the player
     float evadeSlack = 1.6f;     // and on until it's this many times as far
+    float rescueHealth = 0.5f;   // a partner without a gun shoves an enemy off the player only above this share of its
+                                 // hit points (measured: Cindy downed in 3 of 6 runs, most of it wrestling zombies)
     uint32_t evadeCheckFrames = 30; // stepping away that gets less than evadeMinProgress in this long is given up for
     float evadeMinProgress = 40;    // evadeBlockedFrames (a wall behind)
     uint32_t evadeBlockedFrames = 60;
     float shootRange = 1300;     // a partner with a loaded gun shoots its enemy itself within this (the game's attack
-                                 // routines wander and wait first)
+                                 // routines wander and wait first) when the enemy is within urgentToPlayer of the player
+    float urgentToPlayer = 500;
     uint16_t aimTolerance = 0x0B00; // facing within this of the enemy (about 15 degrees) is on target
     uint32_t fireFrames = 10;    // a shot every this many frames at most (the gun's own pace holds it back further)
     uint32_t missedShots = 6;    // presses of the attack without the target losing hit points before the partner stops
@@ -99,9 +102,10 @@ struct Buttons
 
 Buttons Aim(const Character& me, const Vec& target, uint64_t frame, const Tunables& tunables);
 
-// The buttons that take a character away from a point: run off when facing away from it, step back when facing it, turn
-// away in between (the game's own turning rule: right lowers the facing, File 1's 0x82BB30)
-uint32_t StepAway(const Vec& position, uint16_t facing, const Vec& from);
+// The buttons that take a character away from a point: run off when facing away from it, the quick turn (back and run, as
+// the game's own AI turns about) when facing it, turn away in between (the game's own turning rule: right lowers the facing,
+// File 1's 0x82BB30). Stepping back while facing it was tried first: too slow, the zombies caught Cindy
+Buttons StepAway(const Vec& position, uint16_t facing, const Vec& from);
 
 // What a partner remembers between frames
 struct Memory

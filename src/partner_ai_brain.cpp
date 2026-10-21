@@ -171,7 +171,8 @@ Decision Intend(const World& world, int partner, const Abilities& abilities, Mem
     const Character& player = world.player();
     const Threat threat = PickThreat(world, partner, memory, tunables);
     // bare hands only against what's on the player, and only with no other enemy at the partner's elbow
-    const bool bareHanded = threat.onPlayer && TooClose(world, me, tunables.personalSpace * tunables.evadeSlack, tunables) == nullptr;
+    const bool bareHanded = threat.onPlayer && me.hp >= me.hpMax * tunables.rescueHealth &&
+                            TooClose(world, me, tunables.personalSpace, tunables) == nullptr;
     if (threat.index >= 0 && (abilities.gun || bareHanded))
     {
         memory.target = threat.index;
@@ -253,21 +254,21 @@ Buttons Aim(const Character& me, const Vec& target, uint64_t frame, const Tunabl
     return b;
 }
 
-uint32_t StepAway(const Vec& position, uint16_t facing, const Vec& from)
+Buttons StepAway(const Vec& position, uint16_t facing, const Vec& from)
 {
     const uint16_t away = Heading(from, position);
     const int16_t off = static_cast<int16_t>(static_cast<uint16_t>(away - facing));
     constexpr int16_t Ahead = 0x2000;  // within 45 degrees of away: run
-    constexpr int16_t Behind = 0x6000; // within 45 degrees of toward it: step back, still facing it
+    constexpr int16_t Behind = 0x6000; // within 45 degrees of toward it: the quick turn
     if (off >= -Ahead && off <= Ahead)
     {
-        return Pad::Forward | Pad::Run;
+        return {Pad::Forward | Pad::Run, 0};
     }
     if (off >= Behind || off <= -Behind)
     {
-        return Pad::Back;
+        return {Pad::Back | Pad::Run, Pad::Run};
     }
-    return static_cast<uint16_t>(facing - away) <= 0x8000 ? Pad::Right : Pad::Left;
+    return {static_cast<uint16_t>(facing - away) <= 0x8000 ? Pad::Right : Pad::Left, 0};
 }
 
 namespace
@@ -345,12 +346,17 @@ Decision Decide(const World& world, int partner, const Abilities& abilities, Mem
     }
     if (close != nullptr)
     {
-        d.pad = StepAway(me.position, me.facing, close->position);
+        const Buttons away = StepAway(me.position, me.facing, close->position);
+        d.pad = away.held;
+        d.pressed = away.pressed;
         d.why = "too close";
     }
     else if (d.intent == Intent::Fight && abilities.gun && frame >= memory.holdFireUntil &&
-             Distance(world.enemies[d.target].position, me.position) < tunables.shootRange)
+             Distance(world.enemies[d.target].position, me.position) < tunables.shootRange &&
+             Distance(world.enemies[d.target].position, player.position) < tunables.urgentToPlayer)
     {
+        // only when it's urgent (the enemy close to the player): the partner's own aim can't tell what's in the line of fire
+        // (measured: shots into the bar's counter), and the game's attack routine, slower to start, rarely misses
         Shoot(d, me, world.enemies[d.target], memory, frame, tunables);
     }
     return d;
