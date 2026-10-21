@@ -11,8 +11,9 @@ translations/GAME/pictures.toml are redrawn too (bh_pictures.py), and the fonts'
 ends with the coverage: per kind of container, how many of its units are translated.
 
 The patch is version 2 of the runtime's disc patch: "DPAT", u32 2, u32 count, then per range u64 disc offset, u32 length, u32
-variant (0 always; 1 laid while the keyboard and mouse are the device used last, 2 while a gamepad is: a picture with the
-PS2's buttons drawn on it has both, at the same offset and size), the bytes.
+variant (0 always; 1 laid while the prompts are the keyboard's, 2 a PlayStation pad's, 3 an Xbox pad's: the runtime's Button
+prompts, the device used last unless one is chosen; a picture with the PS2's buttons drawn on it has all three, at the same
+offset and size), the bytes.
 """
 import struct
 import sys
@@ -24,7 +25,7 @@ import bh_pictures as pictures
 import bh_sources as sources
 import bh_text as text
 
-MAGIC = 0x54415044  # "DPAT", version 2: each range has a variant (0 always, 1 keyboard and mouse, 2 gamepad)
+MAGIC = 0x54415044  # "DPAT", version 2: each range has a variant (0 always, 1 keyboard, 2 PlayStation, 3 Xbox)
 
 
 def load_translations(folder, units, fallback=None):
@@ -110,10 +111,11 @@ def changed_runs(old, new, gap=16):
 
 
 def check_overlaps(patches):
-    """Sorts the ranges; two may cover the same bytes only as the two devices' variants of one range (same offset and size)."""
+    """Sorts the ranges; two may cover the same bytes only as different prompts' variants of one range (same offset and
+    size)."""
     patches.sort(key=lambda p: (p[0], p[2]))
     for (a, da, va), (b, db, vb) in zip(patches, patches[1:]):
-        if a + len(da) > b and not (a == b and len(da) == len(db) and {va, vb} == {1, 2}):
+        if a + len(da) > b and not (a == b and len(da) == len(db) and va != vb and 0 not in (va, vb)):
             raise SystemExit(f"two changes overlap at disc offset {b:#x}")
 
 

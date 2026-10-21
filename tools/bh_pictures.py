@@ -22,7 +22,8 @@ pictures.toml: [[picture]] with file, entry (MOMO only), tim, pic (default 0), n
   key = "circle"             a PS2 button drawn in the box (circle cross triangle square l1 r1 l2 r2 start select up down
                              left right dpad): left as it is for a gamepad, a key cap with the keyboard's key for the keyboard
                              and mouse; mode = "menus" (default) or "play" says which controls
-A picture with a key edit gets two variants (laid by the runtime for the device used last: disc patch version 2); the others one.
+A picture with a key edit gets three variants (laid by the runtime for its Button prompts: disc patch version 2): the keyboard's
+key caps (1), the PS2's buttons as they are (2), an Xbox pad's (3); the others one.
 
 The keyboard's keys come from the settings folder's bindings.txt when it exists (the runtime writes it; $BH_SETTINGS names the
 folder, default ~/Library/Application Support/PS2 Native Runtime/<executable>), else from src/controls.cpp's defaults, so a
@@ -77,12 +78,20 @@ def spec(game):
 
 # --- the keyboard's keys -------------------------------------------------------------------------------------------------
 
+# src/controls.cpp's modes as the key caps use them (its Mode enumerators)
+CONTROL_MODES = {"Play": "play", "MenuMode": "menus", "Title": "title", "Pause": "pause"}
+
+
 def _default_actions():
-    """{action name: (PS2 button, [keys], mode)} from src/controls.cpp's table: {"name", "description", "button", "keys", Mode}."""
+    """{action name: (PS2 button, [keys], mode)} from src/controls.cpp's table: {"name", "description", "button", "keys", Mode}
+    (then optionally a hold flag). An enumerator this doesn't know fails: read as another mode, the menus' caps showed play's
+    keys."""
     text = (archive.REPO / "src" / "controls.cpp").read_text()
     out = {}
-    for name, button, keys, mode in re.findall(r'\{"(\w+)", "[^"]*", "(\w+)", "([^"]*)", (\w+)\}', text):
-        out[name] = (button, [k.strip() for k in keys.split(",")], mode.lower())
+    for name, button, keys, mode in re.findall(r'\{"(\w+)", "[^"]*", "(\w+)", "([^"]*)", (\w+)(?:, \d+)?\}', text):
+        if mode not in CONTROL_MODES:
+            raise ValueError(f"src/controls.cpp: control {name}'s mode {mode} isn't one of {', '.join(CONTROL_MODES)}")
+        out[name] = (button, [k.strip() for k in keys.split(",")], CONTROL_MODES[mode])
     if not out:
         raise ValueError("src/controls.cpp: no controls table found")
     return out
@@ -258,8 +267,49 @@ def draw_key(image, box, label):
     return Image.alpha_composite(image, layer)
 
 
+# An Xbox pad's buttons for the PS2's, by where they sit (SDL's south, east, west and north: the runtime's pad mapping): a dark
+# button with its letter in the letter's colour, the shoulders' names, START's Menu (three lines). The d-pad is drawn as it is
+XBOX_FACE = {"cross": ("A", (96, 186, 64, 255)), "circle": ("B", (226, 60, 50, 255)), "square": ("X", (52, 122, 222, 255)),
+             "triangle": ("Y", (242, 190, 40, 255))}
+XBOX_SHOULDER = {"l1": "LB", "r1": "RB", "l2": "LT", "r2": "RT", "select": "View"}
+XBOX_BODY, XBOX_RIM, XBOX_INK = (40, 40, 46, 255), (120, 120, 130, 255), (236, 236, 240, 255)
+
+
+def draw_xbox(image, box, key):
+    """An Xbox pad's button for a PS2 button filling the box, drawn 4x and scaled down as draw_key is; the image as it is for
+    the d-pad's."""
+    if key not in XBOX_FACE and key not in XBOX_SHOULDER and key != "start":
+        return image
+    x0, y0, x1, y1 = box
+    w, h, s = x1 - x0, y1 - y0, SUPERSAMPLE
+    big = Image.new("RGBA", (w * s, h * s), (0, 0, 0, 0))
+    d = ImageDraw.Draw(big)
+    if key in XBOX_SHOULDER:
+        d.rounded_rectangle([0, 0, w * s - 1, h * s - 1], radius=min(w, h) * s // 3, fill=XBOX_BODY, outline=XBOX_RIM,
+                            width=s)
+        big = draw_text(big, (2 * s, s, w * s - 2 * s, h * s - s), XBOX_SHOULDER[key], "arialnarrow", None, XBOX_INK, None,
+                        "center")
+    else:
+        side = min(w, h) * s
+        left, top = (w * s - side) // 2, (h * s - side) // 2
+        d.ellipse([left, top, left + side - 1, top + side - 1], fill=XBOX_BODY, outline=XBOX_RIM, width=s)
+        if key == "start":
+            for k in (-1, 0, 1):
+                y = top + side // 2 + k * side // 6
+                d.line([left + side * 0.3, y, left + side * 0.7, y], fill=XBOX_INK, width=max(s, side // 12))
+        else:
+            letter, colour = XBOX_FACE[key]
+            inset = side // 5
+            big = draw_text(big, (left + inset, top + inset, left + side - inset, top + side - inset), letter, "arial", None,
+                            colour, None, "center")
+    layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    layer.paste(big.resize((w, h), Image.LANCZOS), (x0, y0))
+    return Image.alpha_composite(image, layer)
+
+
 def apply_edits(image, edits, variant, keys):
-    """The picture with its edits for a variant (0 or 2: the gamepad's buttons kept; 1: the keyboard's keys drawn)."""
+    """The picture with its edits for a variant (0 or 2: the PS2's buttons kept; 1: the keyboard's keys drawn; 3: an Xbox
+    pad's buttons drawn)."""
     image = image.convert("RGBA")
     mask = np.zeros((image.size[1], image.size[0]), bool)
     for e in edits:
@@ -269,6 +319,9 @@ def apply_edits(image, edits, variant, keys):
                 raise ValueError(f"key {e['key']!r}: not a PS2 button ({', '.join(sorted(BUTTONS))})")
             if variant == 1:
                 image = draw_key(image, box, keys[(e.get("mode", "menus"), e["key"])])
+                mask[box[1]:box[3], box[0]:box[2]] = True
+            elif variant == 3 and (e["key"] in XBOX_FACE or e["key"] in XBOX_SHOULDER or e["key"] == "start"):
+                image = draw_xbox(image, box, e["key"])
                 mask[box[1]:box[3], box[0]:box[2]] = True
             continue
         color, outline = sampled_colors(image, box)
@@ -338,7 +391,7 @@ def build(arc, game, only=None):
         files = tm2.files(stream)
         has_keys = any("key" in e for p in pics for e in p.get("edit", []))
         out[(path, entry)] = {}
-        for variant in ((1, 2) if has_keys else (0,)):
+        for variant in ((1, 2, 3) if has_keys else (0,)):
             new = bytearray(stream)
             images = []
             for p in pics:
@@ -359,7 +412,7 @@ def build(arc, game, only=None):
 
 def patches(arc, game):
     """[(disc offset, bytes, variant)] of the pictures: a picture's whole container entry (its compressed stream can change
-    from the first edited byte on), the same offset and size in both of a picture's device variants."""
+    from the first edited byte on), the same offset and size in each of a picture's prompts' variants."""
     out = []
     for variants in build(arc, game).values():
         for variant, (offset, data, _) in variants.items():

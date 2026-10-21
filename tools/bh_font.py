@@ -63,13 +63,25 @@ def key_glyph(label):
     return big.resize((CELL, CELL), Image.BOX)
 
 
+def xbox_glyph(button):
+    """An Xbox pad's button in a cell: a solid disc with its letter cut out (the font's 4 levels have no colour), drawn 4x and
+    averaged down as key_glyph is. The buttons by where they sit (bh_pictures.XBOX_FACE)"""
+    letter = pictures.XBOX_FACE[button][0]
+    big = Image.new("L", (CELL * 4, CELL * 4), 0)
+    ImageDraw.Draw(big).ellipse([4, 4, CELL * 4 - 5, CELL * 4 - 5], fill=255)
+    rgba = pictures.draw_text(Image.new("RGBA", big.size, (0, 0, 0, 0)), (18, 16, CELL * 4 - 18, CELL * 4 - 16), letter, "arial",
+                              None, (255, 255, 255, 255), None, "center")
+    big.paste(0, (0, 0), rgba.split()[3].point(lambda a: 255 if a > 100 else 0))
+    return big.resize((CELL, CELL), Image.BOX)
+
+
 def fonts(arc, game):
     return [(name, arc.open("/NETBIO00.DAT/" + name)) for name in sources.settings(game).get("fonts", [])]
 
 
 def patches(arc, game):
-    """[(disc offset, bytes, variant)]: each font's button glyphs, the keyboard's keys (1) and the PS2's symbols (2): the four
-    symbols' own cells with the menus' keys, PLAY_SYMBOLS's with play's."""
+    """[(disc offset, bytes, variant)]: each font's button glyphs, the keyboard's keys (1), the PS2's symbols (2) and an Xbox
+    pad's buttons (3): the four symbols' own cells with the menus' keys, PLAY_SYMBOLS's with play's."""
     keys = pictures.key_names(game)
     out = []
     for name, node in fonts(arc, game):
@@ -81,6 +93,7 @@ def patches(arc, game):
                 at = node.offset + index(cell) * GLYPH
                 out.append((at, encode(key_glyph(keys[(mode, button)])), 1))
                 out.append((at, symbol, 2))
+                out.append((at, encode(xbox_glyph(button)), 3))
     return out
 
 
