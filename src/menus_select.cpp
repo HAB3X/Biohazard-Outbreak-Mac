@@ -8,6 +8,7 @@
 // the arrows one picture, the cards and portraits theirs. The selects move by their left and right (each with its own
 // animation, so the pointer presses them rather than writing the selection), and choose by the confirm.
 #include "menus.h"
+#include "text_map.h"
 
 #include <cmath>
 
@@ -35,15 +36,18 @@ struct Layout
     Range scenario;        // the scenario select's records (its cards, then its frame, arrows, hints)
     Range characters;      // the character and partner selects' (their portraits, arrows, hints, panels)
     uint32_t hintTexture;  // the hints' texture (File 2 select.tex's first picture, File 1's sixth)
+    // The difficulty's choice (after the character, the select's screen 11): a byte of the title's state (its address in
+    // this word), 0 EASY
+    uint32_t titleState, difficulty;
 };
 
-const Layout File2 = {"BIN/1.DAT", 0x24b080, 8, 0x998, {0x908, 0x25b8}, {0x2d98, 0x3da0}, 0};
-const Layout File1 = {"PROG/DEMO.BIN", 0x3065fc, 4, 0x974, {0x8e4, 0x254c}, {0x2d74, 0x3d7c}, 5};
+const Layout File2 = {"BIN/1.DAT", 0x24b080, 8, 0x998, {0x908, 0x25b8}, {0x2d98, 0x3da0}, 0, 0x24b070, 0xd};
+const Layout File1 = {"PROG/DEMO.BIN", 0x3065fc, 4, 0x974, {0x8e4, 0x254c}, {0x2d74, 0x3d7c}, 5, 0x23be34, 0xd};
 
 const Layout& L() { return Current() == Disc::File2 ? File2 : File1; }
 
 constexpr uint32_t RecordBytes = 0x48;
-constexpr uint8_t ScenarioSelect = 8, CharacterSelect = 9, PartnerSelect = 10;
+constexpr uint8_t ScenarioSelect = 8, CharacterSelect = 9, PartnerSelect = 10, DifficultySelect = 11;
 
 struct Record
 {
@@ -89,7 +93,12 @@ uint32_t HintButton(const Record& r)
 
 bool IsArrow(const Record& r) { return r.u == 80 && r.v == 464 && r.w == 40 && r.h == 40; }
 bool IsCard(const Record& r) { return r.u == 0 && r.v == 0 && r.w == 256 && r.h == 192; }
-bool IsPortrait(const Record& r) { return r.w == 56 && r.h == 128 && r.place.x1 - r.place.x0 == 60; }
+// (drawn 60 wide in File 2, 56 in File 1: other pictures of the size are drawn otherwise)
+bool IsPortrait(const Record& r)
+{
+    float width = r.place.x1 - r.place.x0;
+    return r.w == 56 && r.h == 128 && width >= 56 && width <= 60;
+}
 bool IsBigPortrait(const Record& r) { return r.u == 0 && r.v == 0 && r.w == 256 && r.h == 256; }
 constexpr uint32_t Characters = 8;
 
@@ -195,8 +204,45 @@ bool Select(Pointer::Screen& screen)
     screen.readyValue = 1;
     return true;
 }
+
+// The difficulty: its words drawn as text, each in a frame (measured in a picture: x 60 to 308, from 6 above the word to 2
+// below it); the pointer over one writes the choice, as the game's up and down do
+bool Difficulty(Pointer::Screen& screen)
+{
+    uint32_t state = SelectState();
+    uint32_t title = Word(L().titleState) & 0x1FFFFFF;
+    if (state == 0 || title == 0 || Byte(state + L().screen) != DifficultySelect)
+    {
+        return false;
+    }
+    static const char* const Levels[] = {"EASY", "NORMAL", "HARD", "VERY HARD"};
+    Rect rows[4];
+    int found = 0;
+    for (const char* level : Levels)
+    {
+        Rect word;
+        if (!TextMap::FindBytes(level, word))
+        {
+            break;
+        }
+        rows[found++] = {60, word.y0 - 6, 308, word.y1 + 2};
+    }
+    if (found == 0)
+    {
+        return false;
+    }
+    Pointer::Tile(rows, found);
+    screen.name = "difficulty";
+    for (int n = 0; n < found; n++)
+    {
+        screen.Item(rows[n], title + L().difficulty, 1, n);
+    }
+    screen.wheelUp = Pointer::Up;
+    screen.wheelDown = Pointer::Down;
+    return true;
+}
 }
 
-const Pointer::Finder SelectFinders[] = {Select};
+const Pointer::Finder SelectFinders[] = {Difficulty, Select};
 const int SelectFinderCount = sizeof(SelectFinders) / sizeof(SelectFinders[0]);
 }

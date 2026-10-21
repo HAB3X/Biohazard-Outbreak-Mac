@@ -307,6 +307,20 @@ bool PauseMenu(Pointer::Screen& screen)
     return true;
 }
 
-const Pointer::Finder PlayFinders[] = {PauseMenu, StatusScreen};
+// The map (what the task shows: 2): its "Cancel" hint closes it (its place measured in a picture of File 2's English map;
+// scrolling and zooming stay on the sticks' keys)
+constexpr uint8_t ShowsMap = 2;
+bool Map(Pointer::Screen& screen)
+{
+    if (!StatusTaskUp() || Byte(L().shows) != ShowsMap)
+    {
+        return false;
+    }
+    screen.name = "map";
+    screen.Press(Box(514, 124, 66, 22), Pointer::Cross);
+    return true;
+}
+
+const Pointer::Finder PlayFinders[] = {PauseMenu, Map, StatusScreen};
 const int PlayFinderCount = sizeof(PlayFinders) / sizeof(PlayFinders[0]);
 }

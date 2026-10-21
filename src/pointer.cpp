@@ -211,12 +211,26 @@ const Target* Under(const Screen& screen, float x, float y)
     return nullptr;
 }
 
-// $BH_POINTER_LOG: the strings drawn in the last finished frame and their places, logged at each change of menu and every
-// three seconds (docs/controls.md: how menus are found)
+// $BH_POINTER_LOG: the menu's targets at each change of menu, and the strings drawn in the last finished frame and their places
+// then and every three seconds (docs/controls.md: how menus are found)
 bool Diagnostics()
 {
     static const bool on = getenv("BH_POINTER_LOG") != nullptr;
     return on;
+}
+
+void LogTargets(const Screen& screen)
+{
+    if (!Diagnostics())
+    {
+        return;
+    }
+    for (int n = 0; n < screen.count; n++)
+    {
+        const Target& t = screen.targets[n];
+        Ps2::Log("  target %.0f,%.0f-%.0f,%.0f cursor %08x = %d, press %04x x%d", t.rect.x0, t.rect.y0, t.rect.x1, t.rect.y1,
+                 t.cursor, t.value, t.press, t.times);
+    }
 }
 
 void LogText()
@@ -333,6 +347,10 @@ bool Vblank(const Finder* finders, int count)
     {
         Ps2::Log("pointer: %s (%d targets)", name != nullptr ? name : "no menu", found ? g_screen.count : 0);
         last = name;
+        if (found)
+        {
+            LogTargets(g_screen);
+        }
         LogText();
     }
     float fx, fy;
