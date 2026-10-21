@@ -229,6 +229,14 @@ extern "C"
     int
     ps2_take_mouse_motion(float* dx, float* dy);
 
+// The wheel's turns while no menu is up (Ps2GameInfo::menu says none): lines turned since the last take (+ away from the player,
+// - towards), taken; 0 when it hasn't turned. For a game's own use of the wheel in play (a camera's zoom). Any thread
+#ifdef __cplusplus
+extern "C"
+#endif
+    int
+    ps2_take_mouse_wheel(float* lines);
+
 // A crosshair drawn over the middle of the game's picture by the PC menus' overlay (not part of the picture: the picture's
 // snapshots and recordings don't have it), until changed; not drawn while the PC menus are up. Sizes in the overlay's
 // reference pixels (a 1280 x 720 window's: scaled with the window)

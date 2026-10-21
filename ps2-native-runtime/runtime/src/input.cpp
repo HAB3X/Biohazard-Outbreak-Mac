@@ -730,6 +730,8 @@ void InputLiveButton(const std::string& name, bool down, bool up)
 // The mouse moving a stick (Ps2GameInfo::mouseStick): its motion since the last update (the window's relative mode's, or
 // --control's move) and the up and down it has been moved to while it does
 static float g_mouseDx = 0, g_mouseDy = 0;
+// The wheel's turns in play (not over a menu), kept for the game (ps2_take_mouse_wheel)
+static float g_mouseWheel = 0;
 static float g_mouseAim = 0;
 static bool g_mouseCaptured = false;
 // Full deflection across at this many pixels of motion in an update (a 60th of a second); up and down at this many in all
@@ -808,6 +810,11 @@ void InputEvent(const SDL_Event& e)
     {
         std::lock_guard<std::mutex> lock(g_typedLock);
         g_mouseEvents.push_back({e.wheel.y > 0 ? PS2_MOUSE_WHEEL_UP : PS2_MOUSE_WHEEL_DOWN, g_mouseX, g_mouseY});
+    }
+    else if (e.type == SDL_EVENT_MOUSE_WHEEL && e.wheel.y != 0)
+    {
+        std::lock_guard<std::mutex> lock(g_typedLock);
+        g_mouseWheel += e.wheel.y;
     }
     if (e.type == SDL_EVENT_GAMEPAD_ADDED && g_gamepad == nullptr)
     {
@@ -1450,6 +1457,14 @@ extern "C" int ps2_take_mouse_motion(float* dx, float* dy)
     *dy = g_mouseDy;
     g_mouseDx = g_mouseDy = 0;
     return *dx != 0 || *dy != 0 ? 1 : 0;
+}
+
+extern "C" int ps2_take_mouse_wheel(float* lines)
+{
+    std::lock_guard<std::mutex> lock(g_typedLock);
+    *lines = g_mouseWheel;
+    g_mouseWheel = 0;
+    return *lines != 0 ? 1 : 0;
 }
 
 extern "C" int ps2_mouse_moved(float* x, float* y)
