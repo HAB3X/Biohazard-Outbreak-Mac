@@ -60,8 +60,8 @@ each).
 The appeals ("Go!", "This way!", "Help me!", thanks/sorry, and a partner's name with the appeal shift) are lines the player's
 character says. The speech code (File 1 GAME.BIN 0x687420) puts the line's command code in the speaker's record (File 1
 +0x1075, File 2 +0x1091) while it's said, and 0 after. The partners' perception reads the player's: codes 2, 4, 5 and 8 set
-their response timers and pick an answer line; 9 and 10 call partner 1 and 2 by name. Which code is which appeal: being
-measured (the telemetry logs each command).
+their response timers and pick an answer line; 9 and 10 call partner 1 and 2 by name. Measured (File 1, each key pressed in play): 1
+"Go!" 2, 2 "This way!" 4, 3 "Help me!" 5, 4 thanks or sorry 3, F+1 10 (Cindy by name), F+2 6, F+3 9 (Mark by name).
 
 ## Telemetry
 
@@ -71,9 +71,41 @@ weapon ready, damage to each enemy, heals, hurts, the player's commands). `tools
 stats, time in another room, attacks and hits, damage put to each partner (damage within half a second of its attack),
 stuck time (forward held, under 30 units a second), heals with the hit points before, the player's damage and time below 30%.
 
+## Items
+
+The items are records at File 1 0x3967D0 (File 2 0x397B40), 0x3C bytes each: +0 there, +6 the item's number, +0x24 its
+rounds (a gun's loaded rounds), +0x2B its class. The classes (File 1 0x716980, File 2 0x75D100; 0x18 bytes each) begin with
+flags (the executable's 0x583EA0 tests them): 1 a weapon, with 0x2000/0x4000/0x8000 one that fires (Kevin's and Mark's
+handguns 0x102041), without them a melee weapon (knife, pipes); 4 without 1 a recovery item (herbs, sprays, 0x40004). A
+character's item in hand is +0xC7C (File 2 +0xC8C); it carries nine (File 1 +0xC84: four slots, its own item, then four in
+it: Cindy's herb case holds her herbs there). The AI's item check (File 1 0x823780, File 2 0x7EB0C0) looks at what the bits
+of +0x1096 (File 2 +0x10B0) ask (1 use or pick up, 2 give, 4 a better weapon, 8 reload) and starts plan 7, 8 or 9; the plans
+ask it only on arriving somewhere.
+
 ## Measured: the game's own AI
 
 File 1, Outbreak (J's Bar, Kevin, normal), the player standing still from the start of play (256 s of play): Mark spent 41%
 of the time away from the player (into the next room and back, again and again) and fired his first shot at about 200 s,
 after the zombies had had the player down to 1 hit point; Cindy shoved (1-10 damage) and healed herself twice. The player
 took 3959 damage, spent 65 s below 30% and was saved from death by an item at 1 HP; one zombie killed.
+
+The game is deterministic for the same input: runs of a scenario differ only by the input's timing (tools/ai_scenario.py's
+seeds have the player take a few steps first). Measured with `tools/ai_scenario.py bar-idle MODE --seeds 3`, 240 s of play
+each (the means):
+
+| | Original | Director, first (0e71ce1) | Director now |
+|---|---|---|---|
+| First partner attack after an enemy is within 600 of the player | 31.6 s | 6.8 s | 0.2 s |
+| Mark's time away from the player (another room or farther than 1500) | 24% | 0% | 0% |
+| Mark's damage to the zombies (15 rounds) | 1568 | 1816 | 1665 |
+| Damage the player took (in the 2 minutes from the first threat) | 2871 (1703) | 2510 (763) | 1970 (1283) |
+| The player's time below 30% / downed | 36 s / 1 of 3 | 42 s / 1 of 3 | 6 s / 0 of 3 |
+| Mark's damage taken / downed | 1270 / 0 of 3 | 2463 / 0 of 3 | 1133 / 1 of 3 |
+| Cindy's damage taken / downed | 1900 / 1 of 3 | 1500 / 3 of 3 | 1320 / 1 of 3 |
+
+What changed after the first: a partner without a loaded gun steps away from an enemy within 200 (on until 320) unless it's
+on the player, and shoves one off the player only with nothing else at its elbow; a partner with a loaded gun shoots its
+target itself within 1300 (turning to it with the weapon down: readied, left and right move the game's own aim between
+enemies instead, and the first try at turning with it readied emptied a clip into nothing), and leaves it to the game's
+attack routine for 8 s after 6 presses that don't hurt the target. The game's own routine is still the better shot (about
+120 damage a round against 111), but it walks and waits before firing.

@@ -13,7 +13,13 @@ set(PS2_RUNTIME_DIR ${PS2_RUNTIME_DEFAULT} CACHE PATH "ps2-native-runtime's fold
 add_subdirectory(${PS2_RUNTIME_DIR} ps2-native-runtime)
 
 # The partners' AI (src/partner_ai.h), both games'
-set(PARTNER_AI_SOURCES src/partner_ai.cpp src/partner_ai_world.cpp src/partner_ai_telemetry.cpp)
+set(PARTNER_AI_SOURCES src/partner_ai.cpp src/partner_ai_brain.cpp src/partner_ai_world.cpp src/partner_ai_telemetry.cpp)
+
+# The partners' AI decisions' tests (no disc needed): ctest, or build/partner_ai_brain_test
+enable_testing()
+add_executable(partner_ai_brain_test tests/partner_ai_brain_test.cpp src/partner_ai_brain.cpp)
+target_include_directories(partner_ai_brain_test PRIVATE src ${PS2_RUNTIME_DIR}/runtime/include)
+add_test(NAME partner_ai_brain COMMAND partner_ai_brain_test)
 
 # The keyboard and mouse: the keys' modes and the pointer over the games' menus (src/controls.h, src/pointer.h, src/menus.h)
 set(CONTROL_SOURCES src/controls.cpp src/pointer.cpp src/text_map.cpp src/menus.cpp src/menus_title.cpp src/menus_save.cpp src/menus_net.cpp src/menus_play.cpp src/menus_select.cpp)
@@ -29,14 +35,14 @@ if(FILE1_DISC)
     ps2_recompile(file1_code CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/config/file1.toml DISC ${FILE1_DISC} EXECUTABLE SLPM_654.28
                   FILES 64)
     add_executable(biohazard-file1 src/file1.cpp ${CONTROL_SOURCES} src/tsnd.cpp src/network.cpp src/loadhigh.cpp src/usbsrch.cpp
-                   src/avewrap.cpp src/typing.cpp ${PARTNER_AI_SOURCES})
+                   src/avewrap.cpp src/lobbytrace.cpp src/typing.cpp ${PARTNER_AI_SOURCES})
     target_link_libraries(biohazard-file1 PRIVATE file1_code ps2runtime)
 endif()
 
 if(FILE2_DISC)
     ps2_recompile(file2_code CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/config/file2.toml DISC ${FILE2_DISC} EXECUTABLE SLPM_656.92
                   FILES 64)
-    add_executable(biohazard-file2 src/file2.cpp ${CONTROL_SOURCES} src/tsnd.cpp src/network.cpp src/loadhigh.cpp src/usbsrch.cpp src/avewrap.cpp src/typing.cpp
+    add_executable(biohazard-file2 src/file2.cpp ${CONTROL_SOURCES} src/tsnd.cpp src/network.cpp src/loadhigh.cpp src/usbsrch.cpp src/avewrap.cpp src/lobbytrace.cpp src/typing.cpp
                    ${PARTNER_AI_SOURCES})
     target_link_libraries(biohazard-file2 PRIVATE file2_code ps2runtime)
 endif()

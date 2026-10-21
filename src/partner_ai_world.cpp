@@ -1,6 +1,5 @@
 #include "partner_ai_world.h"
 
-#include <cmath>
 #include <cstring>
 
 namespace PartnerAi
@@ -15,6 +14,8 @@ constexpr uint32_t Target = 0x24;   // an enemy's: the record of the character i
 constexpr uint32_t Position = 0x38; // three floats
 constexpr uint32_t Facing = 0x92;
 constexpr uint32_t Room = 0x1E2;
+// The enemies' flag the game's AI lists leave out (File 1's 0x6A3B60, File 2's 0x6B3800, which make the per-character lists)
+constexpr uint32_t SetAside = 0x100;
 
 float F32(uint32_t address)
 {
@@ -27,6 +28,43 @@ float F32(uint32_t address)
 Vec ReadVec(uint32_t address) { return {F32(address), F32(address + 4), F32(address + 8)}; }
 
 int S16(uint32_t address) { return static_cast<int16_t>(rd16(address)); }
+
+// An item's record (File 1's executable reads them so: 0x584800, 0x583EA0) and its class's flags (the classes' table, 0x18
+// bytes each, its flags first). The flags, from the classes of File 1's bar (the table dumped, each class's item number at
+// +0x12): 1 a weapon; with 0x2000, 0x4000 or 0x8000 one that fires (the handguns, Kevin's and Mark's 0x190 and 0x191,
+// 0x102041; the shotguns and rifles 0x104001, 0x108001), without them a melee weapon (the knife and the pipes, 0x1001,
+// 0x2481001...); 4 without 1 a recovery item (the herbs and sprays, 0x12C-0x13D, 0x40004: the AI's item use 0x833C90 asks
+// for 4 after 2)
+constexpr uint32_t ItemSize = 0x3C;
+constexpr uint32_t ItemThere = 0x0;
+constexpr uint32_t ItemRounds = 0x24;
+constexpr uint32_t ItemClass = 0x2B;
+constexpr uint8_t NoClass = 0xFF;
+constexpr uint32_t ItemClassSize = 0x18;
+constexpr uint32_t ClassWeapon = 0x1;
+constexpr uint32_t ClassFirearm = 0xE000;
+constexpr uint32_t ClassRecovery = 0x4;
+
+Item ReadItem(const Layout& layout, uint8_t id)
+{
+    Item item;
+    const uint32_t at = layout.items + ItemSize * id;
+    if (id == 0 || rd8(at + ItemThere) == 0)
+    {
+        return item;
+    }
+    item.id = id;
+    item.rounds = S16(at + ItemRounds);
+    const uint8_t itemClass = rd8(at + ItemClass);
+    if (itemClass != NoClass)
+    {
+        const uint32_t flags = rd32(layout.itemClasses + ItemClassSize * itemClass);
+        item.weapon = (flags & ClassWeapon) != 0;
+        item.fires = item.weapon && (flags & ClassFirearm) != 0;
+        item.heals = !item.weapon && (flags & ClassRecovery) != 0;
+    }
+    return item;
+}
 }
 
 World ReadWorld(const Layout& layout)
@@ -54,6 +92,11 @@ World ReadWorld(const Layout& layout)
         c.action = rd8(at + layout.aiAction);
         c.target = rd8(at + layout.aiTarget);
         c.speech = rd8(at + layout.speech);
+        c.hand = ReadItem(layout, rd8(at + layout.weapon));
+        for (int slot = 0; slot < PackSize; slot++)
+        {
+            c.pack[slot] = ReadItem(layout, rd8(at + layout.pack + static_cast<uint32_t>(slot)));
+        }
     }
     for (int n = 0; n < EnemyCount; n++)
     {
@@ -67,9 +110,8 @@ World ReadWorld(const Layout& layout)
         e.hp = S16(at + layout.hp);
         e.hpMax = S16(at + layout.hp + 2);
         e.target = rd32(at + Target);
+        e.setAside = (rd32(at + layout.enemyFlags) & SetAside) != 0;
     }
     return world;
 }
-
-float Distance(const Vec& a, const Vec& b) { return std::hypot(a.x - b.x, a.z - b.z); }
 }

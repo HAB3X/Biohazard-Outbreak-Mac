@@ -18,13 +18,30 @@ extern "C" void netwk_soft_keyboard_step(Ps2Cpu* c)
     netwk_00553820(c);
 }
 
+// A key of the USB keyboard in the software keyboard: the Mac's keys type Latin characters, not romaji (src/typing.cpp)
+extern "C" void netwk_005a51c0(Ps2Cpu* c);
+extern "C" void netwk_00555860(Ps2Cpu* c);
+extern "C" void netwk_00555e50(Ps2Cpu* c);
+extern "C" void netwk_00555b40(Ps2Cpu* c);
+extern "C" void netwk_00555c70(Ps2Cpu* c);
+extern "C" void netwk_005556c0(Ps2Cpu* c);
+extern "C" void netwk_005a75b0(Ps2Cpu* c);
+extern "C" void netwk_005be590(Ps2Cpu* c);
+extern "C" void netwk_00553790(Ps2Cpu* c);
+static const Typing::SoftKeyboard g_softKeyboard{-0x5C20, 0x664, netwk_00555860, netwk_00555e50,
+                                                    {netwk_00555b40, netwk_00555c70, netwk_005556c0, netwk_005a75b0},
+                                                    netwk_005be590, netwk_00553790};
+extern "C" void netwk_usb_key(Ps2Cpu* c) { Typing::UsbKey(c, g_softKeyboard, netwk_005a51c0); }
+
 // netwk's connection setup step: the configuration list skipped (src/network.cpp)
 extern "C" void netwk_005c88c0(Ps2Cpu* c);
 extern "C" void netwk_setup_step(Ps2Cpu* c) { Network::SetupStep(c, Network::File1Setup, netwk_005c88c0); }
 
-// The partners' think, SINGLE.BIN's (src/partner_ai.cpp)
+// The partners' think and its perception, SINGLE.BIN's (src/partner_ai.cpp)
 extern "C" void single_00822440(Ps2Cpu* c);
 extern "C" void single_partner_think(Ps2Cpu* c) { PartnerAi::Think(c, PartnerAi::File1, single_00822440); }
+extern "C" void single_00822520(Ps2Cpu* c);
+extern "C" void single_partner_perceive(Ps2Cpu* c) { PartnerAi::Perceive(c, PartnerAi::File1, single_00822520); }
 
 // The executable's text functions: where each string is drawn is kept for the pointer (src/text_map.h)
 extern "C" void f_001b43c0(Ps2Cpu* c);
@@ -62,6 +79,8 @@ int main(int argc, char** argv)
     game.gsScale = 4;
     BiohazardControls::Apply(game, BiohazardControls::File1);
     game.networkDns = Network::ObsrvDns;
+    game.settings = PartnerAi::Settings;
+    game.settingCount = PartnerAi::SettingCount;
     game.typing = Typing::Typing;
     Tsnd::Register();
     Network::RegisterLoadHigh();

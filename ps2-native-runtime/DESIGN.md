@@ -539,6 +539,11 @@ actions, going back from them goes back to the game, and the game just waits whi
 
 ### Debugging
 
+Every run's log (everything written to stderr: the runtime's, the hardware layer's, a crash's) also goes to the settings
+folder's `logs/latest.log`, the run before's kept as `logs/previous.log`, up to 32 MB (`LogToFile`, log.cpp: stderr is a
+stream that writes to both, so nothing waits in a buffer when the game stops). An app opened from Finder has no terminal:
+that file is its log. `--disc-check` (the release app's launcher asking for the disc) writes none.
+
 `--watch ADDR[:WORDS],...` logs guest memory every `--watch-every` seconds, `--fps` the game's frames and the vblanks of each
 second (also the window's title) with the CPU time the working threads took in it, by what they do (the EE's, the render
 thread, the VU1 thread, the sound's, the timer's: each thread's own time from the kernel, so a scene's cost a frame is that over

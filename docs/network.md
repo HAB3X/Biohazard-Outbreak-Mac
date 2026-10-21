@@ -33,6 +33,14 @@ Typing goes to the game only while the software keyboard is up; the rest of the 
 the Mac is busy (a few frames a second), wait for the keyboard to be drawn before typing and type at a moderate pace: the
 game reads a keyboard of three reports at a time, as on a console, and drops keys typed faster than it reads them.
 
+The Mac's keyboard types the characters on its keys: when a key that types one comes while the software keyboard shows kana
+(あ or ア), the keyboard first goes to its Latin letters, half-width when the field allows it (`Typing::UsbKey`), as its own
+mode key would; in kana mode the game would take the keys as romaji ("mark" became "まrく"). Kana can still be typed with the
+pad or the mouse on the software keyboard's own keys.
+
+The log (the settings folder's `logs/latest.log`) has a line for each message exchanged with the lobby and the game server:
+its command, kind, length and id, no payload (`src/lobbytrace.cpp`). Where a lobby step stops shows there.
+
 ## What the game does, and what stands in
 
 | Step | The game | On the Mac |
@@ -72,7 +80,10 @@ never waits. The wrapper's code is the same on both discs (four bytes of data di
 
 ## Not done
 
-- After the game server: rooms, games with others, handle name and chat (the handle name and chat use the same software
-  keyboard, so typing should work there, untried). The owner's next run shows how far it gets.
+- In a room (File 1), Start scenario did nothing in the owner's run, with no log to say why. On the server's side (obsrv-pack,
+  read as reference) the host's Start sends command 0x6508 and the server answers every member in the slot with 0x6910 (get
+  ready), which the members follow with requests for the game's details and the game server's address. The next log shows
+  whether the game sent 0x6508 (if not, a rule of the game's held it: the room's other choices are Wait and Leave, and a
+  "Scenario starting soon" countdown shows in its last 10 seconds) or what came back. Games with others untried.
 - The mouse in the browser (it has its own pointer, moved by the pad).
 - PPP (modems), the HDD install (insdnas's own DNAS), the network settings screens (they'd write files nothing reads).
