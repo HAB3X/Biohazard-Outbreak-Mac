@@ -3,7 +3,7 @@
 Biohazard Outbreak for Mac – fan project by HAB3X. Found something else? [Report a bug](https://github.com/HAB3X/Biohazard-Outbreak-Mac/issues/new/choose).
 
 **Online**
-1. Starting a scenario in an online room does nothing. Login and the lobby work.
+1. Starting a scenario from an online room isn't confirmed working yet. Login, the lobby and joining rooms work.
 2. The mouse in the lobby after logging in is untested and may not work everywhere.
 
 **Mods**

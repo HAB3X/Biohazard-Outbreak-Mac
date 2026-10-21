@@ -9,7 +9,7 @@ body:
         Thanks for helping. Please check it isn't one of these first.
 
         **Known bugs**
-        1. Starting a scenario in an online room does nothing.
+        1. Starting a scenario from an online room isn't confirmed working yet.
         2. The mouse in the online lobby after logging in may not work everywhere.
         3. Character mods show in the launcher but the games don't load them yet.
         4. Some HD texture packs show pale patches on trees (File 2's zoo).

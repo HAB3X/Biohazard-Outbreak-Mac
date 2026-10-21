@@ -14,7 +14,7 @@ Not affiliated with Capcom or Sony. You need your own discs; no game data is inc
 - Snippy's Outbreak ModernCam (over the shoulder), first person and cheats, toggled in the F10 menu
 - PCSX2 HD texture packs: drop them on the launcher
 - Optional improved partner AI for offline play
-- Online on obsrv.org: login and lobby work, online rooms are still being worked on
+- Online on obsrv.org: login, the lobby and joining rooms work
 
 ## Playing
 
