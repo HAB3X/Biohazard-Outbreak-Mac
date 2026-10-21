@@ -1095,7 +1095,7 @@ void GunElevation(Ps2Cpu* c, Ps2Function original)
         return;
     }
     // The player's branch of it sets her elevation from the aim's stick (the servo and its stores): kept as the camera set it
-    const uint32_t at = record + Field::GunElevation;
+    const uint32_t at = record + g_game->layout().field.GunElevation;
     const uint16_t kept = rd16(at);
     original(c);
     wr16(at, kept);

@@ -16,7 +16,21 @@
 
 namespace Cheats
 {
-// Where one game keeps what the cheats change (docs/mods.md)
+// A character record's fields the cheats write (0: not known in this game, its rows not offered)
+struct CharacterFields
+{
+    uint32_t hp, hpMax;               // s16 each
+    uint32_t speed0, scale;           // f32: Codejunkies' first speed factor; the model's three scale factors
+    uint32_t speed1, speed2, damage;  // f32: bungholio's speed #1, the second speed factor (#2), the damage multiplier
+    uint32_t characterType, animation; // u8
+    uint32_t status, unnoticed, untouchable, rapidFire; // bytes of the flags word (their bits differ between the games)
+    uint32_t gauge, gauge2;           // u32: the virus gauge, bungholio's virus value #2
+    uint32_t model;                   // u16
+    uint32_t altCostume;              // u8
+    uint32_t wallsA, wallsB;          // u32 each: the collision's two words bungholio's code fills
+};
+
+// Where one game keeps what the cheats change (docs/mods.md); 0: not in this game (its cheats not offered)
 struct Layout
 {
     const char* name;
@@ -36,9 +50,11 @@ struct Layout
     // enemies' update's call of the movement routine
     uint32_t deathOfflineReturn;
     uint32_t enemyMoveReturn;
+    CharacterFields field;
 };
 
 extern const Layout File1;
+extern const Layout File2;
 
 void Use(const Layout& layout);
 // The Cheats tab's rows (src/mod_settings.h)

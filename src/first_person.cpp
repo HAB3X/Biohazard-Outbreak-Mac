@@ -16,7 +16,8 @@ namespace FirstPerson
 namespace
 {
 using ModernCamera::Game;
-namespace Field = ModernCamera::Field;
+// The game's record fields (set by each entry point)
+const ModernCamera::Fields* F = nullptr;
 
 struct V3
 {
@@ -248,7 +249,7 @@ V3 ToLocal(V3 d, V3 fwd, V3 right) { return v3(Dot(d, fwd), Dot(d, right), d.y);
 bool NodeOk(uint32_t p) { return p >= 0x100000 && p < 0x2000000 && (p & 15) == 0 && rd32(p + 0x3C) == 0x3F800000; }
 uint32_t NodeTable(uint32_t rec)
 {
-    uint32_t model = rd32(rec + Field::Model);
+    uint32_t model = rd32(rec + F->Model);
     if (model < 0x100000 || model >= 0x2000000 || (model & 3) != 0)
     {
         return 0;
@@ -288,16 +289,16 @@ const Sight* SightOf(uint32_t item)
 // The walking input reads the stick by the camera (not as the d-pad's directions) in this action
 bool StickByCamera(uint32_t rec)
 {
-    uint8_t act = rd8(rec + Field::Action);
+    uint8_t act = rd8(rec + F->Action);
     return !(act == 0x1A || act == 0x27 || act == 0x31 || act == 0x80 || act == 0xB0 ||
-             (act == 0x41 && rd8(rec + Field::PadMode) == 1));
+             (act == 0x41 && rd8(rec + F->PadMode) == 1));
 }
 
 // She's free to turn and walk: standing, walking, running, turning or stepping back
 bool FreeToTurn(uint32_t rec)
 {
-    uint8_t kind = rd8(rec + Field::AimState), act = rd8(rec + Field::ActionPhase), pad = rd8(rec + Field::Action);
-    return rd8(rec + Field::Stance) == 1 && kind <= 0x0B && (act == 0x0B || act == 0x0A || act == 0x01 || act == 0x02) &&
+    uint8_t kind = rd8(rec + F->AimState), act = rd8(rec + F->ActionPhase), pad = rd8(rec + F->Action);
+    return rd8(rec + F->Stance) == 1 && kind <= 0x0B && (act == 0x0B || act == 0x0A || act == 0x01 || act == 0x02) &&
            pad <= 3;
 }
 
@@ -306,8 +307,8 @@ bool FreeToTurn(uint32_t rec)
 // yaw while she stands or steps back; the stick at rest, the view's yaw while she stands. False: her heading is the game's
 bool PadWant(uint32_t rec, int32_t mag, uint32_t dir, bool dash, uint32_t cam16, uint32_t* want, bool* steer)
 {
-    uint8_t kind = rd8(rec + Field::AimState);
-    bool stand = rd8(rec + Field::ActionPhase) == ActionStand;
+    uint8_t kind = rd8(rec + F->AimState);
+    bool stand = rd8(rec + F->ActionPhase) == ActionStand;
     int32_t rel = static_cast<int16_t>(dir);
     *want = static_cast<uint32_t>(static_cast<int32_t>(s.viewYaw + 0.5f)) & 0xFFFF;
     *steer = false;
@@ -388,6 +389,7 @@ void ResetView()
 
 void HandBack(Game& game, bool restoreCamera)
 {
+    F = &game.layout().field;
     if (s.driving && restoreCamera)
     {
         game.RestoreCutCamera();
@@ -406,6 +408,7 @@ bool CentreRightStick() { return s.padCentred; }
 bool Frame(Game& game, const Look& lookInput)
 {
     const ModernCamera::Layout& l = game.layout();
+    F = &l.field;
     const uint32_t rec = game.PlayerRecord();
     uint32_t vbl = rd32(l.frames);
     if (!s.haveVbl)
@@ -418,14 +421,14 @@ bool Frame(Game& game, const Look& lookInput)
     float step = dt / BlendVblanks;
 
     // A level: her record in use with a position, a skeleton with a head
-    V3 pos = Rdv(rec + Field::Position);
+    V3 pos = Rdv(rec + F->Position);
     uint32_t table = 0, head = 0;
-    if (rd8(rec + Field::Live) != 0 && Sane3(pos) && (pos.x != 0 || pos.z != 0))
+    if (rd8(rec + F->Live) != 0 && Sane3(pos) && (pos.x != 0 || pos.z != 0))
     {
         table = NodeTable(rec);
         head = table != 0 ? HeadNode(table) : 0;
     }
-    uint32_t id = rd32(rec + Field::CharacterId) & 0xFF;
+    uint32_t id = rd32(rec + F->CharacterId) & 0xFF;
     if (head == 0 || id >= 8)
     {
         if (s.driving || s.yielded)
@@ -434,14 +437,14 @@ bool Frame(Game& game, const Look& lookInput)
         }
         return false;
     }
-    if (rd32(rec + Field::Model) != s.model)
+    if (rd32(rec + F->Model) != s.model)
     {
         // Another character (a door keeps the model): from her eyes again
-        s.model = rd32(rec + Field::Model);
+        s.model = rd32(rec + F->Model);
         ResetView();
         s.yielded = false;
     }
-    uint8_t stance = rd8(rec + Field::Stance);
+    uint8_t stance = rd8(rec + F->Stance);
     bool raised = stance == 2; // (a hit, stance 3, is no aim: the view stays)
 
     // The game took the camera for a scripted shot: it's the game's until she moves on her own or raises her weapon
@@ -476,7 +479,7 @@ bool Frame(Game& game, const Look& lookInput)
     game.KeepArtwork();
 
     // Her frame: feet, facing (level), right
-    float fx = Rdf(rec + Field::ForwardX), fz = Rdf(rec + Field::ForwardZ), n = std::sqrt(fx * fx + fz * fz);
+    float fx = Rdf(rec + F->ForwardX), fz = Rdf(rec + F->ForwardZ), n = std::sqrt(fx * fx + fz * fz);
     if (!(n > 1e-4f) || !Sane(n))
     {
         fx = 0;
@@ -521,7 +524,7 @@ bool Frame(Game& game, const Look& lookInput)
     // Where you look: from her heading when the camera comes into her eyes and where a door places her; then only the look
     // (the right stick, the mouse) turns it; while she aims the view is her aim's
     float sec = dt * VblankSeconds;
-    uint32_t h16 = rd16(rec + Field::Heading);
+    uint32_t h16 = rd16(rec + F->Heading);
     float turn = -lookInput.stickX * StickTurn * sec * YawUnits - lookInput.mouseYawDegrees * YawUnits;
     bool viewWas = s.haveView;
     int32_t gameTurn = YawDiff(h16, s.lastH) - s.aimApplied;
@@ -574,14 +577,14 @@ bool Frame(Game& game, const Look& lookInput)
     s.wasRaised = raised;
 
     // Her aim: her facing as it'll be drawn, tilted with the gun's elevation
-    bool aimReady = stance == 2 && rd8(rec + Field::AimState) == 1 && rd8(rec + Field::ActionPhase) == ActionAim;
-    float elev = Clamp(static_cast<float>(static_cast<int16_t>(rd16(rec + Field::GunElevation))) * (6.2831853f / 65536.0f),
+    bool aimReady = stance == 2 && rd8(rec + F->AimState) == 1 && rd8(rec + F->ActionPhase) == ActionAim;
+    float elev = Clamp(static_cast<float>(static_cast<int16_t>(rd16(rec + F->GunElevation))) * (6.2831853f / 65536.0f),
                        -1.2f, 1.2f);
     int32_t aimCarry = 0;
-    if (stance == 2 && rd8(rec + Field::AimState) == 0 && rd8(rec + Field::ActionPhase) == ActionAim &&
-        rd16(rec + Field::AutoAimLeft) != 0)
+    if (stance == 2 && rd8(rec + F->AimState) == 0 && rd8(rec + F->ActionPhase) == ActionAim &&
+        rd16(rec + F->AutoAimLeft) != 0)
     {
-        aimCarry = static_cast<int16_t>(rd16(rec + Field::AutoAimStep));
+        aimCarry = static_cast<int16_t>(rd16(rec + F->AutoAimStep));
         aimCarry = aimCarry > AutoAimMax || aimCarry < -AutoAimMax ? 0 : aimCarry;
     }
     else if (viewWas && gameTurn <= AimCarry && gameTurn >= -AimCarry)
@@ -597,7 +600,7 @@ bool Frame(Game& game, const Look& lookInput)
     s.aimBlend = Clamp(s.aimBlend + (raised ? step : -step), 0, 1);
 
     // The sight line: through the weapon's rear-sight spot along her aim; the aiming view stepped square onto it
-    uint32_t item = rd8(rec + Field::Weapon);
+    uint32_t item = rd8(rec + F->Weapon);
     const Sight* sight = SightOf(item);
     uint32_t hand = table != 0 ? HandNode(table) : 0;
     bool ride = false;
@@ -606,7 +609,7 @@ bool Frame(Game& game, const Look& lookInput)
         V3 nx = Unit(Rdv(hand), fwdNow), ny = Unit(Rdv(hand + 0x10), rightNow), nz = Unit(Rdv(hand + 0x20), v3(0, 1, 0));
         V3 rear = Rdv(hand + 0x30) + nx * sight->x + ny * sight->y + nz * sight->z;
         V3 barrel = nx * -1.0f, bl = ToLocal(barrel, fwdNow, rightNow);
-        uint32_t aim16 = rd16(rec + Field::GunElevation);
+        uint32_t aim16 = rd16(rec + F->GunElevation);
         bool settled = s.havePrev && Dot(bl, s.prevBarrel) > SettledCos;
         bool aimMoving = s.havePrev && aim16 != s.prevAim;
         s.prevBarrel = bl;
@@ -677,7 +680,7 @@ bool Frame(Game& game, const Look& lookInput)
         V3 vf = v3(vs, 0, vc), vr = v3(-vc, 0, vs);
         V3 r = htNow - pos;
         int32_t turnNow = YawDiff(h16, s.outH), turnNext = 0;
-        uint8_t kind = rd8(rec + Field::AimState);
+        uint8_t kind = rd8(rec + F->AimState);
         V3 carry;
         if (s.haveOut)
         {
@@ -833,6 +836,7 @@ bool Frame(Game& game, const Look& lookInput)
 void PadMap(Game& game)
 {
     const ModernCamera::Layout& l = game.layout();
+    F = &l.field;
     const uint32_t rec = game.PlayerRecord();
     const uint32_t held = l.padRecords + 8; // offline the local player's mapped record, 0
     // R3 is an ad-lib line too while the right stick looks
@@ -845,8 +849,8 @@ void PadMap(Game& game)
         s.plan = false;
         return;
     }
-    uint32_t h = rd16(rec + Field::Heading);
-    uint8_t stance = rd8(rec + Field::Stance);
+    uint32_t h = rd16(rec + F->Heading);
+    uint8_t stance = rd8(rec + F->Stance);
     int32_t mag = static_cast<int16_t>(rd16(held + PadLeftStickMagnitude));
     uint32_t dir = rd16(held + PadLeftStickDirection);
     bool dash = (rd16(held) & DashButton(game)) != 0;
@@ -857,7 +861,7 @@ void PadMap(Game& game)
     {
         if (s.aimTurn != 0)
         {
-            wr16(rec + Field::Heading, static_cast<uint16_t>(h + static_cast<uint32_t>(s.aimTurn)));
+            wr16(rec + F->Heading, static_cast<uint16_t>(h + static_cast<uint32_t>(s.aimTurn)));
         }
         s.aimApplied = s.aimTurn;
         s.aimTurn = 0;
@@ -881,7 +885,7 @@ void PadMap(Game& game)
         }
         if ((live || s.plan) && to != h)
         {
-            wr16(rec + Field::Heading, static_cast<uint16_t>(to));
+            wr16(rec + F->Heading, static_cast<uint16_t>(to));
         }
     }
     s.plan = false;

@@ -33,18 +33,69 @@ const Layout File1 = {.name = "file1",
                       .available = 0x305DF4,
                       .owned = 0x305E54,
                       .deathOfflineReturn = 0x62E374,
-                      .enemyMoveReturn = 0x6644B8};
+                      .enemyMoveReturn = 0x6644B8,
+                      .field = {.hp = 0x544,
+                                .hpMax = 0x546,
+                                .speed0 = 0x0F0,
+                                .scale = 0x0B4,
+                                .speed1 = 0xBA8,
+                                .speed2 = 0xBC0,
+                                .damage = 0xBC4,
+                                .characterType = 0xB98,
+                                .animation = 0xB9B,
+                                .status = 0xBA0,
+                                .unnoticed = 0xBA1,
+                                .untouchable = 0xBA2,
+                                .rapidFire = 0xBA3,
+                                .gauge = 0xBAC,
+                                .gauge2 = 0xBB8,
+                                .model = 0xBB4,
+                                .altCostume = 0xBBC,
+                                .wallsA = 0xCB0,
+                                .wallsB = 0xCCC}};
+
+// File 2 (SLPM-65692), NOT WIRED YET (not checked in play; src/file2.cpp doesn't install the mods): each function and field matched to File 1's by the code that uses it (docs/mods.md). Its save data,
+// results and scenario select are laid out otherwise (their cheats aren't offered), and so are the flags word's bits
+const Layout File2 = {.name = "file2",
+                      .playMode = 0x3137D2,
+                      .characters = 0x47BD30,
+                      .characterSize = 0x1100,
+                      .items = 0x397B40,
+                      .padFrames = 0x267918,
+                      .gaugeMaxima = 0x738520,
+                      .results = 0,
+                      .files = 0,
+                      .save = 0,
+                      .scenarios = 0,
+                      .available = 0,
+                      .owned = 0,
+                      .deathOfflineReturn = 0x6335B8,
+                      .enemyMoveReturn = 0x674EB0,
+                      .field = {.hp = 0x540,
+                                .hpMax = 0x542,
+                                .speed0 = 0x0F0,
+                                .scale = 0x0B4,
+                                .speed1 = 0xBC0,
+                                .speed2 = 0xBD8,
+                                .damage = 0xBDC,
+                                .characterType = 0xBB0,
+                                .animation = 0xBB2,
+                                .status = 0,
+                                .unnoticed = 0,
+                                .untouchable = 0,
+                                .rapidFire = 0,
+                                .gauge = 0xBC4,
+                                .gauge2 = 0xBCC,
+                                .model = 0xBC8,
+                                .altCostume = 0,
+                                .wallsA = 0xCC8,
+                                .wallsB = 0xCE4}};
 
 namespace
 {
 const Layout* g_layout = nullptr;
+const CharacterFields& F() { return g_layout->field; }
 
-// A character record's fields (the same on the Japanese and the US discs: RaccoonRecomp's probes, and checked here)
-constexpr uint32_t Hp = 0x544, HpMax = 0x546;
-constexpr uint32_t Speed0 = 0x0F0, Scale = 0x0B4, Speed1 = 0xBA8, Speed2 = 0xBC0, Damage = 0xBC4;
-constexpr uint32_t CharacterType = 0xB98, Animation = 0xB9B, Status = 0xBA0, Unnoticed = 0xBA1, Untouchable = 0xBA2,
-                   RapidFire = 0xBA3, Gauge = 0xBAC, Model = 0xBB4, Gauge2 = 0xBB8, AltCostume = 0xBBC;
-constexpr uint32_t WallsA = 0xCB0, WallsB = 0xCCC;
 // An item record's count (s16)
 constexpr uint32_t ItemSize = 60, ItemCount = 0x24;
 // The results' fields after the result points
@@ -188,14 +239,15 @@ enum Row : int
 };
 std::array<int, RowCount> g_rows;
 
-int Choice(Row row) { return ModSettings::Choice(g_rows[row]); }
+// A row's choice (a row this game hasn't: 0, off)
+int Choice(Row row) { return g_rows[row] >= 0 ? ModSettings::Choice(g_rows[row]) : 0; }
 
 // The game is in single play with a scenario set up (the player's maximum hit points are set when the character is made)
 bool Single() { return g_layout != nullptr && rd8(g_layout->playMode) == 0; }
 uint32_t Record(int n) { return g_layout->characters + static_cast<uint32_t>(n) * g_layout->characterSize; }
-bool InScenario() { return Single() && rd16(Record(0) + HpMax) != 0; }
+bool InScenario() { return Single() && rd16(Record(0) + F().hpMax) != 0; }
 // The save data is made or loaded (the game sets the first scenario's bit then)
-bool SaveReady() { return Single() && (rd32(g_layout->scenarios) & 1) != 0; }
+bool SaveReady() { return Single() && g_layout->scenarios != 0 && (rd32(g_layout->scenarios) & 1) != 0; }
 // A cheat of this row is on and the game in single play: what the overrides ask
 bool On(Row row) { return Single() && Choice(row) != 0; }
 
@@ -331,18 +383,18 @@ void PlayerCheats()
     // Health: Codejunkies' Infinite Health (HP held at the maximum: what its code does, lh max / sh HP; MadCatz' 2300/2300 is
     // the same for Kevin) or Infinite Health & Max Health (9999 both)
     int health = Choice(RowHealth);
-    HoldIf(g_held[HeldHp], health != 0, p + Hp, 2, health == 2 ? 9999u : rd16(p + HpMax));
-    HoldIf(g_held[HeldHpMax], health == 2, p + HpMax, 2, 9999);
+    HoldIf(g_held[HeldHp], health != 0, p + F().hp, 2, health == 2 ? 9999u : rd16(p + F().hpMax));
+    HoldIf(g_held[HeldHpMax], health == 2, p + F().hpMax, 2, 9999);
     // The virus gauge held at a share of the character's maximum (bungholio's #1; Codejunkies' Zero Virus Gauge at 0 %)
     int gauge = Choice(RowGauge);
-    uint32_t maximum = rd32(g_layout->gaugeMaxima + 4u * (rd8(p + CharacterType) & 7));
-    HoldIf(g_held[HeldGauge], gauge != 0, p + Gauge, 4, static_cast<uint32_t>(static_cast<uint64_t>(maximum) * GaugePercent[gauge % 8] / 100));
+    uint32_t maximum = rd32(g_layout->gaugeMaxima + 4u * (rd8(p + F().characterType) & 7));
+    HoldIf(g_held[HeldGauge], gauge != 0, p + F().gauge, 4, static_cast<uint32_t>(static_cast<uint64_t>(maximum) * GaugePercent[gauge % 8] / 100));
     int gauge2 = Choice(RowGauge2);
-    HoldIf(g_held[HeldGauge2], gauge2 != 0, p + Gauge2, 4, Gauge2Values[gauge2 % 3]);
+    HoldIf(g_held[HeldGauge2], gauge2 != 0, p + F().gauge2, 4, Gauge2Values[gauge2 % 3]);
     int damage = Choice(RowDamage);
-    HoldIf(g_held[HeldDamage], damage != 0, p + Damage, 4, DamageValues[damage % 8]);
-    HoldIf(g_held[HeldRapid], Choice(RowRapidFire) != 0 && Exactly(GamePad::R1 | GamePad::Cross), p + RapidFire, 1, 0xFF);
-    HoldIf(g_held[HeldUntouchable], Choice(RowUntouchable) != 0, p + Untouchable, 1, 0x20);
+    HoldIf(g_held[HeldDamage], damage != 0, p + F().damage, 4, DamageValues[damage % 8]);
+    HoldIf(g_held[HeldRapid], Choice(RowRapidFire) != 0 && Exactly(GamePad::R1 | GamePad::Cross), p + F().rapidFire, 1, 0xFF);
+    HoldIf(g_held[HeldUntouchable], Choice(RowUntouchable) != 0, p + F().untouchable, 1, 0x20);
     // Enemies Don't Notice: L2+Up sets the byte, L2+Down clears it, as written
     if (Choice(RowUnnoticed) != 0)
     {
@@ -359,22 +411,22 @@ void PlayerCheats()
     {
         g_unnoticed = false;
     }
-    HoldIf(g_held[HeldUnnoticed], g_unnoticed, p + Unnoticed, 1, 1);
+    HoldIf(g_held[HeldUnnoticed], g_unnoticed, p + F().unnoticed, 1, 1);
     // Speed: Codejunkies' two factors, else bungholio's
     int speed = Choice(RowSpeed);
-    HoldIf(g_held[HeldSpeed0], speed != 0, p + Speed0, 4, SpeedValues[speed % 3]);
+    HoldIf(g_held[HeldSpeed0], speed != 0, p + F().speed0, 4, SpeedValues[speed % 3]);
     int speed2 = Choice(RowSpeed2);
-    HoldIf(g_held[HeldSpeed2], speed != 0 || speed2 != 0, p + Speed2, 4,
+    HoldIf(g_held[HeldSpeed2], speed != 0 || speed2 != 0, p + F().speed2, 4,
            speed != 0 ? SpeedValues[speed % 3] : Speed2Values[speed2 % 6]);
     int speed1 = Choice(RowSpeed1);
-    HoldIf(g_held[HeldSpeed1], speed1 != 0, p + Speed1, 4, Speed1Values[speed1 % 6]);
+    HoldIf(g_held[HeldSpeed1], speed1 != 0, p + F().speed1, 4, Speed1Values[speed1 % 6]);
     bool giant = Choice(RowGiant) != 0;
-    HoldIf(g_held[HeldScaleX], giant, p + Scale, 4, 0x3FC00000);
-    HoldIf(g_held[HeldScaleY], giant, p + Scale + 4, 4, 0x3FC00000);
-    HoldIf(g_held[HeldScaleZ], giant, p + Scale + 8, 4, 0x3FC00000);
+    HoldIf(g_held[HeldScaleX], giant, p + F().scale, 4, 0x3FC00000);
+    HoldIf(g_held[HeldScaleY], giant, p + F().scale + 4, 4, 0x3FC00000);
+    HoldIf(g_held[HeldScaleZ], giant, p + F().scale + 8, 4, 0x3FC00000);
     bool walls = Choice(RowWalls) == 1;
-    HoldIf(g_held[HeldWallsA], walls, p + WallsA, 4, 0xFFFFFFFF);
-    HoldIf(g_held[HeldWallsB], walls, p + WallsB, 4, 0xFFFFFFFF);
+    HoldIf(g_held[HeldWallsA], walls, p + F().wallsA, 4, 0xFFFFFFFF);
+    HoldIf(g_held[HeldWallsB], walls, p + F().wallsB, 4, 0xFFFFFFFF);
     if (Choice(RowWalls) == 2)
     {
         if (Exactly(GamePad::R2 | GamePad::Up))
@@ -407,16 +459,16 @@ void PlayerCheats()
         g_infection = false;
     }
     int character = Choice(RowCharacter);
-    HoldIf(g_held[HeldCharacter], character != 0, p + CharacterType, 1, static_cast<uint32_t>(character - 1));
+    HoldIf(g_held[HeldCharacter], character != 0, p + F().characterType, 1, static_cast<uint32_t>(character - 1));
     int model = Choice(RowModel);
     uint32_t modelValue = model != 0 ? std::stoul(std::string(ModelLabels[model]).substr(0, 4), nullptr, 16) : 0;
-    HoldIf(g_held[HeldModel], model != 0, p + Model, 2, modelValue);
+    HoldIf(g_held[HeldModel], model != 0, p + F().model, 2, modelValue);
     int costume = Choice(RowAltCostume);
-    HoldIf(g_held[HeldAltCostume], costume != 0, p + AltCostume, 1, static_cast<uint32_t>(costume - 1));
+    HoldIf(g_held[HeldAltCostume], costume != 0, p + F().altCostume, 1, static_cast<uint32_t>(costume - 1));
     int status = Choice(RowStatus);
-    HoldIf(g_held[HeldStatus], status != 0, p + Status, 1, StatusValues[status % 20]);
+    HoldIf(g_held[HeldStatus], status != 0, p + F().status, 1, StatusValues[status % 20]);
     int animation = Choice(RowAnimation);
-    HoldIf(g_held[HeldAnimation], animation != 0, p + Animation, 1, static_cast<uint32_t>(animation - 1));
+    HoldIf(g_held[HeldAnimation], animation != 0, p + F().animation, 1, static_cast<uint32_t>(animation - 1));
 }
 
 // 47iscool's partner choices: a partner's character written only while it isn't made yet (its maximum hit points 0), so a
@@ -429,9 +481,9 @@ void Partners()
         int choice = Choice(n == 1 ? RowPartner2 : RowPartner3);
         uint32_t type = alone ? 0xFF : choice == 0 ? 0x100 : choice == 9 ? 0xFF : static_cast<uint32_t>(choice - 1);
         uint32_t r = Record(n);
-        if (type <= 0xFF && rd16(r + HpMax) == 0 && rd8(r + CharacterType) != type)
+        if (type <= 0xFF && rd16(r + F().hpMax) == 0 && rd8(r + F().characterType) != type)
         {
-            wr8(r + CharacterType, static_cast<uint8_t>(type));
+            wr8(r + F().characterType, static_cast<uint8_t>(type));
         }
     }
 }
@@ -545,10 +597,11 @@ void SaveData()
     }
 }
 
-int Add(Row row, const char* group, const char* name, const char* description, const char* const* choices)
+// A row offered when this game has what it changes
+void Add(Row row, const char* group, const char* name, const char* description, const char* const* choices,
+         bool available = true)
 {
-    g_rows[row] = ModSettings::Add({Tab, group, name, description, choices, 0});
-    return g_rows[row];
+    g_rows[row] = available ? ModSettings::Add({Tab, group, name, description, choices, 0}) : -1;
 }
 
 // The item record an item function's a0 names
@@ -565,9 +618,11 @@ void AddSettings()
         "Every character's HP set to 9999 at the death check (Code Master, Lajos Szalay, Jay007, VirusPunk...)", OffOn);
     Add(RowNoEnemyDamage, GroupHealth, "Enemies don't damage you",
         "Enemy attacks take no HP from you or the partners; bites still infect (Code Master et al.)", OffOn);
-    Add(RowUntouchable, GroupHealth, "Enemies can't touch you", "Enemies can't hit or grab you (bungholio)", OffOn);
+    Add(RowUntouchable, GroupHealth, "Enemies can't touch you", "Enemies can't hit or grab you (bungholio)", OffOn,
+        F().untouchable != 0);
     Add(RowUnnoticed, GroupHealth, "Enemies don't notice you",
-        "L2+Up on, L2+Down off; buggy, the author warns: no status screen or firing while on (bungholio)", OffOn);
+        "L2+Up on, L2+Down off; buggy, the author warns: no status screen or firing while on (bungholio)", OffOn,
+        F().unnoticed != 0);
     Add(RowNoZombieOverTime, GroupHealth, "Don't become a zombie over time",
         "The virus gauge doesn't rise with time, for anyone (Code Master et al.)", OffOn);
     Add(RowNoZombieBitten, GroupHealth, "Don't become a zombie when bitten",
@@ -587,7 +642,8 @@ void AddSettings()
         OffOn);
     Add(RowOneHit, GroupWeapons, "One-hit kills", "Any hit kills an enemy (Code Master et al.)", OffOn);
     Add(RowDamage, GroupWeapons, "Your damage", "Your hits' damage multiplied (bungholio)", DamageLabels);
-    Add(RowRapidFire, GroupWeapons, "Rapid fire", "Holding R1+Cross fires continuously (bungholio)", OffOn);
+    Add(RowRapidFire, GroupWeapons, "Rapid fire", "Holding R1+Cross fires continuously (bungholio)", OffOn,
+        F().rapidFire != 0);
     Add(RowSpeed, GroupMoving, "Hero speed", "Fast Hero and Super Fast Hero (Codejunkies)", SpeedLabels);
     Add(RowSpeed1, GroupMoving, "Speed #1", "Turning while moving goes at normal speed (bungholio)", Speed1Labels);
     Add(RowSpeed2, GroupMoving, "Speed #2", "A speed multiplier (bungholio)", Speed2Labels);
@@ -602,8 +658,10 @@ void AddSettings()
     Add(RowAlone, GroupPartners, "Go it alone", "No partners from the next scenario on (47iscool)", OffOn);
     Add(RowCharacter, GroupPlayer, "Character type", "Who you are; others don't exist (bungholio)", CharacterLabels);
     Add(RowModel, GroupPlayer, "Character model", "Only your looks; the voice and moves stay (bungholio)", ModelLabels);
-    Add(RowAltCostume, GroupPlayer, "Alternative costume", "(bungholio)", CostumeLabels);
-    Add(RowStatus, GroupPlayer, "Status", "\"Some killed me instantly... useless\" (bungholio)", StatusLabels);
+    Add(RowAltCostume, GroupPlayer, "Alternative costume", "(bungholio)", CostumeLabels,
+        F().altCostume != 0);
+    Add(RowStatus, GroupPlayer, "Status", "\"Some killed me instantly... useless\" (bungholio)", StatusLabels,
+        F().status != 0);
     g_animationText.clear();
     g_animationLabels = {"Off"};
     for (int v = 0; v < 256; v++)
@@ -619,31 +677,50 @@ void AddSettings()
     g_animationLabels.push_back(nullptr);
     Add(RowAnimation, GroupPlayer, "Animation", "\"Mostly useless\": limp, collapse, walk backwards (bungholio)",
         g_animationLabels.data());
-    Add(RowNoDamageClear, GroupResults, "No damage clear", "The scenario ends as a no-damage clear (bungholio)", OffOn);
-    Add(RowNoWeaponClear, GroupResults, "No weapon clear", "The scenario ends as a no-weapon clear (bungholio)", OffOn);
-    Add(RowSurvivors, GroupResults, "Survivors", "The results' survivors (bungholio)", SurvivorLabels);
-    Add(RowRank, GroupResults, "Time rank", "The results' play-time rank (bungholio)", RankLabels);
-    Add(RowBestPoints, GroupResults, "Result points record", "Whether they're a new best (bungholio)", RecordLabels);
-    Add(RowBestTime, GroupResults, "Clear time record", "Whether it's a new best (bungholio)", RecordLabels);
-    Add(RowResultPoints, GroupResults, "Result points", "The scenario's result points (bungholio)", ResultPointLabels);
-    Add(RowEvents1, GroupResults, "Completed events 1 of 2", "All F's: every event done (bungholio)", EventLabels);
-    Add(RowEvents2, GroupResults, "Completed events 2 of 2", "All F's: every event done (bungholio)", EventLabels);
-    Add(RowFiles, GroupResults, "Have all files", "All 16 files of the scenario; they count as events (bungholio)", OffOn);
+    Add(RowNoDamageClear, GroupResults, "No damage clear", "The scenario ends as a no-damage clear (bungholio)", OffOn,
+        g_layout->results != 0);
+    Add(RowNoWeaponClear, GroupResults, "No weapon clear", "The scenario ends as a no-weapon clear (bungholio)", OffOn,
+        g_layout->results != 0);
+    Add(RowSurvivors, GroupResults, "Survivors", "The results' survivors (bungholio)", SurvivorLabels,
+        g_layout->results != 0);
+    Add(RowRank, GroupResults, "Time rank", "The results' play-time rank (bungholio)", RankLabels,
+        g_layout->results != 0);
+    Add(RowBestPoints, GroupResults, "Result points record", "Whether they're a new best (bungholio)", RecordLabels,
+        g_layout->results != 0);
+    Add(RowBestTime, GroupResults, "Clear time record", "Whether it's a new best (bungholio)", RecordLabels,
+        g_layout->results != 0);
+    Add(RowResultPoints, GroupResults, "Result points", "The scenario's result points (bungholio)", ResultPointLabels,
+        g_layout->results != 0);
+    Add(RowEvents1, GroupResults, "Completed events 1 of 2", "All F's: every event done (bungholio)", EventLabels,
+        g_layout->results != 0);
+    Add(RowEvents2, GroupResults, "Completed events 2 of 2", "All F's: every event done (bungholio)", EventLabels,
+        g_layout->results != 0);
+    Add(RowFiles, GroupResults, "Have all files", "All 16 files of the scenario; they count as events (bungholio)", OffOn,
+        g_layout->files != 0);
     Add(RowPoints, GroupSave, "Collection points",
-        "Code Master et al. (65,535 low, 99,999,999); MadCatz (99,999); Codejunkies (3,276,800)", PointLabels);
+        "Code Master et al. (65,535 low, 99,999,999); MadCatz (99,999); Codejunkies (3,276,800)", PointLabels,
+        g_layout->save != 0);
     Add(RowAvailable, GroupSave, "Whole collection for sale", "Every collection item can be bought (Code Master et al.)",
-        OffOn);
-    Add(RowOwned, GroupSave, "Whole collection owned", "Every collection item owned (Code Master et al.; MadCatz)", OffOn);
+        OffOn,
+        g_layout->available != 0);
+    Add(RowOwned, GroupSave, "Whole collection owned", "Every collection item owned (Code Master et al.; MadCatz)", OffOn,
+        g_layout->owned != 0);
     Add(RowOpened, GroupSave, "Collection opened", "Every item can be bought while on; the save is untouched (Codejunkies)",
-        OffOn);
-    Add(RowScenarios, GroupSave, "Unlock all scenarios", "All five scenarios (MadCatz; Code Master et al.)", OffOn);
+        OffOn,
+        g_layout->available != 0);
+    Add(RowScenarios, GroupSave, "Unlock all scenarios", "All five scenarios (MadCatz; Code Master et al.)", OffOn,
+        g_layout->scenarios != 0);
     Add(RowScenariiOpened, GroupSave, "Scenarios opened",
-        "All five can be chosen while on; the save is untouched (Codejunkies)", OffOn);
-    Add(RowInfinity, GroupSave, "Unlock infinity mode", "Infinity and lone wolf modes (MadCatz; Code Master et al.)", OffOn);
+        "All five can be chosen while on; the save is untouched (Codejunkies)", OffOn,
+        g_layout->scenarios != 0);
+    Add(RowInfinity, GroupSave, "Unlock infinity mode", "Infinity and lone wolf modes (MadCatz; Code Master et al.)", OffOn,
+        g_layout->save != 0);
     Add(RowCostumes, GroupSave, "Unlock costumes", "Type B for all, Type C for Alyssa, Yoko and Cindy (Code Master et al.)",
-        CostumeUnlockLabels);
+        CostumeUnlockLabels,
+        g_layout->save != 0);
     Add(RowNpcs, GroupSave, "Unlock all NPCs", "The collection's 40 NPCs at the character select (Code Master et al.)",
-        OffOn);
+        OffOn,
+        g_layout->save != 0);
 }
 
 void Frame()
@@ -661,10 +738,13 @@ void Frame()
     if (InScenario())
     {
         PlayerCheats();
-        Results();
+        if (g_layout->results != 0)
+        {
+            Results();
+        }
     }
     Partners();
-    if (SaveReady())
+    if (g_layout->save != 0 && SaveReady())
     {
         SaveData();
     }
@@ -714,7 +794,7 @@ void ItemUse(Ps2Cpu* c, Ps2Function original)
 
 void GaugeOverTime(Ps2Cpu* c, Ps2Function original)
 {
-    const uint32_t gauge = c->r[4].uw[0] + Gauge;
+    const uint32_t gauge = c->r[4].uw[0] + F().gauge;
     const uint32_t before = rd32(gauge);
     original(c);
     if (!Single())
@@ -738,7 +818,7 @@ void GaugeOverTime(Ps2Cpu* c, Ps2Function original)
 
 void GaugeBite(Ps2Cpu* c, Ps2Function original)
 {
-    const uint32_t gauge = c->r[4].uw[0] + Gauge;
+    const uint32_t gauge = c->r[4].uw[0] + F().gauge;
     const uint32_t before = rd32(gauge);
     original(c);
     if (On(RowNoZombieBitten))
@@ -753,7 +833,7 @@ void EnemyDamage(Ps2Cpu* c, Ps2Function original)
     // stay so here
     constexpr uint32_t DamageTaken = 0x138;
     const uint32_t enemy = c->r[4].uw[0];
-    if (On(RowOneHit) && rd16(enemy + Hp) != 0x7FFF)
+    if (On(RowOneHit) && rd16(enemy + F().hp) != 0x7FFF)
     {
         wr16(enemy + DamageTaken, 0x7FFF);
     }
@@ -776,7 +856,7 @@ void DeathCheck(Ps2Cpu* c, Ps2Function original)
 {
     if (On(RowEveryoneHealth))
     {
-        wr16(c->r[4].uw[0] + Hp, 9999); // Code Master's li v1,9999 and its store (16 bits: the maximum kept)
+        wr16(c->r[4].uw[0] + F().hp, 9999); // Code Master's li v1,9999 and its store (16 bits: the maximum kept)
     }
     original(c);
 }

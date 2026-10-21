@@ -83,3 +83,29 @@ camera and S toward it (she turns to the way she walks); the right mouse aiming 
 mouse's pitch), the crosshair drawn while she aims (the window's picture); swap shoulder (X); the status screen over the view;
 the zombies' entrance cutscene with the game's own camera and the camera back behind her after it; the walls pulling the
 camera in as it turns; 30 frames a second throughout (60 s with the zombies in).
+
+## First person (File 1)
+
+`src/first_person.cpp`, adapted from REO-FirstPerson 2.6.8 by RaccoonRecomp (MIT): View: First person. The same overrides hold
+the game's camera; the mouse (or a gamepad's right stick) turns the view. Its restroom mirrors and On / Off key aren't ported.
+Checked: the bar from Kevin's eyes, the mouse turning the view, walking, aiming along the 45 Auto's sights.
+
+## The cheats (File 1)
+
+`src/cheats.cpp`: the regular and Greatest Hits lists merged (duplicates by effect folded into one row with every author
+credited). Code patches are overrides: a round used (GAME.BIN 0x581A00), an item used (0x581B30), the gauge over time
+(0x6359D0) and from a bite (0x62E6A0), damage to an enemy (0x60F0C0) and to a character (0x62F130), the death check
+(0x62EE10), the single-play check (0x1AF4D0, at the death's call site only, by its return address 0x62E374), the movement
+routine (0x62CA30, from the zombie update only: return 0x6644B8), the event timers (0x65A8C0), the collision (0x631CA0),
+DEMO.BIN's collection check (0x554EC0) and scenario select readers. Addresses: records and submain's bss are the US disc's
+- 0x2EE60 (the timers and files - 0x2EE70), the save block - 0x1DE00 (0x301D60), each checked in code or memory.
+Not ported: the master codes (device hooks), item slot codes, Number Of Players (no address found), the codes Raccoon marks
+as not working.
+
+## File 2 (not wired)
+
+Matched by masking addresses and field offsets in File 1's functions and aligning them with File 2's: frame 0x19F390, mapper
+0x1B08B0, handlers 0x595410/0x595520/0x5959C0, follow 0x5AA6C0, gun 0x557B30, ammo 0x586500, item 0x5867A0, gauge 0x63B1F0,
+bite 0x633950, enemy damage 0x615A40, character damage 0x634720, death check 0x634350, death path's single-play return 0x6335B8,
+movement 0x6318E0 (zombie update return 0x674EB0), timers 0x66BC20, collision 0x637630; fields in src/modern_camera_game.cpp's
+File2Fields and src/cheats.cpp's File2. Not installed in src/file2.cpp until checked in play.

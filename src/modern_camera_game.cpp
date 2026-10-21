@@ -37,6 +37,7 @@ const Layout File1 = {.name = "file1",
                       .localPlayerId = 0x48BF7D,
                       .enemies = 0x3FFCA0,
                       .enemySize = 0xD90,
+                      .enemyFlags = 0xC94,
                       .cuts = 0x3AEF50,
                       .objectCount = 0x470902,
                       .objectFlags = 0x470930,
@@ -44,7 +45,43 @@ const Layout File1 = {.name = "file1",
                       .wallPointer = 0x3938C4,
                       .nearHide = 0x6D6CF0,
                       .systemPadPressed = 0x3063E0,
-                      .roomNow = 0x3065AC};
+                      .roomNow = 0x3065AC,
+                      .field = File1Fields};
+
+// File 2 (SLPM-65692), NOT WIRED YET (not checked in play; src/file2.cpp doesn't install the mods). Snippy's ro_addresses_f2.py for the camera block, the cuts, the objects, the walls, the hide radii, the
+// light, the button map and the raw pad; the rest found by matching File 1's code in File 2's (the camera block and the pad
+// block are File 1's + 0xD210 there: the fixed-cut handler's stores, the button mapper's loads) and checked in play
+const Layout File2 = {.name = "file2",
+                      .eye = 0x313548,
+                      .target = 0x313554,
+                      .nearValue = 0x313584,
+                      .farPlane = 0x313588,
+                      .fovDeg = 0x313590,
+                      .block = 0x313530,
+                      .blockSize = 0x70,
+                      .aspect = 0x2491FC,
+                      .entityLight = 0x3134A8,
+                      .entityLightMode = 0x3134CC,
+                      .frames = 0x3137D4,
+                      .controlType = 0x3137CC,
+                      .padRecords = 0x313620,
+                      .buttonMap = 0x21C160,
+                      .padFrames = 0x267918,
+                      .characters = 0x47BD30,
+                      .characterSize = 0x1100,
+                      .localPlayerId = 0x4912BD,
+                      .enemies = 0x403DB0,
+                      .enemySize = 0xDB0,
+                      .enemyFlags = 0xCB0,
+                      .cuts = 0x3B31D0,
+                      .objectCount = 0x475052,
+                      .objectFlags = 0x475080,
+                      .objectMatrices = 0x475300,
+                      .wallPointer = 0x394FB4,
+                      .nearHide = 0x718DB0,
+                      .systemPadPressed = 0x3135F0,
+                      .roomNow = 0x3137BC,
+                      .field = File2Fields};
 
 namespace
 {
@@ -53,7 +90,7 @@ constexpr uint32_t CutCountAt = 1, CutCurrentAt = 3, CutForceIndexAt = 5, CutFor
 constexpr uint32_t CutRecords = 0x34, CutSize = 0x198, CutFovAt = 0x14, CutEyeAt = 0xA0, CutTargetAt = 0xB8;
 constexpr uint32_t CutMask = 0x154; // 4 words, bit i: object i drawn by this cut
 // An enemy record's fields the target finder checks: live (u8 +0), its model (+0x34), untargetable (bit 0 of +0xC94)
-constexpr uint32_t EnemyLive = 0x000, EnemyModel = 0x034, EnemyPosition = 0x038, EnemyFlags = 0xC94;
+constexpr uint32_t EnemyLive = 0x000, EnemyModel = 0x034, EnemyPosition = 0x038;
 // A pad record (Layout::padRecords)
 constexpr uint32_t PadHeld = 0x08, PadLeftStick = 0x20, PadRightStick = 0x28;
 // The mapper's source word (the pad records' +8): the three buttons the control type maps
@@ -100,7 +137,7 @@ uint32_t Game::PlayerRecord() const
     for (uint32_t i = 0; i < 4; i++)
     {
         uint32_t record = m_layout.characters + i * m_layout.characterSize;
-        if (rd8(record + Field::Id) == id)
+        if (rd8(record + m_layout.field.Id) == id)
         {
             return record;
         }
@@ -114,11 +151,11 @@ bool Game::PlayerLive() const
     return Sane(p.x) && Sane(p.y) && Sane(p.z) && (p.x != 0 || p.y != 0 || p.z != 0);
 }
 
-Vec3 Game::PlayerPosition() const { return ReadVec(PlayerRecord() + Field::Position); }
+Vec3 Game::PlayerPosition() const { return ReadVec(PlayerRecord() + m_layout.field.Position); }
 
 void Game::SetPlayerPosition(const Vec3& p) const
 {
-    uint32_t a = PlayerRecord() + Field::Position;
+    uint32_t a = PlayerRecord() + m_layout.field.Position;
     SetF32(a, p.x);
     SetF32(a + 4, p.y);
     SetF32(a + 8, p.z);
@@ -127,7 +164,7 @@ void Game::SetPlayerPosition(const Vec3& p) const
 float Game::PlayerYaw() const
 {
     uint32_t r = PlayerRecord();
-    float fx = F32(r + Field::ForwardX), fz = F32(r + Field::ForwardZ);
+    float fx = F32(r + m_layout.field.ForwardX), fz = F32(r + m_layout.field.ForwardZ);
     float n = std::hypot(fx, fz);
     if (!(n >= 1e-6f) || !Sane(n))
     {
@@ -138,7 +175,7 @@ float Game::PlayerYaw() const
 
 float Game::PlayerHeading() const
 {
-    return static_cast<float>(static_cast<int16_t>(rd16(PlayerRecord() + Field::Heading))) * (360.0f / 65536.0f);
+    return static_cast<float>(static_cast<int16_t>(rd16(PlayerRecord() + m_layout.field.Heading))) * (360.0f / 65536.0f);
 }
 
 void Game::SetPlayerHeading(float degrees) const
@@ -148,37 +185,37 @@ void Game::SetPlayerHeading(float degrees) const
     {
         d += 360.0f;
     }
-    wr16(PlayerRecord() + Field::Heading, static_cast<uint16_t>(static_cast<int32_t>(std::floor(d * (65536.0f / 360.0f) + 0.5f))));
+    wr16(PlayerRecord() + m_layout.field.Heading, static_cast<uint16_t>(static_cast<int32_t>(std::floor(d * (65536.0f / 360.0f) + 0.5f))));
 }
 
 void Game::SetGunElevation(float degrees) const
 {
     int v = std::clamp(static_cast<int>(std::floor(degrees * (65536.0f / 360.0f) + 0.5f)), -GunElevationMax, GunElevationMax);
-    wr16(PlayerRecord() + Field::GunElevation, static_cast<uint16_t>(v));
+    wr16(PlayerRecord() + m_layout.field.GunElevation, static_cast<uint16_t>(v));
 }
 
-bool Game::PlayerAiming() const { return rd8(PlayerRecord() + Field::Stance) == StanceAim; }
+bool Game::PlayerAiming() const { return rd8(PlayerRecord() + m_layout.field.Stance) == StanceAim; }
 
-bool Game::PlayerMoveHeld() const { return (rd32(PlayerRecord() + Field::Actions + 8) & ActMove) != 0; }
+bool Game::PlayerMoveHeld() const { return (rd32(PlayerRecord() + m_layout.field.Actions + 8) & ActMove) != 0; }
 
-bool Game::PlayerBusy() const { return rd8(PlayerRecord() + Field::Substate) == 0x40; }
+bool Game::PlayerBusy() const { return rd8(PlayerRecord() + m_layout.field.Substate) == 0x40; }
 
 bool Game::AimTarget(Vec3* position) const
 {
     uint32_t r = PlayerRecord();
-    uint8_t stance = rd8(r + Field::Stance);
+    uint8_t stance = rd8(r + m_layout.field.Stance);
     // Aiming, or hit while aiming, with the aim still held: the game keeps the target it picked
-    if ((stance != StanceAim && stance != StanceAimHit) || (rd32(r + Field::Actions + 8) & ActAim) == 0)
+    if ((stance != StanceAim && stance != StanceAimHit) || (rd32(r + m_layout.field.Actions + 8) & ActAim) == 0)
     {
         return false;
     }
-    uint32_t t = rd32(r + Field::AimTarget);
+    uint32_t t = rd32(r + m_layout.field.AimTarget);
     // An enemy record (never a stray word): inside the finder's table, on a record's start
     if (t < m_layout.enemies || t >= m_layout.characters || (t - m_layout.enemies) % m_layout.enemySize != 0)
     {
         return false;
     }
-    if (rd8(t + EnemyLive) == 0 || rd32(t + EnemyModel) == 0 || (rd32(t + EnemyFlags) & 1) != 0)
+    if (rd8(t + EnemyLive) == 0 || rd32(t + EnemyModel) == 0 || (rd32(t + m_layout.enemyFlags) & 1) != 0)
     {
         return false;
     }
@@ -633,7 +670,7 @@ void Game::PadMapApply(bool centreLeft, bool centreRight, bool hideR3) const
 
 void Game::ReleaseWalkHold() const
 {
-    uint32_t a = PlayerRecord() + Field::Actions + ActWalkHold;
+    uint32_t a = PlayerRecord() + m_layout.field.Actions + ActWalkHold;
     if (rd16(a) != 0)
     {
         wr16(a, 0);
@@ -662,9 +699,9 @@ int Game::WalkTurn(int side) const
     uint32_t record = PlayerRecord();
     // Only where the game can step her back: her own walking with the weapon down, player-driven, the stick pushed, and none
     // of the game's own turns round (the dash, its turn-round flag)
-    if (static_cast<int16_t>(rd16(stick)) < WalkStickMin || rd8(record + Field::Stance) != StanceNormal ||
-        rd8(record + Field::Action) > ActionBackStep || rd8(record + Field::Cpu) != 0 ||
-        (rd32(record + Field::Flags) & FlagTurnsRound) != 0 ||
+    if (static_cast<int16_t>(rd16(stick)) < WalkStickMin || rd8(record + m_layout.field.Stance) != StanceNormal ||
+        rd8(record + m_layout.field.Action) > ActionBackStep || rd8(record + m_layout.field.Cpu) != 0 ||
+        (rd32(record + m_layout.field.Flags) & m_layout.field.TurnsRound) != 0 ||
         (MappedActions(rd32(m_layout.padRecords + PadHeld)) & ActDash) != 0)
     {
         return 0;
@@ -678,7 +715,7 @@ int Game::WalkTurn(int side) const
     int32_t yaw = static_cast<int32_t>(std::atan2(dx, dz) * (32768.0f / Pi));
     uint32_t dir = rd16(stick + 2);
     int32_t diff = static_cast<int16_t>(((static_cast<uint32_t>(yaw) & 0xFFF0u) + (dir & 0xFFF0u) -
-                                         rd16(record + Field::Heading)) & 0xFFFFu);
+                                         rd16(record + m_layout.field.Heading)) & 0xFFFFu);
     if (diff >= -TurnTo && diff <= TurnTo)
     {
         return 0;

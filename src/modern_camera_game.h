@@ -13,6 +13,87 @@
 
 namespace ModernCamera
 {
+// A character record's fields (where they are in each game: File 1's are ModernCam's offsets, checked in the code)
+struct Fields
+{
+    uint32_t Id; // u8: the character's id, compared with Layout::localPlayerId
+    uint32_t Stance; // u8: 1 weapon down, 2 aiming, 3 hit while aiming
+    uint32_t Substate; // u8: 0x40 a scripted action
+    uint32_t AimTarget; // u32: the enemy the auto-aim picked as she raised the weapon
+    uint32_t Position; // f32 x, y, z
+    uint32_t ForwardX; // f32: the model matrix's row 2
+    uint32_t ForwardZ;
+    uint32_t Heading; // s16: 0x10000 a turn
+    uint32_t Action; // u8: 0 standing, 1 walking or turning, 2 the step back
+    uint32_t Flags; // u32: 0x80 the game turns her round itself
+    uint32_t GunElevation; // s16: 65536/360 a degree, within +-0x1FFF
+    uint32_t Actions; // the action block: +0 pressed, +8 held, +0x20 the sticks, +0x32 the walk hold
+    uint32_t Cpu; // u8: nonzero for a partner the game's AI plays
+    uint32_t Live; // u8: the record is in use
+    uint32_t AimState; // u8 with the weapon raised: 0 raising, 1 ready, 2 firing; down: her action's kind
+    uint32_t ActionPhase; // u8: 0x0B aiming (or standing, the weapon down)
+    uint32_t AutoAimLeft; // u16: the frames the auto-aim still turns her as she raises the weapon
+    uint32_t CharacterId; // low byte: 0 Kevin .. 7 Cindy
+    uint32_t Model; // the model: its first word points at the skeleton's node table
+    uint32_t PadMode; // u8
+    uint32_t AutoAimStep; // s16: the auto-aim's turn each of those frames
+    uint32_t Weapon; // u8: the equipped weapon's item record
+    uint32_t TurnsRound; // the bit of Flags set while the game turns her round itself
+};
+
+constexpr Fields File1Fields = {
+    .Id = 0x003,
+    .Stance = 0x008,
+    .Substate = 0x009,
+    .AimTarget = 0x024,
+    .Position = 0x038,
+    .ForwardX = 0x070,
+    .ForwardZ = 0x078,
+    .Heading = 0x092,
+    .Action = 0x54F,
+    .Flags = 0xBA0,
+    .GunElevation = 0xBC8,
+    .Actions = 0xF78,
+    .Cpu = 0xFF0,
+    .Live = 0x000,
+    .AimState = 0x009,
+    .ActionPhase = 0x00A,
+    .AutoAimLeft = 0x00C,
+    .CharacterId = 0x030,
+    .Model = 0x034,
+    .PadMode = 0xB98,
+    .AutoAimStep = 0xC4E,
+    .Weapon = 0xC7C,
+    .TurnsRound = 0x80
+};
+
+// File 2's (the same code matched to File 1's: docs/mods.md)
+constexpr Fields File2Fields = {
+    .Id = 0x003,
+    .Stance = 0x008,
+    .Substate = 0x009,
+    .AimTarget = 0x024,
+    .Position = 0x038,
+    .ForwardX = 0x070,
+    .ForwardZ = 0x078,
+    .Heading = 0x092,
+    .Action = 0x54B,
+    .Flags = 0xBB8,
+    .GunElevation = 0xBE0,
+    .Actions = 0xF88,
+    .Cpu = 0xBB4,
+    .Live = 0x000,
+    .AimState = 0x009,
+    .ActionPhase = 0x00A,
+    .AutoAimLeft = 0x00C,
+    .CharacterId = 0x030,
+    .Model = 0x034,
+    .PadMode = 0xBB0,
+    .AutoAimStep = 0xC5E,
+    .Weapon = 0xC8C,
+    .TurnsRound = 0x20
+};
+
 // Where one game keeps it (docs/mods.md has the evidence for each address)
 struct Layout
 {
@@ -35,6 +116,7 @@ struct Layout
     uint32_t localPlayerId;   // u8: the id (record +3) of the character this console's player drives
     uint32_t enemies;         // the enemies' records the auto-aim's target finder walks
     uint32_t enemySize;
+    uint32_t enemyFlags;      // an enemy's u32 flags: bit 0 set, the target finder skips it
     uint32_t cuts;            // the room's fixed cameras: +1 count, +3 current, +5 forced, +6 forcing; records from +0x34
     uint32_t objectCount;     // u16: the room's objects
     uint32_t objectFlags;     // u8 each: bit 0 drawn, bit 7 hidden by an event
@@ -43,41 +125,15 @@ struct Layout
     uint32_t nearHide;        // 4 f32: the radii within which models near the camera are not drawn ([1] the characters')
     uint32_t systemPadPressed; // u32: the system pad's buttons newly pressed this frame (the ad-lib reads R3 there)
     uint32_t roomNow;         // u32: the room she's in (changes during a door's loading screen)
+    Fields field;             // a character record's fields
 };
 
 extern const Layout File1;
+extern const Layout File2;
 
-// A character record's fields (the same in both Japanese discs and the US one: ModernCam's offsets, checked in the code)
-namespace Field
-{
-constexpr uint32_t Id = 0x003;         // u8: the character's id, compared with Layout::localPlayerId
-constexpr uint32_t Stance = 0x008;     // u8: 1 weapon down, 2 aiming, 3 hit while aiming
-constexpr uint32_t Substate = 0x009;   // u8: 0x40 a scripted action
-constexpr uint32_t AimTarget = 0x024;  // u32: the enemy the auto-aim picked as she raised the weapon
-constexpr uint32_t Position = 0x038;   // f32 x, y, z
-constexpr uint32_t ForwardX = 0x070;   // f32: the model matrix's row 2
-constexpr uint32_t ForwardZ = 0x078;
-constexpr uint32_t Heading = 0x092;    // s16: 0x10000 a turn
-constexpr uint32_t Action = 0x54F;     // u8: 0 standing, 1 walking or turning, 2 the step back
-constexpr uint32_t Flags = 0xBA0;      // u32: 0x80 the game turns her round itself
-constexpr uint32_t GunElevation = 0xBC8; // s16: 65536/360 a degree, within +-0x1FFF
-constexpr uint32_t Actions = 0xF78;    // the action block: +0 pressed, +8 held, +0x20 the sticks, +0x32 the walk hold
-constexpr uint32_t Cpu = 0xFF0;        // u8: nonzero for a partner the game's AI plays
-// What the first-person camera reads (RaccoonRecomp's REO-FirstPerson, measured on the US disc; the same record here)
-constexpr uint32_t Live = 0x000;       // u8: the record is in use
-constexpr uint32_t AimState = 0x009;   // u8 with the weapon raised: 0 raising, 1 ready, 2 firing; down: her action's kind
-constexpr uint32_t ActionPhase = 0x00A; // u8: 0x0B aiming (or standing, the weapon down)
-constexpr uint32_t AutoAimLeft = 0x00C; // u16: the frames the auto-aim still turns her as she raises the weapon
-constexpr uint32_t CharacterId = 0x030; // low byte: 0 Kevin .. 7 Cindy
-constexpr uint32_t Model = 0x034;      // the model: its first word points at the skeleton's node table
-constexpr uint32_t PadMode = 0xB98;    // u8
-constexpr uint32_t AutoAimStep = 0xC4E; // s16: the auto-aim's turn each of those frames
-constexpr uint32_t Weapon = 0xC7C;     // u8: the equipped weapon's item record
-}
 
 constexpr uint8_t StanceNormal = 1, StanceAim = 2, StanceAimHit = 3;
 constexpr uint8_t ActionBackStep = 2;
-constexpr uint32_t FlagTurnsRound = 0x80;
 constexpr uint32_t ActForward = 0x0001, ActMove = 0x000F, ActDash = 0x0010, ActFire = 0x0020, ActAim = 0x0400;
 // The action block's walk hold (u16, +0x32): set when the room's camera cuts while the stick walks her, so the new fixed
 // angle doesn't turn her (she walks on the way she went until the stick is let go)

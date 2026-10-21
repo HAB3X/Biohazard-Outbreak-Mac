@@ -125,6 +125,29 @@ graphics.txt from before (it said `renderer = hardware` and `scale = 3` whatever
 - Not done: the software GS's own stepping of colours and texture coordinates (single steps on scattered pixels at 1x, not
   cheap in a shader), WoC's levels and CTTR's races not in a recording (they keep OpenGL), a playthrough by eye in a window.
 
+## Community mods (branch `mods`, runtime `biohazard-mods`), 2026-10-21
+
+Ports of Snippy's Outbreak ModernCam and RaccoonRecomp's REO-ModernCam, REO-FirstPerson, REO-Cheats and REO-GreatestHits-Cheats
+(MIT, with permission; docs/CREDITS.md, docs/mods.md). File 1 only so far.
+
+- **Done, File 1**: PC menus' Camera tab (View: Classic / Modern / First person, ModernCam's framing, look, aiming, crosshair and
+  room settings) and Cheats tab (51 merged rows, each credited). Code patches are overrides (config/file1.toml), data cheats
+  written each frame; cheats act only in single play (play mode 0x3065C2), every override runs the game's own in network play.
+  Runtime: PS2_MOUSE_LOOK / ps2_take_mouse_motion, ps2_set_crosshair, setting headings and descriptions, --control window.
+- **Checked in play** (headless, Metal 4x): Modern in J's Bar (mouse look, walking, aim with the gun following the pitch,
+  crosshair, swap shoulder, walls, status screen, the zombie cutscene keeping the game's camera, 30 fps); First person (eyes,
+  mouse look, walking, aiming along the 45 Auto's sights). Cheats: ammo (off 7->5, infinite, extra, max 99), one-hit kills
+  (enemies' HP - 0x7FFF), enemies don't damage, both don't-become-a-zombie codes, infinite health for everyone, scenarios opened
+  (all five, save word untouched), and the data cheats' values in memory (health, speed, giant, damage, gauge, files, results,
+  points, unlocks).
+- **Left**: File 2 (functions, fields and addresses matched and written in src/modern_camera_game.cpp and src/cheats.cpp as
+  File2 layouts, but not wired into src/file2.cpp and not checked in play: aspect 0x2491FC, frame count 0x3137D4, gauge maxima
+  0x738520 and the object matrices 0x475300 especially need checking); cheats not yet seen in play: zombies don't move,
+  escape time (no timer running in the runs), walk through walls, items, virus never up, L1+Select, zombie after death,
+  collection opened, partners, Player 1 modifiers; item slot codes and Number Of Players not ported; ModernCam's reload,
+  restroom mirrors, alt rig and recenter not ported; the camera is not gated for network play (only the cheats are).
+  The runtime build's VU1 translation step sometimes fails on a fresh build dir (its output folder made by another job): rerun.
+
 ## The Mac apps
 
 Two kinds, both from `tools/make_app.py` (each with SDL3 inside, the build's rpaths taken out, signed ad hoc):

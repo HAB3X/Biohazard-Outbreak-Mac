@@ -44,42 +44,34 @@ extern "C" void single_partner_think(Ps2Cpu* c) { PartnerAi::Think(c, PartnerAi:
 extern "C" void single_00822520(Ps2Cpu* c);
 extern "C" void single_partner_perceive(Ps2Cpu* c) { PartnerAi::Perceive(c, PartnerAi::File1, single_00822520); }
 
-// The Modern camera (src/modern_camera.cpp): the game frame, the button mapper and the game's camera handlers, as recompiled
-extern "C" void f_0019ecb0(Ps2Cpu* c);
-extern "C" void mods_frame_end(Ps2Cpu* c) { Mods::FrameEnd(c, f_0019ecb0); }
-extern "C" void f_001afc60(Ps2Cpu* c);
-extern "C" void mods_pad_map(Ps2Cpu* c) { ModernCamera::PadMap(c, f_001afc60); }
-extern "C" void game_0058ec70(Ps2Cpu* c);
-extern "C" void game_camera_fixed_cut(Ps2Cpu* c) { ModernCamera::FixedCut(c, game_0058ec70); }
-extern "C" void game_0058ed80(Ps2Cpu* c);
-extern "C" void game_camera_rail_cut(Ps2Cpu* c) { ModernCamera::RailCut(c, game_0058ed80); }
-extern "C" void game_0058f230(Ps2Cpu* c);
-extern "C" void game_camera_spline_cut(Ps2Cpu* c) { ModernCamera::RailCut(c, game_0058f230); }
-extern "C" void game_005a9080(Ps2Cpu* c);
-extern "C" void game_camera_follow(Ps2Cpu* c) { ModernCamera::Follow(c, game_005a9080); }
-extern "C" void game_00556800(Ps2Cpu* c);
-extern "C" void game_gun_elevation(Ps2Cpu* c) { ModernCamera::GunElevation(c, game_00556800); }
-
-// The cheats (src/cheats.cpp): the functions whose code the cheats' codes patched, as recompiled
-#define CHEAT_OVERRIDE(name, function, original)                                                                               \
+// The cameras (src/modern_camera.cpp): the game frame, the button mapper and the game's camera handlers, as recompiled
+#define MOD_OVERRIDE(name, call, original)                                                                                     \
     extern "C" void original(Ps2Cpu* c);                                                                                      \
-    extern "C" void name(Ps2Cpu* c) { Cheats::function(c, original); }
-CHEAT_OVERRIDE(cheat_single_play, SinglePlay, f_001af4d0)
-CHEAT_OVERRIDE(cheat_ammo, Ammo, game_00581a00)
-CHEAT_OVERRIDE(cheat_item_use, ItemUse, game_00581b30)
-CHEAT_OVERRIDE(cheat_gauge_over_time, GaugeOverTime, game_006359d0)
-CHEAT_OVERRIDE(cheat_gauge_bite, GaugeBite, game_0062e6a0)
-CHEAT_OVERRIDE(cheat_enemy_damage, EnemyDamage, game_0060f0c0)
-CHEAT_OVERRIDE(cheat_player_damage, PlayerDamage, game_0062f130)
-CHEAT_OVERRIDE(cheat_death_check, DeathCheck, game_0062ee10)
-CHEAT_OVERRIDE(cheat_movement, Movement, game_0062ca30)
-CHEAT_OVERRIDE(cheat_timers, Timers, game_0065a8c0)
-CHEAT_OVERRIDE(cheat_collision, Collision, game_00631ca0)
-CHEAT_OVERRIDE(cheat_available, Available, demo_00554ec0)
-CHEAT_OVERRIDE(cheat_scenario_select_a, ScenarioSelect, demo_00542640)
-CHEAT_OVERRIDE(cheat_scenario_select_b, ScenarioSelect, demo_0054dc10)
-CHEAT_OVERRIDE(cheat_scenario_select_c, ScenarioSelect, demo_0054e2f0)
-CHEAT_OVERRIDE(cheat_scenario_select_d, ScenarioSelect, demo_0054ee40)
+    extern "C" void name(Ps2Cpu* c) { call(c, original); }
+MOD_OVERRIDE(mods_frame_end, Mods::FrameEnd, f_0019ecb0)
+MOD_OVERRIDE(mods_pad_map, ModernCamera::PadMap, f_001afc60)
+MOD_OVERRIDE(game_camera_fixed_cut, ModernCamera::FixedCut, game_0058ec70)
+MOD_OVERRIDE(game_camera_rail_cut, ModernCamera::RailCut, game_0058ed80)
+MOD_OVERRIDE(game_camera_spline_cut, ModernCamera::RailCut, game_0058f230)
+MOD_OVERRIDE(game_camera_follow, ModernCamera::Follow, game_005a9080)
+MOD_OVERRIDE(game_gun_elevation, ModernCamera::GunElevation, game_00556800)
+// The cheats (src/cheats.cpp): the functions whose code the cheats' codes patched, as recompiled
+MOD_OVERRIDE(cheat_single_play, Cheats::SinglePlay, f_001af4d0)
+MOD_OVERRIDE(cheat_ammo, Cheats::Ammo, game_00581a00)
+MOD_OVERRIDE(cheat_item_use, Cheats::ItemUse, game_00581b30)
+MOD_OVERRIDE(cheat_gauge_over_time, Cheats::GaugeOverTime, game_006359d0)
+MOD_OVERRIDE(cheat_gauge_bite, Cheats::GaugeBite, game_0062e6a0)
+MOD_OVERRIDE(cheat_enemy_damage, Cheats::EnemyDamage, game_0060f0c0)
+MOD_OVERRIDE(cheat_player_damage, Cheats::PlayerDamage, game_0062f130)
+MOD_OVERRIDE(cheat_death_check, Cheats::DeathCheck, game_0062ee10)
+MOD_OVERRIDE(cheat_movement, Cheats::Movement, game_0062ca30)
+MOD_OVERRIDE(cheat_timers, Cheats::Timers, game_0065a8c0)
+MOD_OVERRIDE(cheat_collision, Cheats::Collision, game_00631ca0)
+MOD_OVERRIDE(cheat_available, Cheats::Available, demo_00554ec0)
+MOD_OVERRIDE(cheat_scenario_select_a, Cheats::ScenarioSelect, demo_00542640)
+MOD_OVERRIDE(cheat_scenario_select_b, Cheats::ScenarioSelect, demo_0054dc10)
+MOD_OVERRIDE(cheat_scenario_select_c, Cheats::ScenarioSelect, demo_0054e2f0)
+MOD_OVERRIDE(cheat_scenario_select_d, Cheats::ScenarioSelect, demo_0054ee40)
 
 int main(int argc, char** argv)
 {
