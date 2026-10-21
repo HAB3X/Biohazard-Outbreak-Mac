@@ -127,12 +127,72 @@ bool ParseName(const std::string& name, ReplacementKey* key)
     return false;
 }
 
+// The replacement images under a folder, at any depth, by their names (the first of a key kept)
+void ScanFolder(const std::filesystem::path& folder)
+{
+    namespace fs = std::filesystem;
+    std::error_code error;
+    for (auto it = fs::recursive_directory_iterator(folder, fs::directory_options::follow_directory_symlink, error);
+         it != fs::recursive_directory_iterator(); it.increment(error))
+    {
+        if (error || !it->is_regular_file(error))
+        {
+            continue;
+        }
+        std::string extension = Lower(it->path().extension().string());
+        if (extension != ".png" && extension != ".dds")
+        {
+            continue;
+        }
+        ReplacementKey key;
+        if (ParseName(it->path().filename().string(), &key))
+        {
+            g_Files.emplace(key, it->path().string());
+        }
+    }
+}
+
+// The packs a launcher switched on for this game: textures.txt in the settings folder, a folder a line ('#' a comment),
+// later ones over earlier ones
+std::vector<std::string> ListedPacks()
+{
+    std::vector<std::string> packs;
+    std::FILE* file = std::fopen((std::string(Native::SettingsFolder()) + "/textures.txt").c_str(), "r");
+    if (file == nullptr)
+    {
+        return packs;
+    }
+    char line[4096];
+    while (std::fgets(line, sizeof(line), file) != nullptr)
+    {
+        std::string folder = line;
+        while (!folder.empty() && (folder.back() == '\n' || folder.back() == '\r'))
+        {
+            folder.pop_back();
+        }
+        if (!folder.empty() && folder[0] != '#')
+        {
+            packs.push_back(folder);
+        }
+    }
+    std::fclose(file);
+    return packs;
+}
+
 void Scan()
 {
     g_Files.clear();
     g_Images.clear();
     namespace fs = std::filesystem;
     std::error_code error;
+    // The launcher's packs first, the later ones' images over the earlier ones' (emplace keeps the first: scanned last first)
+    std::vector<std::string> packs = ListedPacks();
+    for (auto pack = packs.rbegin(); pack != packs.rend(); ++pack)
+    {
+        size_t before = g_Files.size();
+        ScanFolder(*pack);
+        std::fprintf(stderr, "graphics: %zu replacement textures in %s\n", g_Files.size() - before, pack->c_str());
+    }
     // The settings folder's textures (as PCSX2 lays them out), or $TWIN_TEXTURES_DIR's
     const char* overridden = std::getenv("TWIN_TEXTURES_DIR");
     fs::path root = overridden != nullptr ? fs::path(overridden) : fs::path(Native::SettingsFolder()) / "textures";
@@ -158,26 +218,7 @@ void Scan()
                 continue;
             }
 
-            for (auto it = fs::recursive_directory_iterator(sub.path(), fs::directory_options::follow_directory_symlink, error);
-                 it != fs::recursive_directory_iterator(); it.increment(error))
-            {
-                if (error || !it->is_regular_file(error))
-                {
-                    continue;
-                }
-
-                std::string extension = Lower(it->path().extension().string());
-                if (extension != ".png" && extension != ".dds")
-                {
-                    continue;
-                }
-
-                ReplacementKey key;
-                if (ParseName(it->path().filename().string(), &key))
-                {
-                    g_Files.emplace(key, it->path().string());
-                }
-            }
+            ScanFolder(sub.path());
         }
     }
 
@@ -478,6 +519,14 @@ bool LoadPng(const std::string& path, ReplacementImage* image)
     SDL_DestroySurface(rgba);
     return true;
 }
+}
+
+void ReplacementsEnableListed()
+{
+    if (!ListedPacks().empty())
+    {
+        ReplacementsSetEnabled(true);
+    }
 }
 
 void ReplacementsSetEnabled(bool on)

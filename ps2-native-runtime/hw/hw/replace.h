@@ -32,6 +32,8 @@ struct ReplacementKey
 
 // The folders searched (made when the replacements are switched on: serials SLES-52568, SLUS-20909, SLPM-65801)
 void ReplacementsSetEnabled(bool on);
+// Switched on when the settings folder's textures.txt (a launcher's) lists any pack folder: they're scanned too
+void ReplacementsEnableListed();
 bool ReplacementsEnabled();
 size_t ReplacementCount();
 

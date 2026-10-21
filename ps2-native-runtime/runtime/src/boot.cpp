@@ -4,6 +4,7 @@
 
 #include "ps2/runtime.h"
 #include "ui/menus.h"
+#include "hw/replace.h"
 
 #include <SDL3/SDL.h>
 
@@ -593,6 +594,8 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         return 0;
     }
     LogToFile(g_options.settingsDir);
+    // HD textures: the packs a launcher switched on for this game (textures.txt), if any
+    NativeGraphics::ReplacementsEnableListed();
     {
         std::string line;
         for (int i = 0; i < argc; i++)
