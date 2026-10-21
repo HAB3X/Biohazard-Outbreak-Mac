@@ -1,6 +1,9 @@
 // Biohazard Outbreak for Mac: the recompiled executable and its overlays on the PS2 runtime
+#include "cheats.h"
 #include "controls.h"
 #include "menus.h"
+#include "modern_camera.h"
+#include "mods.h"
 #include "network.h"
 #include "partner_ai.h"
 #include "pointer.h"
@@ -72,6 +75,35 @@ extern "C" void game_frame(Ps2Cpu* c)
     Pointer::Frame(c);
 }
 
+// The cameras (src/modern_camera.cpp): the game frame, the button mapper and the game's camera handlers, as recompiled
+#define MOD_OVERRIDE(name, call, original)                                                                                     \
+    extern "C" void original(Ps2Cpu* c);                                                                                      \
+    extern "C" void name(Ps2Cpu* c) { call(c, original); }
+MOD_OVERRIDE(mods_frame_end, Mods::FrameEnd, f_0019ecb0)
+MOD_OVERRIDE(mods_pad_map, ModernCamera::PadMap, f_001afc60)
+MOD_OVERRIDE(game_camera_fixed_cut, ModernCamera::FixedCut, game_0058ec70)
+MOD_OVERRIDE(game_camera_rail_cut, ModernCamera::RailCut, game_0058ed80)
+MOD_OVERRIDE(game_camera_spline_cut, ModernCamera::RailCut, game_0058f230)
+MOD_OVERRIDE(game_camera_follow, ModernCamera::Follow, game_005a9080)
+MOD_OVERRIDE(game_gun_elevation, ModernCamera::GunElevation, game_00556800)
+// The cheats (src/cheats.cpp): the functions whose code the cheats' codes patched, as recompiled
+MOD_OVERRIDE(cheat_single_play, Cheats::SinglePlay, f_001af4d0)
+MOD_OVERRIDE(cheat_ammo, Cheats::Ammo, game_00581a00)
+MOD_OVERRIDE(cheat_item_use, Cheats::ItemUse, game_00581b30)
+MOD_OVERRIDE(cheat_gauge_over_time, Cheats::GaugeOverTime, game_006359d0)
+MOD_OVERRIDE(cheat_gauge_bite, Cheats::GaugeBite, game_0062e6a0)
+MOD_OVERRIDE(cheat_enemy_damage, Cheats::EnemyDamage, game_0060f0c0)
+MOD_OVERRIDE(cheat_player_damage, Cheats::PlayerDamage, game_0062f130)
+MOD_OVERRIDE(cheat_death_check, Cheats::DeathCheck, game_0062ee10)
+MOD_OVERRIDE(cheat_movement, Cheats::Movement, game_0062ca30)
+MOD_OVERRIDE(cheat_timers, Cheats::Timers, game_0065a8c0)
+MOD_OVERRIDE(cheat_collision, Cheats::Collision, game_00631ca0)
+MOD_OVERRIDE(cheat_available, Cheats::Available, demo_00554ec0)
+MOD_OVERRIDE(cheat_scenario_select_a, Cheats::ScenarioSelect, demo_00542640)
+MOD_OVERRIDE(cheat_scenario_select_b, Cheats::ScenarioSelect, demo_0054dc10)
+MOD_OVERRIDE(cheat_scenario_select_c, Cheats::ScenarioSelect, demo_0054e2f0)
+MOD_OVERRIDE(cheat_scenario_select_d, Cheats::ScenarioSelect, demo_0054ee40)
+
 int main(int argc, char** argv)
 {
     static Ps2GameInfo game = {"Biohazard Outbreak", "SLPM_654.28", 1294104};
@@ -97,6 +129,7 @@ int main(int argc, char** argv)
     game.settings = PartnerAi::Settings;
     game.settingCount = PartnerAi::SettingCount;
     game.typing = Typing::Typing;
+    Mods::Install(game, ModernCamera::File1, BiohazardControls::File1, Cheats::File1);
     Tsnd::Register();
     Network::RegisterLoadHigh();
     Network::RegisterUsbSearcher();
