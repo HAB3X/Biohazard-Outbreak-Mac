@@ -15,6 +15,7 @@ variant (0 always; 1 laid while the prompts are the keyboard's, 2 a PlayStation 
 prompts, the device used last unless one is chosen; a picture with the PS2's buttons drawn on it has all three, at the same
 offset and size), the bytes.
 """
+import os
 import struct
 import sys
 from pathlib import Path
@@ -119,6 +120,14 @@ def check_overlaps(patches):
             raise SystemExit(f"two changes overlap at disc offset {b:#x}")
 
 
+def progress(fraction, step):
+    """How far the build is, for the launcher's bar: a line "fraction<TAB>step" appended to $BH_PROGRESS's file, if set"""
+    path = os.environ.get("BH_PROGRESS")
+    if path:
+        with open(path, "a") as f:
+            f.write(f"{fraction:.2f}\t{step}\n")
+
+
 def main(argv):
     if len(argv) not in (3, 4):
         print(__doc__)
@@ -126,7 +135,9 @@ def main(argv):
     game, out_path = argv[1], argv[2]
     folder = argv[3] if len(argv) == 4 else archive.REPO / "translations" / game
     arc = archive.Archive(game)
+    progress(0.02, "Reading the game's text from your disc")
     pools, nodes = sources.string_pools(arc, game)
+    progress(0.15, "Reading the stage messages")
     files = sources.message_files(arc, game)
     units, kinds = {}, {}  # kinds: unit id -> the kind of container it was first found in, for the coverage report
     for label, pool in pools:
@@ -140,6 +151,7 @@ def main(argv):
         units.update(found)
         kinds.update({u: message_kind(path) for u in found if u not in kinds})
         messages.append((path, node, msg))
+    progress(0.30, "Reading the files and documents")
     pits = sources.table_entries(arc, game)
     for name, _, _, table in pits:
         found = table.texts()
@@ -149,6 +161,7 @@ def main(argv):
         kinds.update({u: kind for u in found if u not in kinds})
     fallback = sources.settings(game).get("fallback")
     new, kept, dropped = load_translations(folder, units, fallback and archive.REPO / "translations" / fallback)
+    progress(0.45, "Writing the English text")
     patches = []  # (disc offset, bytes)
     try:
         images = {}  # image name: its new bytes (one image can be changed by several pools: strings, pointers)
@@ -172,9 +185,13 @@ def main(argv):
                 except text.DoesNotFit as e:
                     raise text.DoesNotFit(f"{name}: {e}")
                 patches += [(node.offset + offset + off, data) for off, data in changed_runs(table.entry, rebuilt)]
-        patches = [(off, data, 0) for off, data in patches] + pictures.patches(arc, game) + font.patches(arc, game)
+        progress(0.65, "Redrawing the pictures in English")
+        drawn = pictures.patches(arc, game)
+        progress(0.90, "Drawing the button prompts")
+        patches = [(off, data, 0) for off, data in patches] + drawn + font.patches(arc, game)
     except (text.DoesNotFit, pictures.DoesNotFit) as e:
         raise SystemExit(f"does not fit: {e}")
+    progress(0.97, "Saving the patch")
     check_overlaps(patches)
     with open(out_path, "wb") as f:
         f.write(struct.pack("<III", MAGIC, 2, len(patches)))

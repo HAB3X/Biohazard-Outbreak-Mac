@@ -71,6 +71,44 @@ final class ModStore: ObservableObject {
         }
     }
 
+    /// The command line's import (LauncherApp): each path added, its game from --game or its name; a line printed each
+    static func importFromCommandLine(_ arguments: [String]) -> Int32 {
+        var game: Game?
+        var paths: [String] = []
+        var i = 0
+        while i < arguments.count {
+            if arguments[i] == "--game", i + 1 < arguments.count {
+                game = Game(rawValue: arguments[i + 1])
+                i += 2
+            } else {
+                paths.append(arguments[i])
+                i += 1
+            }
+        }
+        var failed = false
+        for path in paths {
+            let url = URL(fileURLWithPath: path)
+            guard let target = game ?? gameNamed(url.lastPathComponent) else {
+                print("\(url.lastPathComponent): which game? (--game file1 or file2)")
+                failed = true
+                continue
+            }
+            var result: Result<Mod, ImportError>?
+            Task.detached { result = await importMod(url, game: target) }
+            while result == nil { RunLoop.main.run(until: Date().addingTimeInterval(0.2)) }
+            switch result! {
+            case .success(let mod):
+                shared.mods.append(mod)
+                shared.save()
+                print("\(mod.name): \(mod.kind.title) for \(target.short), \(mod.files) files")
+            case .failure(let error):
+                print(error.message)
+                failed = true
+            }
+        }
+        return failed ? 1 : 0
+    }
+
     func toggle(_ mod: Mod) {
         guard let i = mods.firstIndex(of: mod) else { return }
         mods[i].enabled.toggle()

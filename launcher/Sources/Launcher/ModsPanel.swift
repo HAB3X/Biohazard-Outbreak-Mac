@@ -6,11 +6,14 @@ import UniformTypeIdentifiers
 struct ModsPanel: View {
     @EnvironmentObject var model: LauncherModel
     @ObservedObject private var store: ModStore
-    @State private var game: Game = .file1
+    var game: Game
     @State private var kind: ModKind = .textures
     @State private var dropping = false
 
-    init() { store = ModStore.shared }
+    init(game: Game) {
+        self.game = game
+        store = ModStore.shared
+    }
 
     var body: some View {
         Panel {
@@ -46,10 +49,8 @@ struct ModsPanel: View {
 
     private var header: some View {
         HStack(spacing: 26) {
-            Picker("", selection: $game) {
-                ForEach(Game.allCases) { Text($0.short).tag($0) }
-            }
-            .pickerStyle(.segmented).frame(width: 170).labelsHidden()
+            Text("\(game.short) Mods").font(.system(size: 21, weight: .semibold)).foregroundStyle(Style.ink).fixedSize()
+            Rectangle().fill(Style.line).frame(width: 1, height: 22)
             ForEach(ModKind.allCases) { k in
                 TabTitle(title: k.title, selected: k == kind) { kind = k }
             }

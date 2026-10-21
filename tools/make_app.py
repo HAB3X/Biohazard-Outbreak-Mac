@@ -179,7 +179,7 @@ if [ ! -f "$DISC" ]; then
 fi
 for a in "$@"; do
     shift
-    case "$a" in -psn_*) ;; *) set -- "$@" "$a" ;; esac
+    case "$a" in -psn_*) ;; --prepare) exit 0 ;; *) set -- "$@" "$a" ;; esac
 done
 exec "$DIR/{g['exe']}" --disc "$DISC" --patch "$DIR/../Resources/english.patch" "$@"
 """)

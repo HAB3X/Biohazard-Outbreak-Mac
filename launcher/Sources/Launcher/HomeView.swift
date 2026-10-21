@@ -1,19 +1,29 @@
-// The main menu: the game's own picture (taken from the player's disc) filling the window, the menu bottom right
+// The main screen: the game's own picture (taken from the player's disc) behind, and a card for each game side by side,
+// each with one big Play and that game's Settings and Mods under it. Everything a player does starts from a card
 import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var model: LauncherModel
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             backdrop
-            HStack(alignment: .bottom) {
-                status
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    CornerButton(symbol: "opticaldisc", title: "Discs") { model.overlay = .discs }
+                }
+                .padding(.top, 34)
+                .padding(.horizontal, 30)
                 Spacer()
-                menu
+                HStack(spacing: 24) {
+                    ForEach(Game.allCases) { GameCard(game: $0) }
+                }
+                Text("Unofficial fan project, not affiliated with Capcom. Your discs are only read.")
+                    .font(.system(size: 11)).foregroundStyle(Style.faint)
+                    .padding(.top, 22)
+                    .padding(.bottom, 22)
             }
-            .padding(.horizontal, 56)
-            .padding(.bottom, 44)
         }
         .ignoresSafeArea()
     }
@@ -25,76 +35,120 @@ struct HomeView: View {
                     Image(nsImage: picture)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: size.size.width, height: size.size.height)
+                        .frame(width: size.size.width, height: size.size.height * 0.78, alignment: .top)
                         .clipped()
-                        .transition(.opacity)
+                        .frame(maxHeight: .infinity, alignment: .top)
                 } else {
-                    RadialGradient(colors: [Color(red: 0.06, green: 0.1, blue: 0.2), .black], center: .center, startRadius: 40,
+                    RadialGradient(colors: [Color(red: 0.06, green: 0.1, blue: 0.2), .black], center: .top, startRadius: 40,
                                    endRadius: size.size.width * 0.7)
                 }
-                // Dark under the menu and the status: the picture's lower part (the title's PRESS START BUTTON) falls away
-                LinearGradient(stops: [.init(color: .clear, location: 0.45), .init(color: .black.opacity(0.92), location: 0.86)],
+                LinearGradient(stops: [.init(color: .clear, location: 0.3), .init(color: .black, location: 0.78)],
                                startPoint: .top, endPoint: .bottom)
-                LinearGradient(colors: [.clear, .black.opacity(0.35)], startPoint: .leading, endPoint: .trailing)
             }
         }
         .animation(.easeInOut(duration: 0.6), value: model.picture)
     }
+}
 
-    private var menu: some View {
-        VStack(alignment: .trailing, spacing: 6) {
-            ForEach(Game.allCases) { game in
-                MenuItem(title: "Play \(game.short)", enabled: model.discs[game] != nil && Games.installed(game),
-                         hint: model.discs[game] == nil ? "Choose its disc first" : nil) {
-                    Games.play(game)
-                }
-            }
-            MenuItem(title: "Settings") { model.overlay = .settings }
-            MenuItem(title: "Mods") { model.overlay = .mods }
-            MenuItem(title: "Discs") { model.overlay = .discs }
-            MenuItem(title: "Quit") { NSApp.terminate(nil) }
-        }
-    }
+/// A game: its name and disc, Play (a bar while its English patch is made), its Settings and its Mods
+struct GameCard: View {
+    @EnvironmentObject var model: LauncherModel
+    var game: Game
 
-    private var status: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if model.preparingPicture {
-                Text("Preparing the title picture from your disc…").foregroundStyle(Style.muted)
-            }
-            ForEach(Game.allCases) { game in
+    private var ready: Bool { model.discs[game] != nil && Games.installed(game) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(game.short).font(.system(size: 30, weight: .semibold)).foregroundStyle(Style.ink)
                 HStack(spacing: 6) {
-                    Circle().fill(model.discs[game] != nil ? Color.green.opacity(0.8) : Style.faint).frame(width: 6, height: 6)
-                    Text("\(game.title) · \(game.code)")
+                    Circle().fill(ready ? Color.green.opacity(0.85) : Style.faint).frame(width: 7, height: 7)
+                    Text(ready ? "\(game.title) · ready" : "Disc not chosen")
+                        .font(.system(size: 13)).foregroundStyle(Style.muted)
                 }
             }
-            Text("Unofficial fan project, not affiliated with Capcom").padding(.top, 6)
+            if let preparing = model.preparing[game] {
+                VStack(alignment: .leading, spacing: 8) {
+                    ProgressView(value: preparing.fraction).tint(Style.gold)
+                    Text(preparing.step).font(.system(size: 13)).foregroundStyle(Style.muted).lineLimit(1)
+                }
+                .frame(height: 50)
+            } else if ready {
+                BigButton(title: "Play") { model.play(game) }
+            } else {
+                BigButton(title: "Choose disc…", quiet: true) { model.overlay = .discs }
+            }
+            HStack(spacing: 10) {
+                SmallButton(symbol: "slider.horizontal.3", title: "Settings") { model.overlay = .settings(game) }
+                SmallButton(symbol: "puzzlepiece.extension", title: "Mods") { model.overlay = .mods(game) }
+            }
+            .disabled(!Games.installed(game))
         }
-        .font(.system(size: 11))
-        .foregroundStyle(Style.faint)
+        .padding(24)
+        .frame(width: 360)
+        .background(RoundedRectangle(cornerRadius: 18).fill(Color.black.opacity(0.55)))
+        .background(RoundedRectangle(cornerRadius: 18).fill(.ultraThinMaterial))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Style.line, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }
 
-/// A line of the main menu: white, gold under the pointer, sliding a little towards it
-struct MenuItem: View {
+struct BigButton: View {
     var title: String
-    var enabled = true
-    var hint: String?
+    var quiet = false
     var action: () -> Void
     @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 30, weight: .regular))
-                .tracking(1.2)
-                .foregroundStyle(!enabled ? Style.faint : hovering ? Style.gold : Style.ink)
-                .shadow(color: .black.opacity(0.7), radius: 6)
-                .offset(x: hovering && enabled ? -6 : 0)
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundStyle(quiet ? Style.ink : .black)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .background(RoundedRectangle(cornerRadius: 12)
+                    .fill(quiet ? Color.white.opacity(hovering ? 0.16 : 0.09) : Style.gold.opacity(hovering ? 1 : 0.9)))
+                .scaleEffect(hovering ? 1.015 : 1)
                 .animation(.easeOut(duration: 0.12), value: hovering)
         }
         .buttonStyle(.plain)
-        .disabled(!enabled)
         .onHover { hovering = $0 }
-        .help(hint ?? "")
+    }
+}
+
+struct SmallButton: View {
+    var symbol: String
+    var title: String
+    var action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: symbol)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(hovering ? Style.ink : Style.muted)
+                .frame(maxWidth: .infinity, minHeight: 36)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(hovering ? 0.1 : 0.05)))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+    }
+}
+
+struct CornerButton: View {
+    var symbol: String
+    var title: String
+    var action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: symbol)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(hovering ? Style.ink : Style.muted)
+                .padding(.horizontal, 12).padding(.vertical, 7)
+                .background(Capsule().fill(Color.black.opacity(0.45)))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
     }
 }

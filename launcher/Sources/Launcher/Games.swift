@@ -99,6 +99,25 @@ enum Games {
         return said.replacingOccurrences(of: "[ps2] ", with: "")
     }
 
+    /// The app's --prepare: its English patch made if it's due (its steps written to `progress`), the game not started
+    static func prepare(_ game: Game, progress: URL) async -> ProgramResult {
+        await Task.detached {
+            let process = Process()
+            process.executableURL = app(game).appendingPathComponent("Contents/MacOS/Biohazard")
+            process.arguments = ["--prepare"]
+            process.environment = ProcessInfo.processInfo.environment.merging(["BH_PROGRESS": progress.path]) { $1 }
+            let err = Pipe()
+            process.standardError = err
+            process.standardOutput = FileHandle.nullDevice
+            do { try process.run() } catch {
+                return ProgramResult(status: -1, output: "", errors: error.localizedDescription)
+            }
+            let errors = err.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+            return ProgramResult(status: process.terminationStatus, output: "", errors: String(decoding: errors, as: UTF8.self))
+        }.value
+    }
+
     /// The game started, in English, as its own app does it (its first start makes the English patch from the disc)
     static func play(_ game: Game) {
         let configuration = NSWorkspace.OpenConfiguration()

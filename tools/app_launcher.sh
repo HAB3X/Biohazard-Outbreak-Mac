@@ -17,10 +17,12 @@ end run
 EOF
 }
 
-# macOS's old -psn_ argument isn't an option of the game's
+# macOS's old -psn_ argument isn't an option of the game's. --prepare (the launcher's): only the English patch made if it's
+# due, with no dialog, its progress in $BH_PROGRESS's file (tools/bh_build_patch.py); the game isn't started
+PREPARE=0
 for a in "$@"; do
     shift
-    case "$a" in -psn_*) ;; *) set -- "$@" "$a" ;; esac
+    case "$a" in -psn_*) ;; --prepare) PREPARE=1 ;; *) set -- "$@" "$a" ;; esac
 done
 
 # The disc and the settings folder, a line each; a wrong disc or none chosen is said by the game itself
@@ -34,6 +36,18 @@ WANTED="$(cat "$BUILDER/VERSION")
 $DISC"
 
 if [ ! -f "$PATCH" ] || [ "$(cat "$MADE_FROM" 2>/dev/null)" != "$WANTED" ] || [ "$SETTINGS/bindings.txt" -nt "$PATCH" ]; then
+    if [ "$PREPARE" = 1 ]; then
+        env -i PYTHONHOME="$PYTHON" PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1 PATH=/usr/bin:/bin LANG=en_US.UTF-8 \
+            PS2_RUNTIME_DIR="$BUILDER/ps2-native-runtime" BH_SETTINGS="$SETTINGS" @GAME_UPPER@_DISC="$DISC" \
+            BH_PROGRESS="$BH_PROGRESS" "$PYTHON/bin/python3" "$BUILDER/tools/bh_build_patch.py" @GAME@ "$PATCH.new" >"$LOG" 2>&1 || {
+            rm -f "$PATCH.new"
+            tail -n 3 "$LOG" >&2
+            exit 1
+        }
+        mv -f "$PATCH.new" "$PATCH"
+        printf '%s\n' "$WANTED" >"$MADE_FROM"
+        exit 0
+    fi
     env -i PYTHONHOME="$PYTHON" PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1 PATH=/usr/bin:/bin LANG=en_US.UTF-8 \
         PS2_RUNTIME_DIR="$BUILDER/ps2-native-runtime" BH_SETTINGS="$SETTINGS" @GAME_UPPER@_DISC="$DISC" \
         "$PYTHON/bin/python3" "$BUILDER/tools/bh_build_patch.py" @GAME@ "$PATCH.new" >"$LOG" 2>&1 &
@@ -69,4 +83,5 @@ The whole report is in $LOG: please include it with a bug report."
     printf '%s\n' "$WANTED" >"$MADE_FROM"
 fi
 
+[ "$PREPARE" = 1 ] && exit 0
 exec "$GAME" --disc "$DISC" --patch "$PATCH" "$@"

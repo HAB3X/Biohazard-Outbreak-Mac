@@ -5,7 +5,7 @@ import SwiftUI
 
 struct SettingsPanel: View {
     @EnvironmentObject var model: LauncherModel
-    @State private var game: Game = .file1
+    var game: Game
     @StateObject private var file1 = GameSettings(game: .file1)
     @StateObject private var file2 = GameSettings(game: .file2)
     @State private var page = "Gameplay"
@@ -34,12 +34,8 @@ struct SettingsPanel: View {
 
     private var header: some View {
         HStack(spacing: 26) {
-            Picker("", selection: $game) {
-                ForEach(Game.allCases) { Text($0.short).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 170)
-            .labelsHidden()
+            Text("\(game.short) Settings").font(.system(size: 21, weight: .semibold)).foregroundStyle(Style.ink).fixedSize()
+            Rectangle().fill(Style.line).frame(width: 1, height: 22)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 24) {
                     ForEach(settings.pages) { p in
