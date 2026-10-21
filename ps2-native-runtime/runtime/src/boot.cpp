@@ -121,7 +121,8 @@ std::string DiscProblem(const Ps2GameInfo* game)
 void WrongDisc(const Ps2GameInfo* game, bool asked, const std::string& discFile, const std::string& problem)
 {
     Log("%s isn't %s (%s): %s", g_options.disc.c_str(), game->title, game->executable, problem.c_str());
-    if (!asked)
+    // Headless (a launcher trying a disc image): only the answer, no dialog to wait on, the remembered disc left as it is
+    if (!asked || g_options.headless)
     {
         return;
     }

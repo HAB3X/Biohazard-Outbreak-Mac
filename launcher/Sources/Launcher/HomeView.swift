@@ -30,6 +30,13 @@ struct HomeView: View {
                 RadialGradient(colors: [Color(red: 0.06, green: 0.1, blue: 0.2), .black], center: .center, startRadius: 40,
                                endRadius: 700)
             }
+            if model.picture == nil && model.preparingPicture {
+                HStack(spacing: 10) {
+                    ProgressView().controlSize(.small)
+                    Text("Making the title picture from your disc…").font(.system(size: 13)).foregroundStyle(Style.muted)
+                }
+                .frame(maxHeight: .infinity)
+            }
             // The picture fades into the bar
             LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: 70)
         }

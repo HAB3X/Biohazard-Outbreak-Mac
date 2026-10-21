@@ -345,6 +345,9 @@ def make_launcher(out, games, release):
         "LSApplicationCategoryType": "public.app-category.action-games",
         "LSMinimumSystemVersion": "14.0",
         "NSHighResolutionCapable": True,
+        # Disc images and mods can be opened with it (dropped on its icon): it takes them as a drop on its window
+        "CFBundleDocumentTypes": [{"CFBundleTypeName": "Disc image or mod", "CFBundleTypeRole": "Viewer",
+                                   "LSHandlerRank": "Alternate", "LSItemContentTypes": ["public.item", "public.folder"]}],
     }
     (app / "Contents/Info.plist").write_bytes(plistlib.dumps(plist))
     # The games inside are signed as they were made; the launcher's own program, then the whole

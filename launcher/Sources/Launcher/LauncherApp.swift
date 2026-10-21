@@ -212,7 +212,15 @@ struct RootView: View {
         }
         .animation(.easeOut(duration: 0.18), value: model.overlay)
         .background(Color.black)
-        .onAppear { model.findDiscs() }
+        .onAppear {
+            model.findDiscs()
+            // $BH_LAUNCHER_PLAY (file1, file2): Play pressed at the start, for a test of it
+            if let name = ProcessInfo.processInfo.environment["BH_LAUNCHER_PLAY"], let game = Game(rawValue: name) {
+                model.play(game)
+            }
+        }
+        // Files opened with the launcher (dropped on its Dock icon, Open With, open -a): as if dropped on the window
+        .onOpenURL { model.dropped($0) }
         .onDrop(of: [.fileURL], isTargeted: nil) { items in
             for item in items {
                 _ = item.loadObject(ofClass: URL.self) { url, _ in
