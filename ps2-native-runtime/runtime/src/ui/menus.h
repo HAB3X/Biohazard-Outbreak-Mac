@@ -72,6 +72,10 @@ struct InputOptions
     bool compensateDeadzone = false;
 };
 InputOptions ControlOptions();
+// The launcher's (boot.cpp's --menu-json and --menu-set, without a window or a game running): every page's rows as JSON on
+// stdout; a row's value set (its page's title, its label; an action's done) and saved as the menus save it
+void MenusPrintJson();
+bool MenusSetFromLauncher(const std::string& page, const std::string& label, int value);
 // An event of the window's: true when it's the menus' (all of the keyboard's, the mouse's and the gamepad's while they're up;
 // the menu key, Cmd+F and Alt+Enter while they aren't)
 bool MenusEvent(const SDL_Event& e);

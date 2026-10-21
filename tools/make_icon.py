@@ -39,15 +39,15 @@ def draw(picture, game):
     return out
 
 
-def draw_plain(game, font):
-    """The game's name, OUTBREAK over FILE 1 or FILE 2, in `font` (a .ttf path), on a dark red rounded square."""
+def draw_plain(game, font, line=None):
+    """The game's name, OUTBREAK over FILE 1 or FILE 2 (or `line`), in `font` (a .ttf path), on a dark red rounded square."""
     gradient = Image.linear_gradient("L").resize((SIZE, SIZE))
     canvas = Image.merge("RGB", (gradient.point(lambda v: 70 - v * 58 // 255), gradient.point(lambda v: 10 - v * 8 // 255),
                                  gradient.point(lambda v: 12 - v * 9 // 255))).convert("RGBA")
     pen = ImageDraw.Draw(canvas)
     pen.rounded_rectangle((92, 92, SIZE - 92, SIZE - 92), radius=150, outline=(178, 24, 24), width=14)
     for text, size, y, colour in (("BIOHAZARD", 92, 300, (200, 190, 180)), ("OUTBREAK", 146, 470, (240, 236, 228)),
-                                  (f"FILE {game[-1]}", 120, 690, (205, 30, 30))):
+                                  (line or f"FILE {game[-1]}", 120, 690, (205, 30, 30))):
         face = ImageFont.truetype(str(font), size)
         pen.text((SIZE // 2, y), text, font=face, fill=colour, anchor="mm")
     mask = Image.new("L", (SIZE, SIZE), 0)

@@ -302,15 +302,73 @@ def check_release(game, app, disc):
     print(f"{app.name}: first launch checked (its English patch is this folder's builder's, byte for byte)")
 
 
+# --- the launcher ---------------------------------------------------------------------------------------------------------
+
+LAUNCHER = {"name": "Biohazard Outbreak Launcher", "id": "org.biohazardoutbreak.mac.launcher",
+            "zip": "Biohazard-Outbreak-Launcher-macOS.zip"}
+
+
+def make_launcher(out, games, release):
+    """The launcher (launcher/, SwiftUI) with both games' apps inside it (Contents/Resources/Games, from `games`: the
+    Desktop's for this Mac, build/dist's for the release); the release's zipped."""
+    run("swift", "build", "-c", "release", "--package-path", str(ROOT / "launcher"))
+    binary = Path(run("swift", "build", "-c", "release", "--package-path", str(ROOT / "launcher"), "--show-bin-path").strip())
+    binary = binary / "Launcher"
+    apps = [games / f"{GAMES[g]['name']}.app" for g in GAMES]
+    missing = [a for a in apps if not a.is_dir()]
+    if missing:
+        sys.exit(f"the games' apps aren't made yet: {', '.join(map(str, missing))}")
+    app = out / f"{LAUNCHER['name']}.app"
+    if app.exists():
+        shutil.rmtree(app)
+    (app / "Contents/MacOS").mkdir(parents=True)
+    resources = app / "Contents/Resources"
+    (resources / "Games").mkdir(parents=True)
+    shutil.copy2(binary, app / "Contents/MacOS/Launcher")
+    for game_app in apps:
+        run("ditto", str(game_app), str(resources / "Games" / game_app.name))
+    make_icon.write_icns(make_icon.draw_plain("launcher", runtime_dir() / "runtime/fonts/Fredoka-Bold.ttf", "FILE 1+2"),
+                         resources / "AppIcon.icns")
+    plist = {
+        "CFBundleDevelopmentRegion": "en",
+        "CFBundleExecutable": "Launcher",
+        "CFBundleIconFile": "AppIcon",
+        "CFBundleIdentifier": LAUNCHER["id"],
+        "CFBundleInfoDictionaryVersion": "6.0",
+        "CFBundleName": "Biohazard Outbreak",
+        "CFBundleDisplayName": LAUNCHER["name"],
+        "CFBundlePackageType": "APPL",
+        "CFBundleShortVersionString": VERSION,
+        "CFBundleVersion": VERSION,
+        "LSApplicationCategoryType": "public.app-category.action-games",
+        "LSMinimumSystemVersion": "14.0",
+        "NSHighResolutionCapable": True,
+    }
+    (app / "Contents/Info.plist").write_bytes(plistlib.dumps(plist))
+    # The games inside are signed as they were made; the launcher's own program, then the whole
+    run("codesign", "--force", "--sign", "-", str(app / "Contents/MacOS/Launcher"))
+    run("codesign", "--force", "--sign", "-", str(app))
+    run("codesign", "--verify", "--deep", "--strict", str(app))
+    print(app)
+    if release:
+        archive = out / LAUNCHER["zip"]
+        archive.unlink(missing_ok=True)
+        run("ditto", "-c", "-k", "--keepParent", str(app), str(archive))
+        print(f"{archive}: {archive.stat().st_size / 1e6:.1f} MB")
+
+
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("game", choices=["file1", "file2", "both"])
+    p.add_argument("game", choices=["file1", "file2", "both", "launcher"])
     p.add_argument("--release", action="store_true", help="the apps to share, zipped (see the top of this file)")
     p.add_argument("--out")
     p.add_argument("--disc", help="the disc image (default local.json's); --release only checks the app with it")
     a = p.parse_args()
     out = Path(a.out or (RELEASE_OUT if a.release else Path.home() / "Desktop"))
     out.mkdir(parents=True, exist_ok=True)
+    if a.game == "launcher":
+        make_launcher(out, RELEASE_OUT if a.release else Path.home() / "Desktop", a.release)
+        return
     local = json.loads((ROOT / "local.json").read_text()) if (ROOT / "local.json").exists() else {}
     for game in ("file1", "file2") if a.game == "both" else (a.game,):
         disc = Path(a.disc or local.get(game) or os.environ.get(f"{game.upper()}_DISC", ""))

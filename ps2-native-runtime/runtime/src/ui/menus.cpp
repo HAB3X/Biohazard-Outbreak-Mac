@@ -2074,6 +2074,134 @@ std::string PadControlText(PadControl control, PromptStyle style)
     }
     return "-";
 }
+
+// ------------------------------------------------------------------------------------------------------------- the launcher's
+namespace
+{
+std::string Json(const std::string& text)
+{
+    std::string out = "\"";
+    for (unsigned char c : text)
+    {
+        if (c == '"' || c == '\\')
+        {
+            out += '\\';
+            out += static_cast<char>(c);
+        }
+        else if (c < 0x20)
+        {
+            char escaped[8];
+            std::snprintf(escaped, sizeof(escaped), "\\u%04x", c);
+            out += escaped;
+        }
+        else
+        {
+            out += static_cast<char>(c);
+        }
+    }
+    return out + "\"";
+}
+
+// The Options' pages and the Extras' (their rows as the menus have them)
+std::vector<Page> LauncherPages()
+{
+    BuildOptions();
+    std::vector<Page> pages = g_pages;
+    if (HasExtras())
+    {
+        BuildExtras();
+        pages.insert(pages.end(), g_pages.begin(), g_pages.end());
+    }
+    g_pages.clear();
+    return pages;
+}
+}
+
+void MenusPrintJson()
+{
+    std::string out = "{\"title\": " + Json(WindowTitle()) + ", \"pages\": [";
+    std::vector<Page> pages = LauncherPages();
+    for (size_t p = 0; p < pages.size(); p++)
+    {
+        out += (p == 0 ? "" : ", ") + std::string("{\"title\": ") + Json(pages[p].title) + ", \"rows\": [";
+        bool first = true;
+        for (const Row& row : pages[p].rows)
+        {
+            if (row.kind == RowHeader || (row.shown && !row.shown()))
+            {
+                continue;
+            }
+            out += (first ? "" : ", ") + std::string("{\"label\": ") + Json(row.label) +
+                   ", \"description\": " + Json(row.description);
+            first = false;
+            switch (row.kind)
+            {
+            case RowChoice:
+            case RowSlider:
+            {
+                out += std::string(", \"kind\": ") + (row.kind == RowChoice ? "\"choice\"" : "\"slider\"") +
+                       ", \"value\": " + std::to_string(row.get()) + ", \"minimum\": " + std::to_string(row.minimum) +
+                       ", \"maximum\": " + std::to_string(row.maximum) + ", \"choices\": [";
+                if (row.kind == RowChoice)
+                {
+                    for (int v = row.minimum; v <= row.maximum; v++)
+                    {
+                        out += (v == row.minimum ? "" : ", ") + Json(row.valueText(v));
+                    }
+                }
+                out += "]";
+                break;
+            }
+            case RowBinding:
+                out += ", \"kind\": \"binding\", \"action\": " + std::to_string(row.action) + ", \"keys\": [" +
+                       Json(InputKeyName(InputActionKey(row.action, 0))) + ", " +
+                       Json(InputKeyName(InputActionKey(row.action, 1))) + "], \"group\": " +
+                       Json(InputActionGroup(row.action));
+                break;
+            case RowHeading: out += ", \"kind\": \"heading\""; break;
+            default: out += ", \"kind\": \"action\""; break;
+            }
+            out += "}";
+        }
+        out += "]}";
+    }
+    out += "]}\n";
+    std::fputs(out.c_str(), stdout);
+    std::fflush(stdout);
+}
+
+bool MenusSetFromLauncher(const std::string& page, const std::string& label, int value)
+{
+    std::vector<Page> pages = LauncherPages();
+    for (const Page& p : pages)
+    {
+        if (p.title != page)
+        {
+            continue;
+        }
+        for (const Row& row : p.rows)
+        {
+            if (row.label != label)
+            {
+                continue;
+            }
+            if (row.kind == RowAction && row.activate)
+            {
+                row.activate();
+                return true;
+            }
+            if ((row.kind == RowChoice || row.kind == RowSlider) && row.set && value >= row.minimum && value <= row.maximum)
+            {
+                row.set(value);
+                return true;
+            }
+            Log("--menu-set: %s / %s can't be set to %d", page.c_str(), label.c_str(), value);
+            return false;
+        }
+    }
+    Log("--menu-set: no row %s / %s", page.c_str(), label.c_str());
+    return false;
+}
 }
 
 extern "C" void ps2_open_settings(void) { Ps2::Ui::g_settingsAsked = true; }

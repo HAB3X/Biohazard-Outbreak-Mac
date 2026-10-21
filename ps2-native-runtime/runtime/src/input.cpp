@@ -1466,6 +1466,8 @@ std::string InputKeyName(int key)
 
 int InputMouseKey(int button) { return button >= SDL_BUTTON_LEFT && button <= SDL_BUTTON_X2 ? MouseBase + button : -1; }
 
+int InputKeyFromName(const std::string& name) { return KeyFromName(name); }
+
 int InputBindKey(int action, int slot, int key)
 {
     // The key taken from wherever else it was (that slot given this one's old key: the two swap), then put in the slot

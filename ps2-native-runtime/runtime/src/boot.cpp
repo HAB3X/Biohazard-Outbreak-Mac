@@ -223,6 +223,24 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         {
             g_options.discCheck = true;
         }
+        else if (a == "--menu-json")
+        {
+            g_options.menuJson = true;
+        }
+        else if (a == "--menu-set")
+        {
+            for (int k = 0; k < 3; k++)
+            {
+                g_options.menuSet.push_back(next());
+            }
+        }
+        else if (a == "--menu-bind")
+        {
+            for (int k = 0; k < 3; k++)
+            {
+                g_options.menuBind.push_back(next());
+            }
+        }
         else if (a == "--headless")
         {
             g_options.headless = true;
@@ -484,6 +502,41 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         }
         std::filesystem::create_directories(g_options.settingsDir, ec);
     }
+    // The launcher's settings: read, printed or changed, without a disc or a window
+    if (g_options.menuJson || !g_options.menuSet.empty() || !g_options.menuBind.empty())
+    {
+        Ui::MenusInit();
+        DisplayReadSettings();
+        InputInit();
+        bool done = true;
+        if (!g_options.menuSet.empty())
+        {
+            done = Ui::MenusSetFromLauncher(g_options.menuSet[0], g_options.menuSet[1], atoi(g_options.menuSet[2].c_str()));
+        }
+        if (!g_options.menuBind.empty())
+        {
+            int key = g_options.menuBind[2].empty() ? -1 : InputKeyFromName(g_options.menuBind[2]);
+            int action = atoi(g_options.menuBind[0].c_str()), slot = atoi(g_options.menuBind[1].c_str());
+            if (key < 0 && !g_options.menuBind[2].empty())
+            {
+                Log("--menu-bind: no key \"%s\"", g_options.menuBind[2].c_str());
+                done = false;
+            }
+            else if (key < 0)
+            {
+                InputClearKey(action, slot);
+            }
+            else
+            {
+                InputBindKey(action, slot, key);
+            }
+        }
+        if (g_options.menuJson)
+        {
+            Ui::MenusPrintJson();
+        }
+        return done ? 0 : 1;
+    }
     // The disc: --disc, $PS2_DISC, the one chosen before (disc_image.txt), or (with a window) asked for
     const std::string discFile = g_options.settingsDir + "/disc_image.txt";
     if (g_options.disc.empty() && getenv("PS2_DISC") != nullptr)
@@ -528,7 +581,7 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         WrongDisc(game, asked || g_options.discCheck, discFile, problem);
         return 1;
     }
-    if (asked)
+    if (asked || g_options.discCheck)
     {
         std::ofstream(discFile) << g_options.disc << '\n';
     }

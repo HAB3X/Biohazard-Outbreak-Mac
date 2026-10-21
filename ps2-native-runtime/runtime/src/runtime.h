@@ -237,6 +237,11 @@ struct Options
     // bindings' defaults written if there are none, then the disc's path and the settings folder printed and the game not
     // started: an app's launcher, which builds what it lays over the disc from both before the game starts
     bool discCheck = false;
+    // The launcher's (no window, no disc, no game): --menu-json prints the PC menus' pages; --menu-set PAGE ROW VALUE sets a
+    // row and saves it; --menu-bind ACTION SLOT KEY puts a key (bindings.txt's name, "" none) in an action's slot
+    bool menuJson = false;
+    std::vector<std::string> menuSet;
+    std::vector<std::string> menuBind;
     bool headless = false;
     std::string snapshotDir;
     double snapshotEvery = 0;   // seconds of game time (vblanks / 59.94) between saved pictures (0: none); --snapshot-at too
@@ -343,6 +348,8 @@ bool Vu1Replay(Ee::Vu& vu1, Ee::Vif& vif1, Ee::Gif& gif, const std::vector<u8>& 
 
 // --- display.cpp: the window (drawn by OpenGL or Metal: presenter.h) and the picture's way from the GS to it
 // The window and the GPU's contexts made (the main thread, before RenderStart): the window, or null when headless
+// graphics.txt read into the display's settings (DisplayOpen does it first; the launcher's --menu-json without a window)
+void DisplayReadSettings();
 SDL_Window* DisplayOpen();
 // The render thread's start: its context made current and the hardware renderer started (unless the software GS is asked for)
 void DisplayRenderThreadStart();
@@ -408,6 +415,8 @@ int InputActionKey(int action, int slot);
 std::string InputKeyName(int key);
 // A mouse button as a key (-1: none bindable)
 int InputMouseKey(int button);
+// A key by its bindings.txt name (-1: none)
+int InputKeyFromName(const std::string& name);
 // A key put in an action's slot, taken from where it was (that slot given the old key: the action it swapped with, or -1);
 // a slot cleared; the defaults; each saved to bindings.txt
 int InputBindKey(int action, int slot, int key);

@@ -320,7 +320,7 @@ bool OpenWindow(bool hiddenWindow)
 }
 }
 
-SDL_Window* DisplayOpen()
+void DisplayReadSettings()
 {
     // The renderer: the GPU unless asked for the software GS
     g_fileRenderer = DefaultRenderer();
@@ -364,6 +364,11 @@ SDL_Window* DisplayOpen()
     {
         WriteGraphicsSettings();
     }
+}
+
+SDL_Window* DisplayOpen()
+{
+    DisplayReadSettings();
 
     // Headless, the menus' scripted pictures (--ui) are drawn in a hidden window's context, and --control's mouse and keys are
     // the hidden window's events (the window's own path: its picture's place, the mouse over it)
