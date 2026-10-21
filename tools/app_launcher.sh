@@ -53,14 +53,17 @@ if [ ! -f "$PATCH" ] || [ "$(cat "$MADE_FROM" 2>/dev/null)" != "$WANTED" ] || [ 
         "$PYTHON/bin/python3" "$BUILDER/tools/bh_build_patch.py" @GAME@ "$PATCH.new" >"$LOG" 2>&1 &
     BUILD=$!
     # The wait, said in a dialog whose Quit stops it; the dialog is closed when the patch is made
-    /usr/bin/osascript - "$CONTENTS/Resources/AppIcon.icns" >/dev/null 2>&1 <<'EOF' &
+    # (what it answers is kept: Quit pressed says so; a dialog that couldn't be shown, headless or refused, stops nothing)
+    ANSWER="$SETTINGS/english-patch.answer"
+    rm -f "$ANSWER"
+    /usr/bin/osascript - "$CONTENTS/Resources/AppIcon.icns" >"$ANSWER" 2>/dev/null <<'EOF' &
 on run argv
     display dialog "Making the English patch from your disc image. This takes less than a minute, the first time and after your keys change." buttons {"Quit"} default button "Quit" with title "@NAME@" with icon (POSIX file (item 1 of argv))
 end run
 EOF
     WAIT=$!
     while kill -0 "$BUILD" 2>/dev/null; do
-        if ! kill -0 "$WAIT" 2>/dev/null; then
+        if ! kill -0 "$WAIT" 2>/dev/null && grep -q "Quit" "$ANSWER" 2>/dev/null; then
             { kill "$BUILD"; wait "$BUILD"; } 2>/dev/null # (the shell's "Terminated" notice kept out of the log)
             rm -f "$PATCH.new"
             exit 1
@@ -70,6 +73,7 @@ EOF
     wait "$BUILD"
     STATUS=$?
     { kill "$WAIT"; wait "$WAIT"; } 2>/dev/null
+    rm -f "$ANSWER"
     if [ "$STATUS" -ne 0 ]; then
         rm -f "$PATCH.new"
         alert "The English patch couldn't be made" "$(tail -n 3 "$LOG")

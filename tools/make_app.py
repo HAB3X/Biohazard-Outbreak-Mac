@@ -190,6 +190,8 @@ exec "$DIR/{g['exe']}" --disc "$DISC" --patch "$DIR/../Resources/english.patch" 
                    check=True, stdout=subprocess.DEVNULL, env={**os.environ, f"{game.upper()}_DISC": str(disc)})
     make_icon.write_icns(make_icon.draw(title_picture(game, disc), game), resources / "AppIcon.icns")
     sign_and_check(app)
+    # The disc remembered in the game's settings folder too, as a release app's first launch does: the launcher finds it there
+    run(str(app / "Contents/MacOS" / g["exe"]), "--disc", str(disc), "--disc-check", "--headless")
     print(app)
 
 
