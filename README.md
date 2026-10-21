@@ -125,6 +125,7 @@ the GS, VIF and VU graphics hardware drawn on the GPU. [STATUS.md](STATUS.md) ha
 - [docs/controls.md](docs/controls.md): the keyboard and mouse controls, and how they follow the game
 - [docs/translation.md](docs/translation.md): the English patch, its coverage and how it's built
 - [docs/network.md](docs/network.md): online play, and what stands in for the games' network modules
+- [docs/research/partner-ai.md](docs/research/partner-ai.md): the partners' AI, how the game drives them and what the port's does
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md): how speed is measured, and what was changed
 - [ps2-native-runtime/DESIGN.md](ps2-native-runtime/DESIGN.md): how the runtime is put together
 - [docs/RELEASING.md](docs/RELEASING.md): making the ready-made apps; [docs/adr/](docs/adr/): decisions and why

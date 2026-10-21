@@ -171,7 +171,8 @@ Decision Intend(const World& world, int partner, const Abilities& abilities, Mem
     const Character& player = world.player();
     const Threat threat = PickThreat(world, partner, memory, tunables);
     // bare hands only against what's on the player, and only with no other enemy at the partner's elbow
-    const bool bareHanded = threat.onPlayer && TooClose(world, me, tunables.personalSpace * tunables.evadeSlack, tunables) == nullptr;
+    const bool bareHanded = threat.onPlayer && me.hp >= me.hpMax * tunables.rescueHealth &&
+                            TooClose(world, me, tunables.personalSpace, tunables) == nullptr;
     if (threat.index >= 0 && (abilities.gun || bareHanded))
     {
         memory.target = threat.index;
@@ -253,21 +254,21 @@ Buttons Aim(const Character& me, const Vec& target, uint64_t frame, const Tunabl
     return b;
 }
 
-uint32_t StepAway(const Vec& position, uint16_t facing, const Vec& from)
+Buttons StepAway(const Vec& position, uint16_t facing, const Vec& from)
 {
     const uint16_t away = Heading(from, position);
     const int16_t off = static_cast<int16_t>(static_cast<uint16_t>(away - facing));
     constexpr int16_t Ahead = 0x2000;  // within 45 degrees of away: run
-    constexpr int16_t Behind = 0x6000; // within 45 degrees of toward it: step back, still facing it
+    constexpr int16_t Behind = 0x6000; // within 45 degrees of toward it: the quick turn
     if (off >= -Ahead && off <= Ahead)
     {
-        return Pad::Forward | Pad::Run;
+        return {Pad::Forward | Pad::Run, 0};
     }
     if (off >= Behind || off <= -Behind)
     {
-        return Pad::Back;
+        return {Pad::Back | Pad::Run, Pad::Run};
     }
-    return static_cast<uint16_t>(facing - away) <= 0x8000 ? Pad::Right : Pad::Left;
+    return {static_cast<uint16_t>(facing - away) <= 0x8000 ? Pad::Right : Pad::Left, 0};
 }
 
 namespace
@@ -291,6 +292,79 @@ void Shoot(Decision& d, const Character& me, const Enemy& target, Memory& memory
         memory.holdFireUntil = frame + tunables.holdFireFrames;
         memory.shotsMissed = 0;
     }
+}
+}
+
+namespace
+{
+float NearestEnemy(const World& world, int16_t room, const Vec& at)
+{
+    float best = std::numeric_limits<float>::max();
+    for (const Enemy& enemy : world.enemies)
+    {
+        if (enemy.alive() && enemy.room == room)
+        {
+            best = std::min(best, Distance(enemy.position, at));
+        }
+    }
+    return best;
+}
+
+// The node of the room farthest from the enemies that's clear of them (safeDistance), better than where the partner is,
+// within the leash of the player, and not where it stands already
+bool SafeNode(const World& world, const Character& me, const Tunables& tunables, Vec& out)
+{
+    const Character& player = world.player();
+    const float here = NearestEnemy(world, me.room, me.position);
+    float best = std::max(tunables.safeDistance, here + 150);
+    bool found = false;
+    for (int n = 0; n < world.nodeCount; n++)
+    {
+        const Vec& node = world.nodes[static_cast<size_t>(n)];
+        if (Distance(node, me.position) < 150 ||
+            (player.room == me.room && Distance(node, player.position) > tunables.retreatLeash))
+        {
+            continue;
+        }
+        const float clear = NearestEnemy(world, me.room, node);
+        if (clear >= best)
+        {
+            best = clear;
+            out = node;
+            found = true;
+        }
+    }
+    return found;
+}
+
+// A partner without a gun with an enemy coming (not one on the player: that one it's to shove off) goes to a safer node of
+// the room by the game's own route code, round the counters and tables, instead of running straight off into a corner
+bool Retreat(Decision& d, const World& world, const Character& me, Memory& memory, uint64_t frame, const Tunables& tunables)
+{
+    if (me.room != world.currentRoom || TooClose(world, me, tunables.retreatTrigger, tunables) == nullptr)
+    {
+        memory.retreating = false;
+        return false;
+    }
+    const bool keep = memory.retreating && frame < memory.retreatChosen + tunables.retreatFrames &&
+                      NearestEnemy(world, me.room, memory.retreatTo) >= tunables.safeDistance * 0.6f;
+    Vec node{};
+    if (!keep)
+    {
+        if (!SafeNode(world, me, tunables, node))
+        {
+            memory.retreating = false;
+            return false;
+        }
+        memory.retreating = true;
+        memory.retreatTo = node;
+        memory.retreatChosen = frame;
+        d.newRoute = true;
+    }
+    d.retreat = true;
+    d.retreatTo = memory.retreatTo;
+    d.why = "retreat";
+    return true;
 }
 }
 
@@ -324,16 +398,43 @@ Decision Decide(const World& world, int partner, const Abilities& abilities, Mem
     const Character& player = world.player();
     const bool rescuing = d.intent == Intent::Fight &&
                           Distance(world.enemies[d.target].position, player.position) < tunables.closeQuarters;
-    const Enemy* close = canFight || rescuing ? nullptr : TooClose(world, me, space, tunables);
+    if (!canFight && !rescuing && Retreat(d, world, me, memory, frame, tunables))
+    {
+        memory.evading = false;
+        return d;
+    }
+    const Enemy* close = canFight || rescuing || frame < memory.evadeBlockedUntil ? nullptr : TooClose(world, me, space, tunables);
+    if (close != nullptr && !memory.evading)
+    {
+        memory.evadeFrom = me.position;
+        memory.evadeSince = frame;
+    }
     memory.evading = close != nullptr;
+    if (close != nullptr && frame >= memory.evadeSince + tunables.evadeCheckFrames)
+    {
+        // backing into a wall or a corner: stop trying for a while (the game's own moves get it out)
+        if (Distance(me.position, memory.evadeFrom) < tunables.evadeMinProgress)
+        {
+            memory.evadeBlockedUntil = frame + tunables.evadeBlockedFrames;
+            memory.evading = false;
+            close = nullptr;
+        }
+        memory.evadeFrom = me.position;
+        memory.evadeSince = frame;
+    }
     if (close != nullptr)
     {
-        d.pad = StepAway(me.position, me.facing, close->position);
+        const Buttons away = StepAway(me.position, me.facing, close->position);
+        d.pad = away.held;
+        d.pressed = away.pressed;
         d.why = "too close";
     }
     else if (d.intent == Intent::Fight && abilities.gun && frame >= memory.holdFireUntil &&
-             Distance(world.enemies[d.target].position, me.position) < tunables.shootRange)
+             Distance(world.enemies[d.target].position, me.position) < tunables.shootRange &&
+             Distance(world.enemies[d.target].position, player.position) < tunables.urgentToPlayer)
     {
+        // only when it's urgent (the enemy close to the player): the partner's own aim can't tell what's in the line of fire
+        // (measured: shots into the bar's counter), and the game's attack routine, slower to start, rarely misses
         Shoot(d, me, world.enemies[d.target], memory, frame, tunables);
     }
     return d;

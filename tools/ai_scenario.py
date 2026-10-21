@@ -9,6 +9,7 @@ SCENARIO  bar-idle      File 1, Outbreak (J's Bar), Kevin, normal: the player st
           bar-commands  the same, the player running off and back and giving each command in turn (This way!, Mark and
                         Cindy by name, Go!, Help me!), 12 s apart, then standing still
           zoo-idle      File 2, Wild Things (the zoo), the first character and partners, easy: the player standing still
+          zoo-commands  the same with bar-commands' commands
 MODE      New or Original (the PC menus' Gameplay: Partner AI)
 --seconds the game time measured from the start of play (240); a run ends early when the partners stop thinking (the
           player's game over): its survived_seconds says when
@@ -141,34 +142,44 @@ def wait_for_play(run, timeout=240):
         if in_play(run):
             return
         active = tasks(run)
+        state = byte(run, t["play_state"]) if t["play_state"] and t["game"] in active else None
         if t["status"] in active:
             run.key("Tab")  # a skip that landed as the scene ended opened the status screen (START): closed again
-        elif t["cutscene"] in active or (t["game"] in active and t["play_state"] and byte(run, t["play_state"]) == 14):
+        elif t["cutscene"] in active or state == 14 or (state is not None and time.time() - start > 60):
+            # (a scene of the game overlay's own that isn't the credits, seen once on a loaded machine: Escape too)
             run.key("Escape")
         time.sleep(2)
-    raise RuntimeError(f"{run.folder}: play didn't start")
+    raise RuntimeError(f"{run.folder}: play didn't start (tasks {[hex(a) for a in tasks(run)]}, play state "
+                       f"{byte(run, t['play_state']) if t['play_state'] else '-'})")
+
+
+def through_menus(run, keys, tries=3):
+    """From the title menu, the keys (name, wait after) into a scenario; the menus ignore a press made during their own
+    transitions (on a loaded machine the first can be lost), so the whole sequence is tried again from the title menu while
+    the game hasn't started"""
+    for _ in range(tries):
+        to_title_menu(run)
+        for key, wait in keys:
+            run.key(key, wait=wait)
+        for _ in range(30):
+            active = tasks(run)
+            if TASKS[run.game]["game"] in active or TASKS[run.game]["cutscene"] in active:
+                return wait_for_play(run)
+            if on_title_menu(run):
+                break
+            time.sleep(2)
+    raise RuntimeError(f"{run.folder}: the menus didn't lead into the scenario")
 
 
 def to_bar(run):
     """File 1 from boot: the title, single play, scenario (Outbreak), Kevin, normal."""
-    to_title_menu(run)
-    for wait in (3, 4, 3, 3, 3, 10):
-        run.key("E", wait=wait)
-    wait_for_play(run)
+    through_menus(run, [("E", 3), ("E", 4), ("E", 3), ("E", 3), ("E", 3), ("E", 10)])
 
 
 def to_zoo(run):
     """File 2 from boot: the title, single play, new game, Wild Things (the second scenario), the first character and
     partners, easy."""
-    to_title_menu(run)
-    run.key("E", wait=4)
-    run.key("E", wait=6)
-    run.key("Right", wait=3)
-    for wait in (4, 4, 4, 3):
-        run.key("E", wait=wait)
-    run.key("Up", wait=1)
-    run.key("E", wait=10)
-    wait_for_play(run)
+    through_menus(run, [("E", 4), ("E", 6), ("Right", 3), ("E", 4), ("E", 4), ("E", 4), ("E", 3), ("Up", 1), ("E", 10)])
 
 
 def log_time(log):
@@ -229,7 +240,7 @@ def commands(run, log, seconds, seed):
 
 
 SCENARIOS = {"bar-idle": ("file1", to_bar, idle), "bar-commands": ("file1", to_bar, commands),
-             "zoo-idle": ("file2", to_zoo, idle)}
+             "zoo-idle": ("file2", to_zoo, idle), "zoo-commands": ("file2", to_zoo, commands)}
 
 
 def one_run(scenario, mode, seed, folder, seconds):

@@ -77,6 +77,13 @@ and 5:
 Every key can be rebound in the PC menus' Controls. All of them, and how they follow the game:
 [docs/controls.md](controls.md).
 
+## Partners
+
+In single play the partners are played by a new AI that keeps them with you, shoots what comes for you, backs off when it
+can't fight, uses its recovery items and answers "This way!", "Go!", "Help me!" and your calls by name. It leaves the
+puzzles, keys and the scenario's events to you. The PC menus' Gameplay > Partner AI switches back to the game's own
+(Original). Online play isn't affected: the other players are people.
+
 ## Online
 
 Network Play connects to the revived servers at [obsrv.org](https://obsrv.org). You need an obsrv.org forum account of your

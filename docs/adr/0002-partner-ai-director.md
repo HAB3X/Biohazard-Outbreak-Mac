@@ -43,12 +43,32 @@ Cindy's herbs) carry it out:
   (`Tunables`).
 - `BH_AI_LOG` telemetry and `tools/ai_scenario.py` / `tools/ai_report.py` measure both AIs the same way. The game is
   deterministic for the same input, so the same seed in both modes is the same game until the AIs differ.
+- The pad is taken over only where the game's skills are too slow: shooting an enemy within 500 of the player (turned to
+  it with the weapon down, readied, fired in the aiming stance; given back to the game after 6 presses that don't hurt it).
+- A partner without a gun with an enemy within 450 (not one on the player) is sent to a node of the room clear of the enemies
+  and near the player through the game's own route code inside its plan 2, so it goes round the furniture; running straight
+  off (the pad) is only the fallback when the route code refuses. Running straight off was tried first: the unarmed partner
+  got cornered and was downed more often than with the game's own AI.
 - The PC menus' **Gameplay: Partner AI** setting chooses **New** (the default) or **Original** (the game's own, untouched:
   the overrides run the game's functions and add nothing).
 
 Offline only by construction: the overrides are SINGLE.BIN's functions, which only single play loads and calls (network play
 runs NETAQ.BIN's code at those addresses, and the characters' update calls the think only with the play mode at 0); no
 network code is touched.
+
+## The partners leave the puzzles to the player
+
+The owner's rule: the AI may not be dumb, but it must not solve the scenarios' puzzles or move them on for the player. What
+the game's own AI can do to the world (docs/research/partner-ai.md, "What a partner can do to the world") is: go through
+doors that aren't locked (its route code turns back at locked ones), pick up items lying in the room, use, combine (reload),
+swap and give the items it carries, help the player up, and Cindy's healing. It never operates a device, enters a code or
+uses an item on the world: none of SINGLE.BIN's calls into the game do, and it presses the action button only to fire.
+Picking up is the one way in: the game's partners pick up anything they have room for, keys and event items included. With
+this module's AI the item chooser (File 1 0x833250, File 2 0x7E3AA0) is overridden too: an item that isn't a weapon,
+ammunition or a recovery item is left where it lies, so the partners never carry what the player needs for the scenario.
+The director's own decisions are following, guarding, fighting and asking the game's item check (its picks filtered as
+above); the only button it presses is the attack, with the weapon readied (tests/partner_ai_brain_test.cpp checks both, and
+the telemetry logs every pick-up the chooser makes, allowed or refused).
 
 ## Options not taken
 

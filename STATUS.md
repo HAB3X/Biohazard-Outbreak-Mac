@@ -125,6 +125,40 @@ graphics.txt from before (it said `renderer = hardware` and `scale = 3` whatever
 - Not done: the software GS's own stepping of colours and texture coordinates (single steps on scattered pixels at 1x, not
   cheap in a shader), WoC's levels and CTTR's races not in a recording (they keep OpenGL), a playthrough by eye in a window.
 
+## The partners' AI (branch `ai`), 2026-10-21
+
+Offline partners that fight what threatens the player, stay with them, look after themselves and obey the ad-lib commands,
+without solving the scenarios for the player. A native director over the game's own AI (docs/adr/0002, docs/research/
+partner-ai.md has every address): SINGLE.BIN's think, its perception and its item chooser are overridden (both games); the
+game's AI does the work (routes and doors, attack routines, reloads, item use, helping the player up, Cindy's herbs), the
+director (src/partner_ai_brain.cpp, pure, tested by `ctest`: tests/partner_ai_brain_test.cpp) decides what each partner
+should be doing and puts it into the game AI's wants, plan, target and item check, and takes the pad itself to shoot its
+target and to back away from enemies it can't fight. The PC menus' Gameplay: Partner AI switches New (the default) and
+Original. Only in single play: SINGLE.BIN's functions, which network play doesn't load or call; checked against the play
+mode too. Partners never pick up keys, event items or files (only weapons, ammunition and recovery items): the puzzles and
+the scenario's progress are the player's.
+
+Measured with `tools/ai_scenario.py SCENARIO New|Original --seeds N` (headless, the game's BH_AI_LOG telemetry summed by
+tools/ai_report.py; docs/research/partner-ai.md has the tables):
+
+- File 1, the bar, the player standing still while the zombies come (6 seeds, 240 s, means, Original / New): first partner
+  attack after a threat 45 s / 0.8 s; the player's damage 3258 / 2135, below 30% 67 s / 7 s, downed 0.83 / 0.17; zombies
+  killed 0.83 / 1.33; Mark never away from the player (the game's: 30% of the time), never downed; Cindy downed 0.17 / 0,
+  her damage taken 1160 / 443 (she's sent to a safe node of the room by the game's own route code when a zombie comes; she
+  shoves less: 59 / 13 damage, the one lower number, by design).
+- File 2, the zoo, the player standing still 10 minutes: the game's partners wander off (85% and 75% of the time away) and
+  the player is killed at 504 s; the new partners stay within 400, Mark kills the enemy that comes, the player untouched.
+- Commands: with the new AI both partners are within 300 of the player 0.1-3 s after "This way!" or their name, in both
+  games; the game's Mark ignored 7 of 10 calls in the bar, and in the zoo neither partner came.
+- Partners never took an item that isn't a weapon, ammunition or a recovery item (the pick-up chooser is overridden).
+- No fatal in any run since the sweep's function starts were merged (about 80 runs, 2-10 minutes, both games, both modes).
+
+Left (next): Results vary a lot by seed: compare means over 6 or more. Not measured by a
+scenario: following into another room (the game's follow plan routes to the player's room; the bar's back door walk ran
+into a cutscene), healing the player when asked with "Help me!" (the game's own trade and heal plans run as they are), the
+other File 2 scenarios. The director's own shots are less accurate than the game's attack routine (it can't see what's in
+the line of fire), so it shoots only when an enemy is within 500 of the player.
+
 ## The Mac apps
 
 Two kinds, both from `tools/make_app.py` (each with SDL3 inside, the build's rpaths taken out, signed ad hoc):

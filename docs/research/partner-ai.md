@@ -48,6 +48,10 @@ said the positions weren't floats: they are, at +0x38 of the records below.)
 | Distances between characters | 0x386110 + id * 0x40 + other * 8 (float) | 0x387890 |
 | Distances character to enemy | 0x385490 + id * 400 + enemy's +6 * 8 (float, then two flags) | 0x386C10 |
 
+Cross-checked against RaccoonRecomp's REO-GreatestHits-Cheats (MIT, the USA File 1 disc, src/partners.c): its character
+blocks are 0x4A5C30 there with the same 0x10E0 stride, type +0xB98 (0-7 Kevin, Mark, Jim, George, David, Alyssa, Yoko,
+Cindy) and the most hit points +0x546, as found here on the Japanese disc.
+
 Both kinds of record: active +0, kind +2 (2 an enemy), id +3 (an enemy's own index at +6), the character it's after +0x24
 (an enemy's: a character record), position +0x38 (three floats, y up), facing +0x92 (u16, 0x10000 a turn), room +0x1E2.
 Hit points (s16, then the most): File 1 +0x544, File 2 +0x540 (Kevin 2300, Mark 3000, Cindy 1500 in File 1's bar; enemies the
@@ -82,6 +86,18 @@ it: Cindy's herb case holds her herbs there). The AI's item check (File 1 0x8237
 of +0x1096 (File 2 +0x10B0) ask (1 use or pick up, 2 give, 4 a better weapon, 8 reload) and starts plan 7, 8 or 9; the plans
 ask it only on arriving somewhere.
 
+## What a partner can do to the world
+
+Everything SINGLE.BIN calls outside itself was listed (the call graph of the decompiled code) and read: route and door code
+(File 1 0x829830 asks the door's state, 0x551C20, and turns back at the locked ones: 2, 3 and 5), the character actions its
+moves start (GAME.BIN 0x637810 picks up the item an AI plan chose, motion 9; 0x637510 uses an item it carries, 0x17, for a
+weapon swap; 0x6375B0 combines, a reload; 0x637740 gives one to the player, 0x15; 0x637990 Cindy's herbs on another, 0x12;
+0x637AF0 helps the player up), item and status queries, the speech and network stand-ins. None operates a device, enters a
+code or uses an item on the world, and its pad presses the action button only to fire (with the weapon readied). The items
+it picks up come from 0x833250 (File 2 0x7E3AA0): it walks the room's item objects (+0x30 0x80, the item at +0x40) and takes
+any it has room for, keys and event items too. With the New AI that chooser is overridden: only weapons, ammunition and
+recovery items (class flags 1, 2/0x400/0x800, 4) are taken; the rest is the player's (the owner's rule: docs/adr/0002).
+
 ## Measured: the game's own AI
 
 File 1, Outbreak (J's Bar, Kevin, normal), the player standing still from the start of play (256 s of play): Mark spent 41%
@@ -89,23 +105,37 @@ of the time away from the player (into the next room and back, again and again) 
 after the zombies had had the player down to 1 hit point; Cindy shoved (1-10 damage) and healed herself twice. The player
 took 3959 damage, spent 65 s below 30% and was saved from death by an item at 1 HP; one zombie killed.
 
-The game is deterministic for the same input: runs of a scenario differ only by the input's timing (tools/ai_scenario.py's
-seeds have the player take a few steps first). Measured with `tools/ai_scenario.py bar-idle MODE --seeds 3`, 240 s of play
-each (the means):
+The game is deterministic for the same input: two runs of a scenario are the same game byte for byte, and runs differ only
+by the input's timing (tools/ai_scenario.py's seeds have the player take a few steps first; on a loaded machine the presses
+land on other frames and the same seed can differ too). The results vary a lot from seed to seed (the player's damage from
+0 to 6300 in one configuration): one zombie more or less on the player decides it. So compare means over 6 seeds or more,
+not single runs. `tools/ai_scenario.py bar-idle MODE --seeds 6 --parallel 2`, 240 s each, the means (2026-10-21):
 
-| | Original | Director, first (0e71ce1) | Director now |
-|---|---|---|---|
-| First partner attack after an enemy is within 600 of the player | 31.6 s | 6.8 s | 0.2 s |
-| Mark's time away from the player (another room or farther than 1500) | 24% | 0% | 0% |
-| Mark's damage to the zombies (15 rounds) | 1568 | 1816 | 1665 |
-| Damage the player took (in the 2 minutes from the first threat) | 2871 (1703) | 2510 (763) | 1970 (1283) |
-| The player's time below 30% / downed | 36 s / 1 of 3 | 42 s / 1 of 3 | 6 s / 0 of 3 |
-| Mark's damage taken / downed | 1270 / 0 of 3 | 2463 / 0 of 3 | 1133 / 1 of 3 |
-| Cindy's damage taken / downed | 1900 / 1 of 3 | 1500 / 3 of 3 | 1320 / 1 of 3 |
+| | Original | New |
+|---|---|---|
+| First partner attack after an enemy is within 600 of the player | 45 s | 0.8 s |
+| Partners' time away from the player (another room or farther than 1500) | Mark 30%, Cindy 19% | 0%, 0% |
+| Damage the player took (in the 2 minutes from the first threat) | 3258 (2323) | 2135 (1650) |
+| The player's time below 30% / lowest hit points / downed | 67 s / 383 / 0.83 | 7 s / 639 / 0.17 |
+| Zombies killed | 0.83 | 1.33 |
+| Mark's damage to the zombies / rounds used / damage taken / downed | 1446 / 13.8 / 930 / 0 | 1729 / 15 / 880 / 0 |
+| Cindy's damage taken / downed | 1160 / 0.17 | 443 / 0 |
+| Cindy's damage to the zombies (shoves) | 59 | 13 |
+| Partners' stuck time (forward held, no progress) | 2.3 s, 1.7 s | 0.5 s, 0 s |
+| Items taken that aren't weapons, ammunition or recovery items | 0 | 0 (none lies in the bar) |
 
-What changed after the first: a partner without a loaded gun steps away from an enemy within 200 (on until 320) unless it's
-on the player, and shoves one off the player only with nothing else at its elbow; a partner with a loaded gun shoots its
-target itself within 1300 (turning to it with the weapon down: readied, left and right move the game's own aim between
-enemies instead, and the first try at turning with it readied emptied a clip into nothing), and leaves it to the game's
-attack routine for 8 s after 6 presses that don't hurt the target. The game's own routine is still the better shot (about
-120 damage a round against 111), but it walks and waits before firing.
+Cindy shoves less (she keeps clear of the zombies instead of wrestling them, 1-10 damage a shove): the one measure where the
+new AI's number is lower, by design. How Cindy was fixed: running straight off from a zombie within 280 (the quick turn and
+a run) got her cornered in the small bar (downed in 4 of 6, and 3 of 3); now a partner without a gun with an enemy within 450
+that isn't on the player is sent to a node of the room's route graph (the rooms' node tables, File 1 0x84E2B8, File 2
+0x805858) at least 600 from every enemy and within 1100 of the player, by the game's own route code (File 1 0x826850, File 2
+0x7D6770) inside its plan 2 (the game's own moves round the counters and tables); the choice is kept 3 s unless an enemy comes
+near it. 37-56 routes a run, the game's route code refusing about 1 in 25 (the straight run is the fallback then).
+
+File 2, Wild Things (the zoo gate), the player standing still 10 minutes (1 run each): the game's partners away 85% and 75%
+of the time and the player killed at 504 s; the new partners within 400 all the time, Mark shot the one enemy that came,
+the player untouched.
+
+Commands (the player runs off and calls; `bar-commands` and `zoo-commands`, 2 and 1 runs): with the New AI both partners
+are within 300 of the player 0.1-3 s after "This way!" or their name, in both games. The game's own: in the bar Mark never
+came in 7 of 10 calls (Cindy did), in the zoo neither came (1100-4000 away 10 s later).

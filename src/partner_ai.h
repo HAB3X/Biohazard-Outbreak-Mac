@@ -50,6 +50,11 @@ struct Layout
     uint32_t speech;          // u8 field: the code of the line the character is saying (0 none): the player's commands
     uint32_t setPlan;         // the AI's function starting a plan (a0 the record, a1 the plan; 0 has the next picked)
     uint32_t setMove;         // its function starting a move (a0 the record, a1 the move; 0 stops)
+    uint32_t roomNodes;       // the rooms' route nodes, 0xA4 bytes a room: the count, then the nodes (0x40 bytes each: +0 in use,
+                              // +4 the position)
+    uint32_t route;           // the AI's route code (a0 the record, a1 the point, a2 its room; -1: no way there)
+    uint32_t routeGoal;       // three float fields: where the route goes (the route code copies its point there)
+    uint32_t planLock;        // u16 field: frames before the plan may be cut short by the game's own events
 };
 
 extern const Layout File1;
@@ -60,6 +65,11 @@ void Think(Ps2Cpu* c, const Layout& layout, Ps2Function original);
 // The think's perception override (File 1 0x822520, File 2 0x7E9AD0): the game's, then this module's decision put into the
 // game AI's wants, plan and target (the setting below choosing it)
 void Perceive(Ps2Cpu* c, const Layout& layout, Ps2Function original);
+
+// The AI's choice of an item lying in the room to pick up (File 1 0x833250, File 2 0x7E3AA0; a0 the record, a3 where the
+// item's object goes, the result nonzero when one was picked: the item check then starts the pick-up plan): the game's, and with
+// this module's AI an item that isn't a consumable (a key, an event item, a file) is left for the player
+void PickItem(Ps2Cpu* c, const Layout& layout, Ps2Function original);
 
 // The PC menus' Gameplay setting: the partners' AI, this module's (the default) or the game's own
 extern const Ps2GameSetting Settings[];
