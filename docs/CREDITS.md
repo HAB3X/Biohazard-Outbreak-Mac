@@ -14,4 +14,5 @@ permission under the MIT licence. Each ported source file says in its header whi
   one ported here), REO-FirstPerson (the first-person camera), REO-Cheats and REO-GreatestHits-Cheats (the cheat research:
   every code decoded, moved and checked against the game), and the mod host those mods were written against.
 - **The cheat codes' authors**, as RaccoonRecomp's lists name them: Codejunkies (Action Replay MAX), Code Master, Lajos Szalay,
-  Jay007, VirusPunk and Jarnold83 (CodeBreaker), MadCatz (GameShark), bungholio (GameShark / Xploder).
+  Jay007, VirusPunk and Jarnold83 (CodeBreaker), MadCatz (GameShark), bungholio (GameShark / Xploder), 47iscool (the
+  Greatest Hits list's partner and walk-through-walls codes).
