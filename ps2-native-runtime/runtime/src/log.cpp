@@ -278,6 +278,15 @@ void ps2_trace_store(uint32_t address, uint64_t value, int bytes)
     }
 }
 
+// --control's watch: stores into [low, low + size) logged from now on, the count of logged ones started again
+void Ps2::TraceWatch(uint32_t low, uint32_t size)
+{
+    ps2_watch_low = low;
+    ps2_watch_size = size;
+    g_watchCount = 0;
+    g_watchSkip = 0;
+}
+
 static void InitWatch()
 {
     const char* r = getenv("PS2_TRACE_WATCH");

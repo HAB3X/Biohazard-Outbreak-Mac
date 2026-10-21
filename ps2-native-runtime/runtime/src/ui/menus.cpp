@@ -355,6 +355,12 @@ Clock::time_point g_scriptAt;
 int g_shots = 0;
 std::string g_shotDue;
 bool g_scriptedCursor = false;
+// A picture of the window asked for by --control's window (the control thread's), taken by the presenter as a script's shot
+std::mutex g_controlShotLock;
+std::string g_controlShot;
+// The game's crosshair (ps2_set_crosshair: the game's side)
+std::mutex g_crosshairLock;
+Ps2Crosshair g_crosshair = {};
 
 void Act(UiAction action) { g_actions |= 1u << action; }
 
@@ -458,6 +464,7 @@ void AddGameRows(Page& page, const std::string& tab)
     {
         return;
     }
+    const char* settingGroup = nullptr;
     for (int i = 0; i < g_game->settingCount; i++)
     {
         const Ps2GameSetting& setting = g_game->settings[i];
@@ -465,13 +472,19 @@ void AddGameRows(Page& page, const std::string& tab)
         {
             continue;
         }
+        if (setting.group != nullptr && (settingGroup == nullptr || std::string(settingGroup) != setting.group))
+        {
+            page.rows.push_back(Heading(setting.group));
+        }
+        settingGroup = setting.group;
         std::vector<std::string> texts;
         for (int c = 0; c < ChoiceCount(setting); c++)
         {
             texts.push_back(setting.choices[c]);
         }
         page.rows.push_back(Choice(
-            setting.name, "", [i] { return GameChoice(i); }, [i](int v) { SetGameChoice(i, v); }, texts));
+            setting.name, setting.description != nullptr ? setting.description : "", [i] { return GameChoice(i); },
+            [i](int v) { SetGameChoice(i, v); }, texts));
     }
     const char* group = nullptr;
     for (int i = 0; i < g_game->actionCount; i++)
@@ -1783,7 +1796,23 @@ std::string MenusShotDue()
 {
     std::string shot;
     shot.swap(g_shotDue);
+    if (shot.empty())
+    {
+        std::lock_guard<std::mutex> lock(g_controlShotLock);
+        shot.swap(g_controlShot);
+    }
     return shot;
+}
+
+void MenusShotWindow(const std::string& name)
+{
+    if (g_options.snapshotDir.empty())
+    {
+        Log("--control window: no --snapshots folder for it");
+        return;
+    }
+    std::lock_guard<std::mutex> lock(g_controlShotLock);
+    g_controlShot = g_options.snapshotDir + "/" + name + ".png";
 }
 
 // The game's prompt's opacity now (0-1), following what the game asks for (empty: none)
@@ -1816,11 +1845,40 @@ static f32 PromptOpacity(const std::string& asked)
     return at();
 }
 
+// The game's crosshair over the picture's middle (ps2_set_crosshair), in the prompt's colours' outline for any background
+static void DrawCrosshair(OverlayFrame& frame, const Ps2Crosshair& c, f32 left, f32 top, f32 width, f32 height)
+{
+    f32 x = left + width * 0.5f + c.dx, y = top + height * 0.5f + c.dy;
+    f32 opacity = std::clamp(c.opacity, 0.0f, 1.0f);
+    BoxStyle mark;
+    mark.fill = Hex(c.rgb & 0xFFFFFF, opacity);
+    mark.border = 1.0f;
+    mark.borderColour = Hex(0x000000, 0.6f * opacity);
+    if (c.style == 0)
+    {
+        f32 r = std::max(1.0f, c.size);
+        mark.radius = r;
+        frame.Box(x - r, y - r, 2 * r, 2 * r, mark);
+        return;
+    }
+    f32 arm = std::max(1.0f, c.size), gap = std::max(0.0f, c.gap), t = std::max(1.0f, c.thickness);
+    frame.Box(x - gap - arm, y - t * 0.5f, arm, t, mark);
+    frame.Box(x + gap, y - t * 0.5f, arm, t, mark);
+    frame.Box(x - t * 0.5f, y - gap - arm, t, arm, mark);
+    frame.Box(x - t * 0.5f, y + gap, t, arm, mark);
+}
+
 void MenusDraw(OverlayDevice& device, int pixelWidth, int pixelHeight, float pixelScale, const SDL_FRect& picture)
 {
     NoteWindow(pixelWidth, pixelHeight, pixelScale);
     f32 promptOpacity = PromptOpacity(g_screen == Screen::None ? InputPrompt() : std::string());
-    if (g_screen == Screen::None && promptOpacity <= 0.0f)
+    Ps2Crosshair crosshair;
+    {
+        std::lock_guard<std::mutex> lock(g_crosshairLock);
+        crosshair = g_crosshair;
+    }
+    bool crosshairShown = g_screen == Screen::None && crosshair.visible != 0 && crosshair.opacity > 0.0f;
+    if (g_screen == Screen::None && promptOpacity <= 0.0f && !crosshairShown)
     {
         return;
     }
@@ -1831,7 +1889,14 @@ void MenusDraw(OverlayDevice& device, int pixelWidth, int pixelHeight, float pix
         f32 left, top, right, bottom;
         PixelsToReference(picture.x, picture.y, &left, &top);
         PixelsToReference(picture.x + picture.w, picture.y + picture.h, &right, &bottom);
-        DrawGamePrompt(frame, g_promptFade.text, promptOpacity, left, top, right - left, bottom - top);
+        if (crosshairShown)
+        {
+            DrawCrosshair(frame, crosshair, left, top, right - left, bottom - top);
+        }
+        if (promptOpacity > 0.0f)
+        {
+            DrawGamePrompt(frame, g_promptFade.text, promptOpacity, left, top, right - left, bottom - top);
+        }
     }
     else
     {
@@ -1921,4 +1986,10 @@ extern "C" int ps2_prompt_style(void)
     // A style chosen is that one; the automatic one is the device used last, as the presenter found it
     using namespace Ps2::Ui;
     return g_promptChoice >= 1 && g_promptChoice <= 4 ? static_cast<int>(CurrentPrompts()) : g_promptsNow.load();
+}
+
+extern "C" void ps2_set_crosshair(const Ps2Crosshair* crosshair)
+{
+    std::lock_guard<std::mutex> lock(Ps2::Ui::g_crosshairLock);
+    Ps2::Ui::g_crosshair = *crosshair;
 }

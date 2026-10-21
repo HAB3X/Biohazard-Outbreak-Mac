@@ -15,6 +15,8 @@ typedef struct Ps2GameSetting
     const char* const* choices;   // the choices' labels, ending with NULL ("Off", "On", NULL)
     int (*get)(void);             // the choice now (asked on the presenter's thread: reading the game's memory is fine)
     void (*set)(int choice);      // a choice made (called on the game's side, between its instructions; saved by the runtime)
+    const char* group;            // optional: a heading over a run of settings in it (NULL: none)
+    const char* description;      // optional: the line the menus show for it while it's chosen (NULL: none)
 } Ps2GameSetting;
 
 // A game's own action in the PC menus (a button: e.g. a level of the level select). Its tab as a setting's; "Pause" makes it an
@@ -89,7 +91,8 @@ typedef struct Ps2GameInfo
     // this update: the pointer is captured while it does (the window's relative mouse mode) and the mouse's motion moves that
     // stick beside the keys, across by its speed (a turn as fast as the mouse moves) and up and down by where it was moved to
     // (an aim held high until the mouse comes back down). A game whose aiming is a stick held with a button (the PC releases
-    // of Resident Evil 4 and 5 aim with the mouse)
+    // of Resident Evil 4 and 5 aim with the mouse). PS2_MOUSE_LOOK: the pointer is captured and its motion moves no stick:
+    // the game takes it itself (ps2_take_mouse_motion), for a camera of its own turned by the mouse
     int (*mouseStick)(uint32_t pressed);
     // Optional. The DNS server the network configuration names (the address of the revived servers' own, say): the names
     // the game looks up for online play go to it. NULL: the Mac's own resolver. --dns overrides it
@@ -214,6 +217,37 @@ extern "C"
 #endif
     void
     ps2_open_settings(void);
+
+// Ps2GameInfo::mouseStick's value for the mouse's motion taken by the game itself (ps2_take_mouse_motion)
+#define PS2_MOUSE_LOOK 3
+
+// The mouse's motion while Ps2GameInfo::mouseStick says PS2_MOUSE_LOOK: the window's pixels it moved since the last take (+x
+// right, +y down), taken; 0 when it hasn't moved. Any thread
+#ifdef __cplusplus
+extern "C"
+#endif
+    int
+    ps2_take_mouse_motion(float* dx, float* dy);
+
+// A crosshair drawn over the middle of the game's picture by the PC menus' overlay (not part of the picture: the picture's
+// snapshots and recordings don't have it), until changed; not drawn while the PC menus are up. Sizes in the overlay's
+// reference pixels (a 1280 x 720 window's: scaled with the window)
+typedef struct Ps2Crosshair
+{
+    int visible;
+    int style;          // 0 a dot, 1 a cross
+    float size;         // the dot's radius or the cross's arms' length
+    float gap;          // between the middle and each arm (a cross)
+    float thickness;    // the arms' (a cross)
+    uint32_t rgb;       // 0xRRGGBB
+    float dx, dy;       // from the picture's middle (+x right, +y down)
+    float opacity;      // 0-1
+} Ps2Crosshair;
+#ifdef __cplusplus
+extern "C"
+#endif
+    void
+    ps2_set_crosshair(const Ps2Crosshair* crosshair);
 
 // Runs the game: parses the options, boots the disc, and returns only when the game ends
 int ps2_main(int argc, char** argv, const Ps2GameInfo* game);

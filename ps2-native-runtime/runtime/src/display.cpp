@@ -365,8 +365,9 @@ SDL_Window* DisplayOpen()
         WriteGraphicsSettings();
     }
 
-    // Headless, the menus' scripted pictures (--ui) are drawn in a hidden window's context
-    bool hiddenWindow = g_options.headless && !g_options.ui.empty();
+    // Headless, the menus' scripted pictures (--ui) are drawn in a hidden window's context, and --control's mouse and keys are
+    // the hidden window's events (the window's own path: its picture's place, the mouse over it)
+    bool hiddenWindow = g_options.headless && (!g_options.ui.empty() || !g_options.controlPath.empty());
     if (g_options.headless && g_options.gs == 0 && !hiddenWindow)
     {
         return nullptr;

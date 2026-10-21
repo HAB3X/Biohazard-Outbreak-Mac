@@ -71,8 +71,11 @@ void MenusFrame(double gameSeconds);
 bool MenusVisible();
 // Quit was chosen: the program ends
 bool MenusQuitting();
-// A picture of the window with the menus the script asked for (its path; empty: none)
+// A picture of the window with the menus the script asked for, or --control's window (its path; empty: none)
 std::string MenusShotDue();
+// --control's window NAME: a picture of the window with what's drawn over the picture (NAME.png in the snapshots folder), the
+// next time the presenter draws. Any thread
+void MenusShotWindow(const std::string& name);
 // The overlay drawn by the presenter's overlay device over the window's picture (of these pixels; the picture's place in them)
 void MenusDraw(OverlayDevice& device, int pixelWidth, int pixelHeight, float pixelScale, const SDL_FRect& picture);
 }

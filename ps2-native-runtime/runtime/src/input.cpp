@@ -1057,6 +1057,7 @@ void InputUpdate(double t, SDL_Window* window)
         g_mouseDx = g_mouseDy = 0;
         g_mouseAim = 0;
     }
+    // PS2_MOUSE_LOOK: the motion is kept for the game (ps2_take_mouse_motion)
     if (mouseStick == 1 || mouseStick == 2)
     {
         float dx, dy;
@@ -1441,6 +1442,15 @@ extern "C" void ps2_show_prompt(const char* text)
 }
 
 extern "C" int ps2_menus_open(void) { return Ui::MenusOpen() ? 1 : 0; }
+
+extern "C" int ps2_take_mouse_motion(float* dx, float* dy)
+{
+    std::lock_guard<std::mutex> lock(g_typedLock);
+    *dx = g_mouseDx;
+    *dy = g_mouseDy;
+    g_mouseDx = g_mouseDy = 0;
+    return *dx != 0 || *dy != 0 ? 1 : 0;
+}
 
 extern "C" int ps2_mouse_moved(float* x, float* y)
 {

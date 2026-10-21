@@ -110,6 +110,8 @@ void ControlStart(const std::string& path);
 #ifdef PS2_TRACE_ENTER
 // The function entry counts so far to FILE ($PS2_TRACE_FILE when none is given)
 void TraceEnterDump(const char* file = nullptr);
+// --control's watch: stores into a range logged from now on (PS2_TRACE_ENTER builds)
+void TraceWatch(uint32_t low, uint32_t size);
 #endif
 // Logs a message once per key
 bool Once(const std::string& key);

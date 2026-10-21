@@ -6,17 +6,22 @@
 //   spacing FRAMES           ps2_set_tap_spacing: the least time between two taps' starts
 //   pads                     the presses the pad server took and the frames showed (--log input has each)
 //   snap NAME                a picture, NAME.<n>.png in the --snapshots folder, at the next vblank
+//   window NAME              a picture of the window with what's drawn over the game's (the PC menus, a crosshair),
+//                            NAME.png in the --snapshots folder (headless: needs the hidden window, which --ui makes)
 //   peek ADDR [WORDS]        guest words (hex address) to the log
 //   poke ADDR VALUE [BYTES]  a guest store of 1, 2 or 4 BYTES (4) of VALUE (hex) into main memory: to set the state a test
 //                            needs (a save's unlock flags) the way the game's own store would
 //   ram FILE                 the 32 MB of main memory written to FILE (to look for what the game loaded: texts, tables)
 //   record VBLANKS FILE      --gs-record from the next vblank
 //   vu1record SECONDS FILE   VIF1's and VU1's side recorded for --vu1-replay (with VIF1 and VU1 on their own thread)
+//   watch ADDR [BYTES]       a PS2_TRACE_ENTER build's stores into ADDR..ADDR+BYTES (4) logged from now on, each with the
+//                            guest's call stack (as $PS2_TRACE_WATCH; 0 0 stops)
 //   counts FILE              a PS2_TRACE_ENTER build's function entry counts so far to FILE (the functions a stretch of
 //                            play runs: the difference of two)
 //   stop                     the run ends as --run-seconds ends it (the VU1 counts and reports are logged)
 //   quit                     the runtime stops at once
 #include "runtime.h"
+#include "ui/menus.h"
 
 #include "ps2/runtime.h"
 
@@ -118,6 +123,12 @@ void Handle(const std::string& line)
         in >> name;
         GsLiveSnapshot(name.empty() ? "live" : name);
     }
+    else if (command == "window")
+    {
+        std::string name;
+        in >> name;
+        Ui::MenusShotWindow(name.empty() ? "window" : name);
+    }
     else if (command == "peek")
     {
         std::string address, words = "1";
@@ -186,6 +197,17 @@ void Handle(const std::string& line)
         Log("counts written to %s", file.c_str());
 #else
         Log("--control: counts needs a PS2_TRACE_ENTER build");
+#endif
+    }
+    else if (command == "watch")
+    {
+        std::string address, bytes = "4";
+        in >> address >> bytes;
+#ifdef PS2_TRACE_ENTER
+        TraceWatch(static_cast<u32>(strtoul(address.c_str(), nullptr, 16)), static_cast<u32>(strtoul(bytes.c_str(), nullptr, 16)));
+        Log("watching %s (%s bytes)", address.c_str(), bytes.c_str());
+#else
+        Log("--control: watch needs a PS2_TRACE_ENTER build");
 #endif
     }
     else if (command == "stop")
