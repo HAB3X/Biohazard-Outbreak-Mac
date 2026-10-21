@@ -92,6 +92,26 @@ void TheBoomStopsInFrontOfAWall()
     CHECK(ClampEyeToWalls(walls, &ex2, &ez2, &ey2, 0, 0, 55, 0, true, 100, true, 400) == 1.0f);
 }
 
+void TheBoomStopsUnderTheFloorAbove()
+{
+    // A slab at height 100 over the square x, z in [-200, 200], as two triangles (the floor above a stairwell)
+    const float a[9] = {-200, 100, -200, 200, 100, -200, 200, 100, 200};
+    const float b[9] = {-200, 100, -200, 200, 100, 200, -200, 100, 200};
+    std::vector<Slab> slabs(2);
+    CHECK(SlabFromRecord(a, -1.0f, &slabs[0]));
+    CHECK(SlabFromRecord(b, -1.0f, &slabs[1]));
+    // A wall's record isn't a slab
+    Slab unused;
+    CHECK(!SlabFromRecord(a, 0.1f, &unused));
+    // From her head below it up to an eye above it: kept to the slab, 10 short (the boom is 100 long, straight up)
+    CHECK(Near(BoomClearOfSlabs(slabs, {0, 50, 0}, {0, 150, 0}, 10), 0.4f));
+    // Coming down through it the same
+    CHECK(Near(BoomClearOfSlabs(slabs, {0, 150, 0}, {0, 50, 0}, 10), 0.4f));
+    // A boom that stays under it, or passes beside it, is whole
+    CHECK(Near(BoomClearOfSlabs(slabs, {0, 50, 0}, {0, 90, -150}, 10), 1.0f));
+    CHECK(Near(BoomClearOfSlabs(slabs, {300, 50, 0}, {300, 150, 0}, 10), 1.0f));
+}
+
 void FollowingTakesTheWaySheWalks()
 {
     // Walking along +x (heading 90) facing that way: the heading followed settles on 90; stopped, it holds
@@ -126,6 +146,7 @@ int main()
     TheStickWalksRelativeToTheView();
     TheBoomStopsInFrontOfAWall();
     FollowingTakesTheWaySheWalks();
+    TheBoomStopsUnderTheFloorAbove();
     if (g_failures != 0)
     {
         std::printf("%d checks failed\n", g_failures);

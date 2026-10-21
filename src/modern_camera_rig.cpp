@@ -177,6 +177,68 @@ bool FollowHeading::Update(float px, float pz, float playerYaw, float dt, bool i
     return true;
 }
 
+bool SlabFromRecord(const float c[9], float normalY, Slab* slab)
+{
+    if (std::fabs(normalY) <= WallMaxNormalY)
+    {
+        return false;
+    }
+    *slab = {{c[0], c[1], c[2]}, {c[3], c[4], c[5]}, {c[6], c[7], c[8]}};
+    return true;
+}
+
+namespace
+{
+// Where along from + t * dir the segment meets the triangle (either side), t in [0, 1]; false if it doesn't (Moller-Trumbore)
+bool SegmentHitsTriangle(Vec3 from, Vec3 dir, const Slab& s, float* t)
+{
+    Vec3 e1{s.b.x - s.a.x, s.b.y - s.a.y, s.b.z - s.a.z}, e2{s.c.x - s.a.x, s.c.y - s.a.y, s.c.z - s.a.z};
+    Vec3 p{dir.y * e2.z - dir.z * e2.y, dir.z * e2.x - dir.x * e2.z, dir.x * e2.y - dir.y * e2.x};
+    float det = e1.x * p.x + e1.y * p.y + e1.z * p.z;
+    if (std::fabs(det) < 1e-6f)
+    {
+        return false; // the boom runs along the slab's plane
+    }
+    float inv = 1.0f / det;
+    Vec3 o{from.x - s.a.x, from.y - s.a.y, from.z - s.a.z};
+    float u = (o.x * p.x + o.y * p.y + o.z * p.z) * inv;
+    if (u < 0 || u > 1)
+    {
+        return false;
+    }
+    Vec3 q{o.y * e1.z - o.z * e1.y, o.z * e1.x - o.x * e1.z, o.x * e1.y - o.y * e1.x};
+    float v = (dir.x * q.x + dir.y * q.y + dir.z * q.z) * inv;
+    if (v < 0 || u + v > 1)
+    {
+        return false;
+    }
+    *t = (e2.x * q.x + e2.y * q.y + e2.z * q.z) * inv;
+    return *t >= 0 && *t <= 1;
+}
+}
+
+float BoomClearOfSlabs(const std::vector<Slab>& slabs, Vec3 head, Vec3 eye, float margin)
+{
+    Vec3 dir{eye.x - head.x, eye.y - head.y, eye.z - head.z};
+    float length = std::sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
+    if (length < 1e-3f)
+    {
+        return 1.0f;
+    }
+    float first = 1.0f;
+    bool hit = false;
+    for (const Slab& s : slabs)
+    {
+        float t;
+        if (SegmentHitsTriangle(head, dir, s, &t) && t < first)
+        {
+            first = t;
+            hit = true;
+        }
+    }
+    return hit ? std::max(0.0f, first - margin / length) : 1.0f;
+}
+
 bool WallFromRecord(uint32_t flags, const float c[9], float normalY, Wall* wall)
 {
     if (std::fabs(normalY) > WallMaxNormalY)

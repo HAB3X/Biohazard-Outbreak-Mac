@@ -34,6 +34,7 @@ constexpr uint32_t MaxCuts = 64;
 constexpr float LockTurn = 0.25f;         // the aim lock turns the camera onto its target by SmoothAlpha(this) a frame
 constexpr float LockMinDistance = 40.0f;  // a target nearer than this (holding her) keeps the lock's last direction
 constexpr uint32_t LockGrace = 3;         // game frames the lock holds through a gap (after a hit the game aims again)
+constexpr float ZoomStep = 0.88f, ZoomMin = 0.35f, ZoomMax = 1.8f; // a wheel line's zoom, and its range
 constexpr float RelocateDistance = 100.0f; // a step longer than this in a frame: the game put her somewhere else
 constexpr float VblankHz = 59.94f;
 
@@ -53,6 +54,7 @@ struct Input
     uint32_t held = 0;
     float lx = 0, ly = 0, rx = 0, ry = 0;
     float mouseDx = 0, mouseDy = 0;
+    float wheel = 0; // the wheel's lines turned (+ away: closer in)
     bool menusOpen = false;
 };
 
@@ -71,6 +73,7 @@ struct State
     float nearOriginal = 0, farOriginal = 0;
 
     float camYaw = 0, pitch = 0, lookOff = 0, camT = 1.0f, camHoldTimer = 0, aimAmount = 0;
+    float zoom = 1.0f; // the boom's length as a share of the framing's, set by the wheel (kept across rooms)
     bool aimPrev = false, aimWas = false;
     float recenterTimer = 0;
     bool haveShoulder = false;
@@ -453,6 +456,11 @@ Input ReadInput()
         in.mouseDx = dx;
         in.mouseDy = dy;
     }
+    float lines = 0;
+    if (ps2_take_mouse_wheel(&lines))
+    {
+        in.wheel = lines;
+    }
     in.menusOpen = ps2_menus_open() != 0;
     return in;
 }
@@ -653,6 +661,10 @@ void DriverFrame()
     if (in.menusOpen)
     {
         rx = ry = mdx = mdy = 0;
+    }
+    else if (in.wheel != 0)
+    {
+        s.zoom = std::clamp(s.zoom * std::pow(ZoomStep, in.wheel), ZoomMin, ZoomMax);
     }
     bool inputMoving = std::fabs(lx) > 0.1f || std::fabs(ly) > 0.1f;
     if (inputMoving || g_game->PlayerMoveHeld())
@@ -858,6 +870,8 @@ void DriverFrame()
         }
     }
     Rig eff = BlendRig(hipRig, aimRig, s.aimAmount);
+    // The wheel's zoom lengthens or shortens the boom; aiming keeps the aim framing's own
+    eff.distance *= Lerp(s.zoom, 1.0f, s.aimAmount);
     if (s.locked)
     {
         // The aim lock never pulls the camera back: its distance may shorten, not grow, until the lock ends
@@ -936,6 +950,15 @@ void DriverFrame()
             eye.x = look.x + (eye.x - look.x) * s.camT;
             eye.y = std::max(ey2, p.y + 25.0f);
             eye.z = look.z + (eye.z - look.z) * s.camT;
+        }
+        // Nor through the floor above or below (stairs): pulled in at once, as showing the outside of the room even for a frame
+        // is what this prevents
+        float kept = BoomClearOfSlabs(g_game->Slabs(), look, eye, c.camMargin);
+        if (kept < 1.0f)
+        {
+            eye.x = look.x + (eye.x - look.x) * kept;
+            eye.y = look.y + (eye.y - look.y) * kept;
+            eye.z = look.z + (eye.z - look.z) * kept;
         }
     }
 

@@ -192,9 +192,16 @@ Ports of Snippy's Outbreak ModernCam and RaccoonRecomp's REO-ModernCam, REO-Firs
   (enemies' HP - 0x7FFF), enemies don't damage, both don't-become-a-zombie codes, infinite health for everyone, scenarios opened
   (all five, save word untouched), and the data cheats' values in memory (health, speed, giant, damage, gauge, files, results,
   points, unlocks).
-- **Left**: File 2 (functions, fields and addresses matched and written in src/modern_camera_game.cpp and src/cheats.cpp as
-  File2 layouts, but not wired into src/file2.cpp and not checked in play: aspect 0x2491FC, frame count 0x3137D4, gauge maxima
-  0x738520 and the object matrices 0x475300 especially need checking); cheats not yet seen in play: zombies don't move,
+- **File 2**: wired (src/file2.cpp, config/file2.toml; the single-play check 0x1AFB10, File 1's 0x1AF4D0's code, called from
+  the death path at 0x6335B0). Seen in the zoo: Modern behind Kevin, the mouse turning it (50 degrees for 800 pixels), the
+  wheel's zoom, First person from his eyes (turning and walking), infinite health (9999/9999 held), play mode 0. Not checked:
+  aspect 0x2491FC, gauge maxima 0x738520, the object matrices 0x475300, aiming, the other cheats; a pale rectangle shows at the
+  left of First person's view in the zoo's first street. The collection's and scenario select's cheats aren't offered
+  (File 2's save data is laid out otherwise).
+- **Both games**: the wheel zooms the Modern camera in and out (0.35 to 1.8 times the framing's length; aiming keeps its own),
+  and the boom stops short of floors and ceilings as well as walls (stairs took the eye through the floor above: the walls'
+  collision leaves floors and ceilings out; tests/modern_camera_rig_test.cpp). The stairs fix isn't yet seen on real stairs.
+- **Left**: cheats not yet seen in play: zombies don't move,
   escape time (no timer running in the runs), walk through walls, items, virus never up, L1+Select, zombie after death,
   collection opened, partners, Player 1 modifiers; item slot codes and Number Of Players not ported; ModernCam's reload,
   restroom mirrors, alt rig and recenter not ported; the camera is not gated for network play (only the cheats are).

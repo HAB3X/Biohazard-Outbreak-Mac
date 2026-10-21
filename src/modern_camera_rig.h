@@ -78,6 +78,20 @@ struct Wall
 // false for floors, ceilings and low steps
 bool WallFromRecord(uint32_t flags, const float corners[9], float normalY, Wall* wall);
 
+// A floor or ceiling triangle of the room's collision: what the boom may not pass through going up or down stairs (the walls
+// above leave them out)
+struct Slab
+{
+    Vec3 a, b, c;
+};
+
+// A collision record (as WallFromRecord's) made a slab: true for floors and ceilings, false for walls
+bool SlabFromRecord(const float corners[9], float normalY, Slab* slab);
+
+// The fraction of the boom from `head` to `eye` kept clear of every slab, `margin` short of the first one it crosses, in
+// [0, 1] (1: it crosses none)
+float BoomClearOfSlabs(const std::vector<Slab>& slabs, Vec3 head, Vec3 eye, float margin);
+
 // The boom from the head (hx, hz) to the eye pulled in front of the first wall it crosses, by `margin` along the boom (walls
 // with any of ignoreFlags, and with useMinTop those whose top is below minTop, don't count; with useHy the eye's height
 // follows the boom from hy). The fraction of the boom kept, in (0, 1]

@@ -200,6 +200,8 @@ public:
 
     // The room's walls, read again when the room's wall pointer changes or after a second
     const std::vector<Wall>& Walls(float dt);
+    // The room's floors and ceilings, gathered with the walls (valid after Walls)
+    const std::vector<Slab>& Slabs() const { return m_slabs; }
     void ForgetWalls() { m_wallsBase = 0; m_haveWalls = false; }
 
     // At the button mapper, for her record: the mapped record's sticks centred (the game doesn't see them), and R3 taken from
@@ -232,6 +234,7 @@ private:
     uint32_t m_wallsBase = 0;
     float m_wallsAge = 0;
     std::vector<Wall> m_walls;
+    std::vector<Slab> m_slabs;
     // The artwork kept: each cut's own mask, what every cut also draws, the cuts' cameras
     static constexpr uint32_t MaxCuts = 64, MaskWords = 4;
     struct CutCamera
