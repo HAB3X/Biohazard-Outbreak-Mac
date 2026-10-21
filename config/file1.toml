@@ -28,6 +28,12 @@ extra = [
 not = []
 
 [overrides]
+# The executable's two text functions (the second Network Play's): where each string is drawn is kept for the mouse's
+# pointer over the menus (src/text_map.h)
+"0x1b43c0" = "text_draw"
+"0x1b5fb0" = "text_draw_net"
+# The main loop's frame: after it, the sounds the pointer's moves owe the menus are played (src/pointer.h)
+"0x1b9070" = "game_frame"
 
 # The code overlays: PROG/*.BIN, each a 0x40 byte "MWo3" header (its number, load address, code size, data size, bss size)
 # then its code and data, loaded whole at its load address. The code runs from the header's end for the code size the header
@@ -142,7 +148,8 @@ base = "0x540000"
 text = ["0x540040", "0x5d6080"]
 # The network configuration is the Mac's (src/network.cpp): no card holds one, and the setup screen connects with it without
 # showing its list; the software keyboard's step tells the Mac's keyboard to type (src/typing.cpp)
-overrides = { "0x5d0c00" = "netwk_card_has_netcnf", "0x553820" = "netwk_soft_keyboard_step", "0x5a51c0" = "netwk_usb_key", "0x5c88c0" = "netwk_setup_step" }
+# The lobby's cursor engines keep the cursors the game moves for the mouse's pointer (src/menus_lobby.cpp)
+overrides = { "0x5d0c00" = "netwk_card_has_netcnf", "0x553820" = "netwk_soft_keyboard_step", "0x5a51c0" = "netwk_usb_key", "0x5c88c0" = "netwk_setup_step", "0x5432f0" = "netwk_menu_cursor", "0x543610" = "netwk_menu_cursor_held", "0x543840" = "netwk_menu_cursor_held_fast", "0x543480" = "netwk_menu_cursor_word", "0x543ac0" = "netwk_list_cursor" }
 # Entries of handler tables the game calls through pointers (data words that point at a prologue: addiu sp,sp,-N); 0x565FE0 a
 # function the executable's task system calls by a pointer made at run time (seen in DNAS's progress screen)
 extra = [

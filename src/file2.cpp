@@ -1,7 +1,10 @@
 // Biohazard Outbreak File 2 for Mac: the recompiled executable and its overlays on the PS2 runtime
 #include "controls.h"
+#include "menus.h"
 #include "network.h"
 #include "partner_ai.h"
+#include "pointer.h"
+#include "text_map.h"
 #include "ps2/runtime.h"
 #include "tsnd.h"
 #include "typing.h"
@@ -35,6 +38,18 @@ extern "C" void netwk_usb_key(Ps2Cpu* c) { Typing::UsbKey(c, g_softKeyboard, net
 extern "C" void netwk_005bfd40(Ps2Cpu* c);
 extern "C" void netwk_setup_step(Ps2Cpu* c) { Network::SetupStep(c, Network::File2Setup, netwk_005bfd40); }
 
+// The lobby's cursor engines: the cursors the game moves each frame kept for the pointer (src/menus_lobby.cpp)
+extern "C" void netwk_005477b0(Ps2Cpu* c);
+extern "C" void netwk_menu_cursor(Ps2Cpu* c) { Menus::LobbyCursor(c, Menus::LobbyEngine::Byte, netwk_005477b0); }
+extern "C" void netwk_00547ad0(Ps2Cpu* c);
+extern "C" void netwk_menu_cursor_held(Ps2Cpu* c) { Menus::LobbyCursor(c, Menus::LobbyEngine::Byte, netwk_00547ad0); }
+extern "C" void netwk_00547d00(Ps2Cpu* c);
+extern "C" void netwk_menu_cursor_held_fast(Ps2Cpu* c) { Menus::LobbyCursor(c, Menus::LobbyEngine::Byte, netwk_00547d00); }
+extern "C" void netwk_00547940(Ps2Cpu* c);
+extern "C" void netwk_menu_cursor_word(Ps2Cpu* c) { Menus::LobbyCursor(c, Menus::LobbyEngine::Half, netwk_00547940); }
+extern "C" void netwk_00547f80(Ps2Cpu* c);
+extern "C" void netwk_list_cursor(Ps2Cpu* c) { Menus::LobbyCursor(c, Menus::LobbyEngine::List, netwk_00547f80); }
+
 // The partners' think and its perception, SINGLE.BIN's (src/partner_ai.cpp)
 extern "C" void single_007e99d0(Ps2Cpu* c);
 extern "C" void single_partner_think(Ps2Cpu* c) { PartnerAi::Think(c, PartnerAi::File2, single_007e99d0); }
@@ -42,6 +57,20 @@ extern "C" void single_007e9ad0(Ps2Cpu* c);
 extern "C" void single_partner_perceive(Ps2Cpu* c) { PartnerAi::Perceive(c, PartnerAi::File2, single_007e9ad0); }
 extern "C" void single_007e3aa0(Ps2Cpu* c);
 extern "C" void single_partner_pick_item(Ps2Cpu* c) { PartnerAi::PickItem(c, PartnerAi::File2, single_007e3aa0); }
+
+// The executable's text functions: where each string is drawn is kept for the pointer (src/text_map.h)
+extern "C" void f_001b5090(Ps2Cpu* c);
+extern "C" void f_001b7130(Ps2Cpu* c);
+extern "C" void text_draw(Ps2Cpu* c) { TextMap::Draw(c, f_001b5090); }
+extern "C" void text_draw_net(Ps2Cpu* c) { TextMap::Draw(c, f_001b7130); }
+
+// The main loop's frame, then the menus' sounds the pointer owes them (src/pointer.h)
+extern "C" void f_001ba1d0(Ps2Cpu* c);
+extern "C" void game_frame(Ps2Cpu* c)
+{
+    f_001ba1d0(c);
+    Pointer::Frame(c);
+}
 
 int main(int argc, char** argv)
 {

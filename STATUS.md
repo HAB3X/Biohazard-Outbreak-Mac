@@ -86,6 +86,25 @@ docs/network.md (the runtime's docs/network.md has the design).
   shift (L2), 1-4 the appeals (the right stick), O the pause menu (SELECT), Tab/Escape START (docs/controls.md). The pause
   menu's controller readout and File 1's options legend show the menus' keys (one picture serves both).
 
+## Mouse overhaul, 2026-10-21 (branch `mouse`)
+
+- Every menu is found each vertical blank from the game's memory and the pointer writes the menu's own cursor (no steered
+  D-pad presses): the cursor follows in 25-75 ms. Design, engines and the screen-by-screen checklist: docs/controls.md, "The
+  mouse in the menus". Checked in both games: title menu and submenus, character log (pages and tabs), options and all its
+  screens, selects (File 1's difficulty too), status screen, pause menu, map's Cancel, Network Play by mouse alone to obsrv's
+  login page, the browser, the software keyboard (File 2), collection (File 1; File 2's grid). Map / status / pause opened
+  and left 5 times in each game.
+- Not verified: the lobby after login (SELECT CAPCOM ID, SELECT SERVER, area menu, room list, RULE, a room, hints): built from
+  the code (src/menus_lobby.cpp, cursor-engine overrides in config/file*.toml's netwk); needs a logged-in run with
+  `BH_POINTER_LOG=1` (logs each menu's targets). A room's screen is File 2 only.
+- Left open: File 2's collection tabs (wrong tab byte for File 2), File 2's collection questions and DATA CONVERT, the map's
+  scroll/zoom, the results screen, File 1's software keyboard (not run), windowed/fullscreen mapping checked by code only
+  (presenter and mouse share PictureRect), File 1's difficulty takes one key move only (on main too: not the mouse's).
+- Not started: the control features modelled on RaccoonRecomp's port (remappable mouse buttons and wheel, SDL3 gamepads with
+  per-pad glyphs, Xbox button symbols option, Hold To Toggle, mouse acceleration/sensitivity, Compensate Game Deadzone,
+  Cross in Game Menus check, a controller button for the PC settings, docs/CREDITS.md line). Already present: right mouse
+  ready (R1), left mouse fire (circle) in play.
+
 ## Controls pass, 2026-10-20 (branch `polish`)
 
 - Escape in play is the game's own pause (SELECT's menu: game time stops; checked by a frame counter and in a window), Tab
