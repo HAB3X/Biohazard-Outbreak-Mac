@@ -55,7 +55,7 @@ Full list in [docs/CREDITS.md](docs/CREDITS.md).
 
 ## License
 
-No licence chosen yet, so all rights are reserved for now. Bundled third-party parts keep their own licences (see
-`ps2-native-runtime/runtime/third_party/` and each app's `Contents/Resources/licenses`).
+[MIT](LICENSE). The camera and cheat code adapted from RaccoonRecomp's mods keeps their MIT notice; bundled third-party
+parts keep their own licences.
 
 Biohazard and Resident Evil are trademarks of Capcom. PlayStation is a trademark of Sony Interactive Entertainment.
