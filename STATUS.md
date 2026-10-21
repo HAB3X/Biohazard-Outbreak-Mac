@@ -139,21 +139,25 @@ mode too. Partners never pick up keys, event items or files (only weapons, ammun
 the scenario's progress are the player's.
 
 Measured with `tools/ai_scenario.py SCENARIO New|Original --seeds N` (headless, the game's BH_AI_LOG telemetry summed by
-tools/ai_report.py):
+tools/ai_report.py; docs/research/partner-ai.md has the tables):
 
-- File 1, the bar, the player standing still while the zombies come (3 seeds, 240 s): the player's damage 4813 with the
-  game's AI, 887 with the new (first 2 minutes 2256 / 840), below 30% 33 s / 10 s; first partner attack after a threat
-  35 s / 0.2 s; partners downed 0 / 0; Mark never away from the player (the game's: 20% of the time).
+- File 1, the bar, the player standing still while the zombies come (6 seeds, 240 s, means, Original / New): first partner
+  attack after a threat 45 s / 0.2 s; the player's damage 3258 / 2098, below 30% 67 s / 33 s, downed 0.83 / 0.17; Mark
+  never away from the player (the game's: 30% of the time), never downed, damage taken 930 / 363.
 - File 2, the zoo, the player standing still 10 minutes: the game's partners wander off (85% and 75% of the time away) and
   the player is killed at 504 s; the new partners stay within 400, Mark kills the enemy that comes, the player untouched.
-- Commands (the player runs off and calls): with the new AI both partners are within 300 of the player 0.2-3 s after "This
-  way!" or their name, in both games; the game's partners in the zoo never came (1100-4000 away, 10 s later).
-- No fatal in any run (about 60 runs of 2-10 minutes, both games, both modes).
+- Commands: with the new AI both partners are within 300 of the player 0.1-3 s after "This way!" or their name, in both
+  games; the game's Mark ignored 7 of 10 calls in the bar, and in the zoo neither partner came.
+- Partners never took an item that isn't a weapon, ammunition or a recovery item (the pick-up chooser is overridden).
+- No fatal in any run since the sweep's function starts were merged (about 80 runs, 2-10 minutes, both games, both modes).
 
-Not done: cross-room following measured by a scenario (the game's follow plan routes to the player's room; the bar's door
-walk triggered a cutscene); healing others with a recovery item when the player asks (the game's own trade code is left
-alone); the game's own attack routine is still the better shot when it fires (about 120 damage a round against the
-director's 110).
+Left (next): Cindy (no weapon) is cornered and downed in most bar runs (4 of 6; the game's own Cindy wanders off and
+survives more often): she needs a place to go (the room's route nodes scored away from the zombies, through the game's
+route code) rather than running straight off. Results vary a lot by seed: compare means over 6 or more. Not measured by a
+scenario: following into another room (the game's follow plan routes to the player's room; the bar's back door walk ran
+into a cutscene), healing the player when asked with "Help me!" (the game's own trade and heal plans run as they are), the
+other File 2 scenarios. The director's own shots are less accurate than the game's attack routine (it can't see what's in
+the line of fire), so it shoots only when an enemy is within 500 of the player.
 
 ## The Mac apps
 

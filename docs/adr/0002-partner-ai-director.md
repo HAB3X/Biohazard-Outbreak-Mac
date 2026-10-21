@@ -43,6 +43,9 @@ Cindy's herbs) carry it out:
   (`Tunables`).
 - `BH_AI_LOG` telemetry and `tools/ai_scenario.py` / `tools/ai_report.py` measure both AIs the same way. The game is
   deterministic for the same input, so the same seed in both modes is the same game until the AIs differ.
+- The pad is taken over only where the game's skills are too slow or unsafe: shooting an enemy within 500 of the player
+  (turned to it with the weapon down, readied, fired in the aiming stance; given back to the game after 6 presses that
+  don't hurt it), and a partner without a gun turning away and running from an enemy within 280 that isn't on the player.
 - The PC menus' **Gameplay: Partner AI** setting chooses **New** (the default) or **Original** (the game's own, untouched:
   the overrides run the game's functions and add nothing).
 
