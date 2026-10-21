@@ -1,5 +1,7 @@
 // Biohazard Outbreak for Mac: the recompiled executable and its overlays on the PS2 runtime
 #include "controls.h"
+#include "modern_camera.h"
+#include "mods.h"
 #include "network.h"
 #include "partner_ai.h"
 #include "ps2/runtime.h"
@@ -41,6 +43,22 @@ extern "C" void single_partner_think(Ps2Cpu* c) { PartnerAi::Think(c, PartnerAi:
 extern "C" void single_00822520(Ps2Cpu* c);
 extern "C" void single_partner_perceive(Ps2Cpu* c) { PartnerAi::Perceive(c, PartnerAi::File1, single_00822520); }
 
+// The Modern camera (src/modern_camera.cpp): the game frame, the button mapper and the game's camera handlers, as recompiled
+extern "C" void f_0019ecb0(Ps2Cpu* c);
+extern "C" void mods_frame_end(Ps2Cpu* c) { ModernCamera::FrameMark(c, f_0019ecb0); }
+extern "C" void f_001afc60(Ps2Cpu* c);
+extern "C" void mods_pad_map(Ps2Cpu* c) { ModernCamera::PadMap(c, f_001afc60); }
+extern "C" void game_0058ec70(Ps2Cpu* c);
+extern "C" void game_camera_fixed_cut(Ps2Cpu* c) { ModernCamera::FixedCut(c, game_0058ec70); }
+extern "C" void game_0058ed80(Ps2Cpu* c);
+extern "C" void game_camera_rail_cut(Ps2Cpu* c) { ModernCamera::RailCut(c, game_0058ed80); }
+extern "C" void game_0058f230(Ps2Cpu* c);
+extern "C" void game_camera_spline_cut(Ps2Cpu* c) { ModernCamera::RailCut(c, game_0058f230); }
+extern "C" void game_005a9080(Ps2Cpu* c);
+extern "C" void game_camera_follow(Ps2Cpu* c) { ModernCamera::Follow(c, game_005a9080); }
+extern "C" void game_00556800(Ps2Cpu* c);
+extern "C" void game_gun_elevation(Ps2Cpu* c) { ModernCamera::GunElevation(c, game_00556800); }
+
 int main(int argc, char** argv)
 {
     static Ps2GameInfo game = {"Biohazard Outbreak", "SLPM_654.28", 1294104};
@@ -66,6 +84,7 @@ int main(int argc, char** argv)
     game.settings = PartnerAi::Settings;
     game.settingCount = PartnerAi::SettingCount;
     game.typing = Typing::Typing;
+    Mods::Install(game, ModernCamera::File1, BiohazardControls::File1);
     Tsnd::Register();
     Network::RegisterLoadHigh();
     Network::RegisterUsbSearcher();
