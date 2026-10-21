@@ -76,14 +76,6 @@ constexpr int WalkStickMin = 16;
 constexpr int WalkTurnLimit = 0x5000;
 constexpr int GunElevationMax = 0x1FFF;
 
-// PS2 buttons, active high (the raw frames are active low)
-namespace Sce
-{
-constexpr uint32_t L3 = 0x0002, R3 = 0x0004, Up = 0x0010, Right = 0x0020, Down = 0x0040, Left = 0x0080;
-constexpr uint32_t L2 = 0x0100, R2 = 0x0200, L1 = 0x0400, R1 = 0x0800;
-constexpr uint32_t Triangle = 0x1000, Circle = 0x2000, Cross = 0x4000, Square = 0x8000;
-}
-
 // A view of one game's memory for the camera (the layout and the character it follows)
 class Game
 {
@@ -139,15 +131,6 @@ public:
     const std::vector<Wall>& Walls(float dt);
     void ForgetWalls() { m_wallsBase = 0; m_haveWalls = false; }
 
-    // Port 0's newest raw DualShock frame: buttons active high, sticks -1..1 (+y up) after ModernCam's dead zone
-    struct Pad
-    {
-        bool valid = false;
-        uint32_t held = 0;
-        float lx = 0, ly = 0, rx = 0, ry = 0;
-    };
-    Pad ReadPad() const;
-
     // At the button mapper, for her record: the mapped record's sticks centred (the game doesn't see them), and R3 taken from
     // it (the camera's swap shoulder: the mapper makes it the action 0x2000, seen in her action block while it's held)
     void PadMapApply(bool centreLeft, bool centreRight, bool hideR3) const;
@@ -157,8 +140,6 @@ public:
     // to just inside that, so she turns round toward it instead of stepping back. side: the last frame's (+1 her left, -1 her
     // right, 0 none); this frame's returned
     int WalkTurn(int side) const;
-    // The PS2 button that does an action under the current control type (0: none)
-    uint32_t ButtonForAction(uint32_t action) const;
 
 private:
     uint32_t MappedActions(uint32_t held) const;

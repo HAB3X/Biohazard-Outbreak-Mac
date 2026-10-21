@@ -14,8 +14,8 @@ add_subdirectory(${PS2_RUNTIME_DIR} ps2-native-runtime)
 
 # The partners' AI (src/partner_ai.h), both games'
 set(PARTNER_AI_SOURCES src/partner_ai.cpp src/partner_ai_brain.cpp src/partner_ai_world.cpp src/partner_ai_telemetry.cpp)
-# The community mods (src/mods.h): the Modern camera
-set(MODS_SOURCES src/mods.cpp src/mod_settings.cpp src/modern_camera.cpp src/modern_camera_config.cpp src/modern_camera_game.cpp
+# The community mods (src/mods.h): the Modern camera and the cheats
+set(MODS_SOURCES src/mods.cpp src/mod_settings.cpp src/game_pad.cpp src/cheats.cpp src/modern_camera.cpp src/modern_camera_config.cpp src/modern_camera_game.cpp
                  src/modern_camera_rig.cpp)
 
 # The partners' AI decisions' tests (no disc needed): ctest, or build/partner_ai_brain_test

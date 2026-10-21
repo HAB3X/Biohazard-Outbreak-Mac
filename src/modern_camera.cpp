@@ -8,6 +8,7 @@
 // aids, and the J's Bar restroom mirrors (docs/mods.md).
 #include "modern_camera.h"
 
+#include "game_pad.h"
 #include "modern_camera_config.h"
 
 #include "ps2/iop.h"
@@ -126,7 +127,10 @@ std::atomic<bool> g_mouseLook{false};
 
 float Hypot(float x, float y) { return std::hypot(x, y); }
 float DistXz(const Vec3& a, const Vec3& b) { return Hypot(a.x - b.x, a.z - b.z); }
-float Dist3(const Vec3& a, const Vec3& b) { return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z)); }
+float Dist3(const Vec3& a, const Vec3& b)
+{
+    return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
+}
 
 void SetStatus(const char* status)
 {
@@ -437,7 +441,7 @@ void CutMatch(const Config& c, const Vec3& eye)
 Input ReadInput()
 {
     Input in;
-    Game::Pad pad = g_game->ReadPad();
+    GamePad::State pad = GamePad::Read(g_game->layout().padFrames);
     in.mouse = ps2_prompt_style() == 0;
     in.held = pad.held;
     in.lx = pad.lx;
@@ -610,7 +614,7 @@ void DriverFrame()
         s.moveIdle += dt;
     }
     // Aim: the game's own (R1, the right mouse button)
-    bool aiming = (held & Sce::R1) != 0;
+    bool aiming = (held & GamePad::R1) != 0;
     float blend = aiming ? c.aimBlendIn : c.aimBlendOut;
     if (!(blend > 0))
     {
@@ -620,7 +624,7 @@ void DriverFrame()
     bool aimingNow = s.aimAmount > 0.1f;
 
     // Swap shoulder: R3 (the middle mouse button)
-    if ((pressed & Sce::R3) != 0 && !s.locked)
+    if ((pressed & GamePad::R3) != 0 && !s.locked)
     {
         s.shoulderTarget = -s.shoulderTarget;
     }
@@ -968,11 +972,7 @@ void Use(const Layout& layout, const BiohazardControls::Layout& play)
     g_play = &play;
 }
 
-void FrameMark(Ps2Cpu* c, Ps2Function original)
-{
-    original(c);
-    DriverFrame();
-}
+void Frame() { DriverFrame(); }
 
 void PadMap(Ps2Cpu* c, Ps2Function original)
 {

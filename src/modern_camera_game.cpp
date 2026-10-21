@@ -54,15 +54,10 @@ constexpr uint32_t CutMask = 0x154; // 4 words, bit i: object i drawn by this cu
 constexpr uint32_t EnemyLive = 0x000, EnemyModel = 0x034, EnemyPosition = 0x038, EnemyFlags = 0xC94;
 // A pad record (Layout::padRecords)
 constexpr uint32_t PadHeld = 0x08, PadLeftStick = 0x20, PadRightStick = 0x28;
-// The raw frames (libpad2): the newer of two by the counter at +0x7C; pad data from +0x1C
-constexpr uint32_t PadFrameSize = 0x80, PadFrameCount = 0x7C, PadFrameLength = 0x02, PadFrameButtons = 0x1C;
-constexpr uint32_t PadFrameRx = 0x1E, PadFrameRy = 0x1F, PadFrameLx = 0x20, PadFrameLy = 0x21;
 // The mapper's source word (the pad records' +8): the three buttons the control type maps
 constexpr uint32_t SrcCross = 0x0010, SrcCircle = 0x0020, SrcSquare = 0x0100;
 // R3's bit there (measured: set while R3 is held, the mapper's action 0x2000)
 constexpr uint32_t SrcR3 = 0x2000;
-// ModernCam's stick dead zone: |v| below 7000 of 32767 reads 0, not rescaled
-constexpr float StickDeadZone = 7000.0f / 32767.0f;
 // The walls
 constexpr uint32_t WallSize = 0x38, MaxWalls = 256;
 constexpr float WallRefreshSeconds = 1.0f;
@@ -80,16 +75,6 @@ Vec3 ReadIntVec(uint32_t a)
 {
     return {static_cast<float>(static_cast<int32_t>(rd32(a))), static_cast<float>(static_cast<int32_t>(rd32(a + 4))),
             static_cast<float>(static_cast<int32_t>(rd32(a + 8)))};
-}
-
-float StickAxis(uint32_t raw, bool flip)
-{
-    float v = std::clamp((static_cast<float>(raw) - 128.0f) / 127.0f, -1.0f, 1.0f);
-    if (std::fabs(v) < StickDeadZone)
-    {
-        v = 0;
-    }
-    return flip ? -v : v;
 }
 
 // A centred stick as the mapper reads one: magnitude 0, angle 0xC000, x 0, y 0
@@ -609,37 +594,6 @@ const std::vector<Wall>& Game::Walls(float dt)
     return m_walls;
 }
 
-Game::Pad Game::ReadPad() const
-{
-    Pad pad;
-    uint32_t block = rd32(m_layout.padFrames);
-    if (block < 0x100000 || block + 2 * PadFrameSize > 0x2000000 || (block & 3) != 0)
-    {
-        return pad;
-    }
-    // The newer of the two frames, as the game's own getter picks it
-    uint32_t frame = block;
-    if (static_cast<int32_t>(rd32(block + PadFrameCount)) < static_cast<int32_t>(rd32(block + PadFrameSize + PadFrameCount)))
-    {
-        frame = block + PadFrameSize;
-    }
-    uint8_t length = rd8(frame + PadFrameLength);
-    if (length < 2)
-    {
-        return pad;
-    }
-    pad.valid = true;
-    pad.held = ~rd16(frame + PadFrameButtons) & 0xFFFF;
-    if (length >= 6)
-    {
-        pad.rx = StickAxis(rd8(frame + PadFrameRx), false);
-        pad.ry = StickAxis(rd8(frame + PadFrameRy), true); // up is +
-        pad.lx = StickAxis(rd8(frame + PadFrameLx), false);
-        pad.ly = StickAxis(rd8(frame + PadFrameLy), true);
-    }
-    return pad;
-}
-
 void Game::PadMapApply(bool centreLeft, bool centreRight, bool hideR3) const
 {
     // Offline the local player is mapped record 0 (the mapper's index for her)
@@ -723,20 +677,5 @@ int Game::WalkTurn(int side) const
     uint32_t turned = ((dir & 0xFFF0u) - static_cast<uint32_t>(diff - want) + 8u) & 0xFFF0u;
     wr16(stick + 2, static_cast<uint16_t>(turned | (dir & 0xFu)));
     return side;
-}
-
-uint32_t Game::ButtonForAction(uint32_t action) const
-{
-    // The [square, cross, circle] action words of the player's control type, as the mapper reads them
-    static const uint32_t Buttons[3] = {Sce::Square, Sce::Cross, Sce::Circle};
-    uint32_t type = rd8(m_layout.controlType) & 3;
-    for (int i = 0; i < 3; i++)
-    {
-        if ((rd32(m_layout.buttonMap + type * 12 + i * 4) & action) != 0)
-        {
-            return Buttons[i];
-        }
-    }
-    return 0;
 }
 }

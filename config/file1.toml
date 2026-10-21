@@ -32,6 +32,8 @@ not = []
 # button mapper (a0 a character's record)
 "0x19ecb0" = "mods_frame_end"
 "0x1afc60" = "mods_pad_map"
+# The cheats (src/cheats.cpp): "is this single play" (Become A Zombie After Death)
+"0x1af4d0" = "cheat_single_play"
 
 # The code overlays: PROG/*.BIN, each a 0x40 byte "MWo3" header (its number, load address, code size, data size, bss size)
 # then its code and data, loaded whole at its load address. The code runs from the header's end for the code size the header
@@ -47,6 +49,9 @@ name = "demo"
 file = "PROG/DEMO.BIN"
 base = "0x540000"
 text = ["0x540040", "0x557c00"]
+# The cheats (src/cheats.cpp): the collection's "can it be bought" check and the scenario select's functions reading the
+# unlocked scenarios
+overrides = { "0x554ec0" = "cheat_available", "0x542640" = "cheat_scenario_select_a", "0x54dc10" = "cheat_scenario_select_b", "0x54e2f0" = "cheat_scenario_select_c", "0x54ee40" = "cheat_scenario_select_d" }
 extra = [
     "0x5536a0", "0x555050",
 ]
@@ -57,8 +62,10 @@ file = "PROG/GAME.BIN"
 base = "0x540000"
 text = ["0x540040", "0x6d4d00"]
 # The Modern camera holds the game's camera (src/modern_camera.cpp): the cut dispatcher's fixed, rail and spline handlers, the
-# follow handler (doors), and the gun's elevation (free aim)
-overrides = { "0x58ec70" = "game_camera_fixed_cut", "0x58ed80" = "game_camera_rail_cut", "0x58f230" = "game_camera_spline_cut", "0x5a9080" = "game_camera_follow", "0x556800" = "game_gun_elevation" }
+# follow handler (doors), and the gun's elevation (free aim). The cheats (src/cheats.cpp): a round used, an item used, the virus
+# gauge over time and from a bite, the damage to an enemy and to a character, the death check, the movement routine, the event
+# timers, a character's collision
+overrides = { "0x58ec70" = "game_camera_fixed_cut", "0x58ed80" = "game_camera_rail_cut", "0x58f230" = "game_camera_spline_cut", "0x5a9080" = "game_camera_follow", "0x556800" = "game_gun_elevation", "0x581a00" = "cheat_ammo", "0x581b30" = "cheat_item_use", "0x6359d0" = "cheat_gauge_over_time", "0x62e6a0" = "cheat_gauge_bite", "0x60f0c0" = "cheat_enemy_damage", "0x62f130" = "cheat_player_damage", "0x62ee10" = "cheat_death_check", "0x62ca30" = "cheat_movement", "0x65a8c0" = "cheat_timers", "0x631ca0" = "cheat_collision" }
 extra = [
     "0x540450", "0x542290", "0x5426d0", "0x5426e0", "0x5429e0", "0x542d20", "0x5430a0", "0x5431d0",
     "0x544770", "0x544960", "0x547a70", "0x547aa0", "0x547de0", "0x547f50", "0x548110", "0x548270",

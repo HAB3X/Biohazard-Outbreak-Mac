@@ -22,7 +22,8 @@ namespace ModernCamera
 void Use(const Layout& layout, const BiohazardControls::Layout& play);
 
 // The overrides (each `original` the game's function as recompiled)
-void FrameMark(Ps2Cpu* c, Ps2Function original);   // the game frame's end: the camera computed and written
+// Once a game frame, at its end (src/mods.h): the camera computed and written
+void Frame();
 void PadMap(Ps2Cpu* c, Ps2Function original);      // the button mapper (a0 a character's record)
 void FixedCut(Ps2Cpu* c, Ps2Function original);    // the fixed cut's handler: skipped while the camera drives
 void RailCut(Ps2Cpu* c, Ps2Function original);     // the rail and spline cuts' handlers: their camera writes undone

@@ -33,10 +33,13 @@ int ModeNamed(const Ps2GameInfo& game, const char* name)
 }
 }
 
-void Install(Ps2GameInfo& game, const ModernCamera::Layout& camera, const BiohazardControls::Layout& play)
+void Install(Ps2GameInfo& game, const ModernCamera::Layout& camera, const BiohazardControls::Layout& play,
+             const Cheats::Layout& cheats)
 {
     ModernCamera::Use(camera, play);
     ModernCamera::AddSettings();
+    Cheats::Use(cheats);
+    Cheats::AddSettings();
 
     static std::vector<Ps2GameSetting> settings;
     settings = ModSettings::Settings(game.settings, game.settingCount);
@@ -52,5 +55,12 @@ void Install(Ps2GameInfo& game, const ModernCamera::Layout& camera, const Biohaz
     controls.push_back({"camera_shoulder", "Modern camera: swap shoulder", "r3", "Mouse Middle, X", ModeNamed(game, "Play")});
     game.controls = controls.data();
     game.controlCount = static_cast<int>(controls.size());
+}
+
+void FrameEnd(Ps2Cpu* c, Ps2Function original)
+{
+    original(c);
+    ModernCamera::Frame();
+    Cheats::Frame();
 }
 }
