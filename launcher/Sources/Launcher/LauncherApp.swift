@@ -56,6 +56,7 @@ final class LauncherModel: ObservableObject {
         switch ProcessInfo.processInfo.environment["BH_LAUNCHER_OPEN"] {
         case "settings": overlay = .settings(.file1)
         case "mods": overlay = .mods(.file1)
+        case "characters": overlay = .mods(.file2)
         case "discs": overlay = .discs
         default: break
         }

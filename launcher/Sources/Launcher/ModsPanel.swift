@@ -13,6 +13,9 @@ struct ModsPanel: View {
     init(game: Game) {
         self.game = game
         store = ModStore.shared
+        if ProcessInfo.processInfo.environment["BH_LAUNCHER_OPEN"] == "characters" {
+            _kind = State(initialValue: .characters)
+        }
     }
 
     var body: some View {
@@ -20,7 +23,11 @@ struct ModsPanel: View {
             VStack(spacing: 0) {
                 header
                 Divider().overlay(Style.line)
-                list
+                if kind == .characters && !store.mods(game, .characters).isEmpty {
+                    CharacterGallery(game: game, store: store)
+                } else {
+                    list
+                }
                 Divider().overlay(Style.line)
                 footer
             }

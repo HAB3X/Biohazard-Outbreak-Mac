@@ -26,6 +26,9 @@ struct Mod: Codable, Identifiable, Equatable {
     var folder: String // its copy in the launcher's Mods folder
     var files: Int
     var bytes: Int64
+    /// A character mod's model file and the costume it replaces (romdata.afs's member: "P06_02.nbd"; nil: not chosen)
+    var nbd: String?
+    var replaces: String?
 }
 
 @MainActor
@@ -46,6 +49,7 @@ final class ModStore: ObservableObject {
         if let data = try? Data(contentsOf: manifest), let saved = try? JSONDecoder().decode([Mod].self, from: data) {
             mods = saved
         }
+        fillCharacterDetails()
     }
 
     func mods(_ game: Game, _ kind: ModKind) -> [Mod] { mods.filter { $0.game == game && $0.kind == kind } }
@@ -109,6 +113,27 @@ final class ModStore: ObservableObject {
         return failed ? 1 : 0
     }
 
+    /// The costume a character mod replaces (nil: none), and which of its model files
+    func setReplaces(_ mod: Mod, costume: String?, nbd: String? = nil) {
+        guard let i = mods.firstIndex(where: { $0.id == mod.id }) else { return }
+        mods[i].replaces = costume
+        if let nbd { mods[i].nbd = nbd }
+        save()
+    }
+
+    /// Character mods imported before the launcher read their models: their model file and costume worked out now
+    func fillCharacterDetails() {
+        var changed = false
+        for i in mods.indices where mods[i].kind == .characters && mods[i].nbd == nil {
+            if let nbd = NBD.files(in: URL(fileURLWithPath: mods[i].folder)).first {
+                mods[i].nbd = nbd.path
+                mods[i].replaces = Costume.guess(modName: mods[i].name, nbd: nbd)?.file
+                changed = true
+            }
+        }
+        if changed { save() }
+    }
+
     func toggle(_ mod: Mod) {
         guard let i = mods.firstIndex(of: mod) else { return }
         mods[i].enabled.toggle()
@@ -122,7 +147,7 @@ final class ModStore: ObservableObject {
         save()
     }
 
-    private func save() {
+    func save() {
         if let data = try? JSONEncoder().encode(mods) {
             try? data.write(to: manifest)
         }
@@ -136,6 +161,12 @@ final class ModStore: ObservableObject {
                     lines.joined(separator: "\n") + (lines.isEmpty ? "" : "\n")
                 try? text.write(to: settings.appendingPathComponent(file), atomically: true, encoding: .utf8)
             }
+            // The costumes replaced: romdata.afs's member, a tab, the model file (the last one for a costume counts)
+            let costumes = mods.filter { $0.game == game && $0.enabled && $0.kind == .characters && $0.replaces != nil && $0.nbd != nil }
+                .map { "\($0.replaces!)\t\($0.nbd!)" }
+            let text = "# Character mods switched on in the launcher: the costume's file in romdata.afs, a tab, the model replacing it\n" +
+                costumes.joined(separator: "\n") + (costumes.isEmpty ? "" : "\n")
+            try? text.write(to: settings.appendingPathComponent("characters.txt"), atomically: true, encoding: .utf8)
         }
     }
 
@@ -204,8 +235,13 @@ final class ModStore: ObservableObject {
             } catch {
                 return .failure(ImportError(message: "\(name) couldn't be put in the Mods folder: \(error.localizedDescription)"))
             }
-            return .success(Mod(id: id, name: name, kind: kind, game: game, enabled: true, folder: destination.path,
-                                files: files, bytes: bytes))
+            var mod = Mod(id: id, name: name, kind: kind, game: game, enabled: true, folder: destination.path, files: files,
+                          bytes: bytes)
+            if kind == .characters, let nbd = NBD.files(in: destination).first {
+                mod.nbd = nbd.path
+                mod.replaces = Costume.guess(modName: name, nbd: nbd)?.file
+            }
+            return .success(mod)
         }.value
     }
 
