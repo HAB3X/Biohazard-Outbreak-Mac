@@ -57,20 +57,10 @@ struct CharacterGallery: View {
         if let mod = mods.first(where: { $0.id == selected }) {
             VStack(alignment: .leading, spacing: 14) {
                 Text(mod.name).font(.system(size: 22, weight: .semibold)).foregroundStyle(Style.ink)
-                if let nbd = mod.nbd, let textures = cache.textures(for: nbd) {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 8) {
-                            ForEach(Array(textures.enumerated()), id: \.offset) { _, image in
-                                Image(decorative: image, scale: 1).resizable().interpolation(.high)
-                                    .aspectRatio(contentMode: .fit).frame(height: 190)
-                                    .background(Color.white.opacity(0.04))
-                            }
-                        }
-                    }
-                } else if mod.nbd == nil {
-                    Text("No model (.nbd) in this mod.").foregroundStyle(Style.muted)
+                if let nbd = mod.nbd {
+                    CharacterPreview(file: nbd).frame(height: 250)
                 } else {
-                    ProgressView().controlSize(.small)
+                    Text("No model (.nbd) in this mod.").foregroundStyle(Style.muted)
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Replaces").font(.system(size: 13, weight: .semibold)).foregroundStyle(Style.section)
@@ -100,9 +90,7 @@ struct CharacterGallery: View {
                 }
                 Toggle("On", isOn: Binding(get: { mod.enabled }, set: { _ in store.toggle(mod) }))
                     .toggleStyle(.switch).tint(Style.gold)
-                Text("The 3D preview comes next; the games load these mods once that's in too.")
-                    .font(.system(size: 12)).foregroundStyle(Style.faint)
-                Spacer()
+                Text("Drag the model to turn it.").font(.system(size: 12)).foregroundStyle(Style.faint)
                 Button(role: .destructive) { store.remove(mod); selected = nil } label: {
                     Label("Remove", systemImage: "trash").font(.system(size: 13))
                 }

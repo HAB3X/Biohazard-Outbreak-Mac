@@ -49,7 +49,7 @@ final class LauncherModel: ObservableObject {
     init() {
         refreshDiscs()
         loadPicture()
-        if discs.isEmpty {
+        if discs.isEmpty && ProcessInfo.processInfo.environment["BH_LAUNCHER_OPEN"] == nil {
             overlay = .discs
         }
         // A panel opened at the start ($BH_LAUNCHER_OPEN: settings, mods, discs), for pictures of it
@@ -116,6 +116,72 @@ final class LauncherModel: ObservableObject {
         }
     }
 
+    /// Looking for the games' discs the player hasn't chosen: disc images in Downloads, Documents and the Desktop (and the
+    /// folders in them, three deep), each checked by the game itself; the first that's the game's is taken
+    @Published var searching = false
+
+    func findDiscs() {
+        let missing = Game.allCases.filter { discs[$0] == nil && Games.installed($0) }
+        guard !missing.isEmpty, !searching else { return }
+        searching = true
+        Task {
+            let candidates = await Task.detached(priority: .userInitiated) { LauncherModel.discImages() }.value
+            for game in missing {
+                for candidate in candidates where discs[game] == nil {
+                    if await Games.choose(game, disc: candidate) == nil {
+                        refreshDiscs()
+                    }
+                }
+            }
+            searching = false
+            loadPicture()
+            if !discs.isEmpty && overlay == .discs { overlay = .none }
+        }
+    }
+
+    nonisolated static func discImages() -> [URL] {
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser
+        var found: [URL] = []
+        for folder in ["Downloads", "Documents", "Desktop"] {
+            let root = home.appendingPathComponent(folder)
+            guard let walker = fm.enumerator(at: root, includingPropertiesForKeys: [.fileSizeKey],
+                                             options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { continue }
+            while let url = walker.nextObject() as? URL {
+                if walker.level > 3 { walker.skipDescendants(); continue }
+                let ext = url.pathExtension.lowercased()
+                // A PS2 DVD image: an .iso (or a .bin) of at least 1 GB
+                guard ext == "iso" || ext == "bin",
+                      ((try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) > 1_000_000_000 else { continue }
+                found.append(url)
+            }
+        }
+        // Names that say Biohazard or Outbreak first
+        return found.sorted { a, b in
+            let score = { (u: URL) in u.lastPathComponent.lowercased().contains("outbreak") || u.lastPathComponent.lowercased().contains("biohazard") ? 0 : 1 }
+            return score(a) < score(b)
+        }
+    }
+
+    /// Something dropped on the window: a disc image is tried as each game's disc; anything else is a mod
+    func dropped(_ url: URL) {
+        let ext = url.pathExtension.lowercased()
+        if ext == "iso" || ext == "bin" || ext == "cue" {
+            Task {
+                for game in Game.allCases where Games.installed(game) {
+                    if await Games.choose(game, disc: url) == nil {
+                        refreshDiscs()
+                        loadPicture()
+                        return
+                    }
+                }
+                problem = "\(url.lastPathComponent) isn't the Japanese Biohazard Outbreak or File 2 (SLPM-65428, SLPM-65692)."
+            }
+        } else {
+            ModStore.shared.add(url)
+        }
+    }
+
     /// A disc chosen for a game: the reason it isn't the game's, or nil when it's taken
     func choose(_ game: Game, disc: URL) async -> String? {
         if let problem = await Games.choose(game, disc: disc) {
@@ -146,6 +212,15 @@ struct RootView: View {
         }
         .animation(.easeOut(duration: 0.18), value: model.overlay)
         .background(Color.black)
+        .onAppear { model.findDiscs() }
+        .onDrop(of: [.fileURL], isTargeted: nil) { items in
+            for item in items {
+                _ = item.loadObject(ofClass: URL.self) { url, _ in
+                    if let url { Task { @MainActor in model.dropped(url) } }
+                }
+            }
+            return true
+        }
         .alert("Couldn't start the game", isPresented: Binding(get: { model.problem != nil }, set: { if !$0 { model.problem = nil } })) {
             Button("OK") { model.problem = nil }
         } message: {

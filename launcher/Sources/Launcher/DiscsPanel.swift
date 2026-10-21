@@ -11,9 +11,17 @@ struct DiscsPanel: View {
                 Text("Your discs").font(.system(size: 26, weight: .semibold)).foregroundStyle(Style.ink)
                 Text("Choose the disc image (.iso) you made from each of your Japanese discs. It's only read, never changed or copied; only where it is is remembered. You can play with one game and add the other later.")
                     .font(.system(size: 14)).foregroundStyle(Style.muted).fixedSize(horizontal: false, vertical: true)
+                if model.searching {
+                    HStack(spacing: 10) {
+                        ProgressView().controlSize(.small)
+                        Text("Looking for your discs in Downloads, Documents and the Desktop…")
+                            .font(.system(size: 13)).foregroundStyle(Style.muted)
+                    }
+                }
                 ForEach(Game.allCases) { game in
                     DiscRow(game: game)
                 }
+                Text("Or drop your disc images anywhere on this window.").font(.system(size: 12)).foregroundStyle(Style.faint)
                 HStack {
                     Text("The first time a game starts, its English patch is made from the disc (less than a minute).")
                         .font(.system(size: 12)).foregroundStyle(Style.faint)
