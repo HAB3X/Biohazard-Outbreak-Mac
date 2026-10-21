@@ -68,7 +68,7 @@ struct Target
         uint8_t size = 1;
         int32_t value = 0;
     };
-    static constexpr int MaxAlso = 3;
+    static constexpr int MaxAlso = 6;
     Also also[MaxAlso];
     int alsoCount = 0;
 
@@ -95,6 +95,10 @@ struct Screen
     uint32_t clickElsewhere = 0;
     // Played when the pointer moves the cursor (the menu's own move sound; none: silent)
     Sound moveSound;
+    // A menu that takes its moves one at a time (an animation between them): a click's further presses wait until this byte
+    // says it takes input again (0: they're spaced in time only)
+    uint32_t readyAt = 0;
+    uint8_t readyValue = 0;
     // A pointer of the game's own that follows the mouse (its x and y as 16-bit words there, in the picture's coordinates;
     // 0: none): the network browser's
     uint32_t follow = 0;

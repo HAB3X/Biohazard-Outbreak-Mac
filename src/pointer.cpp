@@ -90,6 +90,8 @@ void Screen::Reset()
     wheelUp = wheelDown = clickElsewhere = 0;
     moveSound = Sound();
     follow = 0;
+    readyAt = 0;
+    readyValue = 0;
 }
 
 Target* Screen::Add()
@@ -335,7 +337,8 @@ bool Vblank(const Finder* finders, int count)
     }
     float fx, fy;
     int kind;
-    if (g_presses.left > 0 && found && --g_presses.wait <= 0)
+    if (g_presses.left > 0 && found && --g_presses.wait <= 0 &&
+        (g_screen.readyAt == 0 || Byte(g_screen.readyAt) == g_screen.readyValue))
     {
         ps2_press_buttons(g_presses.buttons, 0.05);
         g_presses.left--;

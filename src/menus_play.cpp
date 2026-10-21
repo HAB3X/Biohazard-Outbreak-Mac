@@ -43,16 +43,18 @@ struct Layout
     uint32_t pauseRows[11];
     int pauseRowCount;
     int pauseSettings;       // the rows before this are settings (left and right change them), the rest are chosen
-    // The YES and NO the game prints (the executable's table of them by language: a word each, YES the first)
-    uint32_t yesNo;
-    uint32_t language;
 };
 
 const Layout File2 = {"BIN/2.DAT", 0x6c8fa0, 0x24ad3c, 0x2aa890, 0x767250, 0x767254, 0x76a60e, 0x24a210, 0x24b22c,
                       0x38ae30, 0x38ae30, 0x76a60c, 0x4912bd, 0x740a90, 0x73fb60, 0x73f330, 0x767211, 0x7671f2, {0x1b7fd0},
                       {0x7402e0, 0x7402f0, 0, 0x740300, 0x740308, 0x740310, 0x740314, 0x740318, 0x7402d0, 0x7402d4, 0x7402d8},
-                      11, 8, 0x21eb60, 0x3137dd};
-const Layout File1 = {};
+                      11, 8};
+// File 1's: the same code at its own addresses (its slots' places 0x6AEA40, its actions' list 0x6B5740, its tabs 0x6AA100;
+// its pause has STEREO as its row 2, the rows' places at 0x6FF4B0 and 0x6FF4F0)
+const Layout File1 = {"PROG/GAME.BIN", 0x6b9450, 0x23bb30, 0x29b0d0, 0x720be0, 0x720be4, 0x723f9e, 0x23b208, 0x23bfbc,
+                      0x389740,    0x389740, 0x723f9c, 0x48bf7d, 0x6ffc80, 0x6fed50, 0x6fe520, 0x720ba1, 0x720b82, {0x1b6ec0},
+                      {0x6ff4f0, 0x6ff500, 0x6ff510, 0x6ff514, 0x6ff51c, 0x6ff524, 0x6ff528, 0x6ff52c, 0x6ff4c0, 0x6ff4c4, 0x6ff4c8},
+                      11, 8};
 
 const Layout& L() { return Current() == Disc::File2 ? File2 : File1; }
 
@@ -264,9 +266,8 @@ bool PauseMenu(Pointer::Screen& screen)
     uint8_t level = Byte(L().state + ItemLevel);
     if (Byte(cursor) == QuitRow && level == 1)
     {
-        uint32_t table = Word(L().yesNo + 4 * Byte(L().language)) & 0x1FFFFFF;
         Rect yes, no;
-        if (!TextMap::Find(Word(table), yes) || !TextMap::Find(Word(table + 4), no))
+        if (!TextMap::FindYesNo(yes, no))
         {
             return false;
         }

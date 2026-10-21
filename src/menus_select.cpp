@@ -90,6 +90,8 @@ uint32_t HintButton(const Record& r)
 bool IsArrow(const Record& r) { return r.u == 80 && r.v == 464 && r.w == 40 && r.h == 40; }
 bool IsCard(const Record& r) { return r.u == 0 && r.v == 0 && r.w == 256 && r.h == 192; }
 bool IsPortrait(const Record& r) { return r.w == 56 && r.h == 128 && r.place.x1 - r.place.x0 == 60; }
+bool IsBigPortrait(const Record& r) { return r.u == 0 && r.v == 0 && r.w == 256 && r.h == 256; }
+constexpr uint32_t Characters = 8;
 
 uint32_t SelectState()
 {
@@ -137,8 +139,14 @@ bool Select(Pointer::Screen& screen)
             current = &records[n];
         }
     }
+    // The selected portrait's highlight: one record for each character at the array's start, the selected one's shown, at
+    // the selected slot (the portraits scroll under it)
     Record highlight;
-    bool portraits = which != ScenarioSelect && Read(state + range->first, highlight);
+    bool portraits = false;
+    for (uint32_t n = 0; n < Characters && which != ScenarioSelect && !portraits; n++)
+    {
+        portraits = Read(state + range->first + RecordBytes * n, highlight) && IsPortrait(highlight) && highlight.v == 128;
+    }
     int hints = 0;
     for (int n = 0; n < count; n++)
     {
@@ -157,7 +165,11 @@ bool Select(Pointer::Screen& screen)
             float middle = (current->place.x0 + current->place.x1) / 2;
             screen.Press(r.place, &r == current ? Pointer::Circle : r.place.x0 < middle ? Pointer::Left : Pointer::Right);
         }
-        else if (portraits && IsPortrait(r))
+        else if (portraits && IsBigPortrait(r))
+        {
+            screen.Press(r.place, Pointer::Circle);
+        }
+        else if (portraits && IsPortrait(r) && r.v == 0)
         {
             // Steps from the selected slot (the portraits are 72 apart): one press a step
             int steps = static_cast<int>(std::lround((r.place.x0 - highlight.place.x0) / 72.0f));
@@ -178,6 +190,9 @@ bool Select(Pointer::Screen& screen)
     screen.name = which == ScenarioSelect ? "scenario select" : which == CharacterSelect ? "character select" : "partner select";
     screen.wheelUp = Pointer::Left;
     screen.wheelDown = Pointer::Right;
+    // Each step animates (the select's step byte, after its screen byte, is 1 again when it takes the next)
+    screen.readyAt = state + L().screen + 1;
+    screen.readyValue = 1;
     return true;
 }
 }

@@ -30,12 +30,16 @@ const Pointer::Finder* Finders(int& count);
 // The areas' finders (each file's own, in its order)
 extern const Pointer::Finder SaveFinders[];
 extern const int SaveFinderCount;
+extern const Pointer::Finder KeyboardFinders[];
+extern const int KeyboardFinderCount;
 extern const Pointer::Finder SelectFinders[];
 extern const int SelectFinderCount;
 extern const Pointer::Finder PlayFinders[];
 extern const int PlayFinderCount;
 extern const Pointer::Finder NetFinders[];
 extern const int NetFinderCount;
+extern const Pointer::Finder CollectionFinders[];
+extern const int CollectionFinderCount;
 extern const Pointer::Finder TitleFinders[];
 extern const int TitleFinderCount;
 }

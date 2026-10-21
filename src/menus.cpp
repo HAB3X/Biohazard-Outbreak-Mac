@@ -16,9 +16,11 @@ void Use(Disc disc)
     g_finders.clear();
     // The save data's screens come over every other menu (the options' save/load, the collection's data convert...)
     g_finders.insert(g_finders.end(), SaveFinders, SaveFinders + SaveFinderCount);
+    g_finders.insert(g_finders.end(), KeyboardFinders, KeyboardFinders + KeyboardFinderCount);
     g_finders.insert(g_finders.end(), PlayFinders, PlayFinders + PlayFinderCount);
     g_finders.insert(g_finders.end(), SelectFinders, SelectFinders + SelectFinderCount);
     g_finders.insert(g_finders.end(), NetFinders, NetFinders + NetFinderCount);
+    g_finders.insert(g_finders.end(), CollectionFinders, CollectionFinders + CollectionFinderCount);
     g_finders.insert(g_finders.end(), TitleFinders, TitleFinders + TitleFinderCount);
 }
 

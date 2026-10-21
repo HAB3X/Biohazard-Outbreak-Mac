@@ -81,7 +81,7 @@ const Ps2GameControl Controls[] = {
     {"pause_close", "Close the pause (SELECT)", "select", "Escape", Pause},
 };
 
-constexpr uint32_t R1 = 1u << 11, Cross = 1u << 14;
+constexpr uint32_t Start = 1u << 3, R1 = 1u << 11, Cross = 1u << 14;
 
 Layout g_layout = {};
 
@@ -212,6 +212,12 @@ void Vblank()
         // The game's menus ignore presses that come within 6 game frames of a move: taps closer than 7 wait their turn
         ps2_set_tap_spacing(menu ? 7 : 0);
         spaced = menu;
+    }
+    // In the title, the movies and the scenes a click is START (it skips them, and starts from PRESS START), as Return is
+    float x, y;
+    while (mode == Title && ps2_take_click(&x, &y))
+    {
+        ps2_press_buttons(Start, 0.05);
     }
     int count = 0;
     const Pointer::Finder* finders = Menus::Finders(count);

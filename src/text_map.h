@@ -28,6 +28,13 @@ void Draw(Ps2Cpu* c, void (*draw)(Ps2Cpu*));
 // there or from a copy of it (the menus that print their texts into a buffer first: the same bytes, up to the copy kept)
 bool Find(uint32_t text, Pointer::Rect& place);
 
+// The place of a string with these bytes drawn in the last finished frame (for menus that print words of their own data:
+// the YES and NO the game's own tables hold are found by Find), false when none was
+bool FindBytes(const char* bytes, Pointer::Rect& place);
+
+// A question's two answers drawn in the last finished frame: Yes and No as the English patch draws them, or the Japanese
+bool FindYesNo(Pointer::Rect& yes, Pointer::Rect& no);
+
 // The strings drawn in the last finished frame, in the order drawn: where from, the place, and the string's first bytes as
 // they were when drawn (a buffer the game draws from is written again later)
 constexpr int KeptBytes = 40;

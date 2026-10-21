@@ -95,6 +95,58 @@ int Last(const Drawn*& drawn)
     return last.drawn < MaxDrawn ? last.drawn : MaxDrawn;
 }
 
+bool FindBytes(const char* bytes, Pointer::Rect& place)
+{
+    const Drawn* drawn;
+    int count = Last(drawn);
+    for (int n = 0; n < count; n++)
+    {
+        if (std::strcmp(drawn[n].bytes, bytes) == 0)
+        {
+            place = drawn[n].place;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool FindYesNo(Pointer::Rect& yes, Pointer::Rect& no)
+{
+    static const char* const Words[][2] = {{"Yes", "No"}, {"YES", "NO"}, {"\x82\xcd\x82\xa2", "\x82\xa2\x82\xa2\x82\xa6"}};
+    for (const auto& words : Words)
+    {
+        if (FindBytes(words[0], yes) && FindBytes(words[1], no))
+        {
+            return true;
+        }
+    }
+    // One string "Yes/No" (File 1's pause: the game draws the chosen answer's bytes in red as a second string, which with
+    // the English words splits the line elsewhere): the line from the first piece to the end of the pieces after it on the
+    // same line, the answers its characters' share either side of the slash
+    const Drawn* drawn;
+    int count = Last(drawn);
+    for (int n = 0; n < count; n++)
+    {
+        const char* text = drawn[n].bytes;
+        if (std::strncmp(text, "Yes/", 4) != 0 && std::strncmp(text, "YES/", 4) != 0)
+        {
+            continue;
+        }
+        Pointer::Rect line = drawn[n].place;
+        int characters = static_cast<int>(std::strlen(text));
+        for (int k = n + 1; k < count && drawn[k].place.y0 == line.y0 && drawn[k].place.x0 == line.x1; k++)
+        {
+            line.x1 = drawn[k].place.x1;
+            characters += static_cast<int>(std::strlen(drawn[k].bytes));
+        }
+        float width = (line.x1 - line.x0) / static_cast<float>(characters);
+        yes = {line.x0, line.y0, line.x0 + 3 * width, line.y1};
+        no = {line.x0 + 4 * width, line.y0, line.x1, line.y1};
+        return true;
+    }
+    return false;
+}
+
 bool Find(uint32_t text, Pointer::Rect& place)
 {
     const Drawn* drawn;
