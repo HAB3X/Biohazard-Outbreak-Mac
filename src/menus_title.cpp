@@ -34,23 +34,31 @@ struct Layout
     // 0x563000 draws them)
     uint32_t charLogFrames;
     // The character log's pages (File 2 0x5638A0 draws them; 12-byte entries, the frame's x, y, width and height from the
-    // third 16-bit word): the three tabs, the scroll bar (its up arrow, track and down arrow) and the key hints' glyphs (L1
+    // third 16-bit word): the tabs, the scroll bar (its up arrow, track and down arrow) and the key hints' glyphs (L1
     // R1, cross)
-    uint32_t charLogTabs, charLogScroll, charLogHintGlyphs;
+    uint32_t charLogTabs;
+    int charLogPages;  // File 2's three tabs, File 1's five
+    uint32_t charLogScroll, charLogHintGlyphs;
     // The options' screens' frame tables (File 2 drawn by 0x55DF80, 0x55D0C0, 0x55E5B0, 0x55EB50): sound (its rows' frames
     // from entry 8, its value arrows 11 and 12, the volume bars' first segment 13), brightness (its slider 14-16, its
     // marker 17, the marker's step a float of the executable's data), the screen's position (its arrows 16-19), save/load
     // (its two rows from entry 6)
     uint32_t soundFrames, brightnessFrames, brightnessStep, screenFrames, saveLoadFrames;
+    // The settings' values in the options' state, from this offset: the output, the two volumes (0-7), two more, then the
+    // brightness (0x80 the middle) and the screen's position
+    uint32_t settings;
     // The menus' cursor sound (File 2 0x1B8000 with 2, as the title menu's moves play it)
     uint32_t moveSound;
     // File 2's collection starts with two rows (COLLECTION, DATA CONVERT, 0x551370); File 1's is its grid at once (0x542490)
     bool collectionFirstMenu;
+    // The network configuration's question's place is File 2's (File 1's options never showed its row here)
+    bool networkQuestion;
 };
 
-const Layout File2 = {"BIN/1.DAT", 0x24b070, 0x24b08c, 0x170, 0x174, {0x56a520, 0x56a570}, 0x56b1c4, 0x56b2dc, 0x56b360,
-                     0x56b348, 0x56ab10, 0x56a8e0, 0x249220, 0x56a9f0, 0x56ac50, 0x1b8000, true};
-const Layout File1 = {"PROG/DEMO.BIN", 0x23be34, 0x23be40, 0x168, 0x16c, {0x5599b0, 0x559a00}, 0x55a644, 0, 0, 0, 0, 0, 0, 0, 0, 0x1b6ef0, false};
+const Layout File2 = {"BIN/1.DAT", 0x24b070, 0x24b08c, 0x170, 0x174, {0x56a520, 0x56a570}, 0x56b1c4, 0x56b2dc, 3, 0x56b360,
+                     0x56b348, 0x56ab10, 0x56a8e0, 0x249220, 0x56a9f0, 0x56ac50, 0x14, 0x1b8000, true, true};
+const Layout File1 = {"PROG/DEMO.BIN", 0x23be34, 0x23be40, 0x168, 0x16c, {0x5599b0, 0x559a00}, 0x55a644, 0x55a750, 5, 0x55a7e0,
+                     0x55a7c8, 0x559fa0, 0x559d70, 0x239cc4, 0x559e80, 0x55a0e0, 0xc, 0x1b6ef0, false, false};
 
 const Layout& L() { return Current() == Disc::File2 ? File2 : File1; }
 
@@ -195,31 +203,32 @@ Rect Frame(uint32_t table, int n)
     return Box(Short(at), Short(at + 2), Short(at + 4), Short(at + 6));
 }
 
-// The character log's pages: Basic, Combat & Co-op and Scenario (the step 2 or 3 of its state, its 16-bit page at 6 below 3;
-// File 2 0x562A20). A tab is reached with R1 (the next page) or L1 (the one before), as the page's text is made as the page
+// The character log's pages: File 2's Basic, Combat & Co-op and Scenario, File 1's Basic, Combat & Team, Scenario, Special and
+// SP Item (the step 2 or 3 of its state, its 16-bit page at 6; File 2 0x562A20). A tab is reached with R1 (the next page) or L1 (the one before), as the page's text is made as the page
 // changes; the scroll bar's arrows and the wheel scroll it, the hints press their keys
 constexpr uint8_t CharLogData = 2, CharLogNetData = 3;
 constexpr uint32_t CharLogPage = 6;
-constexpr int CharLogPages = 3;
 
 bool CharacterLogPages(Pointer::Screen& screen)
 {
     uint32_t state = State();
     uint32_t sub = SubState();
     if (L().charLogTabs == 0 || state == 0 || sub == 0 || Byte(state) != Submenu || Word(state + ChosenRow) != CharacterLog ||
-        (Byte(sub + 1) != CharLogData && Byte(sub + 1) != CharLogNetData) || Half(sub + CharLogPage) >= CharLogPages)
+        (Byte(sub + 1) != CharLogData && Byte(sub + 1) != CharLogNetData) || Half(sub + CharLogPage) >= L().charLogPages)
     {
         return false;
     }
     screen.name = "character log's pages";
     screen.moveSound = MoveSound();
     int page = Half(sub + CharLogPage);
-    for (int n = 0; n < CharLogPages; n++)
+    const int pages = L().charLogPages;
+    for (int n = 0; n < pages; n++)
     {
-        int ahead = (n - page + CharLogPages) % CharLogPages;
+        int ahead = (n - page + pages) % pages;
         if (ahead != 0)
         {
-            screen.Press(Frame(L().charLogTabs, n), ahead == 1 ? Pointer::R1 : Pointer::L1);
+            bool on = ahead <= pages / 2;
+            screen.PressTimes(Frame(L().charLogTabs, n), on ? Pointer::R1 : Pointer::L1, on ? ahead : pages - ahead);
         }
     }
     screen.Press(Frame(L().charLogScroll, 0), Pointer::Up);
@@ -286,14 +295,14 @@ bool SoundSettings(Pointer::Screen& screen)
     Rect label = Frame(table, 8);
     screen.Setting({label.x0, label.y0 - 8, Frame(table, 12).x1 + 16, label.y1 + 8}, sub + ScreenCursor, 2, 0,
                    Frame(table, 11), Frame(table, 12));
-    // Rows 1 and 2, the volumes (0-7, the options' state's bytes 0x15 and 0x16): seven bar segments 16 apart, the first `level`
+    // Rows 1 and 2, the volumes (0-7, after the output's byte): seven bar segments 16 apart, the first `level`
     // lit; a click on a segment steps the level toward it (left of the last lit one lowers it, right of it raises it)
     for (int row = 1; row <= 2; row++)
     {
         Rect name = Frame(table, 8 + row);
         Rect first = Frame(table, 13);
         float y0 = name.y0 - 8, y1 = name.y1 + 8, right = first.x0 + 16 * 7 + 40;
-        float lit = first.x0 - 4 + 16.0f * static_cast<float>(Byte(sub + 0x14 + static_cast<uint32_t>(row)));
+        float lit = first.x0 - 4 + 16.0f * static_cast<float>(Byte(sub + L().settings + static_cast<uint32_t>(row)));
         screen.Setting({name.x0, y0, right, y1}, sub + ScreenCursor, 2, row, {first.x0 - 40, y0, lit - 16, y1}, {lit, y0, right, y1});
     }
     OptionsHints(screen, true);
@@ -302,8 +311,9 @@ bool SoundSettings(Pointer::Screen& screen)
     return true;
 }
 
-// Brightness: one value (the options' state's byte 0x19, 0x80 the middle), its slider's marker moved from the middle by the
+// Brightness: one value (the settings' byte 5, 0x80 the middle), its slider's marker moved from the middle by the
 // value's distance times a step (0x55D0C0): a click left of the marker lowers it, right of it raises it, as the wheel does
+constexpr uint32_t BrightnessValue = 5;
 bool Brightness(Pointer::Screen& screen)
 {
     uint32_t sub = L().brightnessFrames != 0 ? OptionsScreenUp(BrightnessRow, 3) : 0;
@@ -319,7 +329,7 @@ bool Brightness(Pointer::Screen& screen)
     uint32_t bits = Word(L().brightnessStep);
     static_assert(sizeof(step) == sizeof(bits));
     std::memcpy(&step, &bits, sizeof(step));
-    int value = Byte(sub + 0x19) - 0x80;
+    int value = Byte(sub + L().settings + BrightnessValue) - 0x80;
     float x = (marker.x0 + marker.x1) / 2 + (value < 0 ? -step * static_cast<float>((-value) / 2) : step * static_cast<float>(value));
     Rect slider = {bar.x0 - 16, marker.y0 - 8, end.x1 + 16, end.y1 + 8};
     screen.Press({slider.x0, slider.y0, x, slider.y1}, Pointer::Left);
@@ -379,8 +389,8 @@ bool SaveLoad(Pointer::Screen& screen)
 // picture of the English text (the line's x comes from its text's drawn width)
 bool NetworkConfiguration(Pointer::Screen& screen)
 {
-    uint32_t sub = OptionsScreenUp(NetworkRow, 2);
-    if (sub == 0 || L().soundFrames == 0)
+    uint32_t sub = L().networkQuestion ? OptionsScreenUp(NetworkRow, 2) : 0;
+    if (sub == 0)
     {
         return false;
     }

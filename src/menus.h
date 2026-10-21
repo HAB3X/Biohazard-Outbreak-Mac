@@ -24,6 +24,18 @@ bool AtPressStart();
 // Network Play's overlay is loaded (menus_net.cpp)
 bool NetworkRunning();
 
+// The lobby's cursor engines (menus_lobby.cpp), each run through this: the cursor it moves is kept for the frame (a lobby
+// menu is pointed at while the game moves its cursor), then the engine (`original`) runs. A byte's or a 16-bit word's engine
+// (the cursor's address, its last value, how it moves), or a list's (the window's first row, the row in it, the list's
+// length, the window's)
+enum class LobbyEngine
+{
+    Byte,
+    Half,
+    List,
+};
+void LobbyCursor(Ps2Cpu* c, LobbyEngine engine, void (*original)(Ps2Cpu*));
+
 // Every menu's finder, the topmost (a dialog over a list) first
 const Pointer::Finder* Finders(int& count);
 
@@ -36,6 +48,8 @@ extern const Pointer::Finder SelectFinders[];
 extern const int SelectFinderCount;
 extern const Pointer::Finder PlayFinders[];
 extern const int PlayFinderCount;
+extern const Pointer::Finder LobbyFinders[];
+extern const int LobbyFinderCount;
 extern const Pointer::Finder NetFinders[];
 extern const int NetFinderCount;
 extern const Pointer::Finder CollectionFinders[];

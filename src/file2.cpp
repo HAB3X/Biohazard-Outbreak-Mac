@@ -1,5 +1,6 @@
 // Biohazard Outbreak File 2 for Mac: the recompiled executable and its overlays on the PS2 runtime
 #include "controls.h"
+#include "menus.h"
 #include "network.h"
 #include "partner_ai.h"
 #include "pointer.h"
@@ -36,6 +37,18 @@ extern "C" void netwk_usb_key(Ps2Cpu* c) { Typing::UsbKey(c, g_softKeyboard, net
 // netwk's connection setup step: the configuration list skipped (src/network.cpp)
 extern "C" void netwk_005bfd40(Ps2Cpu* c);
 extern "C" void netwk_setup_step(Ps2Cpu* c) { Network::SetupStep(c, Network::File2Setup, netwk_005bfd40); }
+
+// The lobby's cursor engines: the cursors the game moves each frame kept for the pointer (src/menus_lobby.cpp)
+extern "C" void netwk_005477b0(Ps2Cpu* c);
+extern "C" void netwk_menu_cursor(Ps2Cpu* c) { Menus::LobbyCursor(c, Menus::LobbyEngine::Byte, netwk_005477b0); }
+extern "C" void netwk_00547ad0(Ps2Cpu* c);
+extern "C" void netwk_menu_cursor_held(Ps2Cpu* c) { Menus::LobbyCursor(c, Menus::LobbyEngine::Byte, netwk_00547ad0); }
+extern "C" void netwk_00547d00(Ps2Cpu* c);
+extern "C" void netwk_menu_cursor_held_fast(Ps2Cpu* c) { Menus::LobbyCursor(c, Menus::LobbyEngine::Byte, netwk_00547d00); }
+extern "C" void netwk_00547940(Ps2Cpu* c);
+extern "C" void netwk_menu_cursor_word(Ps2Cpu* c) { Menus::LobbyCursor(c, Menus::LobbyEngine::Half, netwk_00547940); }
+extern "C" void netwk_00547f80(Ps2Cpu* c);
+extern "C" void netwk_list_cursor(Ps2Cpu* c) { Menus::LobbyCursor(c, Menus::LobbyEngine::List, netwk_00547f80); }
 
 // The partners' think and its perception, SINGLE.BIN's (src/partner_ai.cpp)
 extern "C" void single_007e99d0(Ps2Cpu* c);

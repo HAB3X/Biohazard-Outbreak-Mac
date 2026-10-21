@@ -19,6 +19,7 @@ void Use(Disc disc)
     g_finders.insert(g_finders.end(), KeyboardFinders, KeyboardFinders + KeyboardFinderCount);
     g_finders.insert(g_finders.end(), PlayFinders, PlayFinders + PlayFinderCount);
     g_finders.insert(g_finders.end(), SelectFinders, SelectFinders + SelectFinderCount);
+    g_finders.insert(g_finders.end(), LobbyFinders, LobbyFinders + LobbyFinderCount);
     g_finders.insert(g_finders.end(), NetFinders, NetFinders + NetFinderCount);
     g_finders.insert(g_finders.end(), CollectionFinders, CollectionFinders + CollectionFinderCount);
     g_finders.insert(g_finders.end(), TitleFinders, TitleFinders + TitleFinderCount);

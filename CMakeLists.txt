@@ -22,7 +22,7 @@ target_include_directories(partner_ai_brain_test PRIVATE src ${PS2_RUNTIME_DIR}/
 add_test(NAME partner_ai_brain COMMAND partner_ai_brain_test)
 
 # The keyboard and mouse: the keys' modes and the pointer over the games' menus (src/controls.h, src/pointer.h, src/menus.h)
-set(CONTROL_SOURCES src/controls.cpp src/pointer.cpp src/text_map.cpp src/menus.cpp src/menus_title.cpp src/menus_save.cpp src/menus_net.cpp src/menus_play.cpp src/menus_select.cpp src/menus_collection.cpp src/menus_keyboard.cpp)
+set(CONTROL_SOURCES src/controls.cpp src/pointer.cpp src/text_map.cpp src/menus.cpp src/menus_title.cpp src/menus_save.cpp src/menus_net.cpp src/menus_lobby.cpp src/menus_play.cpp src/menus_select.cpp src/menus_collection.cpp src/menus_keyboard.cpp)
 
 # Your own disc images (Japan), either or both: each game is its own program
 set(FILE1_DISC "" CACHE FILEPATH "Your Biohazard Outbreak (Japan, SLPM-65428) disc image")
