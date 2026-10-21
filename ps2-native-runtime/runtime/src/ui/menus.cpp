@@ -42,6 +42,12 @@ bool g_muteInBackground = true;
 bool g_pauseInBackground = true;
 int g_promptChoice = 0;
 std::atomic<bool> g_backIsSelect{false};
+// The input's options (InputOptions): Hold to toggle, the mouse's speed as an index into MouseSpeeds, its acceleration and
+// Compensate game deadzone
+std::atomic<bool> g_holdToToggle{false}, g_mouseAcceleration{false}, g_compensateDeadzone{false};
+const int MouseSpeeds[] = {25, 50, 75, 100, 125, 150, 200, 300};
+constexpr int MouseSpeedDefault = 3;
+std::atomic<int> g_mouseSpeed{MouseSpeedDefault};
 std::map<std::string, std::string> g_savedGame;
 
 // The game asked for the Options (ps2_open_settings); the game paused because the window isn't in front (a game with its own
@@ -73,13 +79,18 @@ void SaveOptions()
     std::ofstream out(OptionsPath());
     out << "# The PC menus' settings (Escape opens them). master_volume: 0-10; mute_in_background, pause_in_background: 0 or 1;\n"
            "# prompts: automatic, keyboard, playstation, xbox or switch; pad_back: menu (a gamepad's Back button opens the PC\n"
-           "# menus) or select (it's the PS2's Select). The game's own settings follow, by their tab and name\n";
+           "# menus) or select (it's the PS2's Select); hold_to_toggle, mouse_acceleration, compensate_deadzone: 0 or 1;\n"
+           "# mouse_speed: 25, 50, 75, 100, 125, 150, 200 or 300 (%). The game's own settings follow, by their tab and name\n";
     static const char* const Prompts[] = {"automatic", "keyboard", "playstation", "xbox", "switch"};
     out << "master_volume = " << g_masterVolume << "\n";
     out << "mute_in_background = " << (g_muteInBackground ? 1 : 0) << "\n";
     out << "pause_in_background = " << (g_pauseInBackground ? 1 : 0) << "\n";
     out << "prompts = " << Prompts[std::clamp(g_promptChoice, 0, 4)] << "\n";
     out << "pad_back = " << (g_backIsSelect ? "select" : "menu") << "\n";
+    out << "hold_to_toggle = " << (g_holdToToggle ? 1 : 0) << "\n";
+    out << "mouse_speed = " << MouseSpeeds[g_mouseSpeed] << "\n";
+    out << "mouse_acceleration = " << (g_mouseAcceleration ? 1 : 0) << "\n";
+    out << "compensate_deadzone = " << (g_compensateDeadzone ? 1 : 0) << "\n";
     for (const auto& [key, value] : g_savedGame)
     {
         out << key << " = " << value << "\n";
@@ -135,6 +146,29 @@ void ReadOptions()
         else if (name == "pad_back")
         {
             g_backIsSelect = value == "select";
+        }
+        else if (name == "hold_to_toggle")
+        {
+            g_holdToToggle = atoi(value.c_str()) != 0;
+        }
+        else if (name == "mouse_speed")
+        {
+            int percent = atoi(value.c_str());
+            for (int i = 0; i < static_cast<int>(std::size(MouseSpeeds)); i++)
+            {
+                if (MouseSpeeds[i] == percent)
+                {
+                    g_mouseSpeed = i;
+                }
+            }
+        }
+        else if (name == "mouse_acceleration")
+        {
+            g_mouseAcceleration = atoi(value.c_str()) != 0;
+        }
+        else if (name == "compensate_deadzone")
+        {
+            g_compensateDeadzone = atoi(value.c_str()) != 0;
         }
         else if (name.find(": ") != std::string::npos)
         {
@@ -650,6 +684,41 @@ void BuildOptions()
             },
             {"PC menu", "Select"}));
     }
+    controls.rows.push_back(Choice(
+        "Hold to toggle", "A control you hold (run, aim) stays held after one press, until the next",
+        [] { return g_holdToToggle ? 1 : 0; },
+        [](int v) {
+            g_holdToToggle = v != 0;
+            SaveOptions();
+        },
+        {"Off", "On"}));
+    controls.rows.push_back(Choice(
+        "Mouse speed", "How far the mouse turns and aims for its movement",
+        [] { return g_mouseSpeed.load(); },
+        [](int v) {
+            g_mouseSpeed = v;
+            SaveOptions();
+        },
+        {"25%", "50%", "75%", "100%", "125%", "150%", "200%", "300%"}));
+    controls.rows.push_back(Choice(
+        "Mouse acceleration", "Faster movements of the mouse turn further than slow ones",
+        [] { return g_mouseAcceleration ? 1 : 0; },
+        [](int v) {
+            g_mouseAcceleration = v != 0;
+            SaveOptions();
+        },
+        {"Off", "On"}));
+    if (g_game != nullptr && g_game->stickDeadzone > 0)
+    {
+        controls.rows.push_back(Choice(
+            "Compensate game deadzone", "A gamepad stick's smallest push moves you: the game's own dead zone skipped",
+            [] { return g_compensateDeadzone ? 1 : 0; },
+            [](int v) {
+                g_compensateDeadzone = v != 0;
+                SaveOptions();
+            },
+            {"Off", "On"}));
+    }
     AddGameRows(controls, "Controls");
     Row header;
     header.kind = RowHeader;
@@ -674,6 +743,17 @@ void BuildOptions()
         controls.rows.push_back(row);
     }
     controls.rows.push_back(Action("Reset the keyboard controls", "Every key and mouse button back to the defaults", InputResetKeys));
+    Row padHeading;
+    padHeading.kind = RowHeading;
+    padHeading.label = "Controller";
+    controls.rows.push_back(padHeading);
+    for (int b = 0; b < InputPadButtonCount(); b++)
+    {
+        controls.rows.push_back(Choice(
+            InputPadButtonLabel(b), "The gamepad's button that is this PS2 button",
+            [b] { return InputPadBinding(b); }, [b](int v) { InputSetPadBinding(b, v); }, InputPadSourceLabels()));
+    }
+    controls.rows.push_back(Action("Reset the controller", "Every PS2 button back on its own gamepad button", InputResetPad));
     g_pages.push_back(controls);
 
     // The game's other tabs
@@ -1561,6 +1641,16 @@ bool MenusOpen() { return g_open; }
 
 bool PadBackIsSelect() { return g_backIsSelect || OwnPause(); }
 
+InputOptions ControlOptions()
+{
+    InputOptions o;
+    o.holdToToggle = g_holdToToggle;
+    o.mouseSpeed = static_cast<float>(MouseSpeeds[g_mouseSpeed]) / 100.0f;
+    o.mouseAcceleration = g_mouseAcceleration;
+    o.compensateDeadzone = g_compensateDeadzone;
+    return o;
+}
+
 bool MenusEvent(const SDL_Event& e)
 {
     InputNoteDevice(e);
@@ -1738,6 +1828,13 @@ bool MenusEvent(const SDL_Event& e)
             if (e.gbutton.button == SDL_GAMEPAD_BUTTON_BACK && !PadBackIsSelect())
             {
                 OpenPause();
+                return true;
+            }
+            // A game with its own pause menu has Back as Select: the Options are on the touchpad's click (DualShock 4,
+            // DualSense) or the Share button (Xbox Series), as F10 on the keyboard
+            if ((e.gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD || e.gbutton.button == SDL_GAMEPAD_BUTTON_MISC1) && OwnPause())
+            {
+                g_settingsAsked = true;
                 return true;
             }
             return false;

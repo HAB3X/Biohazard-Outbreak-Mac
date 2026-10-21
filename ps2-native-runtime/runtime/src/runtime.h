@@ -102,6 +102,8 @@ void InputLiveMouse(float x, float y);
 void InputLiveWheel(float lines);
 // --control move: the mouse moved by this much (pixels), as the relative mode reports it while a game has the mouse on a stick
 void InputLiveMove(float dx, float dy);
+// --control's left stick pushed (each axis -1 to 1) for a hold of game seconds
+void InputLiveStick(float x, float y, double hold);
 void GsLiveSnapshot(const std::string& name);
 void GsLiveStop();
 // Records the GS's side from the next vblank (--gs-record's, asked for while the game runs)
@@ -412,6 +414,14 @@ int InputBindKey(int action, int slot, int key);
 void InputClearKey(int action, int slot);
 void InputResetKeys();
 bool InputIsMenuKey(int key);
+// The controller's buttons: each PS2 button's (Cross, Circle... Select) gamepad button, as an index into the labels; set and
+// saved to bindings.txt; all back to their places
+int InputPadButtonCount();
+std::string InputPadButtonLabel(int button);
+std::vector<std::string> InputPadSourceLabels();
+int InputPadBinding(int button);
+void InputSetPadBinding(int button, int source);
+void InputResetPad();
 // The game's prompt (ps2_show_prompt; empty: none)
 std::string InputPrompt();
 

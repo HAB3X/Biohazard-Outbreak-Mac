@@ -3,6 +3,7 @@
 //   key NAME[+NAME] [HOLD]   keys (bindings.txt's names: W, Left Shift, Mouse Left) held HOLD game seconds (0.3)
 //   tap|down|up NAME[+NAME]  SDL key or mouse button events (tap: pressed and let go at once, as a very short press)
 //   mouse X Y                the mouse over the picture (0-1 across and down), wheel DY: the wheel
+//   stick X Y [HOLD]         the left stick pushed (each axis -1 to 1, as the PS2 reads it) for HOLD game seconds (0.3)
 //   spacing FRAMES           ps2_set_tap_spacing: the least time between two taps' starts
 //   pads                     the presses the pad server took and the frames showed (--log input has each)
 //   snap NAME                a picture, NAME.<n>.png in the --snapshots folder, at the next vblank
@@ -99,6 +100,12 @@ void Handle(const std::string& line)
         float dx = 0, dy = 0;
         in >> dx >> dy;
         InputLiveMove(dx, dy);
+    }
+    else if (command == "stick")
+    {
+        float x = 0, y = 0, hold = 0.3f;
+        in >> x >> y >> hold;
+        InputLiveStick(x, y, hold);
     }
     else if (command == "wheel")
     {

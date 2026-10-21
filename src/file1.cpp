@@ -121,6 +121,9 @@ int main(int argc, char** argv)
     // picture at nearly its own pixels
     game.gsRenderer = "metal";
     game.gsScale = 4;
+    // The left stick moves her only past 0.41 of its push (--control's stick: still at 0.40, walking at 0.42, in File 1's bar and
+    // File 2's zoo): the PC menus' Compensate game deadzone starts a gamepad's push there
+    game.stickDeadzone = 0.42f;
     BiohazardControls::Apply(game, BiohazardControls::File1);
     game.networkDns = Network::ObsrvDns;
     game.settings = PartnerAi::Settings;

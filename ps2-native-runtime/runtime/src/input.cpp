@@ -97,19 +97,63 @@ int KeyFromName(std::string name);
 
 bool GameControls() { return g_game != nullptr && g_game->controls != nullptr && g_game->controlCount > 0; }
 
-// The gamepad's control for a PS2 button (the first of several)
+// The gamepad's buttons a PS2 button can be put on (the Controls tab's Controller rows, bindings.txt's pad_ lines): SDL's
+// button, or a trigger (its axis past half), with its name in bindings.txt and the PC menus, and its control for the prompts
+struct PadSource
+{
+    const char* name;
+    const char* label;
+    SDL_GamepadButton button;
+    int trigger; // 0 none, 1 the left, 2 the right
+    Ui::PadControl pad;
+};
+const PadSource g_padSources[] = {
+    {"South", "A / Cross", SDL_GAMEPAD_BUTTON_SOUTH, 0, Ui::PadControl::South},
+    {"East", "B / Circle", SDL_GAMEPAD_BUTTON_EAST, 0, Ui::PadControl::East},
+    {"West", "X / Square", SDL_GAMEPAD_BUTTON_WEST, 0, Ui::PadControl::West},
+    {"North", "Y / Triangle", SDL_GAMEPAD_BUTTON_NORTH, 0, Ui::PadControl::North},
+    {"Left Shoulder", "LB / L1", SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, 0, Ui::PadControl::LeftShoulder},
+    {"Right Shoulder", "RB / R1", SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, 0, Ui::PadControl::RightShoulder},
+    {"Left Trigger", "LT / L2", SDL_GAMEPAD_BUTTON_INVALID, 1, Ui::PadControl::LeftTrigger},
+    {"Right Trigger", "RT / R2", SDL_GAMEPAD_BUTTON_INVALID, 2, Ui::PadControl::RightTrigger},
+    {"Left Stick", "L3", SDL_GAMEPAD_BUTTON_LEFT_STICK, 0, Ui::PadControl::LeftStick},
+    {"Right Stick", "R3", SDL_GAMEPAD_BUTTON_RIGHT_STICK, 0, Ui::PadControl::RightStick},
+    {"Start", "Menu / Start", SDL_GAMEPAD_BUTTON_START, 0, Ui::PadControl::Start},
+    {"Back", "View / Select", SDL_GAMEPAD_BUTTON_BACK, 0, Ui::PadControl::BackAsSelect},
+};
+constexpr int PadSourceCount = static_cast<int>(sizeof(g_padSources) / sizeof(g_padSources[0]));
+
+// The PS2's buttons a gamepad's can be put on, each on its default (its place on a DualShock: g_padSources' order). The d-pad
+// stays the d-pad
+const struct
+{
+    const char* name; // bindings.txt's pad_<name>
+    const char* label;
+    u32 bit;
+} g_padButtons[] = {{"cross", "Cross", Cross}, {"circle", "Circle", Circle}, {"square", "Square", Square},
+                    {"triangle", "Triangle", Triangle}, {"l1", "L1", L1}, {"r1", "R1", R1}, {"l2", "L2", L2},
+                    {"r2", "R2", R2}, {"l3", "L3", L3}, {"r3", "R3", R3}, {"start", "Start", Start},
+                    {"select", "Select", Select}};
+constexpr int PadButtonCount = static_cast<int>(sizeof(g_padButtons) / sizeof(g_padButtons[0]));
+int g_padBinding[PadButtonCount] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+
+// The gamepad's control for a PS2 button (the first of several): where it's put
 Ui::PadControl PadFor(u32 buttons)
 {
     using P = Ui::PadControl;
+    for (int i = 0; i < PadButtonCount; i++)
+    {
+        if (buttons & g_padButtons[i].bit)
+        {
+            return g_padSources[g_padBinding[i]].pad;
+        }
+    }
     const struct
     {
         u32 bit;
         P pad;
-    } pads[] = {{Cross, P::South},          {Circle, P::East},          {Square, P::West},        {Triangle, P::North},
-                {L1, P::LeftShoulder},      {R1, P::RightShoulder},     {L2, P::LeftTrigger},     {R2, P::RightTrigger},
-                {Start, P::Start},          {Select, P::BackAsSelect},  {L3, P::LeftStick},       {R3, P::RightStick},
-                {Up, P::DpadUp},            {Down, P::DpadDown},        {Left, P::DpadLeft},      {Right, P::DpadRight}};
-    for (const auto& p : pads)
+    } dpad[] = {{Up, P::DpadUp}, {Down, P::DpadDown}, {Left, P::DpadLeft}, {Right, P::DpadRight}};
+    for (const auto& p : dpad)
     {
         if (buttons & p.bit)
         {
@@ -338,6 +382,42 @@ void WriteBindings()
         }
         out << "\n";
     }
+    out << "# The controller: each PS2 button's gamepad button (South, East, West, North, Left Shoulder, Right Shoulder,\n"
+           "# Left Trigger, Right Trigger, Left Stick, Right Stick, Start, Back)\n";
+    for (int i = 0; i < PadButtonCount; i++)
+    {
+        out << "pad_" << g_padButtons[i].name << " = " << g_padSources[g_padBinding[i]].name << "\n";
+    }
+}
+
+// A pad_ line of bindings.txt: true when it was one
+bool LoadPadBinding(const std::string& name, std::string value)
+{
+    if (name.rfind("pad_", 0) != 0)
+    {
+        return false;
+    }
+    value.erase(0, value.find_first_not_of(" \t\r"));
+    value.erase(value.find_last_not_of(" \t\r") + 1);
+    for (int i = 0; i < PadButtonCount; i++)
+    {
+        if (name.substr(4) != g_padButtons[i].name)
+        {
+            continue;
+        }
+        for (int s = 0; s < PadSourceCount; s++)
+        {
+            if (value == g_padSources[s].name)
+            {
+                g_padBinding[i] = s;
+                return true;
+            }
+        }
+        Log("bindings.txt: no gamepad button \"%s\" (%s)", value.c_str(), name.c_str());
+        return true;
+    }
+    Log("bindings.txt: no PS2 button \"%s\"", name.c_str());
+    return true;
 }
 
 void LoadBindings()
@@ -368,6 +448,10 @@ void LoadBindings()
         }
         std::string name = line.substr(0, eq);
         name.erase(std::remove_if(name.begin(), name.end(), [](unsigned char c) { return std::isspace(c); }), name.end());
+        if (LoadPadBinding(name, line.substr(eq + 1)))
+        {
+            continue;
+        }
         for (Action& a : g_actions)
         {
             if (name != a.name)
@@ -629,6 +713,31 @@ bool PadHeld(SDL_GamepadButton button)
 
 u8 Axis(Sint16 v) { return static_cast<u8>(std::clamp((static_cast<int>(v) + 32768) >> 8, 0, 255)); }
 
+// A gamepad stick (SDL's axes) as the PS2 reads it. With Compensate game deadzone (for a game that says its dead zone,
+// Ps2GameInfo::stickDeadzone) a push past the stick's own rest starts at the game's dead zone's edge and reaches full at full,
+// along the push's direction, so the smallest push moves; at rest it stays centred
+constexpr float StickRest = 0.12f; // a gamepad's stick at rest reads up to about this far off the middle
+void CompensatedStick(Sint16 sx, Sint16 sy, u8* outX, u8* outY)
+{
+    float deadzone = g_game != nullptr ? g_game->stickDeadzone : 0;
+    if (deadzone <= 0 || !Ui::ControlOptions().compensateDeadzone)
+    {
+        *outX = Axis(sx);
+        *outY = Axis(sy);
+        return;
+    }
+    float x = std::clamp(sx / 32767.0f, -1.0f, 1.0f), y = std::clamp(sy / 32767.0f, -1.0f, 1.0f);
+    float push = std::min(1.0f, std::hypot(x, y));
+    float k = 0;
+    if (push > StickRest)
+    {
+        float wanted = deadzone + (1.0f - deadzone) * (push - StickRest) / (1.0f - StickRest);
+        k = wanted / push;
+    }
+    *outX = static_cast<u8>(std::clamp(static_cast<int>(std::lround(128.0f + x * k * 127.5f)), 0, 255));
+    *outY = static_cast<u8>(std::clamp(static_cast<int>(std::lround(128.0f + y * k * 127.5f)), 0, 255));
+}
+
 void Typed(const std::string& text)
 {
     std::lock_guard<std::mutex> lock(g_typedLock);
@@ -738,11 +847,38 @@ static bool g_mouseCaptured = false;
 constexpr float MouseTurnPixels = 12.0f;
 constexpr float MouseAimPixels = 120.0f;
 
+// A motion of the mouse's as the game gets it: the PC menus' Mouse speed, and with Mouse acceleration a faster motion (more pixels
+// in one of the mouse's reports) counting for more, from half below AccelPixels to twice at twice it
+constexpr float AccelPixels = 6.0f;
+float MouseScale(float dx, float dy)
+{
+    Ui::InputOptions o = Ui::ControlOptions();
+    float k = o.mouseSpeed;
+    if (o.mouseAcceleration)
+    {
+        k *= std::clamp(std::hypot(dx, dy) / AccelPixels, 0.5f, 2.0f);
+    }
+    return k;
+}
+
 void InputLiveMove(float dx, float dy)
 {
+    float k = MouseScale(dx, dy);
     std::lock_guard<std::mutex> lock(g_typedLock);
-    g_mouseDx += dx;
-    g_mouseDy += dy;
+    g_mouseDx += dx * k;
+    g_mouseDy += dy * k;
+}
+
+// --control's left stick: pushed this far (each axis -1 to 1, as the PS2 reads it, no dead zone of ours) until a game time
+float g_liveStickX = 0, g_liveStickY = 0;
+double g_liveStickUntil = -1;
+
+void InputLiveStick(float x, float y, double hold)
+{
+    std::lock_guard<std::mutex> lock(g_liveLock);
+    g_liveStickX = std::clamp(x, -1.0f, 1.0f);
+    g_liveStickY = std::clamp(y, -1.0f, 1.0f);
+    g_liveStickUntil = g_liveNow + hold;
 }
 
 void InputLiveMouse(float x, float y)
@@ -790,8 +926,9 @@ void InputEvent(const SDL_Event& e)
             g_mouseMoved = true;
             if (g_mouseCaptured)
             {
-                g_mouseDx += e.motion.xrel;
-                g_mouseDy += e.motion.yrel;
+                float k = MouseScale(e.motion.xrel, e.motion.yrel);
+                g_mouseDx += e.motion.xrel * k;
+                g_mouseDy += e.motion.yrel * k;
             }
         }
         else if (g_menu && x >= 0 && x < 1 && y >= 0 && y < 1)
@@ -890,6 +1027,38 @@ void Rumble(bool menus)
     renewed = now;
     on = pad;
 }
+}
+
+// Hold to toggle (the PC menus' Controls): the buttons of the mode's controls the game marks as holds (Ps2GameControl::hold)
+// latch on at a press and off at the next, from the keys, the mouse or a gamepad alike. A change of mode (the status screen
+// opening) lets them all go; the PC menus being up shows none and keeps them for after
+u32 HoldsToggled(u32 pressed, int mode, bool menus)
+{
+    static u32 latched = 0, wasHeld = 0;
+    static int lastMode = -1;
+    if (!Ui::ControlOptions().holdToToggle || !GameControls() || mode != lastMode)
+    {
+        latched = wasHeld = 0;
+        lastMode = mode;
+        return pressed;
+    }
+    if (menus)
+    {
+        return pressed & ~latched;
+    }
+    u32 holds = 0;
+    for (int i = 0; i < g_game->controlCount; i++)
+    {
+        const Ps2GameControl& c = g_game->controls[i];
+        if (c.hold != 0 && c.mode == mode)
+        {
+            holds |= ButtonsFromNames(c.press);
+        }
+    }
+    u32 held = pressed & holds;
+    latched = (latched ^ (held & ~wasHeld)) & holds;
+    wasHeld = held;
+    return (pressed & ~holds) | latched;
 }
 
 void InputUpdate(double t, SDL_Window* window)
@@ -1079,6 +1248,14 @@ void InputUpdate(double t, SDL_Window* window)
         sticks[s][0] += std::clamp(dx / MouseTurnPixels, -1.0f, 1.0f);
         sticks[s][1] += g_mouseAim;
     }
+    {
+        std::lock_guard<std::mutex> lock(g_liveLock);
+        if (g_liveNow < g_liveStickUntil && !menus)
+        {
+            sticks[0][0] += g_liveStickX;
+            sticks[0][1] += g_liveStickY;
+        }
+    }
     // A stick from keys: a diagonal is both axes at full, as a PS2 stick pushed into its corner reads (and PCSX2's keys give):
     // scaled to the circle (both at 1/sqrt(2)) games take it for a stick half pushed, CTTR's Crash walking. Walking at half
     u8 out[4] = {0x80, 0x80, 0x80, 0x80}; // right x, right y, left x, left y
@@ -1102,36 +1279,44 @@ void InputUpdate(double t, SDL_Window* window)
         {
             SDL_GamepadButton button;
             u32 bit;
-        } buttons[] = {{SDL_GAMEPAD_BUTTON_SOUTH, Cross},         {SDL_GAMEPAD_BUTTON_EAST, Circle},
-                       {SDL_GAMEPAD_BUTTON_WEST, Square},         {SDL_GAMEPAD_BUTTON_NORTH, Triangle},
-                       {SDL_GAMEPAD_BUTTON_BACK, backIsSelect ? Select : 0u}, {SDL_GAMEPAD_BUTTON_START, Start},
-                       {SDL_GAMEPAD_BUTTON_LEFT_STICK, L3},       {SDL_GAMEPAD_BUTTON_RIGHT_STICK, R3},
-                       {SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, L1},    {SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, R1},
-                       {SDL_GAMEPAD_BUTTON_DPAD_UP, Up},          {SDL_GAMEPAD_BUTTON_DPAD_DOWN, Down},
-                       {SDL_GAMEPAD_BUTTON_DPAD_LEFT, Left},      {SDL_GAMEPAD_BUTTON_DPAD_RIGHT, Right}};
-        for (const auto& b : buttons)
+        } dpad[] = {{SDL_GAMEPAD_BUTTON_DPAD_UP, Up}, {SDL_GAMEPAD_BUTTON_DPAD_DOWN, Down},
+                    {SDL_GAMEPAD_BUTTON_DPAD_LEFT, Left}, {SDL_GAMEPAD_BUTTON_DPAD_RIGHT, Right}};
+        for (const auto& b : dpad)
         {
             if (PadHeld(b.button))
             {
                 pressed |= b.bit;
             }
         }
-        if (!(g_ignoredPad & (1u << 30)) && SDL_GetGamepadAxis(g_gamepad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER) > 16000)
+        // Each PS2 button from the gamepad's it's put on (the Back button only while it's Select)
+        for (int i = 0; i < PadButtonCount; i++)
         {
-            pressed |= L2;
-        }
-        if (!(g_ignoredPad & (1u << 31)) && SDL_GetGamepadAxis(g_gamepad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > 16000)
-        {
-            pressed |= R2;
+            const PadSource& from = g_padSources[g_padBinding[i]];
+            bool held = false;
+            if (from.trigger != 0)
+            {
+                int ignored = from.trigger == 1 ? 30 : 31;
+                SDL_GamepadAxis axis = from.trigger == 1 ? SDL_GAMEPAD_AXIS_LEFT_TRIGGER : SDL_GAMEPAD_AXIS_RIGHT_TRIGGER;
+                held = !(g_ignoredPad & (1u << ignored)) && SDL_GetGamepadAxis(g_gamepad, axis) > 16000;
+            }
+            else if (from.button != SDL_GAMEPAD_BUTTON_BACK || backIsSelect)
+            {
+                held = PadHeld(from.button);
+            }
+            if (held)
+            {
+                pressed |= g_padButtons[i].bit;
+            }
         }
         // The gamepad's sticks unless the keys moved them
         const SDL_GamepadAxis axes[4] = {SDL_GAMEPAD_AXIS_RIGHTX, SDL_GAMEPAD_AXIS_RIGHTY, SDL_GAMEPAD_AXIS_LEFTX,
                                          SDL_GAMEPAD_AXIS_LEFTY};
-        for (int i = 0; i < 4; i++)
+        for (int s = 0; s < 4; s += 2)
         {
-            if (out[i] == 0x80)
+            if (out[s] == 0x80 && out[s + 1] == 0x80)
             {
-                out[i] = Axis(SDL_GetGamepadAxis(g_gamepad, axes[i]));
+                CompensatedStick(SDL_GetGamepadAxis(g_gamepad, axes[s]), SDL_GetGamepadAxis(g_gamepad, axes[s + 1]), &out[s],
+                                 &out[s + 1]);
             }
         }
     }
@@ -1149,7 +1334,7 @@ void InputUpdate(double t, SDL_Window* window)
     std::fill(g_keyEdge.begin(), g_keyEdge.end(), false);
     g_mouseEdge = 0;
     g_anyHeld = pressed != 0 || std::abs(out[2] - 0x80) > StickHeld || std::abs(out[3] - 0x80) > StickHeld;
-    PadSetInput(0, pressed, out);
+    PadSetInput(0, HoldsToggled(pressed, mode, menus), out);
 }
 
 void InputIgnoreHeld()
@@ -1220,7 +1405,42 @@ std::string InputActionLabel(int action)
     return a.label;
 }
 
-Ui::PadControl InputActionPad(int action) { return g_actions[static_cast<size_t>(action)].pad; }
+Ui::PadControl InputActionPad(int action)
+{
+    const Action& a = g_actions[static_cast<size_t>(action)];
+    return a.button != 0 ? PadFor(a.button) : a.pad;
+}
+
+int InputPadButtonCount() { return PadButtonCount; }
+
+std::string InputPadButtonLabel(int button) { return g_padButtons[button].label; }
+
+std::vector<std::string> InputPadSourceLabels()
+{
+    std::vector<std::string> labels;
+    for (const PadSource& s : g_padSources)
+    {
+        labels.push_back(s.label);
+    }
+    return labels;
+}
+
+int InputPadBinding(int button) { return g_padBinding[button]; }
+
+void InputSetPadBinding(int button, int source)
+{
+    g_padBinding[button] = std::clamp(source, 0, PadSourceCount - 1);
+    WriteBindings();
+}
+
+void InputResetPad()
+{
+    for (int i = 0; i < PadButtonCount; i++)
+    {
+        g_padBinding[i] = i;
+    }
+    WriteBindings();
+}
 
 std::string InputActionGroup(int action)
 {

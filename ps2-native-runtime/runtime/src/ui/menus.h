@@ -62,6 +62,16 @@ void MenusGameVblank();
 bool MenusOpen();
 // Whether a gamepad's Back button is the PS2's Select (else it opens the PC menus). Any thread
 bool PadBackIsSelect();
+// The Controls tab's options for the input (options.txt): Hold to toggle, the mouse's speed (a share: 1 as it was) and
+// acceleration, and Compensate game deadzone. Any thread
+struct InputOptions
+{
+    bool holdToToggle = false;
+    float mouseSpeed = 1.0f;
+    bool mouseAcceleration = false;
+    bool compensateDeadzone = false;
+};
+InputOptions ControlOptions();
 // An event of the window's: true when it's the menus' (all of the keyboard's, the mouse's and the gamepad's while they're up;
 // the menu key, Cmd+F and Alt+Enter while they aren't)
 bool MenusEvent(const SDL_Event& e);

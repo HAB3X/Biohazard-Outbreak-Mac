@@ -45,6 +45,9 @@ typedef struct Ps2GameControl
                         // "right_left", "right_right"), or "walk" (the left stick at half, on and off)
     const char* keys;   // its keys by default as bindings.txt names them, joined by commas ("W, Up"; "" for none)
     int mode;           // its mode: an index into Ps2GameInfo::modes
+    int hold;           // optional: nonzero for a control held down for as long as it lasts (run, aim): the PC menus' Hold to
+                        // toggle then latches it on at one press and off at the next. Its buttons must be no other control's
+                        // in its mode (the latch is the buttons')
 } Ps2GameControl;
 
 typedef struct Ps2GameInfo
@@ -118,6 +121,9 @@ typedef struct Ps2GameInfo
     // OpenGL) or "software" (NULL: hardware), and its scale, 1-8 times the PS2's resolution (0: 3)
     const char* gsRenderer;
     int gsScale;
+    // Optional. The share of a stick's push (0-1) the game itself ignores, measured: the PC menus then offer Compensate game
+    // deadzone, which makes a gamepad stick's smallest push past its own rest count (0: not offered)
+    float stickDeadzone;
 } Ps2GameInfo;
 
 // A prompt shown over the picture near its bottom (the PC menus' style: e.g. "Hold any button to skip"), NULL to take it down

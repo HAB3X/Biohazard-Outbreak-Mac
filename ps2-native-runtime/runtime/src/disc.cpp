@@ -2,9 +2,13 @@
 // itself or by its .cue). A patch file (--patch) replaces byte ranges of the disc's data as the sectors are read, so a game's
 // files can be changed without a modified copy of the image: "DPAT", u32 version, u32 count, then count times u64 offset (in
 // the image's 2048 byte sectors' data, sector * 2048 + byte), u32 length, in version 2 u32 variant, then the bytes. A variant
-// says when a range is laid: 0 always, 1 while the keyboard and mouse are the device used last, 2 while a gamepad is (a game's
-// pictures and font with its buttons' prompts drawn for each: what's read follows the device as it's read)
+// says when a range is laid: 0 always, 1 while the prompts are the keyboard's, 2 while they're a PlayStation pad's (and a
+// Nintendo Switch pad's), 3 while they're an Xbox pad's, where the patch has any (else 2's): the PC menus' Button prompts, the
+// device used last unless one is chosen. A game's pictures and font with its buttons' prompts drawn for each: what's read
+// follows the prompts as it's read
 #include "runtime.h"
+
+#include "ps2/runtime.h"
 
 #include <algorithm>
 #include <cctype>
@@ -26,10 +30,11 @@ bool g_dvd = false;
 struct Patch
 {
     u64 offset;
-    u32 variant; // 0 always, 1 the keyboard and mouse, 2 a gamepad
+    u32 variant; // 0 always, 1 the keyboard's prompts, 2 a PlayStation pad's, 3 an Xbox pad's
     std::vector<u8> bytes;
 };
 std::vector<Patch> g_patches;
+bool g_xboxVariant = false; // the patch has variant 3
 
 struct Entry
 {
@@ -164,7 +169,7 @@ bool DiscLoadPatch(const std::string& path)
         return false;
     }
     u64 bytes = 0;
-    u32 variants[3] = {};
+    u32 variants[4] = {};
     for (u32 i = 0; i < head[2]; i++)
     {
         Patch p;
@@ -176,9 +181,9 @@ bool DiscLoadPatch(const std::string& path)
             Log("--patch %s: cut short at entry %u", path.c_str(), i);
             return false;
         }
-        if (p.variant > 2)
+        if (p.variant > 3)
         {
-            Log("--patch %s: entry %u has variant %u (0 always, 1 keyboard, 2 gamepad)", path.c_str(), i, p.variant);
+            Log("--patch %s: entry %u has variant %u (0 always, 1 keyboard, 2 PlayStation, 3 Xbox)", path.c_str(), i, p.variant);
             return false;
         }
         variants[p.variant]++;
@@ -191,8 +196,9 @@ bool DiscLoadPatch(const std::string& path)
         bytes += length;
         g_patches.push_back(std::move(p));
     }
-    Log("patch %s: %u ranges (%u for the keyboard, %u for a gamepad), %llu bytes", path.c_str(), head[2], variants[1],
-        variants[2], static_cast<unsigned long long>(bytes));
+    g_xboxVariant = variants[3] != 0;
+    Log("patch %s: %u ranges (%u for the keyboard, %u for a PlayStation pad, %u for an Xbox pad), %llu bytes", path.c_str(),
+        head[2], variants[1], variants[2], variants[3], static_cast<unsigned long long>(bytes));
     return true;
 }
 
@@ -255,7 +261,9 @@ bool DiscReadSectors(u32 lsn, u32 count, u8* out)
         return false;
     }
     const u64 start = static_cast<u64>(lsn) * 2048, end = start + static_cast<u64>(count) * 2048;
-    const u32 device = InputLastKeyboard() ? 1 : 2;
+    // ps2_prompt_style: 0 the keyboard, 1 PlayStation, 2 Xbox, 3 Nintendo Switch
+    const int style = ps2_prompt_style();
+    const u32 device = style == 0 ? 1 : style == 2 && g_xboxVariant ? 3 : 2;
     for (const Patch& p : g_patches)
     {
         if (p.variant != 0 && p.variant != device)

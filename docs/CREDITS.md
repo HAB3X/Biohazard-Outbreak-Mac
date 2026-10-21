@@ -16,3 +16,9 @@ permission under the MIT licence. Each ported source file says in its header whi
 - **The cheat codes' authors**, as RaccoonRecomp's lists name them: Codejunkies (Action Replay MAX), Code Master, Lajos Szalay,
   Jay007, VirusPunk and Jarnold83 (CodeBreaker), MadCatz (GameShark), bungholio (GameShark / Xploder), 47iscool (the
   Greatest Hits list's partner and walk-through-walls codes).
+
+## Ideas taken from other projects
+
+- **RaccoonRecomp**'s Resident Evil Outbreak Recompiled: the Controls tab's Hold to toggle, mouse speed and acceleration,
+  Compensate game deadzone, the remappable controller and the Xbox button prompts follow its options. No code of it is used
+  (its source isn't published); only the features.

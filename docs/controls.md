@@ -124,6 +124,23 @@ seconds: a run through SELECT CAPCOM ID, SELECT SERVER, the area menu (ROOM LIST
 RULE, a room and the hints (Sub-window, Soft keyboard, Chat log) shows whether each is found where it's drawn. A room's own
 screen (its member slots and buttons) is File 2's only: File 1's step for it wasn't found.
 
+## The Controls tab's options (the PC menus, F10)
+
+- **Button prompts**: the game's own prompts (its pictures and the font's button glyphs, from the English patch's variants) as
+  the keyboard's keys, a PlayStation pad's symbols or an Xbox pad's buttons (A for cross, B circle, X square, Y triangle: where
+  they sit; LB, RB, LT, RT for the shoulders; Menu for START). Automatic follows the device used last.
+- **Hold to toggle**: run, ready and ready forward (the controls marked as holds in src/controls.cpp) latch on at one press and
+  off at the next; a change of mode (the status screen, a cutscene) lets them go. Checked in File 1's bar: one tap of Shift and
+  W moved her 380 units in 2 s (running), 133 without (walking), 18 after a second tap.
+- **Mouse speed** (25-300 %) and **Mouse acceleration**: every motion the game turns or aims with (the mouse stick and the Modern
+  camera's look). Checked: 400 pixels turned the Modern camera 30 degrees at 100 % and 54 at 200 %.
+- **Compensate game deadzone**: the game moves her only past 0.41 of a stick's push (measured with --control's stick: still at
+  0.40, walking at 0.42, in both games); with it on, a gamepad stick's push past its own rest starts there. Not checked with a
+  real gamepad.
+- **Controller**: each PS2 button's gamepad button (bindings.txt's pad_ lines); Reset the controller puts them back. A
+  DualShock 4's or DualSense's touchpad click, or an Xbox Series pad's Share, opens these Options (Back is the game's SELECT).
+  Not checked with a real gamepad.
+
 ## Title, movies and cutscenes
 
 Escape, Return, Space, E or Tab is START: it skips movies and cutscenes (File 2's cutscene task 0x344C10, File 1's
