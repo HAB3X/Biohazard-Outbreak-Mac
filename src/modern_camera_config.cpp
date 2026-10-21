@@ -13,7 +13,7 @@ namespace ModernCamera
 namespace
 {
 constexpr const char* Tab = "Camera";
-constexpr const char* GroupView = "Outbreak ModernCam by Snippy, ported by RaccoonRecomp";
+constexpr const char* GroupView = "ModernCam by Snippy; ported, and First Person, by RaccoonRecomp";
 constexpr const char* GroupFraming = "Modern: framing";
 constexpr const char* GroupLook = "Modern: look";
 constexpr const char* GroupAim = "Modern: aiming";
@@ -29,7 +29,7 @@ struct Numbers
     const float* values;
 };
 
-const char* const ViewLabels[] = {"Classic", "Modern", nullptr};
+const char* const ViewLabels[] = {"Classic", "Modern", "First person", nullptr};
 
 const char* const DistanceLabels[] = {"100", "150", "200", "250", "300", "350", "400", "450", "500", "600", nullptr};
 const float DistanceValues[] = {100, 150, 200, 250, 300, 350, 400, 450, 500, 600};
@@ -94,7 +94,7 @@ void AddSettings()
 {
     const Config d;
     g_rows.view = Add(GroupView, "View",
-                      "Classic: the game's fixed cameras. Modern: over her shoulder, turned with the mouse or right stick",
+                      "Classic: the game's fixed cameras. Modern: over her shoulder. First person: in her eyes",
                       ViewLabels, 0);
     g_rows.distance = Add(GroupFraming, "Distance", "How far behind her the camera sits", DistanceLabels,
                           IndexOf(DistanceValues, d.hip.distance));
@@ -150,7 +150,8 @@ Config ReadConfig()
 {
     using ModSettings::Choice;
     Config c;
-    c.view = Choice(g_rows.view) == 1 ? View::Modern : View::Classic;
+    int view = Choice(g_rows.view);
+    c.view = view == 1 ? View::Modern : view == 2 ? View::FirstPerson : View::Classic;
     c.hip.distance = ValueOf(DistanceValues, Choice(g_rows.distance));
     c.hip.shoulder = ValueOf(OffsetValues, Choice(g_rows.offset)) * (Choice(g_rows.side) == 1 ? -1.0f : 1.0f);
     c.hip.height = ValueOf(HeightValues, Choice(g_rows.height));

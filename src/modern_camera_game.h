@@ -40,7 +40,9 @@ struct Layout
     uint32_t objectFlags;     // u8 each: bit 0 drawn, bit 7 hidden by an event
     uint32_t objectMatrices;  // f32 4x4 each (rows, the origin at +0x30)
     uint32_t wallPointer;     // the word pointing at the room's wall records (0x38 bytes each)
-    uint32_t nearHide;        // 4 f32: the radii within which models near the camera are not drawn
+    uint32_t nearHide;        // 4 f32: the radii within which models near the camera are not drawn ([1] the characters')
+    uint32_t systemPadPressed; // u32: the system pad's buttons newly pressed this frame (the ad-lib reads R3 there)
+    uint32_t roomNow;         // u32: the room she's in (changes during a door's loading screen)
 };
 
 extern const Layout File1;
@@ -61,6 +63,16 @@ constexpr uint32_t Flags = 0xBA0;      // u32: 0x80 the game turns her round its
 constexpr uint32_t GunElevation = 0xBC8; // s16: 65536/360 a degree, within +-0x1FFF
 constexpr uint32_t Actions = 0xF78;    // the action block: +0 pressed, +8 held, +0x20 the sticks, +0x32 the walk hold
 constexpr uint32_t Cpu = 0xFF0;        // u8: nonzero for a partner the game's AI plays
+// What the first-person camera reads (RaccoonRecomp's REO-FirstPerson, measured on the US disc; the same record here)
+constexpr uint32_t Live = 0x000;       // u8: the record is in use
+constexpr uint32_t AimState = 0x009;   // u8 with the weapon raised: 0 raising, 1 ready, 2 firing; down: her action's kind
+constexpr uint32_t ActionPhase = 0x00A; // u8: 0x0B aiming (or standing, the weapon down)
+constexpr uint32_t AutoAimLeft = 0x00C; // u16: the frames the auto-aim still turns her as she raises the weapon
+constexpr uint32_t CharacterId = 0x030; // low byte: 0 Kevin .. 7 Cindy
+constexpr uint32_t Model = 0x034;      // the model: its first word points at the skeleton's node table
+constexpr uint32_t PadMode = 0xB98;    // u8
+constexpr uint32_t AutoAimStep = 0xC4E; // s16: the auto-aim's turn each of those frames
+constexpr uint32_t Weapon = 0xC7C;     // u8: the equipped weapon's item record
 }
 
 constexpr uint8_t StanceNormal = 1, StanceAim = 2, StanceAimHit = 3;
@@ -116,6 +128,9 @@ public:
     bool CutPose(Vec3* eye, Vec3* look, float* fov) const; // the current cut's authored camera
     void ForceCut(uint32_t index) const;
     void ReleaseCut() const;
+    // The room's own camera of the current cut written back (its eye, target and field of view), so the game's view
+    // returns at once and not at its next cut change
+    void RestoreCutCamera() const;
 
     void ShowAllObjects() const;
     // The walls and pictures a fixed camera leaves out kept drawn while the camera drives (every cut's mask also holds what

@@ -8,6 +8,7 @@
 // aids, and the J's Bar restroom mirrors (docs/mods.md).
 #include "modern_camera.h"
 
+#include "first_person.h"
 #include "game_pad.h"
 #include "modern_camera_config.h"
 
@@ -124,6 +125,9 @@ bool g_freeze = false;
 bool g_freeAim = false;
 // The mouse turns the camera (asked on the presenter's thread)
 std::atomic<bool> g_mouseLook{false};
+// The first-person camera is in her eyes; the game's right stick is held centred for it (a gamepad's look)
+bool g_firstPerson = false;
+bool g_firstPersonCentre = false;
 
 float Hypot(float x, float y) { return std::hypot(x, y); }
 float DistXz(const Vec3& a, const Vec3& b) { return Hypot(a.x - b.x, a.z - b.z); }
@@ -195,16 +199,7 @@ void ResetRigToPlayer()
 // view until its next cut change
 void RestoreEngineCamera()
 {
-    Vec3 eye, look;
-    float fov;
-    if (g_game->CutPose(&eye, &look, &fov))
-    {
-        g_game->WriteCamera(eye, look);
-        if (std::isfinite(fov) && fov > 0)
-        {
-            g_game->SetFov(fov);
-        }
-    }
+    g_game->RestoreCutCamera();
     if (s.haveClip)
     {
         g_game->SetNearFar(s.nearOriginal, s.farOriginal);
@@ -462,6 +457,48 @@ Input ReadInput()
     return in;
 }
 
+// The first-person camera (src/first_person.h) driven instead: in play, a frame of it once a game frame; the game's camera
+// held while it's in her eyes, the mouse its look
+void FirstPersonOff(bool restoreCamera)
+{
+    FirstPerson::HandBack(*g_game, restoreCamera);
+    g_firstPerson = false;
+    g_freeze = false;
+    g_mouseLook = false;
+}
+
+void FirstPersonFrame(const Config& c, bool newFrame)
+{
+    if (!InPlay())
+    {
+        if (g_firstPerson)
+        {
+            FirstPersonOff(false); // a cutscene: the camera it wrote stays
+        }
+        SetStatus("first person: waiting for play");
+        return;
+    }
+    if (!newFrame)
+    {
+        return; // the same game frame
+    }
+    Input in = ReadInput();
+    FirstPerson::Look look;
+    if (!in.menusOpen)
+    {
+        float msens = c.mouseSensitivity * 0.4f, pdir = c.invertPitch ? -1.0f : 1.0f;
+        look.stickX = in.rx;
+        look.stickY = in.ry * pdir;
+        look.mouseYawDegrees = in.mouseDx * msens;
+        look.mousePitchDegrees = -in.mouseDy * msens * pdir;
+    }
+    g_firstPerson = FirstPerson::Frame(*g_game, look);
+    g_freeze = g_firstPerson;
+    g_mouseLook = g_firstPerson;
+    g_firstPersonCentre = g_firstPerson && !in.mouse;
+    SetStatus(g_firstPerson ? "first person: in her eyes" : "first person: waiting");
+}
+
 void DriverFrame()
 {
     uint32_t frames = rd32(g_game->layout().frames);
@@ -482,8 +519,21 @@ void DriverFrame()
         {
             HandBackAll();
         }
+        if (c.view == View::FirstPerson)
+        {
+            FirstPersonFrame(c, dt > 0);
+            return;
+        }
+        if (g_firstPerson)
+        {
+            FirstPersonOff(true);
+        }
         SetStatus("off");
         return;
+    }
+    if (g_firstPerson)
+    {
+        FirstPersonOff(true);
     }
     // A level live: the game overlay in play with her record filled in
     if (!InPlay() || !g_game->PlayerLive())
@@ -979,7 +1029,12 @@ void PadMap(Ps2Cpu* c, Ps2Function original)
     const uint32_t record = c->r[4].uw[0];
     // ModernCam's mark at the mapper's load of her held word: nothing between the mapper's start and that load changes the
     // mapped record, so the change is made before it (only her record, offline the mapped record 0)
-    if (s.map.active && s.levelLive && record == g_game->PlayerRecord())
+    if (g_firstPerson && record == g_game->PlayerRecord())
+    {
+        g_game->PadMapApply(false, g_firstPersonCentre, false);
+        FirstPerson::PadMap(*g_game);
+    }
+    else if (s.map.active && s.levelLive && record == g_game->PlayerRecord())
     {
         g_game->PadMapApply(s.map.centreLeft, s.map.centreRight, true);
         if (s.map.walkFree)

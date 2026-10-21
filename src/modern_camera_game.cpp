@@ -42,7 +42,9 @@ const Layout File1 = {.name = "file1",
                       .objectFlags = 0x470930,
                       .objectMatrices = 0x470BB0,
                       .wallPointer = 0x3938C4,
-                      .nearHide = 0x6D6CF0};
+                      .nearHide = 0x6D6CF0,
+                      .systemPadPressed = 0x3063E0,
+                      .roomNow = 0x3065AC};
 
 namespace
 {
@@ -299,6 +301,20 @@ void Game::ForceCut(uint32_t index) const
 }
 
 void Game::ReleaseCut() const { wr8(m_layout.cuts + CutForceOnAt, 0); }
+
+void Game::RestoreCutCamera() const
+{
+    Vec3 eye, look;
+    float fov;
+    if (CutPose(&eye, &look, &fov))
+    {
+        WriteCamera(eye, look);
+        if (Sane(fov) && fov > 1.0f && fov < 120.0f)
+        {
+            SetFov(fov);
+        }
+    }
+}
 
 void Game::ShowAllObjects() const
 {

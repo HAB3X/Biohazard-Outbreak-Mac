@@ -15,6 +15,7 @@ enum class View : int
 {
     Classic,
     Modern,
+    FirstPerson,
 };
 
 enum class TurnMode : int
