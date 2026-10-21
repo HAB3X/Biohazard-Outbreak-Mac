@@ -10,6 +10,11 @@
 
 #include "ps2/runtime.h"
 
+// An override of the recompiled function `original` that calls `call(c, original)` (each game's config names `name`)
+#define MOD_OVERRIDE(name, call, original)                                                                                     \
+    extern "C" void original(Ps2Cpu* c);                                                                                      \
+    extern "C" void name(Ps2Cpu* c) { call(c, original); }
+
 namespace Mods
 {
 // After the game's own settings, controls and mouse are in `game` (BiohazardControls::Apply, the partners' AI)
