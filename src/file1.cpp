@@ -2,6 +2,8 @@
 #include "controls.h"
 #include "network.h"
 #include "partner_ai.h"
+#include "pointer.h"
+#include "text_map.h"
 #include "ps2/runtime.h"
 #include "tsnd.h"
 #include "typing.h"
@@ -23,6 +25,20 @@ extern "C" void netwk_setup_step(Ps2Cpu* c) { Network::SetupStep(c, Network::Fil
 // The partners' think, SINGLE.BIN's (src/partner_ai.cpp)
 extern "C" void single_00822440(Ps2Cpu* c);
 extern "C" void single_partner_think(Ps2Cpu* c) { PartnerAi::Think(c, PartnerAi::File1, single_00822440); }
+
+// The executable's text functions: where each string is drawn is kept for the pointer (src/text_map.h)
+extern "C" void f_001b43c0(Ps2Cpu* c);
+extern "C" void f_001b5fb0(Ps2Cpu* c);
+extern "C" void text_draw(Ps2Cpu* c) { TextMap::Draw(c, f_001b43c0); }
+extern "C" void text_draw_net(Ps2Cpu* c) { TextMap::Draw(c, f_001b5fb0); }
+
+// The main loop's frame, then the menus' sounds the pointer owes them (src/pointer.h)
+extern "C" void f_001b9070(Ps2Cpu* c);
+extern "C" void game_frame(Ps2Cpu* c)
+{
+    f_001b9070(c);
+    Pointer::Frame(c);
+}
 
 int main(int argc, char** argv)
 {

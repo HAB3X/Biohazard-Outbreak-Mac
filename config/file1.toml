@@ -28,6 +28,12 @@ extra = [
 not = []
 
 [overrides]
+# The executable's two text functions (the second Network Play's): where each string is drawn is kept for the mouse's
+# pointer over the menus (src/text_map.h)
+"0x1b43c0" = "text_draw"
+"0x1b5fb0" = "text_draw_net"
+# The main loop's frame: after it, the sounds the pointer's moves owe the menus are played (src/pointer.h)
+"0x1b9070" = "game_frame"
 
 # The code overlays: PROG/*.BIN, each a 0x40 byte "MWo3" header (its number, load address, code size, data size, bss size)
 # then its code and data, loaded whole at its load address. The code runs from the header's end for the code size the header
