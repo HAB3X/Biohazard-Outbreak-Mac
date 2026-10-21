@@ -1,0 +1,73 @@
+name: Report a bug
+description: Tell us what went wrong. You can add screenshots or videos.
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping. Please check it isn't one of these first.
+
+        **Known bugs**
+        1. Starting a scenario in an online room does nothing.
+        2. The mouse in the online lobby after logging in may not work everywhere.
+        3. Character mods show in the launcher but the games don't load them yet.
+        4. Some HD texture packs show pale patches on trees (File 2's zoo).
+        5. File 2's collection: clicking the tabs picks the wrong one.
+        6. The map can't be scrolled or zoomed with the mouse.
+
+        The full list is in [KNOWN BUGS.md](https://github.com/HAB3X/Biohazard-Outbreak-Mac/blob/main/KNOWN%20BUGS.md).
+  - type: dropdown
+    id: game
+    attributes:
+      label: Which game?
+      options:
+        - File 1
+        - File 2
+        - The launcher
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      placeholder: The game froze when I opened the map in the zoo.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where were you?
+      placeholder: J's Bar, the character select, the online lobby, the launcher's Mods...
+  - type: textarea
+    id: steps
+    attributes:
+      label: What were you doing just before?
+  - type: textarea
+    id: shots
+    attributes:
+      label: Screenshots or videos
+      description: Drag them into this box, or paste them in.
+  - type: textarea
+    id: log
+    attributes:
+      label: The game's log
+      description: |
+        Drag in `latest.log` from ~/Library/Application Support/PS2 Native Runtime/SLPM_654.28/logs (File 1)
+        or SLPM_656.92/logs (File 2). In Finder: Go › Go to Folder, then paste the path.
+  - type: input
+    id: mac
+    attributes:
+      label: Your Mac and macOS version
+      placeholder: MacBook Air M2, macOS 26.1
+  - type: dropdown
+    id: mods
+    attributes:
+      label: Any mods on?
+      multiple: true
+      options:
+        - None
+        - HD textures
+        - Modern camera or first person
+        - Cheats
+        - Character mods

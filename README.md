@@ -6,9 +6,6 @@ recompiled to native code, not emulated. Both games are playable in English, and
 
 Not affiliated with Capcom or Sony. You need your own discs; no game data is included.
 
-![File 2's title menu](milestones/file2-main-menu.png)
-![Kevin in J's Bar](milestones/file2-in-game.png)
-
 ## Features
 
 - Both games in one launcher, in English (the patch is made from your disc on first play)
@@ -29,7 +26,7 @@ You need an Apple-silicon Mac on macOS 26 or later and a disc image of the Japan
 3. The launcher finds your disc images in Downloads, Documents or the Desktop, or drop them on its window.
 4. Press Play.
 
-More in [docs/PLAYING.md](docs/PLAYING.md), including known issues.
+Known bugs: [KNOWN BUGS.md](KNOWN%20BUGS.md). Found another? [Report it](https://github.com/HAB3X/Biohazard-Outbreak-Mac/issues/new/choose).
 
 ## Building
 
