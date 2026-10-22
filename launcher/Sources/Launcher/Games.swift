@@ -118,10 +118,12 @@ enum Games {
         }.value
     }
 
-    /// The game started, in English, as its own app does it (its first start makes the English patch from the disc)
-    static func play(_ game: Game) {
+    /// The game started, in English, as its own app does it (its first start makes the English patch from the disc), with its
+    /// memory card in `cards` (the save profile's folder)
+    static func play(_ game: Game, cards: URL) {
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.createsNewApplicationInstance = false
+        configuration.arguments = ["--memcards", cards.path]
         NSWorkspace.shared.openApplication(at: app(game), configuration: configuration)
     }
 

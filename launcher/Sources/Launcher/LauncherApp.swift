@@ -109,7 +109,7 @@ final class LauncherModel: ObservableObject {
             poll.cancel()
             preparing[game] = nil
             if result.status == 0 {
-                Games.play(game)
+                Games.play(game, cards: SaveStore.shared.folder(game))
             } else {
                 problem = "The English patch for \(game.short) couldn't be made:\n\(result.errors)"
             }

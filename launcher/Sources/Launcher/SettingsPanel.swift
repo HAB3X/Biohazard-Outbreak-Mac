@@ -1,14 +1,18 @@
 // The settings: a game's own PC menus' pages (Gameplay, Display, Sound, Controls, Camera, Cheats) as tabs across the top, the
 // rows on the left (a few choices side by side, the chosen one underlined; more as ‹ value ›), what the row under the pointer
-// does on the right
+// does on the right; then the launcher's own Saves tab (SavesView)
 import SwiftUI
+
+/// The launcher's own tab after the game's
+private let SavesPage = "Saves"
 
 struct SettingsPanel: View {
     @EnvironmentObject var model: LauncherModel
     var game: Game
     @StateObject private var file1 = GameSettings(game: .file1)
     @StateObject private var file2 = GameSettings(game: .file2)
-    @State private var page = "Gameplay"
+    // The tab shown first ($BH_LAUNCHER_PAGE: another, for pictures of it)
+    @State private var page = ProcessInfo.processInfo.environment["BH_LAUNCHER_PAGE"] ?? "Gameplay"
     @State private var described: SettingsRow?
 
     private var settings: GameSettings { game == .file1 ? file1 : file2 }
@@ -18,17 +22,21 @@ struct SettingsPanel: View {
             VStack(spacing: 0) {
                 header
                 Divider().overlay(Style.line)
-                HStack(alignment: .top, spacing: 0) {
-                    rows
-                    Divider().overlay(Style.line)
-                    description
+                if page == SavesPage {
+                    SavesView(game: game)
+                } else {
+                    HStack(alignment: .top, spacing: 0) {
+                        rows
+                        Divider().overlay(Style.line)
+                        description
+                    }
                 }
             }
             .frame(width: 1120, height: 640)
         }
         .task(id: game) {
             if settings.pages.isEmpty { await settings.load() }
-            if !settings.pages.contains(where: { $0.title == page }) { page = settings.pages.first?.title ?? page }
+            if page != SavesPage && !settings.pages.contains(where: { $0.title == page }) { page = settings.pages.first?.title ?? page }
         }
     }
 
@@ -41,6 +49,7 @@ struct SettingsPanel: View {
                     ForEach(settings.pages) { p in
                         TabTitle(title: p.title, selected: p.title == page) { page = p.title; described = nil }
                     }
+                    TabTitle(title: SavesPage, selected: page == SavesPage) { page = SavesPage; described = nil }
                 }
             }
             Button { model.overlay = .none } label: {
