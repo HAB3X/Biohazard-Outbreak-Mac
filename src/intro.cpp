@@ -19,6 +19,9 @@
 
 namespace Intro
 {
+const StartUp StartUpFile1 = {9, 10, 9};
+const StartUp StartUpFile2 = {9, 10, 9};
+
 const Layout File1 = {{0x540EA0, 0x5410BC}};
 const Layout File2 = {{0x54FFF0, 0x54F914}};
 
@@ -34,6 +37,17 @@ bool FromStartUp(const Ps2Cpu* c, const Layout& layout)
     const uint32_t from = c->r[31].uw[0];
     return from == layout.startUpCalls[0] || from == layout.startUpCalls[1];
 }
+}
+
+void SkipNotice(Ps2Cpu* c, Ps2Function original, const StartUp& startUp)
+{
+    const uint32_t task = c->r[4].uw[0];
+    original(c);
+    const uint8_t state = rd8(task + startUp.stateByte);
+    if (state == startUp.noticeState && rd8(task + startUp.holdByte) > 1)
+    {
+        wr8(task + startUp.holdByte, 1);
+    }
 }
 
 void AddSettings()

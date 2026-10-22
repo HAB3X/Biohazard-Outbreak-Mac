@@ -31,6 +31,8 @@ not = []
 # pointer over the menus (src/text_map.h)
 "0x1b5090" = "text_draw"
 "0x1b7130" = "text_draw_net"
+# The start-up sequence's per-frame step: its licence notice is skipped (src/intro.cpp)
+"0x1bc2a0" = "boot_sequence_step"
 # The main loop's frame: after it, the sounds the pointer's moves owe the menus are played (src/pointer.h)
 "0x1ba1d0" = "game_frame"
 # The Modern camera (src/modern_camera.cpp): the game frame's end and the button mapper (File 1's 0x19ecb0 and 0x1afc60,

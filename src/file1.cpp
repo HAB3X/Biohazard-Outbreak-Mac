@@ -109,6 +109,8 @@ extern "C" void widescreen_set_projection(Ps2Cpu* c) { Widescreen::SetProjection
 
 // Skip intro movies: the demo overlay's start-up sequences' START check (src/intro.cpp)
 extern "C" void demo_00540cb0(Ps2Cpu* c);
+extern "C" void f_001bae80(Ps2Cpu* c);
+extern "C" void boot_sequence_step(Ps2Cpu* c) { Intro::SkipNotice(c, f_001bae80, Intro::StartUpFile1); }
 extern "C" void intro_start_pressed(Ps2Cpu* c) { Intro::StartPressed(c, demo_00540cb0, Intro::File1); }
 
 int main(int argc, char** argv)

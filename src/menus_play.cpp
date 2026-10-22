@@ -216,12 +216,25 @@ bool StatusScreen(Pointer::Screen& screen)
             ActionTargets(screen, work, itemStep == WeaponStep);
             screen.wheelUp = Pointer::Up;
             screen.wheelDown = Pointer::Down;
+            // Choosing what an action applies to (an item to combine with, a partner to give to) has no rows of its own here:
+            // a click confirms the choice the keys' cursor is on, as the right button does
+            if (screen.count == 0)
+            {
+                screen.clickElsewhere = Pointer::Circle;
+            }
             return true;
         }
         uint8_t step = Byte(L().state + ItemStep);
         if ((step == GridStep || step == WeaponStep) && itemLevel == 0)
         {
             ItemTargets(screen, work);
+        }
+        else
+        {
+            // Any other step of the ITEM tab is the game asking where an item goes (a pick-up's place in the pack, what to
+            // swap it with when the pack is full): nothing here to point at, so a click is the confirm, as the right button
+            // is. (Left click did nothing there: only the right button took the item.)
+            screen.clickElsewhere = Pointer::Circle;
         }
     }
     else if ((tab == SpecialTab || tab == FileTab) && level == 2)
@@ -321,6 +334,19 @@ bool Map(Pointer::Screen& screen)
     return true;
 }
 
-const Pointer::Finder PlayFinders[] = {PauseMenu, Map, StatusScreen};
+// Any other state of the status task (the game asking where a picked-up item goes, whether to take it): nothing in it is
+// pointed at, so a click is the confirm, as the right button is (the left button did nothing there)
+bool StatusTaskElse(Pointer::Screen& screen)
+{
+    if (!StatusTaskUp())
+    {
+        return false;
+    }
+    screen.name = "status task";
+    screen.clickElsewhere = Pointer::Circle;
+    return true;
+}
+
+const Pointer::Finder PlayFinders[] = {PauseMenu, Map, StatusScreen, StatusTaskElse};
 const int PlayFinderCount = sizeof(PlayFinders) / sizeof(PlayFinders[0]);
 }

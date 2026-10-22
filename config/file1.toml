@@ -32,6 +32,8 @@ not = []
 # pointer over the menus (src/text_map.h)
 "0x1b43c0" = "text_draw"
 "0x1b5fb0" = "text_draw_net"
+# The start-up sequence's per-frame step: its licence notice is skipped (src/intro.cpp)
+"0x1bae80" = "boot_sequence_step"
 # The main loop's frame: after it, the sounds the pointer's moves owe the menus are played (src/pointer.h)
 "0x1b9070" = "game_frame"
 # The Modern camera (src/modern_camera.cpp): the game frame's end (the vertical blank's wait and the picture's flip) and the
