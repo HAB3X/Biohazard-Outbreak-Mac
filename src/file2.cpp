@@ -1,6 +1,7 @@
 // Biohazard Outbreak File 2 for Mac: the recompiled executable and its overlays on the PS2 runtime
 #include "cheats.h"
 #include "controls.h"
+#include "intro.h"
 #include "menus.h"
 #include "modern_camera.h"
 #include "mods.h"
@@ -101,6 +102,10 @@ extern "C" void game_frame(Ps2Cpu* c)
 extern "C" void f_0018f4c0(Ps2Cpu* c);
 extern "C" void widescreen_set_projection(Ps2Cpu* c) { Widescreen::SetProjection(c, f_0018f4c0); }
 
+// Skip intro movies: the demo overlay's start-up sequences' START check (src/intro.cpp)
+extern "C" void demo_0054f250(Ps2Cpu* c);
+extern "C" void intro_start_pressed(Ps2Cpu* c) { Intro::StartPressed(c, demo_0054f250, Intro::File2); }
+
 int main(int argc, char** argv)
 {
     static Ps2GameInfo game = {"Biohazard Outbreak File 2", "SLPM_656.92", 1356096};
@@ -133,6 +138,7 @@ int main(int argc, char** argv)
     game.settings = PartnerAi::Settings;
     game.settingCount = PartnerAi::SettingCount;
     game.typing = Typing::Typing;
+    Intro::AddSettings();
     Mods::Install(game, ModernCamera::File2, BiohazardControls::File2, Cheats::File2);
     Tsnd::Register();
     Network::RegisterLoadHigh();

@@ -57,6 +57,8 @@ name = "demo"
 file = "BIN/1.DAT"
 base = "0x543000"
 text = ["0x543040", "0x564480"]
+# Skip intro movies (src/intro.cpp): the start-up sequences' START check
+overrides = { "0x54f250" = "intro_start_pressed" }
 extra = [
     "0x5488f0", "0x55d4b0",
 ]

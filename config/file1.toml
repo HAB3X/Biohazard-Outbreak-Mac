@@ -58,8 +58,8 @@ file = "PROG/DEMO.BIN"
 base = "0x540000"
 text = ["0x540040", "0x557c00"]
 # The cheats (src/cheats.cpp): the collection's "can it be bought" check and the scenario select's functions reading the
-# unlocked scenarios
-overrides = { "0x554ec0" = "cheat_available", "0x542640" = "cheat_scenario_select_a", "0x54dc10" = "cheat_scenario_select_b", "0x54e2f0" = "cheat_scenario_select_c", "0x54ee40" = "cheat_scenario_select_d" }
+# unlocked scenarios; Skip intro movies (src/intro.cpp): the start-up sequences' START check
+overrides = { "0x540cb0" = "intro_start_pressed", "0x554ec0" = "cheat_available", "0x542640" = "cheat_scenario_select_a", "0x54dc10" = "cheat_scenario_select_b", "0x54e2f0" = "cheat_scenario_select_c", "0x54ee40" = "cheat_scenario_select_d" }
 extra = [
     "0x5536a0", "0x555050",
 ]
