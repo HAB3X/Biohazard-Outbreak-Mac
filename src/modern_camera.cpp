@@ -34,6 +34,10 @@ constexpr uint32_t MaxCuts = 64;
 constexpr float LockTurn = 0.25f;         // the aim lock turns the camera onto its target by SmoothAlpha(this) a frame
 constexpr float LockMinDistance = 40.0f;  // a target nearer than this (holding her) keeps the lock's last direction
 constexpr uint32_t LockGrace = 3;         // game frames the lock holds through a gap (after a hit the game aims again)
+constexpr float EyeAboveFeet = 25.0f; // the lowest the eye goes, above her feet
+constexpr float CloseBoom = 140.0f;   // a boom shorter than this (a wall behind her) brings the eye in over her head
+constexpr float CloseRise = 40.0f;    // how far up it goes, at a boom of nothing
+constexpr float ResumeTurn = 3.0f;    // the swing from the room's camera's direction to behind her, back in play (1/3 s)
 constexpr float ZoomStep = 0.88f, ZoomMin = 0.35f, ZoomMax = 1.8f; // a wheel line's zoom, and its range
 constexpr float RelocateDistance = 100.0f; // a step longer than this in a frame: the game put her somewhere else
 constexpr float VblankHz = 59.94f;
@@ -76,6 +80,9 @@ struct State
     float zoom = 1.0f; // the boom's length as a share of the framing's, set by the wheel (kept across rooms)
     bool aimPrev = false, aimWas = false;
     float recenterTimer = 0;
+    float mouseDx = 0, mouseDy = 0; // the smoothed mouse
+    float resumeYaw = 0;            // back in play: the direction swung from to behind her, and how far through
+    float resumeLeft = 0;
     bool haveShoulder = false;
     float shoulderTarget = 1, shoulderSign = 1;
     FollowHeading follow;
@@ -576,8 +583,16 @@ void DriverFrame()
     }
     if (!s.levelLive)
     {
+        // The room's camera's side of her, to swing from (a door's or a cutscene's last view) rather than cut
+        Vec3 was = g_game->CameraEye();
+        Vec3 her = g_game->PlayerPosition();
         Freeze();
         ResetRigToPlayer();
+        if (Hypot(was.x - her.x, was.z - her.z) > 1.0f)
+        {
+            s.resumeYaw = AngleWrap(std::atan2(was.x - her.x, was.z - her.z) * RadToDeg - s.camYaw);
+            s.resumeLeft = 1.0f;
+        }
         s.levelLive = true;
         SetStatus("driving the camera");
         return; // seeded this frame, driven from the next
@@ -657,7 +672,12 @@ void DriverFrame()
     s.prevHeld = held;
     float lx = std::clamp(in.lx, -1.0f, 1.0f), ly = std::clamp(in.ly, -1.0f, 1.0f);
     float rx = std::clamp(in.rx, -1.0f, 1.0f), ry = std::clamp(in.ry, -1.0f, 1.0f);
-    float mdx = in.mouseDx, mdy = in.mouseDy;
+    // The mouse, smoothed a little across game frames (it's read 30 times a second: a motion split unevenly between two frames
+    // made the view step)
+    const float smooth = std::clamp(c.mouseSmoothing, 0.0f, 0.9f);
+    s.mouseDx = Lerp(in.mouseDx, s.mouseDx, smooth);
+    s.mouseDy = Lerp(in.mouseDy, s.mouseDy, smooth);
+    float mdx = s.mouseDx, mdy = s.mouseDy;
     if (in.menusOpen)
     {
         rx = ry = mdx = mdy = 0;
@@ -903,9 +923,27 @@ void DriverFrame()
         g_game->SetFov(eff.fovDeg);
     }
 
+    // In tight spaces the eye comes in over her head instead of into her: as the walls shorten the boom, the shoulder offset
+    // goes to the middle and the eye rises (from last frame's boom, which the collision eases)
+    float boomNow = eff.distance * s.camT;
+    if (c.camCollision && boomNow < CloseBoom && eff.distance > 0)
+    {
+        float close = std::clamp((CloseBoom - boomNow) / CloseBoom, 0.0f, 1.0f);
+        eff.shoulder *= 1.0f - close;
+        eff.height += CloseRise * close;
+    }
+
+    // Back in play, the eye swings from the room's camera's side of her to behind her (eased out), rather than cutting
+    float yawShown = s.camYaw;
+    if (s.resumeLeft > 0)
+    {
+        yawShown += s.resumeYaw * s.resumeLeft * s.resumeLeft;
+        s.resumeLeft = std::max(0.0f, s.resumeLeft - dt * ResumeTurn);
+    }
+
     // The eye and what it looks at
     Vec3 eye, look;
-    EyeAndLook(p.x, p.y, p.z, s.camYaw, s.pitch + eff.pitchTrim, eff, &eye, &look);
+    EyeAndLook(p.x, p.y, p.z, yawShown, s.pitch + eff.pitchTrim, eff, &eye, &look);
 
     // Collision: the eye pulled in front of walls
     if (c.camCollision)
@@ -960,6 +998,17 @@ void DriverFrame()
             eye.y = look.y + (eye.y - look.y) * kept;
             eye.z = look.z + (eye.z - look.z) * kept;
         }
+    }
+    // Never below her feet: looking up swings the eye down behind her, and the floor she stands on isn't in the walls' list
+    // (the bar's floor let it through: the view went black, from under the room). The boom shortens instead, so the camera
+    // comes in toward her head as it goes up
+    const float floorClear = p.y + EyeAboveFeet;
+    if (eye.y < floorClear && look.y > floorClear)
+    {
+        float t = (look.y - floorClear) / (look.y - eye.y);
+        eye.x = look.x + (eye.x - look.x) * t;
+        eye.y = floorClear;
+        eye.z = look.z + (eye.z - look.z) * t;
     }
 
     g_game->WriteCamera(eye, look);
@@ -1053,7 +1102,7 @@ void Frame() { DriverFrame(); }
 void WalkStep(Ps2Cpu* c, Ps2Function original)
 {
     constexpr uint32_t CutChangedAt = 4;
-    const bool driving = g_firstPerson || (s.map.active && s.levelLive && s.map.walkFree);
+    const bool driving = g_firstPerson || (s.map.active && s.levelLive);
     if (!driving || c->r[4].uw[0] != g_game->PlayerRecord())
     {
         original(c);

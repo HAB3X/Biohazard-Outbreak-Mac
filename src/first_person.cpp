@@ -78,10 +78,13 @@ struct Tune
 {
     float fwd, up, right, look, fov;
 };
-constexpr Tune NormalView = {0.0f, 0.0f, -4.0f, 0.0f, 63.0f};
+constexpr Tune NormalView = {0.0f, 0.0f, -4.0f, 0.0f, 72.0f}; // wider than RaccoonRecomp's 63: less of a tunnel
 constexpr Tune AimView = {2.5f, 3.5f, -1.0f, 0.0f, 61.0f};
 
 constexpr float LookDistance = 500.0f;
+// The near clip plane in her eyes (the room's own is far: walls right in front of her vanished), and the head bob's damping:
+// the share of last frame's eye height kept while she walks (a step the size of a stair's or more is taken at once)
+constexpr float NearInEyes = 10.0f, BobDamp = 0.6f, BobStep = 12.0f;
 constexpr float SteadyCos = 0.9063078f;  // the barrel within 25 degrees of her aim: the sights are usable
 constexpr float SettledCos = 0.9993908f; // turned less than 2 degrees since the last frame: held still
 constexpr float BlendVblanks = 12.0f;    // normal <-> aiming view and her aim <-> the sight line take 0.2 s
@@ -146,6 +149,10 @@ struct State
     V3 yieldPos;
     bool haveHide = false;
     float hideOriginal = 0;
+    bool haveNear = false;
+    float nearOriginal = 0;
+    bool haveBob = false;
+    float bobY = 0;
     bool haveLast = false;
     V3 lastEye, lastAt;
     uint32_t taken = 0;
@@ -365,6 +372,12 @@ void Crosshair(bool on)
 
 void RestoreHide(const Game& game)
 {
+    if (s.haveNear)
+    {
+        game.SetNearFar(s.nearOriginal, 0);
+        s.haveNear = false;
+    }
+    s.haveBob = false;
     if (s.haveHide)
     {
         Wrf(game.layout().nearHide + 4, s.hideOriginal);
@@ -807,6 +820,17 @@ bool Frame(Game& game, const Look& lookInput)
     {
         return true; // (never a broken camera: the last one stays)
     }
+    // The head bob damped: the eye's height eased (not while aiming: the sights stay on the gun)
+    if (!s.haveBob || raised || std::fabs(camPos.y - s.bobY) > BobStep)
+    {
+        s.bobY = camPos.y;
+        s.haveBob = true;
+    }
+    else
+    {
+        s.bobY = camPos.y + (s.bobY - camPos.y) * BobDamp;
+        camPos.y = s.bobY;
+    }
     if (raised)
     {
         s.aimYaw = YawWrap(static_cast<float>(std::atan2(static_cast<double>(camDir.x), static_cast<double>(camDir.z)) *
@@ -821,6 +845,12 @@ bool Frame(Game& game, const Look& lookInput)
     s.lastAt = camPos + camDir * LookDistance;
     s.haveLast = true;
     game.SetFov(fov);
+    if (!s.haveNear)
+    {
+        s.nearOriginal = game.NearValue();
+        s.haveNear = true;
+    }
+    game.SetNearFar(NearInEyes, 0);
 
     // The characters right in front of the camera stay drawn (her own arms and gun, a zombie up close)
     if (!s.haveHide)

@@ -52,6 +52,7 @@ struct Config
     // Look
     float stickSpeed = 140;
     float mouseSensitivity = 0.15f;
+    float mouseSmoothing = 0.35f; // the share of last frame's mouse motion kept (0: none)
     float pitchSpeed = 90;
     bool invertPitch = false;
     bool invertStick = false;
@@ -87,8 +88,10 @@ struct Config
     uint32_t crosshairRgb = 0xF2F2F2;
 
     bool ownLookStick = true;
-    TurnMode turnToCamera = TurnMode::Off;
-    float turnSpeed = 165;
+    // She turns to the way the stick points from the camera as she moves, quickly (RE4's and RE5's feel); ModernCam's default
+    // was Off, the game's own slower walking turns
+    TurnMode turnToCamera = TurnMode::Moving;
+    float turnSpeed = 540;
 
     // Collision
     bool camCollision = true;
@@ -96,7 +99,7 @@ struct Config
     float camBlockTop = 25;
     float camRecover = 0.1f;
     float camHold = 0.12f;
-    float camSnap = 0;
+    float camSnap = 0; // the pull in front of a wall at once (eased, the eye was beyond the wall for a few frames)
 
     // Projection
     float nearValue = 50;
