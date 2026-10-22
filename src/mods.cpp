@@ -46,6 +46,9 @@ void Install(Ps2GameInfo& game, const ModernCamera::Layout& camera, const Biohaz
     game.settings = settings.data();
     game.settingCount = static_cast<int>(settings.size());
 
+    // F8: the Camera tab over the running game, its framing seen as it's set (RaccoonRecomp's camera window)
+    game.liveTab = ModernCamera::SettingsTab;
+
     g_gameMouseStick = game.mouseStick;
     game.mouseStick = MouseStick;
 

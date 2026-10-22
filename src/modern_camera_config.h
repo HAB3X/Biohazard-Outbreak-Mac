@@ -118,7 +118,8 @@ struct Config
     bool doorHold = true;
 };
 
-// The rows of the Camera tab (src/mod_settings.h)
+// The Camera tab's name, and its rows (src/mod_settings.h)
+constexpr const char* SettingsTab = "Camera";
 void AddSettings();
 // The settings now
 Config ReadConfig();

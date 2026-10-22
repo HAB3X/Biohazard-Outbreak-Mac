@@ -12,7 +12,7 @@ namespace ModernCamera
 {
 namespace
 {
-constexpr const char* Tab = "Camera";
+constexpr const char* Tab = SettingsTab;
 constexpr const char* GroupView = "ModernCam by Snippy; ported, and First Person, by RaccoonRecomp";
 constexpr const char* GroupFraming = "Modern: framing";
 constexpr const char* GroupLook = "Modern: look";
