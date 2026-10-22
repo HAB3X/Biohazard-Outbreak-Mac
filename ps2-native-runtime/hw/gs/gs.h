@@ -12,6 +12,7 @@
 
 #include "common.h"
 
+#include <array>
 #include <bitset>
 #include <cstddef>
 #include <cstdint>
@@ -524,6 +525,16 @@ public:
     // Blends with a texture's region clamp or repeat made by the GPU's blending, as other blends are (its rounding, not the GS's
     // truncation), by the GPU renderer (ps2-native-runtime's addition, a game's own choice: Ps2GameInfo::gsRoundedRegionBlends)
     bool roundedRegionBlends = false;
+    // Widescreen, anamorphic (ps2-native-runtime's addition, a game's own choice: Ps2GameInfo::widescreen; gswide.cpp): the
+    // game's 4:3 buffers are shown 16:9, its 3D drawn for that by the game (its projection's aspect), and its 2D drawn at three
+    // quarters of its width about the picture's middle so it keeps its shape, pillarboxed. The 2D is what the EE sends (the
+    // GIF's paths 2 and 3: for a game whose 3D all comes from VU1) into a buffer the PCRTC shows, except what spans the
+    // picture's whole width untextured or with something other than a picture (clears, fades, bars, scanlines, a copy of the
+    // frame): that stays as wide as the 16:9 picture
+    void SetWidescreen(bool on) { widescreen_ = on; }
+    bool widescreen() const { return widescreen_; }
+    // The GIF path the data being taken comes on (0-2: paths 1-3), set by the GIF
+    u32 sourcePath = 2;
 
     // The privileged registers (the PCRTC's: PMODE, SMODE2, DISPFB1/2, DISPLAY1/2, BGCOLOR)
     RegPmode pmode = {};
@@ -730,6 +741,16 @@ private:
     u32 transferY_ = 0;
     std::vector<u8> transferRest_;
     std::vector<GlyphOverride> glyphs_;
+    // Widescreen (gswide.cpp): on; the buffers the PCRTC has shown lately, and those drawn or copied into lately (render
+    // targets: a texture read from one is a copy of the frame, not a picture), by base (blocks), newest first
+    bool widescreen_ = false;
+    std::array<u32, 4> shownBuffers_ = {~0u, ~0u, ~0u, ~0u};
+    std::array<u32, 8> targets_ = {~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u};
+    // A primitive squeezed for widescreen when it's 2D: its vertexes into squeezed and the state's scissor squeezed (false: it
+    // isn't, and is drawn as it is)
+    bool SqueezeForWidescreen(DrawState& state, const Vertex* vertexes, u32 count, Vertex* squeezed);
+    // A buffer drawn or copied into (target), or filled from the host (not one)
+    void NoteWidescreenTarget(u32 bp, bool target);
     Backend* backend_ = nullptr;
     bool backendQuiet_ = false;
     void BackendWrote(u32 page);

@@ -315,6 +315,10 @@ void Gs::WriteRegister(u32 address, u64 value)
         {
             shownBufferWrites++;
         }
+        if (widescreen_ && ((value & 3) == 0 || (value & 3) == 2))
+        {
+            NoteWidescreenTarget(static_cast<u32>(bitbltbuf_.dbp), (value & 3) == 2);
+        }
         switch (value & 3)
         {
         case 0:

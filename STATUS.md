@@ -207,6 +207,15 @@ Ports of Snippy's Outbreak ModernCam and RaccoonRecomp's REO-ModernCam, REO-Firs
   restroom mirrors, alt rig and recenter not ported; the camera is not gated for network play (only the cheats are).
   The runtime build's VU1 translation step sometimes fails on a fresh build dir (its output folder made by another job): rerun.
 
+## Widescreen, 2026-10-22
+
+Both games are 16:9 by default (Display tab, graphics.txt `widescreen`). Hor+: the game's projection (SetPerspective, File 1
+0x18F0E0, File 2 0x18F4C0; src/widescreen.cpp) gets its aspect times 4/3, so the view is wider and as high; the runtime shows the
+picture 16:9 and the GS draws the 2D (GIF paths 2 and 3: HUD, menus, text, movies) into the middle 4:3 (hw/gs/gswide.cpp).
+Seen in both games: title, Training Ground/zoo in play, the status screen, the pause menu; File 1's Modern and first-person
+cameras; widescreen off is the old 4:3. Not seen: switching it live in the PC menus mid-game (ApplyWidescreen), the endings and
+other Sofdec movies.
+
 ## The Mac apps
 
 Two kinds, both from `tools/make_app.py` (each with SDL3 inside, the build's rpaths taken out, signed ad hoc):

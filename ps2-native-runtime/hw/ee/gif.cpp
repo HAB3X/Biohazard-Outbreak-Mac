@@ -21,6 +21,7 @@ enum GifFormat : u32
 u32 Gif::TransferNow(u32 index, const u8* data, u32 quadwords, bool stopAtEnd)
 {
     Path& path = paths_[index];
+    gs_.sourcePath = index;
     u32 taken = 0;
     while (taken < quadwords)
     {

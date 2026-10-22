@@ -127,7 +127,26 @@ typedef struct Ps2GameInfo
     // Optional. The PC menus' look: "crash" (NULL: the Crash Twinsanity port's options screen) or "outbreak" (Biohazard
     // Outbreak's own menus' look: ui/menutheme.h)
     const char* menuTheme;
+    // Optional. Widescreen (16:9) for a game that can draw its 3D wider (below): PS2_WIDESCREEN_OFF or PS2_WIDESCREEN_ON, how
+    // it is until the player chooses (the PC menus' Display tab, graphics.txt's widescreen); 0: the game has none. While it's
+    // on, the picture is shown 16:9 from the game's own 4:3 buffers: the game draws its 3D for that itself, asking
+    // ps2_widescreen() where it sets its projection (its view wider, as high: the aspect it gives times 4/3), and the GS draws
+    // its 2D (what the EE sends the GIF, paths 2 and 3: menus, text, movies) at three quarters of its width in the middle, so it
+    // keeps its shape; what spans the whole picture's width as a fade, a bar or a pattern stays as wide as the 16:9 picture.
+    // For a game whose 3D all comes from VU1 (the GIF's path 1)
+    int widescreen;
 } Ps2GameInfo;
+
+#define PS2_WIDESCREEN_OFF 1
+#define PS2_WIDESCREEN_ON 2
+
+// Whether the picture is widescreen now (16:9: the player's choice, for a game with Ps2GameInfo::widescreen): the game's 3D is
+// to be drawn for it. Any thread
+#ifdef __cplusplus
+extern "C"
+#endif
+    int
+    ps2_widescreen(void);
 
 // A prompt shown over the picture near its bottom (the PC menus' style: e.g. "Hold any button to skip"), NULL to take it down
 // (it fades in and out); not shown while the PC menus are up. Any thread

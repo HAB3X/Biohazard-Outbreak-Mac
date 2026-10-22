@@ -229,6 +229,11 @@ void Gs::DrawPrimitive(const Vertex* vertexes, u32 count)
 {
     DrawState state;
     SetUpState(state, &vertexes[count - 1]);
+    Vertex squeezed[3];
+    if (widescreen_ && SqueezeForWidescreen(state, vertexes, count, squeezed))
+    {
+        vertexes = squeezed;
+    }
     primitivesDrawn++;
     if (state.frameWritten && Shown(state.fbp))
     {

@@ -40,6 +40,8 @@ not = []
 # The cheats (src/cheats.cpp): "is this single play" (File 1's 0x1af4d0: the same code over the play mode at 0x3137D2; the
 # death path calls it from 0x6335B0)
 "0x1afb10" = "cheat_single_play"
+# The 3D's projection (SetPerspective): its aspect widescreen's while the picture is (src/widescreen.cpp)
+"0x18f4c0" = "widescreen_set_projection"
 
 # The code overlays: BIN/n.DAT, each a 0x40 byte "MWo3" header (its number, load address, code size, data size, bss size)
 # then its code and data, loaded whole at the address the executable's table at 0x217740 gives for its slot. The code runs

@@ -9,6 +9,10 @@
 // resolution, the textures' filtering and upscale, anti-aliasing (FXAA on the picture shown, or supersampling: the internal
 // resolution 2 or 4 times higher, up to 8 times the PS2's), the CRT filter and v-sync (the presenter's, from the Twinsanity
 // port's graphics/display.cpp and ui/crtfilter.cpp). The menus' overlay is drawn over the picture (ui/menus.h).
+//
+// Widescreen, for a game that has it (Ps2GameInfo::widescreen): the picture shown 16:9, the game's 3D drawn wider by the game
+// itself (ps2_widescreen) and its 2D squeezed into the middle 4:3 by the GS (hw/gs/gs.h's SetWidescreen). Each copy handed to
+// the window says which it was drawn for, so a picture is shown at the shape it was drawn at whenever the setting changes.
 #include "runtime.h"
 
 #include "presenter.h"
@@ -22,6 +26,7 @@
 #include <SDL3/SDL.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -59,12 +64,14 @@ InUse g_inUse = InUse::None;
 
 // The display settings (graphics.txt): the window's size in points, fullscreen, the textures' filtering (0 the game's, 1
 // bilinear, 2 trilinear), anti-aliasing (0 off, 1 FXAA, 2 and 3 supersampling 2x and 4x), the CRT filter, v-sync
-int g_windowWidth = 1280, g_windowHeight = 960;
+int g_windowWidth = 0, g_windowHeight = 0;
 bool g_fullscreen = false;
 int g_filtering = 0;
 int g_antiAliasing = 0;
 bool g_crt = false;
 bool g_vsync = true;
+// Widescreen (16:9), for a game that has it; read from the game's side (ps2_widescreen)
+std::atomic<bool> g_widescreen{false};
 // The window's sizes the menus offer
 constexpr int WindowSizes[][2] = {{960, 720}, {1280, 960}, {1600, 1200}, {1920, 1440}, {1280, 720}, {1920, 1080}};
 
@@ -75,6 +82,8 @@ struct Slot
 {
     NativeGraphics::ShownTexture shown = {};
     void* drawn = nullptr;
+    // Drawn for widescreen
+    bool wide = false;
 };
 std::mutex g_slotLock;
 Slot g_slots[3];
@@ -82,6 +91,8 @@ int g_ready = -1;
 // The copy the window drew last (kept for drawing again under the PC menus while the game is paused: the render thread
 // copies into the third)
 int g_shown = -1;
+// Whether the picture the presenter has in use was drawn for widescreen
+bool g_inUseWide = false;
 
 // The renderer and scale a game has unless its player chooses others: its own (Ps2GameInfo::gsRenderer, gsScale), else the
 // runtime's (OpenGL at 3x)
@@ -100,6 +111,13 @@ std::string DefaultRenderer()
 }
 
 int DefaultScale() { return g_game != nullptr && g_game->gsScale > 0 ? std::clamp(g_game->gsScale, 1, 8) : 3; }
+
+// Widescreen: whether the game has it, and on until the player chooses (the game's own default)
+bool WidescreenOffered() { return g_game != nullptr && g_game->widescreen != 0; }
+bool DefaultWidescreen() { return g_game != nullptr && g_game->widescreen == PS2_WIDESCREEN_ON; }
+// The window's size by default: the TV's shape, or 16:9
+constexpr int DefaultWindowWidth = 1280;
+int DefaultWindowHeight() { return DefaultWidescreen() ? 720 : 960; }
 
 // graphics.txt's renderer and scale as read (the options may say otherwise for this run: those are written back)
 std::string g_fileRenderer;
@@ -129,8 +147,14 @@ void WriteGraphicsSettings()
            "# The CRT filter (scanlines): 0 off, 1 on\n"
            "crt = " << (g_crt ? 1 : 0) << "\n"
            "# V-sync: 0 off, 1 on\n"
-           "vsync = " << (g_vsync ? 1 : 0) << "\n"
-           "# The window: its size in points, and fullscreen (0 or 1; Cmd+F or Alt+Enter switch)\n"
+           "vsync = " << (g_vsync ? 1 : 0) << "\n";
+    if (WidescreenOffered())
+    {
+        out << "# Widescreen: 0 the TV's 4:3, 1 16:9 (the view wider, the menus and text keeping their shape; this game's own: "
+            << (DefaultWidescreen() ? 1 : 0) << ")\n"
+               "widescreen = " << (g_widescreen ? 1 : 0) << "\n";
+    }
+    out << "# The window: its size in points, and fullscreen (0 or 1; Cmd+F or Alt+Enter switch)\n"
            "window = " << g_windowWidth << "x" << g_windowHeight << "\n"
            "fullscreen = " << (g_fullscreen ? 1 : 0) << "\n"
            "# This file's form\n"
@@ -201,11 +225,12 @@ std::string Setting(const char* name, const std::map<std::string, std::string>& 
 // The GPU's resolution with supersampling's
 int EffectiveScale() { return std::min(8, g_options.gsScale * (g_antiAliasing == 2 ? 2 : g_antiAliasing == 3 ? 4 : 1)); }
 
-// The picture's place in a window of these pixels: the TV's 4:3, letterboxed
-SDL_FRect PictureRect(int width, int height)
+// The picture's place in a window of these pixels: the TV's 4:3 or widescreen's 16:9, letterboxed
+SDL_FRect PictureRect(int width, int height, bool wide)
 {
-    float scale = std::min(width / 640.0f, height / 480.0f);
-    return {(width - 640 * scale) / 2, (height - 480 * scale) / 2, 640 * scale, 480 * scale};
+    const float shapeWidth = wide ? 640.0f * 4 / 3 : 640.0f;
+    float scale = std::min(width / shapeWidth, height / 480.0f);
+    return {(width - shapeWidth * scale) / 2, (height - 480 * scale) / 2, shapeWidth * scale, 480 * scale};
 }
 
 // The picture to draw made the presenter's: the newest copy (it becomes the shown one), else the shown one again when asked to
@@ -231,6 +256,7 @@ bool TakePicture(const Gs::DisplayImage* image, bool redraw, int* slot)
     {
         g_presenter->UseShown(g_slots[*slot].shown);
         g_inUse = InUse::Slot;
+        g_inUseWide = g_slots[*slot].wide;
         return true;
     }
     if (image != nullptr && image->width != 0)
@@ -242,6 +268,7 @@ bool TakePicture(const Gs::DisplayImage* image, bool redraw, int* slot)
         }
         g_presenter->UsePixels(*image);
         g_inUse = InUse::Pixels;
+        g_inUseWide = g_widescreen;
         return true;
     }
     return redraw && g_inUse == InUse::Pixels;
@@ -254,7 +281,7 @@ WindowFrame FrameOf(int width, int height, float pixelScale)
     frame.width = width;
     frame.height = height;
     frame.pixelScale = pixelScale;
-    frame.place = PictureRect(width, height);
+    frame.place = PictureRect(width, height, g_inUseWide);
     frame.filter = g_crt ? PictureFilter::Crt : g_antiAliasing == 1 ? PictureFilter::Fxaa : PictureFilter::Plain;
     // The PS2's lines: the picture's pixels less the GPU's scale (the software GS's are the PS2's own)
     u32 pictureWidth = 0, pictureHeight = 0;
@@ -280,6 +307,20 @@ void ApplyWindow()
     else
     {
         SDL_SetWindowFullscreen(g_window, true);
+    }
+}
+
+// Widescreen set on the GS's side in its place among its work (from the game's side), and the window made the picture's shape
+// (its width kept)
+void ApplyWidescreen()
+{
+    const bool on = g_widescreen;
+    KernelOnGameSide([=] { RenderCall([=] { Hw().gs->SetWidescreen(on); }); });
+    if (!g_fullscreen)
+    {
+        DisplayGet(DisplaySetting::WindowSize);
+        g_windowHeight = on ? g_windowWidth * 9 / 16 : g_windowWidth * 3 / 4;
+        ApplyWindow();
     }
 }
 
@@ -325,6 +366,9 @@ void DisplayReadSettings()
     // The renderer: the GPU unless asked for the software GS
     g_fileRenderer = DefaultRenderer();
     g_fileScale = DefaultScale();
+    g_widescreen = DefaultWidescreen();
+    g_windowWidth = DefaultWindowWidth;
+    g_windowHeight = DefaultWindowHeight();
     std::map<std::string, std::string> file = ReadGraphicsSettings();
     const bool old = !file.empty() && file.find("version") == file.end();
     ForgetOldDefaults(file);
@@ -352,15 +396,23 @@ void DisplayReadSettings()
     g_antiAliasing = std::clamp(atoi(Setting("", file, "anti_aliasing", "0").c_str()), 0, 3);
     g_crt = atoi(Setting("", file, "crt", "0").c_str()) != 0;
     g_vsync = atoi(Setting("", file, "vsync", "1").c_str()) != 0;
+    g_widescreen = WidescreenOffered() && atoi(Setting("", file, "widescreen", DefaultWidescreen() ? "1" : "0").c_str()) != 0;
     g_fullscreen = atoi(Setting("", file, "fullscreen", "0").c_str()) != 0;
-    if (sscanf(Setting("", file, "window", "1280x960").c_str(), "%dx%d", &g_windowWidth, &g_windowHeight) != 2 ||
+    const std::string defaultWindow = std::to_string(DefaultWindowWidth) + "x" + std::to_string(DefaultWindowHeight());
+    if (sscanf(Setting("", file, "window", defaultWindow.c_str()).c_str(), "%dx%d", &g_windowWidth, &g_windowHeight) != 2 ||
         g_windowWidth < 320 || g_windowHeight < 240)
     {
-        g_windowWidth = 1280;
-        g_windowHeight = 960;
+        g_windowWidth = DefaultWindowWidth;
+        g_windowHeight = DefaultWindowHeight();
+    }
+    // A file from before the game had widescreen: a window of the TV's shape made widescreen's when that's on by default
+    const bool widescreenAdded = WidescreenOffered() && !file.empty() && file.find("widescreen") == file.end();
+    if (widescreenAdded && g_widescreen && g_windowHeight == g_windowWidth * 3 / 4)
+    {
+        g_windowHeight = g_windowWidth * 9 / 16;
     }
     // Settings added since the file was written are written in with their defaults
-    if (old || (!file.empty() && file.find("vsync") == file.end()))
+    if (old || widescreenAdded || (!file.empty() && file.find("vsync") == file.end()))
     {
         WriteGraphicsSettings();
     }
@@ -424,6 +476,7 @@ SDL_Window* DisplayOpen()
 
 void DisplayRenderThreadStart()
 {
+    Hw().gs->SetWidescreen(g_widescreen);
     if (g_presenter == nullptr)
     {
         return;
@@ -449,6 +502,7 @@ void DisplayRenderThreadStart()
 
 void DisplayNoRenderThread()
 {
+    Hw().gs->SetWidescreen(g_widescreen);
     if (g_options.gs != 0)
     {
         Log("graphics: the hardware renderer needs the render thread: the software GS draws");
@@ -482,6 +536,7 @@ int DisplayCopyShown()
     }
     std::lock_guard<std::mutex> lock(g_slotLock);
     g_slots[slot].shown = shown;
+    g_slots[slot].wide = Hw().gs->widescreen();
     g_ready = slot;
     return slot;
 }
@@ -538,8 +593,12 @@ void DisplayPresent(const Gs::DisplayImage* image, bool redraw, SDL_FRect* pictu
             g_presenter->DropFence(old);
         }
     }
-    // The mouse's place over the picture goes by the window's points
-    SDL_FRect dst = PictureRect(width, height);
+    // The mouse's place over the picture goes by the window's points, over the game's 2D: widescreen's is in the middle 4:3
+    SDL_FRect dst = PictureRect(width, height, g_inUseWide);
+    if (g_inUseWide)
+    {
+        dst = {dst.x + dst.w / 8, dst.y, dst.w * 3 / 4, dst.h};
+    }
     *pictureRect = {dst.x / density, dst.y / density, dst.w / density, dst.h / density};
 }
 
@@ -607,7 +666,9 @@ int DisplayGet(DisplaySetting setting)
     case DisplaySetting::AntiAliasing: return g_antiAliasing;
     case DisplaySetting::Crt: return g_crt ? 1 : 0;
     case DisplaySetting::VSync: return g_vsync ? 1 : 0;
+    case DisplaySetting::Widescreen: return g_widescreen ? 1 : 0;
     case DisplaySetting::OnGpu: return g_options.gs != 0 ? 1 : 0;
+    case DisplaySetting::WidescreenOffered: return WidescreenOffered() ? 1 : 0;
     }
     return 0;
 }
@@ -618,13 +679,15 @@ int DisplayDefault(DisplaySetting setting)
     {
     case DisplaySetting::Scale: return DefaultScale();
     case DisplaySetting::VSync: return 1;
+    case DisplaySetting::Widescreen: return DefaultWidescreen() ? 1 : 0;
     case DisplaySetting::Fullscreen:
     case DisplaySetting::WindowSize:
     case DisplaySetting::TextureUpscale:
     case DisplaySetting::Filtering:
     case DisplaySetting::AntiAliasing:
     case DisplaySetting::Crt:
-    case DisplaySetting::OnGpu: return 0;
+    case DisplaySetting::OnGpu:
+    case DisplaySetting::WidescreenOffered: return 0;
     }
     return 0;
 }
@@ -672,7 +735,16 @@ void DisplaySet(DisplaySetting setting, int value)
             g_presenter->SetVsync(g_vsync);
         }
         break;
-    case DisplaySetting::OnGpu: return;
+    case DisplaySetting::Widescreen:
+        if (!WidescreenOffered() || g_widescreen == (value != 0))
+        {
+            return;
+        }
+        g_widescreen = value != 0;
+        ApplyWidescreen();
+        break;
+    case DisplaySetting::OnGpu:
+    case DisplaySetting::WidescreenOffered: return;
     }
     WriteGraphicsSettings();
 }
@@ -716,3 +788,5 @@ void DisplayClose()
     SDL_Quit();
 }
 }
+
+extern "C" int ps2_widescreen(void) { return Ps2::g_widescreen ? 1 : 0; }

@@ -379,7 +379,10 @@ enum class DisplaySetting
     AntiAliasing,
     Crt,
     VSync,
+    // Widescreen (16:9), for a game that has it (WidescreenOffered: whether it does; read only)
+    Widescreen,
     OnGpu,
+    WidescreenOffered,
 };
 int DisplayGet(DisplaySetting setting);
 void DisplaySet(DisplaySetting setting, int value);

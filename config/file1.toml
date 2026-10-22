@@ -40,6 +40,8 @@ not = []
 "0x1afc60" = "mods_pad_map"
 # The cheats (src/cheats.cpp): "is this single play" (Become A Zombie After Death)
 "0x1af4d0" = "cheat_single_play"
+# The 3D's projection (SetPerspective): its aspect widescreen's while the picture is (src/widescreen.cpp)
+"0x18f0e0" = "widescreen_set_projection"
 
 # The code overlays: PROG/*.BIN, each a 0x40 byte "MWo3" header (its number, load address, code size, data size, bss size)
 # then its code and data, loaded whole at its load address. The code runs from the header's end for the code size the header

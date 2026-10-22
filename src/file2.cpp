@@ -11,6 +11,7 @@
 #include "ps2/runtime.h"
 #include "tsnd.h"
 #include "typing.h"
+#include "widescreen.h"
 
 #include "ps2/recomp.h"
 
@@ -96,6 +97,9 @@ extern "C" void game_frame(Ps2Cpu* c)
     f_001ba1d0(c);
     Pointer::Frame(c);
 }
+// The 3D's projection: widescreen's aspect while the picture is (src/widescreen.cpp)
+extern "C" void f_0018f4c0(Ps2Cpu* c);
+extern "C" void widescreen_set_projection(Ps2Cpu* c) { Widescreen::SetProjection(c, f_0018f4c0); }
 
 int main(int argc, char** argv)
 {
@@ -122,6 +126,8 @@ int main(int argc, char** argv)
     game.stickDeadzone = 0.42f;
     // The PC menus in the game's own menus' look (the runtime's ui/menutheme.h)
     game.menuTheme = "outbreak";
+    // Widescreen (16:9) unless the player chooses the TV's 4:3: the 3D wider (src/widescreen.cpp), the 2D keeping its shape
+    game.widescreen = PS2_WIDESCREEN_ON;
     BiohazardControls::Apply(game, BiohazardControls::File2);
     game.networkDns = Network::ObsrvDns;
     game.settings = PartnerAi::Settings;

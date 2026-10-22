@@ -477,7 +477,8 @@ void ResetPage(const std::string& title)
     else if (title == "Display")
     {
         for (DisplaySetting setting : {DisplaySetting::Scale, DisplaySetting::TextureUpscale, DisplaySetting::Filtering,
-                                       DisplaySetting::AntiAliasing, DisplaySetting::Crt, DisplaySetting::VSync})
+                                       DisplaySetting::AntiAliasing, DisplaySetting::Crt, DisplaySetting::VSync,
+                                       DisplaySetting::Widescreen})
         {
             DisplaySet(setting, DisplayDefault(setting));
         }
@@ -615,6 +616,10 @@ void BuildOptions()
     size.shown = [] { return DisplayGet(DisplaySetting::Fullscreen) == 0; };
     size.asksToKeep = true;
     display.rows.push_back(size);
+    Row widescreen = DisplayChoice("Widescreen", "The picture 16:9: the view wider, the menus and text keeping their shape",
+                                   DisplaySetting::Widescreen, {"Off", "On"});
+    widescreen.shown = [] { return DisplayGet(DisplaySetting::WidescreenOffered) != 0; };
+    display.rows.push_back(widescreen);
     auto onGpu = [] { return DisplayGet(DisplaySetting::OnGpu) != 0; };
     Row scale = Choice(
         "Internal resolution", "The picture drawn at a multiple of the PS2's resolution: sharper, and slower, the higher it is",

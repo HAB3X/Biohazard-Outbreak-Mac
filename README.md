@@ -10,6 +10,7 @@ Not affiliated with Capcom or Sony. You need your own discs; no game data is inc
 
 - Both games in one launcher, in English (the patch is made from your disc on first play)
 - Metal renderer, 4x resolution by default, 30 fps
+- Widescreen 16:9: a wider view, with the HUD and menus keeping their shape (switchable)
 - Keyboard and mouse like the PC RE4/RE5, rebindable; controllers with PlayStation or Xbox prompts
 - Snippy's Outbreak ModernCam (over the shoulder), first person and cheats, toggled in the F10 menu
 - PCSX2 HD texture packs: drop them on the launcher

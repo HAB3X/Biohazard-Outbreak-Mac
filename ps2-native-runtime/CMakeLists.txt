@@ -21,6 +21,7 @@ add_library(ps2hw STATIC
     hw/gs/gsdraw.cpp
     hw/gs/gsmemory.cpp
     hw/gs/gsscale.cpp
+    hw/gs/gswide.cpp
     hw/gs/workers.cpp
     hw/hw/bc7.cpp
     hw/hw/gl.cpp
