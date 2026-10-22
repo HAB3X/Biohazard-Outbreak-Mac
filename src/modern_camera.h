@@ -25,6 +25,7 @@ void Use(const Layout& layout, const BiohazardControls::Layout& play);
 // Once a game frame, at its end (src/mods.h): the camera computed and written
 void Frame();
 void PadMap(Ps2Cpu* c, Ps2Function original);      // the button mapper (a0 a character's record)
+void WalkStep(Ps2Cpu* c, Ps2Function original);    // a character's stick walking (a0 its record): no cut hold while the camera drives
 void FixedCut(Ps2Cpu* c, Ps2Function original);    // the fixed cut's handler: skipped while the camera drives
 void RailCut(Ps2Cpu* c, Ps2Function original);     // the rail and spline cuts' handlers: their camera writes undone
 void Follow(Ps2Cpu* c, Ps2Function original);      // the follow handler (doors): skipped while the camera drives

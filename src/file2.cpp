@@ -65,6 +65,7 @@ extern "C" void single_partner_pick_item(Ps2Cpu* c) { PartnerAi::PickItem(c, Par
 // scenario select's cheats aren't offered here (File 2's save data is laid out otherwise: src/cheats.cpp)
 MOD_OVERRIDE(mods_frame_end, Mods::FrameEnd, f_0019f390)
 MOD_OVERRIDE(mods_pad_map, ModernCamera::PadMap, f_001b08b0)
+MOD_OVERRIDE(game_walk_step, ModernCamera::WalkStep, game_00636040)
 MOD_OVERRIDE(game_camera_fixed_cut, ModernCamera::FixedCut, game_00595410)
 MOD_OVERRIDE(game_camera_rail_cut, ModernCamera::RailCut, game_00595520)
 MOD_OVERRIDE(game_camera_spline_cut, ModernCamera::RailCut, game_005959c0)

@@ -117,7 +117,8 @@ struct Layout
     uint32_t enemies;         // the enemies' records the auto-aim's target finder walks
     uint32_t enemySize;
     uint32_t enemyFlags;      // an enemy's u32 flags: bit 0 set, the target finder skips it
-    uint32_t cuts;            // the room's fixed cameras: +1 count, +3 current, +5 forced, +6 forcing; records from +0x34
+    uint32_t cuts;            // the room's fixed cameras: +1 count, +3 current, +4 the cut changed this frame, +5 forced, +6
+                              // forcing; records from +0x34
     uint32_t objectCount;     // u16: the room's objects
     uint32_t objectFlags;     // u8 each: bit 0 drawn, bit 7 hidden by an event
     uint32_t objectMatrices;  // f32 4x4 each (rows, the origin at +0x30)

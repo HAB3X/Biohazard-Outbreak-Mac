@@ -78,6 +78,7 @@ extern "C" void game_frame(Ps2Cpu* c)
 // The cameras (src/modern_camera.cpp): the game frame, the button mapper and the game's camera handlers, as recompiled
 MOD_OVERRIDE(mods_frame_end, Mods::FrameEnd, f_0019ecb0)
 MOD_OVERRIDE(mods_pad_map, ModernCamera::PadMap, f_001afc60)
+MOD_OVERRIDE(game_walk_step, ModernCamera::WalkStep, game_006307e0)
 MOD_OVERRIDE(game_camera_fixed_cut, ModernCamera::FixedCut, game_0058ec70)
 MOD_OVERRIDE(game_camera_rail_cut, ModernCamera::RailCut, game_0058ed80)
 MOD_OVERRIDE(game_camera_spline_cut, ModernCamera::RailCut, game_0058f230)

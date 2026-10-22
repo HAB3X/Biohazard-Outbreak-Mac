@@ -1047,6 +1047,25 @@ void Use(const Layout& layout, const BiohazardControls::Layout& play)
 
 void Frame() { DriverFrame(); }
 
+// The walking step sets the walk hold when the cut changed this frame (cuts + 4: File 1's 0x6307E0 reads 0x3AEF54, File 2's
+// 0x636040 0x3B31D4) and uses it in the same step, after the mapper's release: and the borrowed cut changes as this camera
+// moves, so with the stick held she went on the way she went before. For her step that byte reads unchanged, then it's put back
+void WalkStep(Ps2Cpu* c, Ps2Function original)
+{
+    constexpr uint32_t CutChangedAt = 4;
+    const bool driving = g_firstPerson || (s.map.active && s.levelLive && s.map.walkFree);
+    if (!driving || c->r[4].uw[0] != g_game->PlayerRecord())
+    {
+        original(c);
+        return;
+    }
+    const uint32_t changed = g_game->layout().cuts + CutChangedAt;
+    const uint8_t saved = rd8(changed);
+    wr8(changed, 0);
+    original(c);
+    wr8(changed, saved);
+}
+
 void PadMap(Ps2Cpu* c, Ps2Function original)
 {
     const uint32_t record = c->r[4].uw[0];
