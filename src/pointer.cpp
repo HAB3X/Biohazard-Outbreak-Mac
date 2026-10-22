@@ -90,6 +90,7 @@ void Screen::Reset()
     wheelUp = wheelDown = clickElsewhere = 0;
     moveSound = Sound();
     follow = 0;
+    mapSticks = false;
     readyAt = 0;
     readyValue = 0;
 }
@@ -264,6 +265,8 @@ struct Owed
 } g_presses;
 // Vertical blanks between two owed presses (the menus' tap spacing is 7 game frames; a press shows for a frame or two)
 constexpr int PressGap = 10;
+// The pointer moving this many pixels of the picture in one move pushes a dragged stick fully (a map's scroll)
+constexpr float DragPixels = 6.0f;
 
 void Press(uint32_t buttons, int times)
 {
@@ -371,6 +374,8 @@ bool Vblank(const Finder* finders, int count)
         }
         return false;
     }
+    static float dragX = 0, dragY = 0;
+    static bool dragging = false;
     if (ps2_mouse_moved(&fx, &fy))
     {
         Follow(fx, fy);
@@ -378,6 +383,23 @@ bool Vblank(const Finder* finders, int count)
         {
             Point(*t);
         }
+        if (g_screen.mapSticks && ps2_mouse_left_held())
+        {
+            if (dragging)
+            {
+                // The picture follows the pointer: the left stick pushed the other way for a moment, harder the faster the
+                // pointer moved
+                float dx = (fx - dragX) * Width, dy = (fy - dragY) * Height;
+                ps2_push_stick(0, std::clamp(-dx / DragPixels, -1.0f, 1.0f), std::clamp(-dy / DragPixels, -1.0f, 1.0f), 0.1);
+            }
+            dragX = fx;
+            dragY = fy;
+            dragging = true;
+        }
+    }
+    if (!ps2_mouse_left_held())
+    {
+        dragging = false;
     }
     while (ps2_take_click(&fx, &fy))
     {
@@ -403,6 +425,11 @@ bool Vblank(const Finder* finders, int count)
             continue;
         }
         bool up = kind == PS2_MOUSE_WHEEL_UP;
+        if (g_screen.mapSticks)
+        {
+            ps2_push_stick(1, 0, up ? -1.0f : 1.0f, 0.15);
+            continue;
+        }
         const Target* t = Under(g_screen, fx * Width, fy * Height);
         uint32_t buttons = t != nullptr && (t->wheelUp | t->wheelDown) != 0 ? (up ? t->wheelUp : t->wheelDown)
                                                                              : (up ? g_screen.wheelUp : g_screen.wheelDown);

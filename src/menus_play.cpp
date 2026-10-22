@@ -320,8 +320,7 @@ bool PauseMenu(Pointer::Screen& screen)
     return true;
 }
 
-// The map (what the task shows: 2): its "Cancel" hint closes it (its place measured in a picture of File 2's English map;
-// scrolling and zooming stay on the sticks' keys)
+// The map (what the task shows: 2): its "Cancel" hint closes it (its place measured in a picture of File 2's English map)
 constexpr uint8_t ShowsMap = 2;
 bool Map(Pointer::Screen& screen)
 {
@@ -331,6 +330,11 @@ bool Map(Pointer::Screen& screen)
     }
     screen.name = "map";
     screen.Press(Box(514, 124, 66, 22), Pointer::Cross);
+    // The floor tabs (Q and R at the top: the map's L1 and R1), the wheel zooms (the right stick) and dragging scrolls it (the
+    // left stick)
+    screen.Press(Box(112, 28, 38, 28), Pointer::L1);
+    screen.Press(Box(490, 28, 38, 28), Pointer::R1);
+    screen.mapSticks = true;
     return true;
 }
 

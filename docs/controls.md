@@ -107,14 +107,14 @@ Checked through `--control` in hidden-window runs (`mouse X Y`, `tap Mouse_Left`
 | Partner select | ✓ | not seen (File 1 started the scenario after the difficulty) |
 | Status screen: cells, weapon, actions, tabs, FILE | ✓ | ✓ cells, weapon |
 | Pause menu: rows, settings' wheel, quit question | ✓ | ✓ |
-| Map: Cancel hint | ✓ | ✓ |
+| Map: Cancel hint, Q and R floor tabs, wheel zoom, drag to scroll | ✓ wheel and drag checked (the Q/R tabs: a one-floor map, not seen to switch) | not run |
 | Map, status screen, pause each opened and left 5 times by key and mouse | ✓ every time | ✓ (a map key lost once in the game's own event) |
 | Network: caution, NET file dialogs, messages, broadband menu, manners | ✓ mouse alone to the login page | ✓ mouse alone to the login page |
 | Browser's pointer, wheel | ✓ 56 ms | ✓ reached |
 | Software keyboard: hover, click types | ✓ ("l6" typed, nothing sent) | not run |
 | Lobby (after login) | built from the code, not run | built from the code, not run |
 
-Not done with the mouse: the map's scrolling and zooming (the sticks' keys), File 2's DATA CONVERT, the results screen.
+The map: the wheel zooms (the right stick, pushed from the game's side: ps2_push_stick) and holding the left button while the pointer moves drags it (the left stick the other way, so the map follows the pointer). Not done with the mouse: File 2's DATA CONVERT, the results screen.
 
 ### What the owner's run needs to check
 

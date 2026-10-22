@@ -102,6 +102,9 @@ struct Screen
     // A pointer of the game's own that follows the mouse (its x and y as 16-bit words there, in the picture's coordinates;
     // 0: none): the network browser's
     uint32_t follow = 0;
+    // A map that scrolls and zooms on sticks: the wheel pushes the right stick up (a turn away from the player) or down, and
+    // the left button held while the mouse moves drags the picture with the left stick (the map follows the pointer)
+    bool mapSticks = false;
 
     // A row that sets a cursor (and confirms when clicked); the target, to add the values written with it
     Target& Item(const Rect& rect, uint32_t cursor, uint8_t size, int32_t value, uint32_t press = Circle);

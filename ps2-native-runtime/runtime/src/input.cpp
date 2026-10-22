@@ -873,6 +873,12 @@ void InputLiveMove(float dx, float dy)
 float g_liveStickX = 0, g_liveStickY = 0;
 double g_liveStickUntil = -1;
 
+// The game's own pushes of a stick (ps2_push_stick): each stick's push and the game time it lasts to; and whether the left
+// mouse button is down (kept from its events: a press shorter than a poll still counts as down until its up is seen)
+float g_pushStick[2][2] = {};
+double g_pushUntil[2] = {-1, -1};
+std::atomic<bool> g_leftHeld{false};
+
 void InputLiveStick(float x, float y, double hold)
 {
     std::lock_guard<std::mutex> lock(g_liveLock);
@@ -904,6 +910,10 @@ void InputLiveWheel(float lines)
 
 void InputEvent(const SDL_Event& e)
 {
+    if ((e.type == SDL_EVENT_MOUSE_BUTTON_DOWN || e.type == SDL_EVENT_MOUSE_BUTTON_UP) && e.button.button == SDL_BUTTON_LEFT)
+    {
+        g_leftHeld = e.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+    }
     InputNoteDevice(e);
     if (e.type == SDL_EVENT_KEY_DOWN && !e.key.repeat && e.key.scancode < SDL_SCANCODE_COUNT)
     {
@@ -1255,6 +1265,14 @@ void InputUpdate(double t, SDL_Window* window)
             sticks[0][0] += g_liveStickX;
             sticks[0][1] += g_liveStickY;
         }
+        for (int stick = 0; stick < 2 && !menus; stick++)
+        {
+            if (g_liveNow < g_pushUntil[stick])
+            {
+                sticks[stick][0] += g_pushStick[stick][0];
+                sticks[stick][1] += g_pushStick[stick][1];
+            }
+        }
     }
     // A stick from keys: a diagonal is both axes at full, as a PS2 stick pushed into its corner reads (and PCSX2's keys give):
     // scaled to the circle (both at 1/sqrt(2)) games take it for a stick half pushed, CTTR's Crash walking. Walking at half
@@ -1550,6 +1568,20 @@ extern "C" void ps2_press_buttons(uint32_t buttons, double seconds)
     g_synthAsked = buttons;
     g_synthFor = seconds;
 }
+
+extern "C" void ps2_push_stick(int stick, float x, float y, double seconds)
+{
+    if (stick < 0 || stick > 1)
+    {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(g_liveLock);
+    g_pushStick[stick][0] = std::clamp(x, -1.0f, 1.0f);
+    g_pushStick[stick][1] = std::clamp(y, -1.0f, 1.0f);
+    g_pushUntil[stick] = g_liveNow + seconds;
+}
+
+extern "C" int ps2_mouse_left_held(void) { return g_leftHeld ? 1 : 0; }
 
 extern "C" int ps2_any_input_held(void) { return g_anyHeld ? 1 : 0; }
 

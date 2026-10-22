@@ -226,6 +226,21 @@ extern "C"
     int
     ps2_control_name(const char* control, int style, char* out, int size);
 
+// A stick (0 the left, 1 the right) pushed from the game's side (each axis -1 to 1, as the PS2 reads it: up is -y) for a while
+// (seconds of game time), added to what the player's keys and pad push; a game's mouse-driven scrolling and zooming
+#ifdef __cplusplus
+extern "C"
+#endif
+    void
+    ps2_push_stick(int stick, float x, float y, double seconds);
+
+// Whether the left mouse button is down now (from its events: a press and release between two polls still counts until the up)
+#ifdef __cplusplus
+extern "C"
+#endif
+    int
+    ps2_mouse_left_held(void);
+
 // Port 0's buttons (PS2 bits: cross is 1 << 14) pressed from the game's side for a while (seconds of game time)
 #ifdef __cplusplus
 extern "C"
