@@ -35,7 +35,7 @@ void Usage(const char* program)
             "          [--run-seconds S] [--log kernel,syscall,io,dma,sif,iop,gs,call,thread,irq,ipu]\n"
             "          [--watch ADDR[:WORDS],... [--watch-every S]] [--memcards DIR] [--settings DIR]\n"
             "          [--press S:BUTTON[+BUTTON][:HOLD],...] [--key S:KEY[+KEY][:HOLD],...]\n"
-            "          [--control FIFO] [--patch FILE] [--dns ADDRESS] [--disc-check]\n"
+            "          [--control FIFO] [--patch FILE]... [--dns ADDRESS] [--disc-check]\n"
             "          [--type S:TEXT] [--click S:X,Y] [--ui S:KEY,KEY,...]\n"
             "          [--fps] [--gs hardware|software] [--scale 1-8] [--texture-upscale 0|2|4] [--mute] [--audio-dump FILE.wav]\n"
             "          [--gs-record S:VBLANKS:FILE] [--gs-replay FILE[:PASSES]] [--vu1-replay FILE[:PASSES]]\n",
@@ -219,7 +219,7 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         }
         else if (a == "--patch")
         {
-            g_options.patch = next();
+            g_options.patches.push_back(next());
         }
         else if (a == "--disc-check")
         {
@@ -605,9 +605,12 @@ int ps2_main(int argc, char** argv, const Ps2GameInfo* game)
         }
         Log("%s (%s): %s", game->title, game->executable, line.c_str());
     }
-    if (!g_options.patch.empty() && !DiscLoadPatch(g_options.patch))
+    for (const std::string& patch : g_options.patches)
     {
-        return 1;
+        if (!DiscLoadPatch(patch))
+        {
+            return 1;
+        }
     }
     // Read again with the patch laid over it: the executable's own text is translated
     std::vector<u8> elf;

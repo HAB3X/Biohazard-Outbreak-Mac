@@ -135,6 +135,10 @@ typedef struct Ps2GameInfo
     // keeps its shape; what spans the whole picture's width as a fade, a bar or a pattern stays as wide as the 16:9 picture.
     // For a game whose 3D all comes from VU1 (the GIF's path 1)
     int widescreen;
+    // Optional. A tab of the PC menus' Options (a setting's tab: "Camera") that F8 opens on its own over the running game: not
+    // paused and not dimmed, in a narrow panel at the picture's right, so what a row sets is seen as it's set (a camera's
+    // framing). The game gets no input meanwhile; F8 or Escape closes it. NULL: F8 does nothing
+    const char* liveTab;
 } Ps2GameInfo;
 
 #define PS2_WIDESCREEN_OFF 1

@@ -88,4 +88,20 @@ The whole report is in $LOG: please include it with a bug report."
 fi
 
 [ "$PREPARE" = 1 ] && exit 0
+
+# The character mods switched on in the launcher (characters.txt): their models laid over the disc by a second patch, made
+# again at each start (it takes a moment: tools/bh_character_patch.py). One that can't be made is said, and the game starts
+# without them
+CHARACTERS="$SETTINGS/characters.txt"
+if grep -q '^[^#]' "$CHARACTERS" 2>/dev/null; then
+    if env -i PYTHONHOME="$PYTHON" PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1 PATH=/usr/bin:/bin LANG=en_US.UTF-8 \
+        PS2_RUNTIME_DIR="$BUILDER/ps2-native-runtime" @GAME_UPPER@_DISC="$DISC" "$PYTHON/bin/python3" \
+        "$BUILDER/tools/bh_character_patch.py" @GAME@ "$CHARACTERS" "$SETTINGS/characters.patch" >"$SETTINGS/characters-patch.log" 2>&1; then
+        set -- --patch "$SETTINGS/characters.patch" "$@"
+    else
+        alert "The character mods couldn't be put in" "$(tail -n 2 "$SETTINGS/characters-patch.log")
+
+The game starts without them."
+    fi
+fi
 exec "$GAME" --disc "$DISC" --patch "$PATCH" "$@"

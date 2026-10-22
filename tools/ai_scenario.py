@@ -36,14 +36,14 @@ import ai_report  # noqa: E402
 class Run:
     """One game, headless, driven through the runtime's --control FIFO."""
 
-    def __init__(self, game, folder, env):
+    def __init__(self, game, folder, env, args=()):
         self.game, self.folder = game, folder
         self.fifo, self.log = folder / "c", folder / "game.log"
         self.fifo.unlink(missing_ok=True)  # a FIFO left by an earlier run would be taken for this game's
         disc = os.environ.get(f"{game.upper()}_DISC") or json.loads((ROOT / "local.json").read_text())[game]
         cmd = [str(ROOT / "build" / f"biohazard-{game}"), "--disc", disc, "--patch", str(ROOT / "build" / f"english-{game}.patch"),
                "--headless", "--run-seconds", "6000", "--fps", "--control", str(self.fifo), "--snapshots", str(folder / "shots"),
-               "--memcards", str(folder / "card"), "--settings", str(folder / "card")]
+               "--memcards", str(folder / "card"), "--settings", str(folder / "card"), *args]
         self.process = subprocess.Popen(cmd, stdout=open(self.log, "w"), stderr=subprocess.STDOUT, env={**os.environ, **env},
                                         start_new_session=True)
         for _ in range(600):

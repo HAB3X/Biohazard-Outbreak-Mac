@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -72,6 +73,19 @@ bool g_crt = false;
 bool g_vsync = true;
 // Widescreen (16:9), for a game that has it; read from the game's side (ps2_widescreen)
 std::atomic<bool> g_widescreen{false};
+// Fullscreen exclusive (the display's mode set for the window) rather than borderless; the picture's scaling (presenter.h's
+// PictureScaling) and look: brightness and gamma as the menus' choices (0-10: 50-150%, 0.6-1.6), the colour filter, Reduce
+// Flashing
+bool g_exclusive = false;
+int g_scaling = 0;
+int g_brightness = 5;
+int g_gamma = 4;
+int g_colourFilter = 0;
+bool g_reduceFlashing = false;
+constexpr int DefaultBrightness = 5;
+constexpr int DefaultGamma = 4;
+// Reduce Flashing's most a pixel brightens a frame shown: from black to white in about a third of a second at 30 frames
+constexpr float FlashStep = 0.1f;
 // The window's sizes the menus offer
 constexpr int WindowSizes[][2] = {{960, 720}, {1280, 960}, {1600, 1200}, {1920, 1440}, {1280, 720}, {1920, 1080}};
 
@@ -154,9 +168,20 @@ void WriteGraphicsSettings()
             << (DefaultWidescreen() ? 1 : 0) << ")\n"
                "widescreen = " << (g_widescreen ? 1 : 0) << "\n";
     }
-    out << "# The window: its size in points, and fullscreen (0 or 1; Cmd+F or Alt+Enter switch)\n"
+    out << "# The picture's scaling into the window: 0 smooth, 1 sharp (whole pixels, their edges smoothed), 2 pixelated\n"
+           "scaling = " << g_scaling << "\n"
+           "# Brightness in percent (50-150) and gamma (0.6-1.6, 1 the game's own)\n"
+           "brightness = " << 50 + g_brightness * 10 << "\n"
+           "gamma = " << (6 + g_gamma) / 10 << "." << (6 + g_gamma) % 10 << "\n"
+           "# A colour filter for colour blindness: 0 off, 1 protanopia, 2 deuteranopia, 3 tritanopia\n"
+           "colour_filter = " << g_colourFilter << "\n"
+           "# Reduce Flashing: 0 off, 1 sudden bright flashes fade in over a third of a second\n"
+           "reduce_flashing = " << (g_reduceFlashing ? 1 : 0) << "\n"
+           "# The window: its size in points, fullscreen (0 or 1; Cmd+F or Alt+Enter switch) and how: 0 borderless over the\n"
+           "# desktop, 1 exclusive (the display's own mode)\n"
            "window = " << g_windowWidth << "x" << g_windowHeight << "\n"
            "fullscreen = " << (g_fullscreen ? 1 : 0) << "\n"
+           "exclusive_fullscreen = " << (g_exclusive ? 1 : 0) << "\n"
            "# This file's form\n"
            "version = " << GraphicsVersion << "\n";
 }
@@ -283,6 +308,11 @@ WindowFrame FrameOf(int width, int height, float pixelScale)
     frame.pixelScale = pixelScale;
     frame.place = PictureRect(width, height, g_inUseWide);
     frame.filter = g_crt ? PictureFilter::Crt : g_antiAliasing == 1 ? PictureFilter::Fxaa : PictureFilter::Plain;
+    frame.scaling = static_cast<PictureScaling>(g_scaling);
+    frame.look.brightness = 0.5f + 0.1f * static_cast<float>(g_brightness);
+    frame.look.power = 1.0f / (0.6f + 0.1f * static_cast<float>(g_gamma));
+    frame.look.colourFilter = g_colourFilter;
+    frame.look.flashStep = g_reduceFlashing ? FlashStep : 1.0f;
     // The PS2's lines: the picture's pixels less the GPU's scale (the software GS's are the PS2's own)
     u32 pictureWidth = 0, pictureHeight = 0;
     g_presenter->PictureSize(&pictureWidth, &pictureHeight);
@@ -292,12 +322,27 @@ WindowFrame FrameOf(int width, int height, float pixelScale)
     return frame;
 }
 
+// Fullscreen's kind for the window: exclusive at its display's own mode, else borderless over the desktop
+void ApplyFullscreenMode()
+{
+    const SDL_DisplayMode* mode = g_exclusive ? SDL_GetDesktopDisplayMode(SDL_GetDisplayForWindow(g_window)) : nullptr;
+    if (g_exclusive && mode == nullptr)
+    {
+        Log("display: no display mode for exclusive fullscreen (%s): borderless", SDL_GetError());
+    }
+    if (!SDL_SetWindowFullscreenMode(g_window, mode))
+    {
+        Log("display: fullscreen's mode not set: %s", SDL_GetError());
+    }
+}
+
 void ApplyWindow()
 {
     if (g_window == nullptr || g_options.headless)
     {
         return;
     }
+    ApplyFullscreenMode();
     if (!g_fullscreen)
     {
         SDL_SetWindowFullscreen(g_window, false);
@@ -357,6 +402,10 @@ bool OpenWindow(bool hiddenWindow)
         flags |= SDL_WINDOW_FULLSCREEN;
     }
     g_window = SDL_CreateWindow(WindowTitle().c_str(), hiddenWindow ? 1280 : g_windowWidth, hiddenWindow ? 960 : g_windowHeight, flags);
+    if (g_window != nullptr && !hiddenWindow && g_exclusive)
+    {
+        ApplyFullscreenMode();
+    }
     return g_window != nullptr && g_presenter->Open(g_window, g_vsync);
 }
 }
@@ -398,6 +447,12 @@ void DisplayReadSettings()
     g_vsync = atoi(Setting("", file, "vsync", "1").c_str()) != 0;
     g_widescreen = WidescreenOffered() && atoi(Setting("", file, "widescreen", DefaultWidescreen() ? "1" : "0").c_str()) != 0;
     g_fullscreen = atoi(Setting("", file, "fullscreen", "0").c_str()) != 0;
+    g_exclusive = atoi(Setting("", file, "exclusive_fullscreen", "0").c_str()) != 0;
+    g_scaling = std::clamp(atoi(Setting("", file, "scaling", "0").c_str()), 0, 2);
+    g_brightness = std::clamp((atoi(Setting("", file, "brightness", "100").c_str()) - 50 + 5) / 10, 0, 10);
+    g_gamma = std::clamp(static_cast<int>(std::lround(atof(Setting("", file, "gamma", "1.0").c_str()) * 10)) - 6, 0, 10);
+    g_colourFilter = std::clamp(atoi(Setting("", file, "colour_filter", "0").c_str()), 0, 3);
+    g_reduceFlashing = atoi(Setting("", file, "reduce_flashing", "0").c_str()) != 0;
     const std::string defaultWindow = std::to_string(DefaultWindowWidth) + "x" + std::to_string(DefaultWindowHeight());
     if (sscanf(Setting("", file, "window", defaultWindow.c_str()).c_str(), "%dx%d", &g_windowWidth, &g_windowHeight) != 2 ||
         g_windowWidth < 320 || g_windowHeight < 240)
@@ -412,7 +467,7 @@ void DisplayReadSettings()
         g_windowHeight = g_windowWidth * 9 / 16;
     }
     // Settings added since the file was written are written in with their defaults
-    if (old || widescreenAdded || (!file.empty() && file.find("vsync") == file.end()))
+    if (old || widescreenAdded || (!file.empty() && (file.find("vsync") == file.end() || file.find("reduce_flashing") == file.end())))
     {
         WriteGraphicsSettings();
     }
@@ -669,6 +724,12 @@ int DisplayGet(DisplaySetting setting)
     case DisplaySetting::Widescreen: return g_widescreen ? 1 : 0;
     case DisplaySetting::OnGpu: return g_options.gs != 0 ? 1 : 0;
     case DisplaySetting::WidescreenOffered: return WidescreenOffered() ? 1 : 0;
+    case DisplaySetting::ExclusiveFullscreen: return g_exclusive ? 1 : 0;
+    case DisplaySetting::Scaling: return g_scaling;
+    case DisplaySetting::Brightness: return g_brightness;
+    case DisplaySetting::Gamma: return g_gamma;
+    case DisplaySetting::ColourFilter: return g_colourFilter;
+    case DisplaySetting::ReduceFlashing: return g_reduceFlashing ? 1 : 0;
     }
     return 0;
 }
@@ -680,6 +741,12 @@ int DisplayDefault(DisplaySetting setting)
     case DisplaySetting::Scale: return DefaultScale();
     case DisplaySetting::VSync: return 1;
     case DisplaySetting::Widescreen: return DefaultWidescreen() ? 1 : 0;
+    case DisplaySetting::Brightness: return DefaultBrightness;
+    case DisplaySetting::Gamma: return DefaultGamma;
+    case DisplaySetting::ExclusiveFullscreen:
+    case DisplaySetting::Scaling:
+    case DisplaySetting::ColourFilter:
+    case DisplaySetting::ReduceFlashing:
     case DisplaySetting::Fullscreen:
     case DisplaySetting::WindowSize:
     case DisplaySetting::TextureUpscale:
@@ -743,6 +810,15 @@ void DisplaySet(DisplaySetting setting, int value)
         g_widescreen = value != 0;
         ApplyWidescreen();
         break;
+    case DisplaySetting::ExclusiveFullscreen:
+        g_exclusive = value != 0;
+        ApplyWindow();
+        break;
+    case DisplaySetting::Scaling: g_scaling = std::clamp(value, 0, 2); break;
+    case DisplaySetting::Brightness: g_brightness = std::clamp(value, 0, 10); break;
+    case DisplaySetting::Gamma: g_gamma = std::clamp(value, 0, 10); break;
+    case DisplaySetting::ColourFilter: g_colourFilter = std::clamp(value, 0, 3); break;
+    case DisplaySetting::ReduceFlashing: g_reduceFlashing = value != 0; break;
     case DisplaySetting::OnGpu:
     case DisplaySetting::WidescreenOffered: return;
     }

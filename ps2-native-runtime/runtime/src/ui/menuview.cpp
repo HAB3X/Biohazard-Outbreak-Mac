@@ -334,9 +334,9 @@ struct RowColours
     Rgba32 chevron;
 };
 
-// A value between chevrons (common.css's .v: centred in its 280px on the row's right)
+// A value between chevrons (common.css's .v: centred in its width, 280px, on the row's right)
 void ChoiceValue(OverlayFrame& frame, const std::string& value, f32 centre, f32 middle, const RowColours& colours, int index,
-                 f32 top, std::vector<HitRegion>& regions)
+                 f32 top, std::vector<HitRegion>& regions, f32 valueWidth = ValueWidth)
 {
     TextStyle text = Body(21.0f, colours.pillText);
     TextStyle chevron = Body(21.0f, colours.chevron, true);
@@ -344,7 +344,7 @@ void ChoiceValue(OverlayFrame& frame, const std::string& value, f32 centre, f32 
     f32 chevronWidth = OverlayTextWidth(left, chevron);
     f32 textWidth = OverlayTextWidth(value, text);
     // A long value made smaller to fit (the chevrons and the pill's ends beside it)
-    f32 fits = ValueWidth - 36.0f - 2.0f * (chevronWidth + ChevronGap);
+    f32 fits = valueWidth - 36.0f - 2.0f * (chevronWidth + ChevronGap);
     if (textWidth > fits && fits > 0.0f)
     {
         text.size *= fits / textWidth;
@@ -737,6 +737,126 @@ void DrawPages(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
     Footer(frame, items, view.prompts, regions);
 }
 
+// The live tab (Ps2GameInfo::liveTab) over the running game: a narrow panel at the right, nothing dimmed, its rows as the
+// pages' (smaller values), the highlighted row's description and how to close it at its foot
+void DrawLive(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>& regions)
+{
+    constexpr f32 Width = 450.0f, X = ReferenceWidth - Width - 20.0f, Y = 40.0f, Height = ReferenceHeight - 80.0f;
+    constexpr f32 Pad = 12.0f, Value = 200.0f, Head = 50.0f, Foot = 78.0f;
+    const Page& page = (*view.pages)[static_cast<size_t>(view.page)];
+    const std::vector<Row>& rows = page.rows;
+    frame.Box(X, Y, Width, Height, T().panel);
+    TextStyle title = Body(20.0f, T().heading, true);
+    title.letterSpacing = 1.5f;
+    frame.Text(Capitals(page.title), X + Pad + RowPad, Y + Head * 0.5f + 4.0f, title);
+
+    std::vector<int> visible;
+    int selectedLine = 0;
+    for (int i = 0; i < static_cast<int>(rows.size()); i++)
+    {
+        if (!rows[static_cast<size_t>(i)].shown || rows[static_cast<size_t>(i)].shown())
+        {
+            if (i == view.row)
+            {
+                selectedLine = static_cast<int>(visible.size());
+            }
+            visible.push_back(i);
+        }
+    }
+    const f32 rowsTop = Y + Head, rowsHeight = Height - Head - Foot;
+    const f32 rowLeft = X + Pad, rowWidth = Width - Pad * 2.0f;
+    const f32 valueCentre = rowLeft + rowWidth - 12.0f - Value * 0.5f;
+    // The selection kept in view (a heading just above it with it)
+    static f32 scroll = 0.0f;
+    const f32 maxScroll = std::max(0.0f, static_cast<f32>(visible.size()) * RowPitch - rowsHeight);
+    const f32 selectedTop = static_cast<f32>(selectedLine) * RowPitch;
+    const f32 allowance = selectedLine > 0 && rows[static_cast<size_t>(visible[static_cast<size_t>(selectedLine - 1)])].kind == RowHeading
+                              ? RowPitch
+                              : 0.0f;
+    scroll = std::clamp(std::clamp(scroll, selectedTop + RowHeight - rowsHeight, selectedTop - allowance), 0.0f, maxScroll);
+    MenuScroll() = static_cast<int>(scroll / RowPitch);
+    frame.Clip(X, rowsTop, Width, rowsHeight);
+    for (int line = 0; line < static_cast<int>(visible.size()); line++)
+    {
+        const f32 top = rowsTop + static_cast<f32>(line) * RowPitch - scroll;
+        if (top + RowHeight < rowsTop || top > rowsTop + rowsHeight)
+        {
+            continue;
+        }
+        const int index = visible[static_cast<size_t>(line)];
+        const Row& row = rows[static_cast<size_t>(index)];
+        const f32 middle = top + RowHeight * 0.5f;
+        if (row.kind == RowHeading)
+        {
+            TextStyle heading = Body(14.0f, T().heading, true);
+            heading.letterSpacing = 1.5f;
+            const std::string text = Capitals(row.label);
+            // (the spacing between the letters is beyond the text's own width)
+            const f32 room = rowWidth - RowPad * 2.0f;
+            const f32 width = OverlayTextWidth(text, heading) + heading.letterSpacing * static_cast<f32>(text.size());
+            if (width > room)
+            {
+                heading.size *= room / width;
+            }
+            frame.Text(text, rowLeft + RowPad, middle + 4.0f, heading);
+            continue;
+        }
+        if (row.kind != RowChoice && row.kind != RowSlider && row.kind != RowAction)
+        {
+            continue;
+        }
+        const bool selected = index == view.row;
+        const bool enabled = !row.enabled || row.enabled();
+        if (selected)
+        {
+            BoxStyle bar;
+            bar.fill = T().bar;
+            bar.radius = T().barRadius;
+            frame.Box(rowLeft, top, rowWidth, RowHeight, bar);
+        }
+        RowColours colours;
+        const f32 alpha = enabled ? 1.0f : 0.45f;
+        colours.label = Faded(selected ? T().labelSelected : T().label, alpha);
+        colours.pillFill = Faded(selected ? T().pillSelected : T().pill, alpha);
+        colours.pillText = Faded(selected ? T().pillTextSelected : T().pillText, alpha);
+        colours.chevron = Faded(selected ? T().chevronSelected : T().chevron, alpha);
+        regions.push_back({HitKind::Row, rowLeft, std::max(top, rowsTop), rowWidth, RowHeight, index, -1, -1});
+        TextStyle label = Body(18.0f, colours.label);
+        const f32 labelRoom = (row.kind == RowAction ? rowLeft + rowWidth : valueCentre - Value * 0.5f) - 8.0f - (rowLeft + RowPad);
+        const f32 labelWidth = OverlayTextWidth(row.label, label);
+        if (labelWidth > labelRoom)
+        {
+            label.size *= labelRoom / labelWidth;
+        }
+        frame.Text(row.label, rowLeft + RowPad, middle, label);
+        if (row.kind == RowChoice)
+        {
+            ChoiceValue(frame, row.valueText(row.get()), valueCentre, middle, colours, index, top, regions, Value);
+        }
+        else if (row.kind == RowSlider)
+        {
+            SliderValue(frame, row, valueCentre - Value * 0.5f, middle, colours, index, top, regions);
+        }
+    }
+    frame.NoClip();
+
+    // The description (made smaller to fit its line) and how to close it
+    const Row* selectedRow = view.row >= 0 && view.row < static_cast<int>(rows.size()) ? &rows[static_cast<size_t>(view.row)] : nullptr;
+    TextStyle describe = Body(15.0f, T().label);
+    const std::string description = selectedRow != nullptr ? selectedRow->description : std::string();
+    const f32 describeRoom = rowWidth - RowPad * 2.0f;
+    const f32 describeWidth = OverlayTextWidth(description, describe);
+    if (describeWidth > describeRoom)
+    {
+        describe.size *= std::max(0.6f, describeRoom / describeWidth);
+    }
+    frame.Clip(X, Y + Height - Foot, Width, Foot);
+    frame.Text(description, rowLeft + RowPad, Y + Height - Foot + 24.0f, describe);
+    frame.NoClip();
+    frame.Text("F8 or Esc closes it. The game goes on behind it.", rowLeft + RowPad, Y + Height - 22.0f,
+               Body(14.0f, Faded(T().label, 0.6f)));
+}
+
 void DrawPause(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>& regions)
 {
     DimGame(frame);
@@ -766,6 +886,10 @@ void DrawMenus(OverlayFrame& frame, const MenuView& view, std::vector<HitRegion>
     if (view.screen == Screen::Pause)
     {
         DrawPause(frame, view, regions);
+    }
+    else if (view.live)
+    {
+        DrawLive(frame, view, regions);
     }
     else if (view.screen == Screen::Options || view.screen == Screen::Extras)
     {

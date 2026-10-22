@@ -216,6 +216,21 @@ Seen in both games: title, Training Ground/zoo in play, the status screen, the p
 cameras; widescreen off is the old 4:3. Not seen: switching it live in the PC menus mid-game (ApplyWidescreen), the endings and
 other Sofdec movies.
 
+## Raccoon's features, 2026-10-22
+
+Added to match RaccoonRecomp's Resident Evil Outbreak Recompiled:
+- Display (runtime, both presenters): exclusive fullscreen, picture scaling (smooth, sharp, pixelated), brightness, gamma,
+  colour filters (daltonization) and Reduce Flashing (a pixel brightens at most 0.1 a frame shown: gunfire's 187/255 jumps
+  held to 26, measured on Metal and OpenGL). Exclusive fullscreen isn't seen (headless runs have no screen).
+- Skip intro movies (src/intro.cpp): the main menu at 20 s in both games.
+- Saves: the runtime backs the card up when a game starts (the newest 10); the launcher's Saves tab has profiles, portable
+  saves and putting a backup back.
+- F8: the Camera tab over the running game (the runtime's liveTab); Recenter (L3, C) and the Alt view (L3+R3, V).
+- Character mods in the games (tools/bh_character_patch.py, a second --patch made at each start): the model over the
+  costume's member of romdata.afs. Seen: Kevin as the Hello Kitty mod in File 2's zoo. A model bigger than the costume is left
+  out: changing the AFS table's size crashes File 2's boot at 2 s (open).
+- Not done: the restroom mirrors, ultrawide and HUD placement, the launcher's background video.
+
 ## The Mac apps
 
 Two kinds, both from `tools/make_app.py` (each with SDL3 inside, the build's rpaths taken out, signed ad hoc):

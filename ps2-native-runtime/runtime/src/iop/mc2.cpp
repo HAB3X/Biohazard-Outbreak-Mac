@@ -40,6 +40,8 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -53,6 +55,57 @@ constexpr u32 CardPages = 16384;
 constexpr u32 RawPage = 528;              // a page and its spare area, in the image
 constexpr u32 EccBytes = PageBytes / 128 * 3;
 constexpr u32 CardPort = 2;               // the slot's SIO2 port, as the driver connects it
+constexpr size_t BackupsKept = 10;
+
+// The card as it was when the game started, kept in --memcards' backups folder (the newest BackupsKept, named by the time:
+// "port0 2026-10-22 16-49-03.ps2"; one the same as the newest isn't kept again), so a save gone wrong can be put back (the
+// launcher's Saves). A backup that can't be made is said; the game goes on with the card
+void BackUp(const fs::path& card)
+{
+    std::error_code ec;
+    const fs::path folder = card.parent_path() / "backups";
+    fs::create_directories(folder, ec);
+    std::vector<fs::path> backups;
+    for (const fs::directory_entry& entry : fs::directory_iterator(folder, ec))
+    {
+        if (entry.path().extension() == ".ps2" && entry.path().filename().string().rfind(card.stem().string() + " ", 0) == 0)
+        {
+            backups.push_back(entry.path());
+        }
+    }
+    if (ec)
+    {
+        Log("mc2: no backup of the card: %s: %s", folder.c_str(), ec.message().c_str());
+        return;
+    }
+    std::sort(backups.begin(), backups.end());
+    auto contents = [](const fs::path& path) {
+        std::ifstream in(path, std::ios::binary);
+        return std::vector<char>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+    };
+    if (!backups.empty() && contents(backups.back()) == contents(card))
+    {
+        return;
+    }
+    std::time_t now = std::time(nullptr);
+    std::tm local{};
+    localtime_r(&now, &local);
+    char stamp[32];
+    std::strftime(stamp, sizeof(stamp), "%Y-%m-%d %H-%M-%S", &local);
+    const fs::path backup = folder / (card.stem().string() + " " + stamp + ".ps2");
+    if (!fs::copy_file(card, backup, fs::copy_options::overwrite_existing, ec))
+    {
+        Log("mc2: no backup of the card: %s: %s", backup.c_str(), ec.message().c_str());
+        return;
+    }
+    backups.push_back(backup);
+    while (backups.size() > BackupsKept)
+    {
+        fs::remove(backups.front(), ec);
+        backups.erase(backups.begin());
+    }
+    Log("mc2: the card backed up: %s", backup.c_str());
+}
 
 enum : u32
 {
@@ -582,7 +635,8 @@ private:
         }
         fs::path path = fs::path(g_options.memcardDir) / "port0.ps2";
         std::error_code ec;
-        if (!fs::exists(path, ec))
+        const bool made = !fs::exists(path, ec);
+        if (made)
         {
             fs::create_directories(path.parent_path(), ec);
             std::ofstream blank(path, std::ios::binary);
@@ -602,6 +656,10 @@ private:
         {
             Fatal("mc2: the card %s is %llu bytes; an 8 MB card's image is %u (16384 pages of 528)", path.c_str(),
                   static_cast<unsigned long long>(size), RawPage * CardPages);
+        }
+        if (!made)
+        {
+            BackUp(path);
         }
         image_.open(path, std::ios::binary | std::ios::in | std::ios::out);
         if (!image_)

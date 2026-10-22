@@ -90,6 +90,10 @@ struct CharacterGallery: View {
                 }
                 Toggle("On", isOn: Binding(get: { mod.enabled }, set: { _ in store.toggle(mod) }))
                     .toggleStyle(.switch).tint(Style.gold)
+                if let tooBig = ModStore.tooBig(mod) {
+                    Text("Left out when \(mod.game.short) last started: the model is \(tooBig.size / 1024) KB and the costume it replaces holds \(tooBig.room / 1024) KB. Choose a costume with more room, or a smaller model.")
+                        .font(.system(size: 12)).foregroundStyle(.red.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+                }
                 Text("Drag the model to turn it.").font(.system(size: 12)).foregroundStyle(Style.faint)
                 Button(role: .destructive) { store.remove(mod); selected = nil } label: {
                     Label("Remove", systemImage: "trash").font(.system(size: 13))

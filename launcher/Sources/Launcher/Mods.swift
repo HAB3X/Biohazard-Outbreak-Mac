@@ -170,6 +170,21 @@ final class ModStore: ObservableObject {
         }
     }
 
+    /// A character mod's model the game left out when it last started (tools/bh_character_patch.py's characters.patch.skipped:
+    /// bigger than the costume it replaces), with its size and the costume's
+    nonisolated static func tooBig(_ mod: Mod) -> (size: Int, room: Int)? {
+        guard let nbd = mod.nbd, let replaces = mod.replaces,
+              let text = try? String(contentsOf: Games.settingsFolder(mod.game).appendingPathComponent("characters.patch.skipped"),
+                                     encoding: .utf8) else { return nil }
+        for line in text.split(separator: "\n") {
+            let fields = line.split(separator: "\t").map(String.init)
+            if fields.count == 4, fields[0] == replaces, fields[1] == nbd, let size = Int(fields[2]), let room = Int(fields[3]) {
+                return (size, room)
+            }
+        }
+        return nil
+    }
+
     // MARK: importing
 
     struct ImportError: Error { var message: String }

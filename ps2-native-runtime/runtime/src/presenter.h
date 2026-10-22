@@ -28,8 +28,29 @@ enum class PictureFilter
     Crt,
 };
 
-// A frame of the window: its pixels and the window's pixels a point, the picture's place in them, its filter, and the
-// picture's size in the PS2's pixels (the CRT filter's lines)
+// The picture's scaling into its place: smooth (bilinear), sharp (whole pixels, bilinear only at their edges), pixelated
+enum class PictureScaling
+{
+    Smooth,
+    Sharp,
+    Pixelated,
+};
+
+// What's done to the picture's colours after its filter: brightness (a factor), gamma (the power the colours are raised to:
+// 1/gamma), a colour filter for colour blindness (daltonization: 0 off, 1 protanopia, 2 deuteranopia, 3 tritanopia) and Reduce
+// Flashing: a pixel brightens by at most flashStep a frame shown (1: no limit), so a flash fades in instead of striking
+struct PictureLook
+{
+    float brightness = 1.0f;
+    float power = 1.0f;
+    int colourFilter = 0;
+    float flashStep = 1.0f;
+
+    bool Plain() const { return brightness == 1.0f && power == 1.0f && colourFilter == 0 && flashStep >= 1.0f; }
+};
+
+// A frame of the window: its pixels and the window's pixels a point, the picture's place in them, its filter, scaling and look,
+// and the picture's size in the PS2's pixels (the CRT filter's lines)
 struct WindowFrame
 {
     int width;
@@ -37,6 +58,8 @@ struct WindowFrame
     float pixelScale;
     SDL_FRect place;
     PictureFilter filter;
+    PictureScaling scaling;
+    PictureLook look;
     float pictureLines[2];
 };
 

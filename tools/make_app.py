@@ -43,9 +43,9 @@ import make_icon  # noqa: E402
 
 GAMES = {
     "file1": {"name": "Biohazard Outbreak", "id": "org.biohazardoutbreak.mac.file1", "exe": "biohazard-file1",
-              "zip": "Biohazard-Outbreak-File1-macOS.zip"},
+              "code": "SLPM_654.28", "zip": "Biohazard-Outbreak-File1-macOS.zip"},
     "file2": {"name": "Biohazard Outbreak File 2", "id": "org.biohazardoutbreak.mac.file2", "exe": "biohazard-file2",
-              "zip": "Biohazard-Outbreak-File2-macOS.zip"},
+              "code": "SLPM_656.92", "zip": "Biohazard-Outbreak-File2-macOS.zip"},
 }
 VERSION = "0.1.0"
 SYSTEM = ("/usr/lib/", "/System/")
@@ -181,6 +181,16 @@ for a in "$@"; do
     shift
     case "$a" in -psn_*) ;; --prepare) exit 0 ;; *) set -- "$@" "$a" ;; esac
 done
+# The launcher's character mods, as tools/app_launcher.sh lays them (from this repository's tools)
+SETTINGS="$HOME/Library/Application Support/PS2 Native Runtime/{g['code']}"
+if grep -q '^[^#]' "$SETTINGS/characters.txt" 2>/dev/null; then
+    if "{sys.executable}" "{ROOT / 'tools/bh_character_patch.py'}" {game} "$SETTINGS/characters.txt" "$SETTINGS/characters.patch" \
+        >"$SETTINGS/characters-patch.log" 2>&1; then
+        set -- --patch "$SETTINGS/characters.patch" "$@"
+    else
+        osascript -e "display alert \"The character mods couldn't be put in\" message \"$(tail -n 2 "$SETTINGS/characters-patch.log")\"" >/dev/null
+    fi
+fi
 exec "$DIR/{g['exe']}" --disc "$DISC" --patch "$DIR/../Resources/english.patch" "$@"
 """)
     resources = app / "Contents/Resources"
@@ -202,6 +212,8 @@ def builder_files(game):
     repository's layout (the builder finds them from its own folder; the runtime's part from $PS2_RUNTIME_DIR)."""
     finder = modulefinder.ModuleFinder(path=[str(ROOT / "tools"), str(runtime_dir() / "tools")])
     finder.run_script(str(ROOT / "tools" / "bh_build_patch.py"))
+    # (and the character patch's, tools/app_launcher.sh's)
+    finder.run_script(str(ROOT / "tools" / "bh_character_patch.py"))
     files = {}
     for module in finder.modules.values():
         source = Path(module.__file__ or "")

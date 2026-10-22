@@ -314,6 +314,8 @@ bool SameName(const char* a, const std::string& b)
 
 // ------------------------------------------------------------------------------------------------------------- the state
 std::atomic<bool> g_open{false};
+// The menus are the live tab over the running game (Ps2GameInfo::liveTab: F8), the game not paused
+bool g_live = false;
 Screen g_screen = Screen::None;
 std::vector<Page> g_pages;
 int g_page = 0;
@@ -478,7 +480,9 @@ void ResetPage(const std::string& title)
     {
         for (DisplaySetting setting : {DisplaySetting::Scale, DisplaySetting::TextureUpscale, DisplaySetting::Filtering,
                                        DisplaySetting::AntiAliasing, DisplaySetting::Crt, DisplaySetting::VSync,
-                                       DisplaySetting::Widescreen})
+                                       DisplaySetting::Widescreen, DisplaySetting::ExclusiveFullscreen, DisplaySetting::Scaling,
+                                       DisplaySetting::Brightness, DisplaySetting::Gamma, DisplaySetting::ColourFilter,
+                                       DisplaySetting::ReduceFlashing})
         {
             DisplaySet(setting, DisplayDefault(setting));
         }
@@ -616,6 +620,12 @@ void BuildOptions()
     size.shown = [] { return DisplayGet(DisplaySetting::Fullscreen) == 0; };
     size.asksToKeep = true;
     display.rows.push_back(size);
+    Row exclusive = DisplayChoice("Fullscreen type",
+                                  "Borderless: over the desktop, quick to switch away from. Exclusive: the screen given to the game",
+                                  DisplaySetting::ExclusiveFullscreen, {"Borderless", "Exclusive"});
+    exclusive.shown = [] { return DisplayGet(DisplaySetting::Fullscreen) != 0; };
+    exclusive.asksToKeep = true;
+    display.rows.push_back(exclusive);
     Row widescreen = DisplayChoice("Widescreen", "The picture 16:9: the view wider, the menus and text keeping their shape",
                                    DisplaySetting::Widescreen, {"Off", "On"});
     widescreen.shown = [] { return DisplayGet(DisplaySetting::WidescreenOffered) != 0; };
@@ -644,6 +654,22 @@ void BuildOptions()
                                          {"Off", "On"}));
     display.rows.push_back(DisplayChoice("V-sync", "The picture shown in step with the screen (no tearing)", DisplaySetting::VSync,
                                          {"Off", "On"}));
+    display.rows.push_back(DisplayChoice("Picture scaling",
+                                         "How the picture fills the window: smooth, sharp (crisp pixels, soft edges) or pixelated",
+                                         DisplaySetting::Scaling, {"Smooth", "Sharp", "Pixelated"}));
+    display.rows.push_back(Heading("Accessibility"));
+    Row brightness = DisplayChoice("Brightness", "The whole picture lighter or darker", DisplaySetting::Brightness, {});
+    brightness.maximum = 10;
+    brightness.valueText = [](int v) { return std::to_string(50 + v * 10) + "%"; };
+    display.rows.push_back(brightness);
+    Row gamma = DisplayChoice("Gamma", "The dark parts lighter (higher) or deeper (lower), the brightest kept", DisplaySetting::Gamma, {});
+    gamma.maximum = 10;
+    gamma.valueText = [](int v) { return std::to_string((6 + v) / 10) + "." + std::to_string((6 + v) % 10); };
+    display.rows.push_back(gamma);
+    display.rows.push_back(DisplayChoice("Colour filter", "Colours that are hard to tell apart with colour blindness made distinct",
+                                         DisplaySetting::ColourFilter, {"Off", "Protanopia", "Deuteranopia", "Tritanopia"}));
+    display.rows.push_back(DisplayChoice("Reduce flashing", "Sudden bright flashes (gunfire, explosions) fade in instead",
+                                         DisplaySetting::ReduceFlashing, {"Off", "On"}));
     AddGameRows(display, "Display");
     display.rows.push_back(Action("Reset to defaults", "The PC settings on this tab as they were at first", nullptr));
     g_pages.push_back(display);
@@ -927,16 +953,20 @@ void Close()
     {
         g_open = false;
         InputIgnoreHeld();
-        KernelPause(false);
-        SoundPause(false);
-        Log("PC menus: the game goes on");
+        if (!g_live)
+        {
+            KernelPause(false);
+            SoundPause(false);
+            Log("PC menus: the game goes on");
+        }
     }
+    g_live = false;
 }
 
-// Back from Options or Extras: to the pause menu, or to the game when it keeps its own
+// Back from Options or Extras: to the pause menu, or to the game when it keeps its own (or from the live tab)
 void BackFromPages()
 {
-    if (OwnPause())
+    if (OwnPause() || g_live)
     {
         Close();
     }
@@ -958,6 +988,30 @@ void OpenSettings()
     KernelPause(true);
     SoundPause(true);
     Log("PC menus: the game paused (its options)");
+}
+
+// The game's live tab over the running game (F8: Ps2GameInfo::liveTab), not pausing it
+void OpenLive()
+{
+    if (g_open || g_game == nullptr || g_game->liveTab == nullptr)
+    {
+        return;
+    }
+    OpenPages(Screen::Options);
+    for (int page = 0; page < static_cast<int>(g_pages.size()); page++)
+    {
+        if (SameName(g_game->liveTab, g_pages[static_cast<size_t>(page)].title))
+        {
+            SelectPage(page);
+            g_open = true;
+            g_live = true;
+            Log("PC menus: the %s tab over the running game", g_game->liveTab);
+            return;
+        }
+    }
+    Log("PC menus: no tab \"%s\" for F8 (the game's live tab)", g_game->liveTab);
+    g_screen = Screen::None;
+    g_pages.clear();
 }
 
 // ------------------------------------------------------------------------------------------------------------ the frame's input
@@ -1361,12 +1415,13 @@ void TakePagesInput()
             Act(UiBack);
         }
     }
+    // (the live tab is the only one it shows)
     int pages = static_cast<int>(g_pages.size());
-    if (Took(UiTabPrevious))
+    if (Took(UiTabPrevious) && !g_live)
     {
         SelectPage((g_page + pages - 1) % pages);
     }
-    else if (Took(UiTabNext))
+    else if (Took(UiTabNext) && !g_live)
     {
         SelectPage((g_page + 1) % pages);
     }
@@ -1459,7 +1514,7 @@ void ScriptStep(const std::string& token)
         {"back", SDL_SCANCODE_BACKSPACE}, {"delete", SDL_SCANCODE_DELETE}, {"up", SDL_SCANCODE_UP},
         {"down", SDL_SCANCODE_DOWN}, {"left", SDL_SCANCODE_LEFT}, {"right", SDL_SCANCODE_RIGHT},
         {"tab", SDL_SCANCODE_TAB}, {"q", SDL_SCANCODE_Q}, {"e", SDL_SCANCODE_E}, {"k", SDL_SCANCODE_K},
-        {"f1", SDL_SCANCODE_F1}, {"f10", SDL_SCANCODE_F10},
+        {"f1", SDL_SCANCODE_F1}, {"f8", SDL_SCANCODE_F8}, {"f10", SDL_SCANCODE_F10},
     };
     for (const auto& [name, code] : Keys)
     {
@@ -1714,7 +1769,17 @@ bool MenusEvent(const SDL_Event& e)
                 g_settingsAsked = true;
                 return true;
             }
+            if (!e.key.repeat && e.key.scancode == SDL_SCANCODE_F8 && g_game != nullptr && g_game->liveTab != nullptr)
+            {
+                OpenLive();
+                return true;
+            }
             return false;
+        }
+        if (g_live && !e.key.repeat && e.key.scancode == SDL_SCANCODE_F8)
+        {
+            Act(UiBack);
+            return true;
         }
         if (g_capturing)
         {
@@ -2022,6 +2087,7 @@ void MenusDraw(OverlayDevice& device, int pixelWidth, int pixelHeight, float pix
         view.confirmingQuit = g_confirmingQuit;
         view.boxChoice = g_boxChoice;
         view.prompts = CurrentPrompts();
+        view.live = g_live;
         view.padStyle = CurrentPadStyle();
         g_regions.clear();
         DrawMenus(frame, view, g_regions);

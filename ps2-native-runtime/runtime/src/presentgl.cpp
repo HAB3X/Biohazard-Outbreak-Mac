@@ -1,9 +1,11 @@
 // The window drawn by OpenGL (presenter.h): the window's context, and the render thread's context the OpenGL renderer draws
 // with (made here, on the main thread: SDL's windows are the main thread's, sharing the window's textures, with a hidden window
 // of its own to be current with). The render thread copies the shown picture into one of three textures and fences it; the
-// window waits for the fence, draws the copy at 4:3 letterboxed (plain, FXAA or the CRT filter) with the PC menus over it, and
-// fences its drawing so the render thread doesn't copy into a texture still being drawn (the Crash Twinsanity native port's
-// hand-over, graphics/display.cpp there; FXAA and the CRT filter from its graphics/display.cpp and ui/crtfilter.cpp).
+// window waits for the fence, draws the copy at 4:3 letterboxed (plain, FXAA or the CRT filter, then its look) with the PC menus
+// over it, and fences its drawing so the render thread doesn't copy into a texture still being drawn (the Crash Twinsanity
+// native port's hand-over, graphics/display.cpp there; FXAA and the CRT filter from its graphics/display.cpp and
+// ui/crtfilter.cpp). With Reduce Flashing the picture is drawn into one of two textures of its place's size first, each frame's
+// limited by the last one's, and that copied into the window (presentmetal.mm does the same).
 #include "presenter.h"
 
 #include "ui/menus.h"
@@ -13,6 +15,7 @@
 #include "../../hw/hw/gl.h"
 
 #include <algorithm>
+#include <string>
 
 namespace NativeGraphics
 {
@@ -37,22 +40,78 @@ void main()
 }
 )";
 
-constexpr const char* FragmentSource = R"(#version 330 core
+// What every fragment program begins with: the picture's look (presenter.h's PictureLook: brightness, 1/gamma, the colour
+// filter, the flash step) as Finish gives it, daltonization for the colour filter and the sharp scaling's place
+// (presentmetal.mm says what each does)
+constexpr const char* FragmentCommon = R"(#version 330 core
 in vec2 place;
 out vec4 colour;
 uniform sampler2D picture;
+uniform sampler2D history;
+uniform vec4 look;
+uniform vec4 scaling;
+vec3 Daltonize(vec3 c, int kind)
+{
+    float l = 17.8824 * c.r + 43.5161 * c.g + 4.11935 * c.b;
+    float m = 3.45565 * c.r + 27.1554 * c.g + 3.86714 * c.b;
+    float s = 0.0299566 * c.r + 0.184309 * c.g + 1.46709 * c.b;
+    if (kind == 1)
+    {
+        l = 2.02344 * m - 2.52581 * s;
+    }
+    else if (kind == 2)
+    {
+        m = 0.494207 * l + 1.24827 * s;
+    }
+    else
+    {
+        s = -0.395913 * l + 0.801109 * m;
+    }
+    vec3 seen = vec3(0.0809444479 * l - 0.130504409 * m + 0.116721066 * s,
+                     -0.0102485335 * l + 0.0540193266 * m - 0.113614708 * s,
+                     -0.000365296938 * l - 0.00412161469 * m + 0.693511405 * s);
+    vec3 lost = c - seen;
+    return c + vec3(0.0, 0.7 * lost.r + lost.g, 0.7 * lost.r + lost.b);
+}
+vec4 Finish(vec3 c)
+{
+    c = pow(max(c, 0.0), vec3(look.y)) * look.x;
+    int kind = int(look.z + 0.5);
+    if (kind > 0)
+    {
+        c = Daltonize(c, kind);
+    }
+    c = clamp(c, 0.0, 1.0);
+    if (look.w < 1.0)
+    {
+        c = min(c, texelFetch(history, ivec2(gl_FragCoord.xy), 0).rgb + look.w);
+    }
+    return vec4(c, 1.0);
+}
+vec2 SharpPlace(vec2 at, vec2 size, vec2 view)
+{
+    vec2 texel = at * size;
+    vec2 scale = max(floor(view / size), 1.0);
+    vec2 range = 0.5 - 0.5 / scale;
+    vec2 centre = fract(texel) - 0.5;
+    vec2 f = (centre - clamp(centre, -range, range)) * scale + 0.5;
+    return (floor(texel) + f) / size;
+}
+)";
+
+constexpr const char* FragmentSource = R"(
+uniform vec2 texel;
+uniform vec2 viewSize;
 void main()
 {
-    colour = vec4(texture(picture, place).rgb, 1.0);
+    vec2 at = scaling.x > 0.5 ? SharpPlace(place, 1.0 / texel, viewSize) : place;
+    colour = Finish(texture(picture, at).rgb);
 }
 )";
 
 // FXAA (a short version of Timothy Lottes' FXAA 3 console algorithm): edges found by luma contrast with their neighbours and
 // blended along them, on the shown picture (the Twinsanity port's)
-constexpr const char* FxaaSource = R"(#version 330 core
-in vec2 place;
-out vec4 colour;
-uniform sampler2D picture;
+constexpr const char* FxaaSource = R"(
 uniform vec2 texel;
 float Luma(vec3 c)
 {
@@ -79,7 +138,7 @@ void main()
     vec3 a = 0.5 * (texture(picture, place + direction * (1.0 / 3.0 - 0.5)).rgb + texture(picture, place + direction * (2.0 / 3.0 - 0.5)).rgb);
     vec3 b = a * 0.5 + 0.25 * (texture(picture, place - direction * 0.5).rgb + texture(picture, place + direction * 0.5).rgb);
     float lb = Luma(b);
-    colour = vec4((lb < lowest || lb > highest) ? a : b, 1.0);
+    colour = Finish((lb < lowest || lb > highest) ? a : b);
 }
 )";
 
@@ -87,10 +146,7 @@ void main()
 // beam's horizontal softness, a dark gap between the picture's lines (less where the line is bright, as a beam blooms), an
 // aperture grille's faint stripes at the screen's own pixels, the brightness the gaps take given back, the corners a touch
 // darker. pictureSize is the PS2's lines (the texture's at the internal resolution divided down)
-constexpr const char* CrtSource = R"(#version 330 core
-in vec2 place;
-out vec4 colour;
-uniform sampler2D picture;
+constexpr const char* CrtSource = R"(
 uniform vec2 pictureSize;
 uniform vec2 viewSize;
 vec3 Sample(vec2 at)
@@ -111,7 +167,7 @@ void main()
                                                    : vec3(1.0);
     vec2 centred = place * 2.0 - 1.0;
     float vignette = 1.0 - 0.08 * dot(centred * centred, vec2(0.5, 0.5));
-    colour = vec4(clamp(beam * line * grille * 1.12 * vignette, 0.0, 1.0), 1.0);
+    colour = Finish(clamp(beam * line * grille * 1.12 * vignette, 0.0, 1.0));
 }
 )";
 
@@ -139,10 +195,12 @@ GLuint Compile(Gl& gl, GLenum kind, const char* source)
     return shader;
 }
 
+// A program of the vertex shader and a fragment program's own part after FragmentCommon
 GLuint Program(Gl& gl, const char* fragmentSource)
 {
     GLuint vertex = Compile(gl, GL_VERTEX_SHADER, VertexSource);
-    GLuint fragment = Compile(gl, GL_FRAGMENT_SHADER, fragmentSource);
+    const std::string fragmentText = std::string(FragmentCommon) + fragmentSource;
+    GLuint fragment = Compile(gl, GL_FRAGMENT_SHADER, fragmentText.c_str());
     GLuint program = gl.CreateProgram();
     gl.AttachShader(program, vertex);
     gl.AttachShader(program, fragment);
@@ -158,6 +216,7 @@ GLuint Program(Gl& gl, const char* fragmentSource)
     }
     gl.UseProgram(program);
     gl.Uniform1i(gl.GetUniformLocation(program, "picture"), 0);
+    gl.Uniform1i(gl.GetUniformLocation(program, "history"), 1);
     return program;
 }
 
@@ -196,6 +255,12 @@ public:
 private:
     // The picture (and the menus' overlay) drawn into the framebuffer bound, of the frame's pixels
     void Draw(const WindowFrame& frame, bool picture, GLuint framebuffer);
+    // A picture texture of this size drawn into the viewport bound (of this size) with the frame's filter, scaling and this look;
+    // history: the last frame's for Reduce Flashing (else unused)
+    void DrawPicture(GLuint picture, u32 width, u32 height, f32 viewWidth, f32 viewHeight, PictureFilter filter,
+                     PictureScaling scaling, const PictureLook& look, const WindowFrame& frame, GLuint history);
+    // Reduce Flashing's two textures and their framebuffers made the place's size; a new size starts them unlimited
+    void PrepareHistory(u32 width, u32 height);
 
     // The window's drawing: a quad over the viewport from the vertex number alone, rows top first; FXAA's and the CRT filter's
     // programs in its place when they're on
@@ -212,6 +277,13 @@ private:
     bool vsync_ = true;
     bool vsyncSet_ = false;
     std::unique_ptr<Ui::OverlayDevice> overlay_;
+    // Reduce Flashing's frames: the one drawn last, its size, and whether it holds a frame yet
+    GLuint history_[2] = {};
+    GLuint historyFramebuffers_[2] = {};
+    u32 historyLast_ = 0;
+    u32 historyWidth_ = 0;
+    u32 historyHeight_ = 0;
+    bool historyHeld_ = false;
 };
 
 GlPresenter* g_presenter = nullptr;
@@ -355,37 +427,107 @@ void GlPresenter::Draw(const WindowFrame& frame, bool picture, GLuint framebuffe
     gl.Viewport(0, 0, frame.width, frame.height);
     gl.ClearColor(0, 0, 0, 1);
     gl.Clear(GL_COLOR_BUFFER_BIT);
-    if (picture && texture_ != 0)
+    const bool drawn = picture && texture_ != 0 && dst.w > 0 && dst.h > 0;
+    // Reduce Flashing: the picture drawn into the next history texture, limited by the last, then that copied into the window
+    const u32 placeWidth = static_cast<u32>(dst.w + 0.5f), placeHeight = static_cast<u32>(dst.h + 0.5f);
+    const bool limited = drawn && frame.look.flashStep < 1.0f && placeWidth > 0 && placeHeight > 0;
+    if (limited)
+    {
+        PrepareHistory(placeWidth, placeHeight);
+        const u32 next = historyLast_ ^ 1;
+        gl.BindFramebuffer(GL_FRAMEBUFFER, historyFramebuffers_[next]);
+        gl.Viewport(0, 0, static_cast<GLsizei>(placeWidth), static_cast<GLsizei>(placeHeight));
+        PictureLook look = frame.look;
+        look.flashStep = historyHeld_ ? look.flashStep : 1.0f;
+        DrawPicture(texture_, width_, height_, static_cast<f32>(placeWidth), static_cast<f32>(placeHeight), frame.filter,
+                    frame.scaling, look, frame, history_[historyLast_]);
+        historyLast_ = next;
+        historyHeld_ = true;
+        gl.BindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    }
+    else if (frame.look.flashStep >= 1.0f)
+    {
+        historyHeld_ = false;
+    }
+    if (drawn)
     {
         gl.Viewport(static_cast<GLint>(dst.x), static_cast<GLint>(frame.height - dst.y - dst.h), static_cast<GLsizei>(dst.w),
                     static_cast<GLsizei>(dst.h));
-        gl.ActiveTexture(GL_TEXTURE0);
-        gl.BindTexture(GL_TEXTURE_2D, texture_);
-        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(GL_LINEAR));
-        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(GL_LINEAR));
-        // The CRT filter, else FXAA, else the plain picture (a filter whose program didn't build: the plain picture)
-        GLuint program = frame.filter == PictureFilter::Crt && crtProgram_ != 0    ? crtProgram_
-                         : frame.filter == PictureFilter::Fxaa && fxaaProgram_ != 0 ? fxaaProgram_
-                                                                                    : program_;
-        gl.UseProgram(program);
-        gl.Uniform4f(gl.GetUniformLocation(program, "uvRect"), 0, 0, 1, 1);
-        if (program == fxaaProgram_)
+        if (limited)
         {
-            gl.Uniform2f(gl.GetUniformLocation(program, "texel"), 1.0f / static_cast<float>(width_), 1.0f / static_cast<float>(height_));
+            DrawPicture(history_[historyLast_], placeWidth, placeHeight, dst.w, dst.h, PictureFilter::Plain, PictureScaling::Smooth,
+                        PictureLook{}, frame, history_[historyLast_]);
         }
-        else if (program == crtProgram_)
+        else
         {
-            gl.Uniform2f(gl.GetUniformLocation(program, "pictureSize"), frame.pictureLines[0], frame.pictureLines[1]);
-            gl.Uniform2f(gl.GetUniformLocation(program, "viewSize"), dst.w, dst.h);
+            DrawPicture(texture_, width_, height_, dst.w, dst.h, frame.filter, frame.scaling, frame.look, frame, texture_);
         }
-        gl.BindVertexArray(vertexArray_);
-        gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
     gl.Viewport(0, 0, frame.width, frame.height);
     if (overlay_ != nullptr)
     {
         Ui::MenusDraw(*overlay_, frame.width, frame.height, frame.pixelScale, dst);
     }
+}
+
+void GlPresenter::DrawPicture(GLuint picture, u32 width, u32 height, f32 viewWidth, f32 viewHeight, PictureFilter filter,
+                              PictureScaling scaling, const PictureLook& look, const WindowFrame& frame, GLuint history)
+{
+    Gl& gl = GetGl();
+    const GLint sampling = static_cast<GLint>(scaling == PictureScaling::Pixelated ? GL_NEAREST : GL_LINEAR);
+    gl.ActiveTexture(GL_TEXTURE1);
+    gl.BindTexture(GL_TEXTURE_2D, history);
+    gl.ActiveTexture(GL_TEXTURE0);
+    gl.BindTexture(GL_TEXTURE_2D, picture);
+    gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, sampling);
+    gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, sampling);
+    // The CRT filter, else FXAA, else the plain picture (a filter whose program didn't build: the plain picture)
+    GLuint program = filter == PictureFilter::Crt && crtProgram_ != 0    ? crtProgram_
+                     : filter == PictureFilter::Fxaa && fxaaProgram_ != 0 ? fxaaProgram_
+                                                                          : program_;
+    gl.UseProgram(program);
+    gl.Uniform4f(gl.GetUniformLocation(program, "uvRect"), 0, 0, 1, 1);
+    gl.Uniform4f(gl.GetUniformLocation(program, "look"), look.brightness, look.power, static_cast<f32>(look.colourFilter),
+                 look.flashStep);
+    gl.Uniform4f(gl.GetUniformLocation(program, "scaling"), scaling == PictureScaling::Sharp ? 1.0f : 0.0f, 0, 0, 0);
+    gl.Uniform2f(gl.GetUniformLocation(program, "texel"), 1.0f / static_cast<float>(width), 1.0f / static_cast<float>(height));
+    gl.Uniform2f(gl.GetUniformLocation(program, "viewSize"), viewWidth, viewHeight);
+    if (program == crtProgram_)
+    {
+        gl.Uniform2f(gl.GetUniformLocation(program, "pictureSize"), frame.pictureLines[0], frame.pictureLines[1]);
+    }
+    gl.BindVertexArray(vertexArray_);
+    gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+void GlPresenter::PrepareHistory(u32 width, u32 height)
+{
+    if (history_[0] != 0 && historyWidth_ == width && historyHeight_ == height)
+    {
+        return;
+    }
+    Gl& gl = GetGl();
+    if (history_[0] == 0)
+    {
+        gl.GenTextures(2, history_);
+        gl.GenFramebuffers(2, historyFramebuffers_);
+    }
+    for (u32 i = 0; i < 2; i++)
+    {
+        gl.BindTexture(GL_TEXTURE_2D, history_[i]);
+        gl.TexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(GL_RGBA8), static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0,
+                      GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(GL_LINEAR));
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(GL_LINEAR));
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLint>(GL_CLAMP_TO_EDGE));
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLint>(GL_CLAMP_TO_EDGE));
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+        gl.BindFramebuffer(GL_FRAMEBUFFER, historyFramebuffers_[i]);
+        gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, history_[i], 0);
+    }
+    historyWidth_ = width;
+    historyHeight_ = height;
+    historyHeld_ = false;
 }
 
 void* GlPresenter::Present(const WindowFrame& frame, bool picture)

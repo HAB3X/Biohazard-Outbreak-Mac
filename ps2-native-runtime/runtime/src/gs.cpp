@@ -351,8 +351,8 @@ bool GsVblank(bool newest, bool gameThread)
         g_liveSnaps.clear();
     }
     // The picture: every frame for a window or snapshots (the game's thread kept at most two pictures ahead), its pixels read
-    // for a snapshot when one is due
-    bool show = !g_options.headless || !g_options.ui.empty();
+    // for a snapshot when one is due. Headless, --ui's and --control's hidden window has it too (their pictures of the window)
+    bool show = !g_options.headless || !g_options.ui.empty() || !g_options.controlPath.empty();
     if ((!show && g_options.snapshotDir.empty()) || !newest)
     {
         return false;

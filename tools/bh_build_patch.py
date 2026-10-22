@@ -16,18 +16,15 @@ prompts, the device used last unless one is chosen; a picture with the PS2's but
 offset and size), the bytes.
 """
 import os
-import struct
 import sys
 from pathlib import Path
 
 import bh_archive as archive
 import bh_font as font
+from bh_patchfile import write_patch
 import bh_pictures as pictures
 import bh_sources as sources
 import bh_text as text
-
-MAGIC = 0x54415044  # "DPAT", version 2: each range has a variant (0 always, 1 keyboard, 2 PlayStation, 3 Xbox)
-
 
 def load_translations(folder, units, fallback=None):
     """({unit id: English bytes}, {unit ids kept Japanese on purpose}, {unit ids dropped: text.DROP}); units = {unit id: original bytes} the disc has. `fallback`: another game's translations
@@ -111,15 +108,6 @@ def changed_runs(old, new, gap=16):
     return runs
 
 
-def check_overlaps(patches):
-    """Sorts the ranges; two may cover the same bytes only as different prompts' variants of one range (same offset and
-    size)."""
-    patches.sort(key=lambda p: (p[0], p[2]))
-    for (a, da, va), (b, db, vb) in zip(patches, patches[1:]):
-        if a + len(da) > b and not (a == b and len(da) == len(db) and va != vb and 0 not in (va, vb)):
-            raise SystemExit(f"two changes overlap at disc offset {b:#x}")
-
-
 def progress(fraction, step):
     """How far the build is, for the launcher's bar: a line "fraction<TAB>step" appended to $BH_PROGRESS's file, if set"""
     path = os.environ.get("BH_PROGRESS")
@@ -192,11 +180,7 @@ def main(argv):
     except (text.DoesNotFit, pictures.DoesNotFit) as e:
         raise SystemExit(f"does not fit: {e}")
     progress(0.97, "Saving the patch")
-    check_overlaps(patches)
-    with open(out_path, "wb") as f:
-        f.write(struct.pack("<III", MAGIC, 2, len(patches)))
-        for off, data, variant in patches:
-            f.write(struct.pack("<QII", off, len(data), variant) + data)
+    write_patch(out_path, patches)
     keyed = sum(1 for p in patches if p[2])
     print(f"{len(new)} of {len(units)} units translated; {len(patches)} ranges ({keyed} for one device), "
           f"{sum(len(p[1]) for p in patches)} bytes -> {out_path}")

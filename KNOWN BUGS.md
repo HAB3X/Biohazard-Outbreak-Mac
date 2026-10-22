@@ -7,7 +7,7 @@ Biohazard Outbreak for Mac – fan project by HAB3X. Found something else? [Repo
 2. The mouse in the lobby after logging in is untested and may not work everywhere.
 
 **Mods**
-3. Character mods show in the launcher but the games don't load them yet.
+3. A character model bigger than the costume it replaces can't be used: the game leaves it out and the launcher says so.
 4. Some HD texture packs show pale patches on trees (File 2's zoo).
 5. File 2, first person: a pale rectangle at the left of the view in the zoo's first street.
 

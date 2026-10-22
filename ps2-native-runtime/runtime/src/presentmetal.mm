@@ -1,8 +1,10 @@
 // The window drawn by Metal (presenter.h), for the Metal renderer: the window's CAMetalLayer shows each frame directly. The
 // renderer copies the shown picture into its slot's texture and commits the copy to the queue both share (hw/hw/metalshared.h);
 // the presenter's drawing of it, committed later, runs after it, so neither thread waits for the GPU. The picture is drawn at
-// 4:3 letterboxed (plain, FXAA or the CRT filter: presentgl.cpp's GLSL programs in Metal's language, line for line; GLSL's mod
-// is Mod here) with the PC menus over it (ui/overlaymetal.mm). At most three frames are in flight (the layer's drawables).
+// 4:3 letterboxed (plain, FXAA or the CRT filter, then its look: presentgl.cpp's GLSL programs in Metal's language, line for
+// line; GLSL's mod is Mod here) with the PC menus over it (ui/overlaymetal.mm). At most three frames are in flight (the
+// layer's drawables). With Reduce Flashing the picture is drawn into one of two textures of its place's size first, each
+// frame's limited by the last one's, and that copied into the window.
 #include "presenter.h"
 
 #include "ui/menus.h"
@@ -32,6 +34,10 @@ struct PictureUniforms
     float2 texel;
     float2 pictureSize;
     float2 viewSize;
+    // presenter.h's PictureLook: brightness, 1/gamma, the colour filter, the flash step
+    float4 look;
+    // x: 1 for the sharp scaling
+    float4 scaling;
 };
 
 struct Varyings
@@ -50,9 +56,68 @@ vertex Varyings PictureVertex(uint id [[vertex_id]], constant PictureUniforms& u
     return out;
 }
 
-fragment float4 PicturePlain(Varyings in [[stage_in]], texture2d<float> picture [[texture(0)]], sampler smp [[sampler(0)]])
+// Daltonization (Fidaner, Lin and Ozguven's, as daltonize.js has it): the colours a colour-blind eye can't tell apart found by
+// simulating its view in LMS space, and what it loses moved into the colours it sees (1 protanopia, 2 deuteranopia, 3
+// tritanopia)
+float3 Daltonize(float3 c, int kind)
 {
-    return float4(picture.sample(smp, in.place).rgb, 1.0);
+    float l = 17.8824 * c.r + 43.5161 * c.g + 4.11935 * c.b;
+    float m = 3.45565 * c.r + 27.1554 * c.g + 3.86714 * c.b;
+    float s = 0.0299566 * c.r + 0.184309 * c.g + 1.46709 * c.b;
+    if (kind == 1)
+    {
+        l = 2.02344 * m - 2.52581 * s;
+    }
+    else if (kind == 2)
+    {
+        m = 0.494207 * l + 1.24827 * s;
+    }
+    else
+    {
+        s = -0.395913 * l + 0.801109 * m;
+    }
+    float3 seen = float3(0.0809444479 * l - 0.130504409 * m + 0.116721066 * s,
+                         -0.0102485335 * l + 0.0540193266 * m - 0.113614708 * s,
+                         -0.000365296938 * l - 0.00412161469 * m + 0.693511405 * s);
+    float3 lost = c - seen;
+    return c + float3(0.0, 0.7 * lost.r + lost.g, 0.7 * lost.r + lost.b);
+}
+
+// The picture's look (presenter.h's PictureLook) on a filtered colour; history is the last frame's at this pixel (Reduce
+// Flashing: drawn into a texture of the place's size)
+float4 Finish(float3 c, float4 position, constant PictureUniforms& u, texture2d<float> history)
+{
+    c = pow(max(c, 0.0), float3(u.look.y)) * u.look.x;
+    int kind = int(u.look.z + 0.5);
+    if (kind > 0)
+    {
+        c = Daltonize(c, kind);
+    }
+    c = clamp(c, 0.0, 1.0);
+    if (u.look.w < 1.0)
+    {
+        c = min(c, history.read(uint2(position.xy)).rgb + u.look.w);
+    }
+    return float4(c, 1.0);
+}
+
+// The sharp scaling's place: inside each picture pixel the same colour, bilinear only across the band where two meet (the
+// band as wide as a window pixel: the whole times each picture pixel is shown)
+float2 SharpPlace(float2 place, float2 size, float2 view)
+{
+    float2 texel = place * size;
+    float2 scale = max(floor(view / size), 1.0);
+    float2 range = 0.5 - 0.5 / scale;
+    float2 centre = fract(texel) - 0.5;
+    float2 f = (centre - clamp(centre, -range, range)) * scale + 0.5;
+    return (floor(texel) + f) / size;
+}
+
+fragment float4 PicturePlain(Varyings in [[stage_in]], texture2d<float> picture [[texture(0)]], sampler smp [[sampler(0)]],
+                             constant PictureUniforms& u [[buffer(0)]], texture2d<float> history [[texture(1)]])
+{
+    float2 place = u.scaling.x > 0.5 ? SharpPlace(in.place, 1.0 / u.texel, u.viewSize) : in.place;
+    return Finish(picture.sample(smp, place).rgb, in.position, u, history);
 }
 
 float Mod(float x, float y)
@@ -68,7 +133,7 @@ float Luma(float3 c)
 // FXAA (a short version of Timothy Lottes' FXAA 3 console algorithm): edges found by luma contrast with their neighbours and
 // blended along them, on the shown picture
 fragment float4 PictureFxaa(Varyings in [[stage_in]], texture2d<float> picture [[texture(0)]], sampler smp [[sampler(0)]],
-                            constant PictureUniforms& u [[buffer(0)]])
+                            constant PictureUniforms& u [[buffer(0)]], texture2d<float> history [[texture(1)]])
 {
     float2 place = in.place;
     float2 texel = u.texel;
@@ -92,12 +157,12 @@ fragment float4 PictureFxaa(Varyings in [[stage_in]], texture2d<float> picture [
                       picture.sample(smp, place + direction * (2.0 / 3.0 - 0.5)).rgb);
     float3 b = a * 0.5 + 0.25 * (picture.sample(smp, place - direction * 0.5).rgb + picture.sample(smp, place + direction * 0.5).rgb);
     float lb = Luma(b);
-    return float4((lb < lowest || lb > highest) ? a : b, 1.0);
+    return Finish((lb < lowest || lb > highest) ? a : b, in.position, u, history);
 }
 
 // The CRT filter (presentgl.cpp says what each part is). pictureSize is the PS2's lines
 fragment float4 PictureCrt(Varyings in [[stage_in]], texture2d<float> picture [[texture(0)]], sampler smp [[sampler(0)]],
-                           constant PictureUniforms& u [[buffer(0)]])
+                           constant PictureUniforms& u [[buffer(0)]], texture2d<float> history [[texture(1)]])
 {
     float2 place = in.place;
     float2 texel = 1.0 / u.pictureSize;
@@ -113,7 +178,7 @@ fragment float4 PictureCrt(Varyings in [[stage_in]], texture2d<float> picture [[
                                                          : float3(1.0);
     float2 centred = place * 2.0 - 1.0;
     float vignette = 1.0 - 0.08 * dot(centred * centred, float2(0.5, 0.5));
-    return float4(clamp(beam * line * grille * 1.12 * vignette, 0.0, 1.0), 1.0);
+    return Finish(clamp(beam * line * grille * 1.12 * vignette, 0.0, 1.0), in.position, u, history);
 }
 )";
 
@@ -123,6 +188,9 @@ struct alignas(16) PictureUniforms
     f32 texel[2];
     f32 pictureSize[2];
     f32 viewSize[2];
+    f32 pad[2];
+    f32 look[4];
+    f32 scaling[4];
 };
 
 // The window's pixels (the layer's, and a picture's of the window)
@@ -160,12 +228,24 @@ private:
     void Commit(id<MTLCommandBuffer> commands);
     // The frame encoded into a target of the frame's pixels
     void Encode(id<MTLCommandBuffer> commands, id<MTLTexture> target, const WindowFrame& frame, bool picture);
+    // A picture of this size drawn into the viewport (of this size) with the frame's filter, scaling and this look; history:
+    // the last frame's for Reduce Flashing (else unused)
+    void DrawPicture(id<MTLRenderCommandEncoder> encoder, id<MTLTexture> picture, u32 width, u32 height, MTLViewport viewport,
+                     PictureFilter filter, PictureScaling scaling, const PictureLook& look, const WindowFrame& frame,
+                     id<MTLTexture> history);
+    // Reduce Flashing's two textures made the place's size (false: they couldn't be); a new size starts them unlimited
+    bool PrepareHistory(u32 width, u32 height);
 
     NativeGraphics::MetalGpu& gpu_;
     SDL_MetalView view_ = nullptr;
     CAMetalLayer* layer_ = nil;
     id<MTLRenderPipelineState> pipelines_[3] = {};
     id<MTLSamplerState> sampler_ = nil;
+    id<MTLSamplerState> nearest_ = nil;
+    // Reduce Flashing's frames: the one drawn last, and whether it holds a frame yet
+    id<MTLTexture> history_[2] = {};
+    u32 historyLast_ = 0;
+    bool historyHeld_ = false;
     std::unique_ptr<Ui::MetalOverlay> overlay_;
     dispatch_semaphore_t inFlight_ = nullptr;
     bool frameOpen_ = false;
@@ -233,6 +313,9 @@ bool MetalPresenter::Open(SDL_Window* window, bool vsync)
     sampler.sAddressMode = MTLSamplerAddressModeClampToEdge;
     sampler.tAddressMode = MTLSamplerAddressModeClampToEdge;
     sampler_ = [device newSamplerStateWithDescriptor:sampler];
+    sampler.minFilter = MTLSamplerMinMagFilterNearest;
+    sampler.magFilter = MTLSamplerMinMagFilterNearest;
+    nearest_ = [device newSamplerStateWithDescriptor:sampler];
     overlay_ = Ui::MakeMetalOverlay(device, WindowFormat);
     inFlight_ = dispatch_semaphore_create(FramesInFlight);
     if (window == nullptr)
@@ -323,21 +406,42 @@ void MetalPresenter::Encode(id<MTLCommandBuffer> commands, id<MTLTexture> target
     pass.colorAttachments[0].loadAction = MTLLoadActionClear;
     pass.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1);
     pass.colorAttachments[0].storeAction = MTLStoreActionStore;
-    id<MTLRenderCommandEncoder> encoder = [commands renderCommandEncoderWithDescriptor:pass];
     const SDL_FRect& dst = frame.place;
-    if (picture && texture_ != nil && dst.w > 0 && dst.h > 0)
+    const bool drawn = picture && texture_ != nil && dst.w > 0 && dst.h > 0;
+    // Reduce Flashing: the picture drawn into the next history texture, limited by the last, then that copied into the window
+    const u32 placeWidth = static_cast<u32>(dst.w + 0.5f), placeHeight = static_cast<u32>(dst.h + 0.5f);
+    const bool limited = drawn && frame.look.flashStep < 1.0f && PrepareHistory(placeWidth, placeHeight);
+    if (limited)
     {
-        [encoder setViewport:MTLViewport{dst.x, dst.y, dst.w, dst.h, 0, 1}];
-        [encoder setRenderPipelineState:pipelines_[static_cast<u32>(frame.filter)]];
-        PictureUniforms u = {{0, 0, 1, 1},
-                             {1.0f / static_cast<f32>(width_), 1.0f / static_cast<f32>(height_)},
-                             {frame.pictureLines[0], frame.pictureLines[1]},
-                             {dst.w, dst.h}};
-        [encoder setVertexBytes:&u length:sizeof(u) atIndex:0];
-        [encoder setFragmentBytes:&u length:sizeof(u) atIndex:0];
-        [encoder setFragmentTexture:texture_ atIndex:0];
-        [encoder setFragmentSamplerState:sampler_ atIndex:0];
-        [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+        const u32 next = historyLast_ ^ 1;
+        MTLRenderPassDescriptor* into = [MTLRenderPassDescriptor renderPassDescriptor];
+        into.colorAttachments[0].texture = history_[next];
+        into.colorAttachments[0].loadAction = MTLLoadActionDontCare;
+        into.colorAttachments[0].storeAction = MTLStoreActionStore;
+        id<MTLRenderCommandEncoder> limit = [commands renderCommandEncoderWithDescriptor:into];
+        PictureLook look = frame.look;
+        look.flashStep = historyHeld_ ? look.flashStep : 1.0f;
+        DrawPicture(limit, texture_, width_, height_, MTLViewport{0, 0, static_cast<double>(placeWidth), static_cast<double>(placeHeight), 0, 1},
+                    frame.filter, frame.scaling, look, frame, history_[historyLast_]);
+        [limit endEncoding];
+        historyLast_ = next;
+        historyHeld_ = true;
+    }
+    else if (frame.look.flashStep >= 1.0f)
+    {
+        historyHeld_ = false;
+    }
+
+    id<MTLRenderCommandEncoder> encoder = [commands renderCommandEncoderWithDescriptor:pass];
+    const MTLViewport place{dst.x, dst.y, dst.w, dst.h, 0, 1};
+    if (limited)
+    {
+        DrawPicture(encoder, history_[historyLast_], placeWidth, placeHeight, place, PictureFilter::Plain, PictureScaling::Smooth,
+                    PictureLook{}, frame, history_[historyLast_]);
+    }
+    else if (drawn)
+    {
+        DrawPicture(encoder, texture_, width_, height_, place, frame.filter, frame.scaling, frame.look, frame, texture_);
     }
 
     if (overlay_ != nullptr)
@@ -347,6 +451,55 @@ void MetalPresenter::Encode(id<MTLCommandBuffer> commands, id<MTLTexture> target
     }
 
     [encoder endEncoding];
+}
+
+void MetalPresenter::DrawPicture(id<MTLRenderCommandEncoder> encoder, id<MTLTexture> picture, u32 width, u32 height,
+                                 MTLViewport viewport, PictureFilter filter, PictureScaling scaling, const PictureLook& look,
+                                 const WindowFrame& frame, id<MTLTexture> history)
+{
+    [encoder setViewport:viewport];
+    [encoder setRenderPipelineState:pipelines_[static_cast<u32>(filter)]];
+    PictureUniforms u = {{0, 0, 1, 1},
+                         {1.0f / static_cast<f32>(width), 1.0f / static_cast<f32>(height)},
+                         {frame.pictureLines[0], frame.pictureLines[1]},
+                         {static_cast<f32>(viewport.width), static_cast<f32>(viewport.height)},
+                         {0, 0},
+                         {look.brightness, look.power, static_cast<f32>(look.colourFilter), look.flashStep},
+                         {scaling == PictureScaling::Sharp ? 1.0f : 0.0f, 0, 0, 0}};
+    [encoder setVertexBytes:&u length:sizeof(u) atIndex:0];
+    [encoder setFragmentBytes:&u length:sizeof(u) atIndex:0];
+    [encoder setFragmentTexture:picture atIndex:0];
+    [encoder setFragmentTexture:history atIndex:1];
+    [encoder setFragmentSamplerState:scaling == PictureScaling::Pixelated ? nearest_ : sampler_ atIndex:0];
+    [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+}
+
+bool MetalPresenter::PrepareHistory(u32 width, u32 height)
+{
+    if (width == 0 || height == 0)
+    {
+        return false;
+    }
+    if (history_[0] != nil && history_[0].width == width && history_[0].height == height)
+    {
+        return true;
+    }
+    MTLTextureDescriptor* descriptor = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:WindowFormat width:width height:height
+                                                                                     mipmapped:NO];
+    descriptor.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
+    descriptor.storageMode = MTLStorageModePrivate;
+    for (__strong id<MTLTexture>& texture : history_)
+    {
+        texture = [gpu_.device newTextureWithDescriptor:descriptor];
+        if (texture == nil)
+        {
+            Log("graphics: no texture for Reduce Flashing (%ux%u): the picture isn't limited", width, height);
+            history_[0] = nil;
+            return false;
+        }
+    }
+    historyHeld_ = false;
+    return true;
 }
 
 void* MetalPresenter::Present(const WindowFrame& frame, bool picture)

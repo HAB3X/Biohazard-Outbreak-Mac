@@ -232,7 +232,7 @@ void PresenterStop();
 struct Options
 {
     std::string disc;
-    std::string patch;          // --patch FILE: byte ranges laid over the disc (disc.cpp)
+    std::vector<std::string> patches; // --patch FILE, each: byte ranges laid over the disc, later ones over earlier (disc.cpp)
     // --disc-check: the disc found (asked for with a window, even headless, when none is known), checked and remembered, the
     // bindings' defaults written if there are none, then the disc's path and the settings folder printed and the game not
     // started: an app's launcher, which builds what it lays over the disc from both before the game starts
@@ -383,6 +383,16 @@ enum class DisplaySetting
     Widescreen,
     OnGpu,
     WidescreenOffered,
+    // Fullscreen taking the display for itself (its mode set) rather than borderless over the desktop
+    ExclusiveFullscreen,
+    // The picture's scaling into the window: 0 smooth, 1 sharp (whole pixels, their edges smoothed), 2 pixelated
+    Scaling,
+    // The picture's look (presenter.h's PictureLook): brightness 50-150% in tens (0-10), gamma 0.6-1.6 in tenths (0-10), a
+    // colour filter for colour blindness (0 off, 1 protanopia, 2 deuteranopia, 3 tritanopia), Reduce Flashing (0 or 1)
+    Brightness,
+    Gamma,
+    ColourFilter,
+    ReduceFlashing,
 };
 int DisplayGet(DisplaySetting setting);
 void DisplaySet(DisplaySetting setting, int value);

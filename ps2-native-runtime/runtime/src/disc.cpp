@@ -1,7 +1,8 @@
 // The disc: an ISO 9660 image read in place, from a 2048 byte .iso or a raw 2352 byte .bin (MODE1 or MODE2 form 1, named by
 // itself or by its .cue). A patch file (--patch) replaces byte ranges of the disc's data as the sectors are read, so a game's
 // files can be changed without a modified copy of the image: "DPAT", u32 version, u32 count, then count times u64 offset (in
-// the image's 2048 byte sectors' data, sector * 2048 + byte), u32 length, in version 2 u32 variant, then the bytes. A variant
+// the image's 2048 byte sectors' data, sector * 2048 + byte), u32 length, in version 2 u32 variant, then the bytes. Several
+// patches are laid in the order given (a later one's ranges over an earlier one's). A variant
 // says when a range is laid: 0 always, 1 while the prompts are the keyboard's, 2 while they're a PlayStation pad's (and a
 // Nintendo Switch pad's), 3 while they're an Xbox pad's, where the patch has any (else 2's): the PC menus' Button prompts, the
 // device used last unless one is chosen. A game's pictures and font with its buttons' prompts drawn for each: what's read
@@ -196,7 +197,7 @@ bool DiscLoadPatch(const std::string& path)
         bytes += length;
         g_patches.push_back(std::move(p));
     }
-    g_xboxVariant = variants[3] != 0;
+    g_xboxVariant = g_xboxVariant || variants[3] != 0;
     Log("patch %s: %u ranges (%u for the keyboard, %u for a PlayStation pad, %u for an Xbox pad), %llu bytes", path.c_str(),
         head[2], variants[1], variants[2], variants[3], static_cast<unsigned long long>(bytes));
     return true;

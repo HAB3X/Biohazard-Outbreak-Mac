@@ -140,6 +140,8 @@ struct MenuView
     // The prompts' style (the device in use) and the gamepad's (the Controls table's gamepad column)
     PromptStyle prompts;
     PromptStyle padStyle;
+    // The page is the live tab, over the running game (Ps2GameInfo::liveTab)
+    bool live;
 };
 
 // The game's title for the screens' subtitle
