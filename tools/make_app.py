@@ -188,7 +188,7 @@ if grep -q '^[^#]' "$SETTINGS/characters.txt" 2>/dev/null; then
         >"$SETTINGS/characters-patch.log" 2>&1; then
         set -- --patch "$SETTINGS/characters.patch" "$@"
     else
-        osascript -e "display alert \"The character mods couldn't be put in\" message \"$(tail -n 2 "$SETTINGS/characters-patch.log")\"" >/dev/null
+        osascript -e 'display alert "The character mods could not be put in" message "'"$(tail -n 2 "$SETTINGS/characters-patch.log")"'"' >/dev/null
     fi
 fi
 exec "$DIR/{g['exe']}" --disc "$DISC" --patch "$DIR/../Resources/english.patch" "$@"
