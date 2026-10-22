@@ -210,17 +210,17 @@ exec "$DIR/{g['exe']}" --disc "$DISC" --patch "$DIR/../Resources/english.patch" 
 def builder_files(game):
     """{path in Resources/english-patch: the file}: what tools/bh_build_patch.py reads to build GAME's patch, in the
     repository's layout (the builder finds them from its own folder; the runtime's part from $PS2_RUNTIME_DIR)."""
-    finder = modulefinder.ModuleFinder(path=[str(ROOT / "tools"), str(runtime_dir() / "tools")])
-    finder.run_script(str(ROOT / "tools" / "bh_build_patch.py"))
-    # (and the character patch's, tools/app_launcher.sh's)
-    finder.run_script(str(ROOT / "tools" / "bh_character_patch.py"))
     files = {}
-    for module in finder.modules.values():
-        source = Path(module.__file__ or "")
-        if source.parent == ROOT / "tools":
-            files[f"tools/{source.name}"] = source
-        elif source.parent == runtime_dir() / "tools":
-            files[f"ps2-native-runtime/tools/{source.name}"] = source
+    # (and the character patch's, tools/app_launcher.sh's: a finder each, as each script is its __main__)
+    for script in ("bh_build_patch.py", "bh_character_patch.py"):
+        finder = modulefinder.ModuleFinder(path=[str(ROOT / "tools"), str(runtime_dir() / "tools")])
+        finder.run_script(str(ROOT / "tools" / script))
+        for module in finder.modules.values():
+            source = Path(module.__file__ or "")
+            if source.parent == ROOT / "tools":
+                files[f"tools/{source.name}"] = source
+            elif source.parent == runtime_dir() / "tools":
+                files[f"ps2-native-runtime/tools/{source.name}"] = source
     if "ps2-native-runtime/tools/disc.py" not in files:
         sys.exit("bh_build_patch.py no longer imports the runtime's tools/disc.py: check builder_files")
     translate = tomllib.loads((ROOT / "config/translate.toml").read_text())
