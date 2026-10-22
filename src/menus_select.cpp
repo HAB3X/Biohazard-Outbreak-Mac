@@ -41,7 +41,7 @@ struct Layout
     uint32_t titleState, difficulty;
 };
 
-const Layout File2 = {"BIN/1.DAT", 0x24b080, 8, 0x998, {0x908, 0x25b8}, {0x2d98, 0x3da0}, 0, 0x24b070, 0xd};
+const Layout File2 = {"BIN/1.DAT", 0x24b080, 8, 0x998, {0x908, 0x25b8}, {0x2d98, 0x3da0}, 0, 0x24b070, 0xe};
 const Layout File1 = {"PROG/DEMO.BIN", 0x3065fc, 4, 0x974, {0x8e4, 0x254c}, {0x2d74, 0x3d7c}, 5, 0x23be34, 0xd};
 
 const Layout& L() { return Current() == Disc::File2 ? File2 : File1; }
