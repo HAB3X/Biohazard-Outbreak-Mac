@@ -44,6 +44,23 @@ void EyeAndLook(float px, float py, float pz, float yawDeg, float pitchDeg, cons
 bool ModernMovement(float lx, float ly, float viewYaw, float playerYaw, float deadzone, float* heading, float* gap);
 Rig BlendRig(const Rig& hip, const Rig& aim, float t);
 
+// The rig as the look angle bends it: looking down (a positive pitch, the eye above her) raises the eye and pulls it back,
+// looking up lowers it, each blended smoothly from level to its anchor angle. `strength` scales both (0: the rig as it is)
+Rig LookAngleBoom(const Rig& rig, float pitchDeg, float strength);
+
+// Keeps the camera's sideways lag behind her, in the camera's own frame: her sideways steps reach the camera slowly, her
+// steps toward and away from it and up and down at once. Add (*offX, *offZ) to the eye's and the look point's x and z
+struct LateralLag
+{
+    bool have = false;
+    float posX = 0, posZ = 0;
+    float lagX = 0, lagZ = 0;
+
+    void Reset();
+    // k is the share of the lag let go a frame at 60 frames a second; yawDeg the camera's yaw (EyeAndLook's)
+    void Update(float px, float pz, float yawDeg, float dt, float k, float* offX, float* offZ);
+};
+
 // The heading the follow camera sits behind: the way she travels, or her facing when her motion can't be trusted. A fast copy
 // tells a backpedal, a slow one is followed
 struct FollowHeading
@@ -92,9 +109,19 @@ bool SlabFromRecord(const float corners[9], float normalY, Slab* slab);
 // [0, 1] (1: it crosses none)
 float BoomClearOfSlabs(const std::vector<Slab>& slabs, Vec3 head, Vec3 eye, float margin);
 
+// Half the near plane's width, in the room's units, for the value the camera writes, the vertical field of view and the
+// aspect (width over height)
+float NearHalfWidth(float nearValue, float fovDeg, float aspect);
+
 // The boom from the head (hx, hz) to the eye pulled in front of the first wall it crosses, by `margin` along the boom (walls
 // with any of ignoreFlags, and with useMinTop those whose top is below minTop, don't count; with useHy the eye's height
 // follows the boom from hy). The fraction of the boom kept, in (0, 1]
 float ClampEyeToWalls(const std::vector<Wall>& walls, float* ex, float* ez, float* ey, float hx, float hz, float margin,
                       uint32_t ignoreFlags, bool useHy, float hy, bool useMinTop, float minTop);
+
+// ClampEyeToWalls with two more rays, the boom's line moved sideways by `halfWidth` each way (the near plane's corners), the
+// nearest of the three kept, so the near plane never pokes through a wall's corner or thin edge. A side ray whose start is
+// itself behind a wall (she stands against it) can't be helped by pulling in, so it doesn't count
+float ClampEyeToWallsProbed(const std::vector<Wall>& walls, float* ex, float* ez, float* ey, float hx, float hz, float margin,
+                            uint32_t ignoreFlags, bool useHy, float hy, bool useMinTop, float minTop, float halfWidth);
 }

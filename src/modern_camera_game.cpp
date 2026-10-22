@@ -262,6 +262,12 @@ float Game::Fov() const
     return Sane(v) && v > 0 ? v : 60.0f;
 }
 
+float Game::Aspect() const
+{
+    float v = F32(m_layout.aspect);
+    return Sane(v) && v > 0 ? v : 4.0f / 3.0f;
+}
+
 void Game::SetFov(float degrees) const { SetF32(m_layout.fovDeg, degrees); }
 
 void Game::SetNearFar(float nearValue, float farPlane) const

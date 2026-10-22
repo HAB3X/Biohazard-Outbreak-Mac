@@ -88,6 +88,7 @@ struct State
     bool haveShoulder = false;
     float shoulderTarget = 1, shoulderSign = 1;
     FollowHeading follow;
+    LateralLag lag; // Crisp stops
 
     uint32_t prevHeld = 0;
     PadTransform map;
@@ -196,6 +197,7 @@ void CrosshairOff()
 void ResetRigToPlayer()
 {
     s.follow.Reset();
+    s.lag.Reset();
     s.camYaw = g_game->PlayerYaw() + 180.0f; // seeded behind her whatever the follow side says
     s.lookOff = 0;
     s.pitch = 0;
@@ -935,6 +937,12 @@ void DriverFrame()
         g_game->SetFov(eff.fovDeg);
     }
 
+    // Looking down raises the camera and pulls it back, looking up lowers it; the aim framing keeps its own
+    if (c.lookAngleBoom > 0)
+    {
+        eff = LookAngleBoom(eff, s.pitch + eff.pitchTrim, c.lookAngleBoom * (1.0f - s.aimAmount));
+    }
+
     // In tight spaces the eye comes in over her head instead of into her: as the walls shorten the boom, the shoulder offset
     // goes to the middle and the eye rises (from last frame's boom, which the collision eases)
     float boomNow = eff.distance * s.camT;
@@ -957,13 +965,33 @@ void DriverFrame()
     Vec3 eye, look;
     EyeAndLook(p.x, p.y, p.z, yawShown, s.pitch + eff.pitchTrim, eff, &eye, &look);
 
+    // Crisp stops: the pivot lags her sideways only (and not at all while she aims: the shot goes where the camera looks)
+    if (c.crispStops > 0)
+    {
+        float lagX, lagZ;
+        s.lag.Update(p.x, p.z, yawShown, dt, c.crispStops, &lagX, &lagZ);
+        lagX *= 1.0f - s.aimAmount;
+        lagZ *= 1.0f - s.aimAmount;
+        eye.x += lagX, eye.z += lagZ, look.x += lagX, look.z += lagZ;
+    }
+    else
+    {
+        s.lag.Reset();
+    }
+
     // Collision: the eye pulled in front of walls
     if (c.camCollision)
     {
         float ex = eye.x, ez = eye.z, ey = eye.y;
         // Only the boom's fraction is used: smoothing the point would drag the eye through walls
-        float tHit = ClampEyeToWalls(g_game->Walls(dt), &ex, &ez, &ey, look.x, look.z, c.camMargin, 0, true, look.y, true,
-                                     look.y + c.camBlockTop);
+        float probe = 0;
+        if (c.wallProbes)
+        {
+            float fov = writeFov && eff.fovDeg > 0 ? eff.fovDeg : g_game->Fov();
+            probe = NearHalfWidth(c.nearValue, fov, g_game->Aspect());
+        }
+        float tHit = ClampEyeToWallsProbed(g_game->Walls(dt), &ex, &ez, &ey, look.x, look.z, c.camMargin, 0, true, look.y, true,
+                                           look.y + c.camBlockTop, probe);
         s.camHoldTimer = tHit < 0.999f ? c.camHold : std::max(0.0f, s.camHoldTimer - dt);
         if (s.locked)
         {

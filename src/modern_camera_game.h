@@ -172,6 +172,7 @@ public:
     void WriteCamera(const Vec3& eye, const Vec3& look) const;
     Vec3 CameraEye() const;
     float Fov() const;
+    float Aspect() const; // width over height as the game has it set
     void SetFov(float degrees) const;
     void SetNearFar(float nearValue, float farPlane) const; // <= 0 leaves one alone
     float NearValue() const;

@@ -61,6 +61,10 @@ const float AimSensValues[] = {0.25f, 0.40f, 0.55f, 0.70f, 0.85f, 1.00f, 1.25f, 
 const char* const CrosshairLabels[] = {"Off", "Dot", "Cross", nullptr};
 const char* const CrossSizeLabels[] = {"1", "2", "3", "4", "5", "6", "8", "10", nullptr};
 const float CrossSizeValues[] = {1, 2, 3, 4, 5, 6, 8, 10};
+const char* const BoomLabels[] = {"Off", "Light", "Normal", "Strong", nullptr};
+const float BoomValues[] = {0, 0.5f, 1.0f, 1.5f};
+const char* const LagLabels[] = {"Off", "Light", "Normal", "Heavy", nullptr};
+const float LagValues[] = {0, 0.2f, 0.12f, 0.07f};
 const char* const ColourLabels[] = {"White", "Green", "Red", "Yellow", "Cyan", nullptr};
 const uint32_t ColourValues[] = {0xF2F2F2, 0x40F040, 0xF04040, 0xF0E040, 0x40E0F0};
 
@@ -69,6 +73,7 @@ struct Rows
 {
     int view, distance, side, offset, height, fov, aimDistance, aimFov, keepBehind, turnToCamera;
     int mouse, stick, invert, modernAim, freeAim, lockOn, aimSens, crosshair, crossSize, crossColour;
+    int lookAngleBoom, crispStops, wallProbes;
     int collision, cutMatch, showHidden, charLight;
     int altDistance, altHeight, altFov;
 } g_rows;
@@ -123,6 +128,12 @@ void AddSettings()
     g_rows.turnToCamera = Add(GroupFraming, "Turn her to the camera",
                               "Moving: she faces the way you push from the view. Always: where the camera looks",
                               TurnLabels, static_cast<int>(d.turnToCamera));
+    g_rows.lookAngleBoom = Add(GroupFraming, "Look-angle boom",
+                               "Looking down raises the camera and pulls it back, looking up lowers it: how much",
+                               BoomLabels, IndexOf(BoomValues, d.lookAngleBoom));
+    g_rows.crispStops = Add(GroupFraming, "Crisp stops",
+                            "Only the camera's sideways follow is eased, so it stops and turns with her; the rest follows at once",
+                            LagLabels, IndexOf(LagValues, d.crispStops));
     g_rows.mouse = Add(GroupLook, "Mouse sensitivity", "How far the camera turns with the mouse's motion",
                        MouseLabels, IndexOf(MouseValues, d.mouseSensitivity));
     g_rows.stick = Add(GroupLook, "Stick sensitivity", "Degrees a second at the right stick's full push", StickLabels,
@@ -149,6 +160,9 @@ void AddSettings()
     g_rows.altFov = Add(GroupAlt, "Alt field of view", "The Alt view's field of view", AltFovLabels, 0);
     g_rows.collision = Add(GroupRoom, "Camera collision", "The camera stops in front of walls instead of going through them", OnOff,
                            d.camCollision ? 0 : 1);
+    g_rows.wallProbes = Add(GroupRoom, "Wall probes",
+                            "The camera's near plane is kept clear of wall corners and thin edges, not only its centre line",
+                            OnOff, d.wallProbes ? 0 : 1);
     g_rows.cutMatch = Add(GroupRoom, "Match the room's cameras",
                           "The room is drawn for its fixed camera nearest the view", OnOff,
                           d.cutMatch ? 0 : 1);
@@ -198,6 +212,9 @@ Config ReadConfig()
     int colour = Choice(g_rows.crossColour);
     c.crosshairRgb = ColourValues[colour >= 0 && colour < static_cast<int>(std::size(ColourValues)) ? colour : 0];
     c.camCollision = Choice(g_rows.collision) == 0;
+    c.wallProbes = Choice(g_rows.wallProbes) == 0;
+    c.lookAngleBoom = ValueOf(BoomValues, Choice(g_rows.lookAngleBoom));
+    c.crispStops = ValueOf(LagValues, Choice(g_rows.crispStops));
     c.cutMatch = Choice(g_rows.cutMatch) == 0;
     c.showHiddenObjects = Choice(g_rows.showHidden) == 1;
     c.charLight = Choice(g_rows.charLight) == 1;

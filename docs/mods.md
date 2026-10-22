@@ -72,6 +72,28 @@ her). The status screen over play keeps the view.
 | walls | 0x3938C4 → 0x925730 in the bar | Snippy's WALL_PTRS file1 |
 | near-camera hide radii | 0x6D6CF0 | 20, 80, 180, 300 in memory |
 
+**Three optional camera rows** (written for this port after reading a description of how RE4 frames its camera; none of its
+code was used):
+
+- **Wall probes** (Room group; on by default). The wall test casts the boom's line three times: the centre and two lines moved
+  sideways by half the near plane's width (`NearHalfWidth`: the near value 50 at the field of view and the game's aspect
+  0x239D48), and keeps the nearest, so the near plane doesn't poke through a wall's corner or thin edge
+  (`ClampEyeToWallsProbed`). A side line whose start is itself behind a wall (she stands against it) is left out, as pulling in
+  can't help it and it would crush the boom to its minimum. Seen in J's Bar, turning on the spot by the bar's corner: with it
+  off the boom swung out to full length through the corner three steps earlier (eye (8481, 13061) to (8627, 12975) in one
+  step); with it on it stayed in until the corner cleared. No flash was visible in the off pictures, so the artefact itself is
+  unconfirmed; the row changes only when the boom lengthens past a corner.
+- **Look-angle boom** (Framing group; off by default, Light / Normal / Strong). Looking down raises the camera up to 60 units and
+  pulls it back 45 at a 50 degree pitch, looking up lowers it 12 at -30, each smoothstepped from level (`LookAngleBoom`), scaled by
+  the row and faded out while she aims. Seen in the bar: looking down she takes less of the picture and more floor shows; the
+  lowering looking up was first 25 units and put the eye on the floor behind her (worse than without), so it is 12. In tight
+  rooms the walls hold the boom short, so only the height shows there.
+- **Crisp stops** (Framing group; off by default, Light / Normal / Heavy). The camera's pivot lags her sideways only, in the
+  camera's own frame (`LateralLag`, eye and look point together); toward, away and up and down follow at once. Faded out while
+  she aims. Note the camera has no positional smoothing otherwise (only its turning), so this adds a soft sideways follow
+  rather than replacing one. In the bar's walk-stop-turn capture the difference at Normal is a few units for a few frames
+  (look point 8458 against 8452 mid-turn): too small to see in a still. Whether it reads better needs a play session.
+
 **Not ported** (the reasons): the camera's own Aim, Shoot, Reload, Sprint and Special buttons (the game's controls here already
 aim with R1, fire, reload with L1 and run); its reload call (the game's L1 reloads); the reveal camera and Watch next
 player (the last needs online play); the J's Bar restroom mirrors and light-bar

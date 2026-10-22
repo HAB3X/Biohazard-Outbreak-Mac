@@ -50,6 +50,10 @@ struct Config
     float yawOffset = 0;
     float shoulderSwapTime = 0.18f;
     float recenterTime = 0.25f;
+    // Looking down raises the camera and pulls it back, looking up lowers it: how much (0: the one fixed boom)
+    float lookAngleBoom = 0;
+    // Sideways-only smoothing: the share of the lag let go a frame (0: none, the camera follows her as she is)
+    float crispStops = 0;
 
     // Look
     float stickSpeed = 140;
@@ -101,6 +105,8 @@ struct Config
     float camBlockTop = 25;
     float camRecover = 0.1f;
     float camHold = 0.12f;
+    // The near plane's corners also probe the walls, so its edge doesn't poke through a corner
+    bool wallProbes = true;
     float camSnap = 0; // the pull in front of a wall at once (eased, the eye was beyond the wall for a few frames)
 
     // Projection

@@ -21,6 +21,18 @@ constexpr float FollowBackpedalOff = 115.0f;
 constexpr float WallMinHeight = 20.0f;
 constexpr float WallMaxNormalY = 0.707f;    // mostly horizontal: a floor or a ceiling, not a wall
 constexpr float BoomMinKeep = 0.15f;
+// The look-angle boom's anchors: how far the rig moves at the pitch where it is fullest (the pitch is the eye's elevation over
+// her, so a positive one looks down on her)
+constexpr float LookDownAt = 50.0f, LookDownRaise = 60.0f, LookDownBack = 45.0f;
+constexpr float LookUpAt = 30.0f, LookUpLower = 25.0f;
+// The sideways lag can't leave her further than this, however fast she goes
+constexpr float MaxLateralLag = 150.0f;
+
+float SmoothStep(float x)
+{
+    x = std::clamp(x, 0.0f, 1.0f);
+    return x * x * (3.0f - 2.0f * x);
+}
 }
 
 float AngleWrap(float degrees)
@@ -100,6 +112,61 @@ Rig BlendRig(const Rig& hip, const Rig& aim, float t)
     r.lookDrop = Lerp(hip.lookDrop, aim.lookDrop, t);
     r.pitchTrim = Lerp(hip.pitchTrim, aim.pitchTrim, t);
     return r;
+}
+
+Rig LookAngleBoom(const Rig& rig, float pitchDeg, float strength)
+{
+    Rig r = rig;
+    if (pitchDeg >= 0)
+    {
+        float w = SmoothStep(pitchDeg / LookDownAt) * strength;
+        r.height += LookDownRaise * w;
+        r.distance += LookDownBack * w;
+    }
+    else
+    {
+        r.height -= LookUpLower * SmoothStep(-pitchDeg / LookUpAt) * strength;
+    }
+    return r;
+}
+
+void LateralLag::Reset()
+{
+    have = false;
+    lagX = lagZ = 0;
+}
+
+void LateralLag::Update(float px, float pz, float yawDeg, float dt, float k, float* offX, float* offZ)
+{
+    if (have && std::hypot(px - posX, pz - posZ) > FollowTeleport)
+    {
+        Reset(); // a warp or a room change: nothing to lag behind
+    }
+    if (have)
+    {
+        // The camera's pivot stays where it was while she moves, then eases toward her
+        lagX += posX - px;
+        lagZ += posZ - pz;
+        float keep = 1.0f - SmoothAlpha(k, dt);
+        lagX *= keep;
+        lagZ *= keep;
+    }
+    have = true;
+    posX = px;
+    posZ = pz;
+    // Only the sideways part (the camera's right, EyeAndLook's) stays: toward and away follows at once
+    float yaw = yawDeg * DegToRad;
+    float rx = std::cos(yaw), rz = -std::sin(yaw);
+    float lateral = std::clamp(lagX * rx + lagZ * rz, -MaxLateralLag, MaxLateralLag);
+    lagX = rx * lateral;
+    lagZ = rz * lateral;
+    *offX = lagX;
+    *offZ = lagZ;
+}
+
+float NearHalfWidth(float nearValue, float fovDeg, float aspect)
+{
+    return nearValue * std::tan(fovDeg * DegToRad * 0.5f) * aspect;
 }
 
 void FollowHeading::Reset()
@@ -331,5 +398,38 @@ float ClampEyeToWalls(const std::vector<Wall>& walls, float* ex, float* ez, floa
     *ex = hx + (*ex - hx) * minT;
     *ez = hz + (*ez - hz) * minT;
     return minT;
+}
+
+float ClampEyeToWallsProbed(const std::vector<Wall>& walls, float* ex, float* ez, float* ey, float hx, float hz, float margin,
+                            uint32_t ignoreFlags, bool useHy, float hy, bool useMinTop, float minTop, float halfWidth)
+{
+    const float ex0 = *ex, ez0 = *ez, ey0 = *ey;
+    float kept = ClampEyeToWalls(walls, ex, ez, ey, hx, hz, margin, ignoreFlags, useHy, hy, useMinTop, minTop);
+    float length = std::hypot(ex0 - hx, ez0 - hz);
+    if (halfWidth > 0.0f && length > 0.0f)
+    {
+        // Sideways of the boom, across the floor
+        float sx = -(ez0 - hz) / length * halfWidth, sz = (ex0 - hx) / length * halfWidth;
+        for (float side : {1.0f, -1.0f})
+        {
+            float ox = side * sx, oz = side * sz;
+            // The probe's start, level with the head: a wall between the head and it leaves nothing to pull in from
+            float startX = hx + ox, startZ = hz + oz, startY = hy;
+            if (ClampEyeToWalls(walls, &startX, &startZ, &startY, hx, hz, 0.0f, ignoreFlags, useHy, hy, useMinTop, minTop) < 1.0f)
+            {
+                continue;
+            }
+            float px = ex0 + ox, pz = ez0 + oz, py = ey0;
+            kept = std::min(kept, ClampEyeToWalls(walls, &px, &pz, &py, hx + ox, hz + oz, margin, ignoreFlags, useHy, hy,
+                                                  useMinTop, minTop));
+        }
+    }
+    if (kept < 1.0f)
+    {
+        *ex = hx + (ex0 - hx) * kept;
+        *ez = hz + (ez0 - hz) * kept;
+        *ey = useHy ? hy + (ey0 - hy) * kept : ey0;
+    }
+    return kept;
 }
 }

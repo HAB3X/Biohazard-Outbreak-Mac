@@ -304,3 +304,10 @@ number with them; the NET file screens' header reads "NET File". With the one sa
   movie's missing decoder thread was found.
 - `work/` (ignored) holds files extracted from the discs for analysis.
 - REOF2 (no licence) is read-only reference; reo (MIT) may be used with credit; libthanatos and OBTool are GPL (read-only).
+
+## Camera extras (branch `camera`), 2026-10-23
+
+Three optional Camera tab rows, described in `docs/mods.md` ("Three optional camera rows"): Wall probes (on), Look-angle boom
+(off), Crisp stops (off). Unit tests in `tests/modern_camera_rig_test.cpp`; checked headless in J's Bar (pitch, a 30-step turn
+and a walk-stop-turn, each with the row on and off). Not judged in a real window: whether Look-angle boom and Crisp stops feel
+better is a playtest question, and the wall-flash that Wall probes should prevent was not seen without them.
