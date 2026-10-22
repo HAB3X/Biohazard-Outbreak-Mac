@@ -99,11 +99,11 @@ Checked through `--control` in hidden-window runs (`mouse X Y`, `tap Mouse_Left`
 | Screen position: arrows, Default, Exit | ✓ | ✓ |
 | Save/load rows, Exit | ✓ | ✓ 54 ms |
 | Memory card YES/NO (hover, wheel, click) | ✓ | not seen |
-| Collection: grid, tabs, scroll arrows, hints | grid ✓ 45-76 ms; tabs ✗ (File 2's tab byte isn't 0x10: its tab targets are wrong) | ✓ |
+| Collection: grid, tabs, scroll arrows, hints | ✓ (File 2's tab byte is 0xB30 below its state: all five tabs by click) | ✓ |
 | Collection's "Return to the top menu?" Yes/No | not run | ✓ |
 | Scenario select: cards, wheel, hints | ✓ | ✓ (one scenario open on a new card) |
 | Character select: arrows, portraits (steps), big portrait, wheel | ✓ | ✓ |
-| Difficulty (File 1) | - | ✓ hover 24-46 ms, click starts |
+| Difficulty | ✓ hover moves the highlight (the choice is the title state's byte 0xE) | ✓ hover 24-46 ms, click starts (File 1 has two rows: Easy and Normal) |
 | Partner select | ✓ | not seen (File 1 started the scenario after the difficulty) |
 | Status screen: cells, weapon, actions, tabs, FILE | ✓ | ✓ cells, weapon |
 | Pause menu: rows, settings' wheel, quit question | ✓ | ✓ |

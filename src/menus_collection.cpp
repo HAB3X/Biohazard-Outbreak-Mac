@@ -29,7 +29,8 @@ struct Layout
     Pointer::Sound move;
 };
 
-const Layout File2 = {"BIN/1.DAT", 0x24b074, 0, 0x549da0, 0x24ad3c, 0x2aa890, 0x18, 0x10, 0x28, 0, {0x1b8000, 2}};
+// (File 2's tab byte is 0xB30 below the state the cursor and first cell are in: the offset wraps)
+const Layout File2 = {"BIN/1.DAT", 0x24b074, 0, 0x549da0, 0x24ad3c, 0x2aa890, 0x18, static_cast<uint32_t>(-0xb30), 0x28, 0, {0x1b8000, 2}};
 const Layout File1 = {"PROG/DEMO.BIN", 0, 0x5a4420, 0, 0x23bb30, 0x29b0d0, 6, 4, 0x10, 5, {0x1b6ef0, 2}};
 
 const Layout& L() { return Current() == Disc::File2 ? File2 : File1; }

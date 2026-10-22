@@ -12,9 +12,7 @@ Found something else? [Report it](https://github.com/HAB3X/Biohazard-Outbreak-Ma
 5. File 2, first person: a pale rectangle on the left in the zoo's first street.
 
 **Menus**
-6. File 2's collection: clicking a tab picks the wrong one.
-7. File 1's difficulty menu only moves one step with the keys.
-8. The map can't be scrolled or zoomed with the mouse.
+6. The map can't be scrolled or zoomed with the mouse.
 
 **Other**
-9. The first time, macOS blocks the app: System Settings › Privacy & Security › Open Anyway.
+7. The first time, macOS blocks the app: System Settings › Privacy & Security › Open Anyway.
