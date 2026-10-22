@@ -1,24 +1,22 @@
 # Credits
 
-Biohazard Outbreak and Biohazard Outbreak File 2 are Capcom's. This port needs your own discs and contains none of their data.
+Biohazard Outbreak and File 2 belong to Capcom. No game data is included.
 
-## Community mods ported into the game
+## Mods ported in (MIT, with permission)
 
-The camera and cheat mods of the PC menus' Camera and Cheats tabs are ports of community projects, used with their authors'
-permission under the MIT licence. Each ported source file says in its header which project it's adapted from.
+- **Snippy** ([heysnippy.com](https://heysnippy.com/mods/outbreak-moderncam/)): Outbreak ModernCam, the original
+  over-the-shoulder camera for the Japanese discs, and its addresses.
+- **RaccoonRecomp**: REO-ModernCam (the camera code used here), REO-FirstPerson, REO-Cheats and REO-GreatestHits-Cheats.
+- **Cheat code authors**: Codejunkies (Action Replay MAX), Code Master, Lajos Szalay, Jay007, VirusPunk and Jarnold83
+  (CodeBreaker), MadCatz (GameShark), bungholio (GameShark / Xploder), 47iscool (partner and walk-through-walls codes).
 
-- **Snippy** ([heysnippy.com](https://heysnippy.com/mods/outbreak-moderncam/)): Outbreak ModernCam, the original over-the-shoulder
-  camera for PCSX2, written for the Japanese Biohazard Outbreak (SLPM-65428) and File 2 (SLPM-65692): the camera's design, its
-  rig, collision and settings, and the Japanese addresses this port uses (`src/modern_camera*.cpp`).
-- **RaccoonRecomp**: REO-ModernCam (the recreation of ModernCam for Resident Evil Outbreak Recompiled, whose camera logic is the
-  one ported here), REO-FirstPerson (the first-person camera), REO-Cheats and REO-GreatestHits-Cheats (the cheat research:
-  every code decoded, moved and checked against the game), and the mod host those mods were written against.
-- **The cheat codes' authors**, as RaccoonRecomp's lists name them: Codejunkies (Action Replay MAX), Code Master, Lajos Szalay,
-  Jay007, VirusPunk and Jarnold83 (CodeBreaker), MadCatz (GameShark), bungholio (GameShark / Xploder), 47iscool (the
-  Greatest Hits list's partner and walk-through-walls codes).
+## Ideas
 
-## Ideas taken from other projects
+- **RaccoonRecomp**'s Resident Evil Outbreak Recompiled: control options (hold to toggle, mouse speed and acceleration,
+  deadzone fix, remappable controller, Xbox prompts), display and accessibility options, save backups and profiles, skip
+  intro, the camera window. Features only; none of its code (it isn't published).
 
-- **RaccoonRecomp**'s Resident Evil Outbreak Recompiled: the Controls tab's Hold to toggle, mouse speed and acceleration,
-  Compensate game deadzone, the remappable controller and the Xbox button prompts follow its options. No code of it is used
-  (its source isn't published); only the features.
+## References
+
+- [reo](https://github.com/sp00nznet/reo) by sp00nznet and [REOF2](https://github.com/caprado/REOF2) by caprado.
+- [obsrv.org](https://obsrv.org) for keeping Outbreak online.

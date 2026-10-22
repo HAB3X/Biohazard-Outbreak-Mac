@@ -1,22 +1,21 @@
 name: Report a bug
-description: Tell us what went wrong. You can add screenshots or videos.
+description: What went wrong? Screenshots and videos help.
 title: "Bug: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping. Please check it isn't one of these first.
+        Check the known bugs first:
 
-        **Known bugs**
-        1. Starting a scenario from an online room isn't confirmed working yet.
-        2. The mouse in the online lobby after logging in may not work everywhere.
-        3. Character mods show in the launcher but the games don't load them yet.
-        4. Some HD texture packs show pale patches on trees (File 2's zoo).
-        5. File 2's collection: clicking the tabs picks the wrong one.
+        1. Starting a scenario from an online room isn't confirmed yet.
+        2. The mouse in the online lobby may not work everywhere.
+        3. Character models bigger than the costume they replace are skipped.
+        4. Some HD texture packs show pale patches on trees in File 2's zoo.
+        5. File 2's collection: clicking a tab picks the wrong one.
         6. The map can't be scrolled or zoomed with the mouse.
 
-        The full list is in [KNOWN BUGS.md](https://github.com/HAB3X/Biohazard-Outbreak-Mac/blob/main/KNOWN%20BUGS.md).
+        Full list: [KNOWN BUGS.md](https://github.com/HAB3X/Biohazard-Outbreak-Mac/blob/main/KNOWN%20BUGS.md).
   - type: dropdown
     id: game
     attributes:
