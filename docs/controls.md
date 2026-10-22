@@ -103,7 +103,7 @@ Checked through `--control` in hidden-window runs (`mouse X Y`, `tap Mouse_Left`
 | Collection's "Return to the top menu?" Yes/No | not run | ✓ |
 | Scenario select: cards, wheel, hints | ✓ | ✓ (one scenario open on a new card) |
 | Character select: arrows, portraits (steps), big portrait, wheel | ✓ | ✓ |
-| Difficulty | ✓ hover moves the highlight (the choice is the title state's byte 0xE) | ✓ hover 24-46 ms, click starts (File 1 has two rows: Easy and Normal) |
+| Difficulty | ✓ hover moves the highlight (the choice is the title state's byte 0xE) | ✓ hover moves the highlight and a click starts (File 1 has two rows: Easy and Normal; its choice byte is also the title state's 0xE, not 0xD) |
 | Partner select | ✓ | not seen (File 1 started the scenario after the difficulty) |
 | Status screen: cells, weapon, actions, tabs, FILE | ✓ | ✓ cells, weapon |
 | Pause menu: rows, settings' wheel, quit question | ✓ | ✓ |
