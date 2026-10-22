@@ -685,6 +685,16 @@ const ReplacementImage* FindReplacement(const ReplacementKey& key)
         image.reset();
     }
 
+    if (image)
+    {
+        // The files' alpha runs 0-255 (as PCSX2 dumps it); the GS's 0-128 (0x80 is opaque), as the decoded textures have it
+        // and the blending reads it: unconverted, an opaque replacement was taken for twice opaque (seen through, washed out)
+        for (u32& texel : image->pixels)
+        {
+            u32 alpha = texel >> 24;
+            texel = (texel & 0xFFFFFF) | ((alpha * 128 + 127) / 255) << 24;
+        }
+    }
     const ReplacementImage* result = image.get();
     g_Images[key] = std::move(image);
     return result;
