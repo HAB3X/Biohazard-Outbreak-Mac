@@ -17,6 +17,7 @@ constexpr const char* GroupView = "ModernCam by Snippy; ported, and First Person
 constexpr const char* GroupFraming = "Modern: framing";
 constexpr const char* GroupLook = "Modern: look";
 constexpr const char* GroupAim = "Modern: aiming";
+constexpr const char* GroupAlt = "Modern: Alt view (L3+R3, V)";
 constexpr const char* GroupRoom = "Modern: the room";
 
 const char* const OffOn[] = {"Off", "On", nullptr};
@@ -44,6 +45,12 @@ const char* const AimDistanceLabels[] = {"As the main", "100", "150", "200", "25
 const float AimDistanceValues[] = {-1, 100, 150, 200, 250, 300, 400};
 const char* const AimFovLabels[] = {"As the main", "30", "40", "45", "50", "55", "60", nullptr};
 const float AimFovValues[] = {-1, 30, 40, 45, 50, 55, 60};
+const char* const AltDistanceLabels[] = {"As the main", "150", "200", "250", "300", "400", "500", "600", nullptr};
+const float AltDistanceValues[] = {-1, 150, 200, 250, 300, 400, 500, 600};
+const char* const AltHeightLabels[] = {"As the main", "50", "90", "130", "170", "210", "250", nullptr};
+const float AltHeightValues[] = {-1, 50, 90, 130, 170, 210, 250};
+const char* const AltFovLabels[] = {"As the main", "40", "50", "60", "70", "80", "90", nullptr};
+const float AltFovValues[] = {-1, 40, 50, 60, 70, 80, 90};
 const char* const TurnLabels[] = {"Off", "Moving", "Always", nullptr};
 const char* const MouseLabels[] = {"0.05", "0.08", "0.10", "0.12", "0.15", "0.20", "0.25", "0.30", "0.40", "0.60", nullptr};
 const float MouseValues[] = {0.05f, 0.08f, 0.10f, 0.12f, 0.15f, 0.20f, 0.25f, 0.30f, 0.40f, 0.60f};
@@ -63,6 +70,7 @@ struct Rows
     int view, distance, side, offset, height, fov, aimDistance, aimFov, keepBehind, turnToCamera;
     int mouse, stick, invert, modernAim, freeAim, lockOn, aimSens, crosshair, crossSize, crossColour;
     int collision, cutMatch, showHidden, charLight;
+    int altDistance, altHeight, altFov;
 } g_rows;
 
 template <size_t N>
@@ -135,6 +143,10 @@ void AddSettings()
     g_rows.crossSize = Add(GroupAim, "Crosshair size", "The dot's radius or the cross's arms", CrossSizeLabels,
                            IndexOf(CrossSizeValues, d.crosshairSize));
     g_rows.crossColour = Add(GroupAim, "Crosshair colour", "", ColourLabels, 0);
+    g_rows.altDistance = Add(GroupAlt, "Alt distance", "How far behind her the Alt view sits (L3+R3 or V switches to it and back)",
+                             AltDistanceLabels, 0);
+    g_rows.altHeight = Add(GroupAlt, "Alt height", "The Alt view's height", AltHeightLabels, 0);
+    g_rows.altFov = Add(GroupAlt, "Alt field of view", "The Alt view's field of view", AltFovLabels, 0);
     g_rows.collision = Add(GroupRoom, "Camera collision", "The camera stops in front of walls instead of going through them", OnOff,
                            d.camCollision ? 0 : 1);
     g_rows.cutMatch = Add(GroupRoom, "Match the room's cameras",
@@ -162,6 +174,15 @@ Config ReadConfig()
     float aimFov = ValueOf(AimFovValues, Choice(g_rows.aimFov));
     c.aim.fov = aimFov > 0;
     c.aim.rig.fovDeg = aimFov;
+    float altDistance = ValueOf(AltDistanceValues, Choice(g_rows.altDistance));
+    c.alt.distance = altDistance > 0;
+    c.alt.rig.distance = altDistance;
+    float altHeight = ValueOf(AltHeightValues, Choice(g_rows.altHeight));
+    c.alt.height = altHeight > 0;
+    c.alt.rig.height = altHeight;
+    float altFov = ValueOf(AltFovValues, Choice(g_rows.altFov));
+    c.alt.fov = altFov > 0;
+    c.alt.rig.fovDeg = altFov;
     c.keepBehind = Choice(g_rows.keepBehind) == 1;
     c.turnToCamera = static_cast<TurnMode>(Choice(g_rows.turnToCamera) % 3);
     c.mouseSensitivity = ValueOf(MouseValues, Choice(g_rows.mouse));
@@ -183,17 +204,29 @@ Config ReadConfig()
     return c;
 }
 
-void Presets(const Config& config, Rig* hip, Rig* aim)
+namespace
+{
+// The rig's values the override sets
+void Apply(const RigOverride& o, Rig* rig)
+{
+    if (o.distance) rig->distance = o.rig.distance;
+    if (o.shoulder) rig->shoulder = o.rig.shoulder;
+    if (o.height) rig->height = o.rig.height;
+    if (o.fov) rig->fovDeg = o.rig.fovDeg;
+    if (o.lookDrop) rig->lookDrop = o.rig.lookDrop;
+    if (o.pitchTrim) rig->pitchTrim = o.rig.pitchTrim;
+}
+}
+
+void Presets(const Config& config, bool altView, Rig* hip, Rig* aim)
 {
     *hip = config.hip;
+    if (altView)
+    {
+        Apply(config.alt, hip);
+    }
     *aim = *hip;
-    const RigOverride& o = config.aim;
-    if (o.distance) aim->distance = o.rig.distance;
-    if (o.shoulder) aim->shoulder = o.rig.shoulder;
-    if (o.height) aim->height = o.rig.height;
-    if (o.fov) aim->fovDeg = o.rig.fovDeg;
-    if (o.lookDrop) aim->lookDrop = o.rig.lookDrop;
-    if (o.pitchTrim) aim->pitchTrim = o.rig.pitchTrim;
+    Apply(config.aim, aim);
     if (!(aim->fovDeg != 0.0f))
     {
         aim->fovDeg = hip->fovDeg; // ModernCam: "if not aim['fov_deg']"

@@ -203,8 +203,8 @@ Ports of Snippy's Outbreak ModernCam and RaccoonRecomp's REO-ModernCam, REO-Firs
   collision leaves floors and ceilings out; tests/modern_camera_rig_test.cpp). The stairs fix isn't yet seen on real stairs.
 - **Left**: cheats not yet seen in play: zombies don't move,
   escape time (no timer running in the runs), walk through walls, items, virus never up, L1+Select, zombie after death,
-  collection opened, partners, Player 1 modifiers; item slot codes and Number Of Players not ported; ModernCam's reload,
-  restroom mirrors, alt rig and recenter not ported; the camera is not gated for network play (only the cheats are).
+  collection opened, partners, Player 1 modifiers; item slot codes and Number Of Players not ported; ModernCam's restroom mirrors
+  not ported (its reload is the game's own L1); the camera is not gated for network play (only the cheats are).
   The runtime build's VU1 translation step sometimes fails on a fresh build dir (its output folder made by another job): rerun.
 
 ## Widescreen, 2026-10-22

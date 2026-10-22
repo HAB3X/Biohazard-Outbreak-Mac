@@ -73,10 +73,15 @@ her). The status screen over play keeps the view.
 | near-camera hide radii | 0x6D6CF0 | 20, 80, 180, 300 in memory |
 
 **Not ported** (the reasons): the camera's own Aim, Shoot, Reload, Sprint and Special buttons (the game's controls here already
-aim with R1, fire, reload with L1 and run); its reload call (the game's L1 reloads); the alternate rig, Recenter, the reveal
-camera and Watch next player (no buttons for them; the last needs online play); the J's Bar restroom mirrors and light-bar
+aim with R1, fire, reload with L1 and run); its reload call (the game's L1 reloads); the reveal camera and Watch next
+player (the last needs online play); the J's Bar restroom mirrors and light-bar
 glow cards (drawn by calling the game's drawing functions from inside the room's draw loop, a mark mid-function that has no
 override here); the swap of shoulder written back into the settings (it lasts the session).
+
+**Added since:** Recenter (L3, C: the camera swings behind her over 0.3 s, the port's `recenterTimer`) and the Alt view (L3
+and R3 at once, V: the Alt rig's distance, height and field of view, each the main one's unless set, in the main rig's place
+until pressed again), as REO-ModernCam has them; and its camera window: F8 opens the Camera tab over the running game (the
+runtime's `Ps2GameInfo::liveTab`).
 
 **Checked** (File 1, headless, Metal 4x, J's Bar): the view behind Kevin; the mouse turning it; W walking her away from the
 camera and S toward it (she turns to the way she walks); the right mouse aiming (stance 2, the gun's elevation following the

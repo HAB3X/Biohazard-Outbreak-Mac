@@ -38,6 +38,8 @@ struct Config
 
     Rig hip;
     RigOverride aim;
+    // The Alt view's rig (L3+R3 toggles it), each value the main one's unless set
+    RigOverride alt;
 
     // Following
     bool keepBehind = false;
@@ -124,5 +126,6 @@ void AddSettings();
 // The settings now
 Config ReadConfig();
 // The rigs for this frame: the main one, and the aim one with its set values over it (an aim field of view of 0: the main's)
-void Presets(const Config& config, Rig* hip, Rig* aim);
+// (with altView the main rig is the Alt view's)
+void Presets(const Config& config, bool altView, Rig* hip, Rig* aim);
 }

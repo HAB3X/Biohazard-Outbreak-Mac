@@ -52,10 +52,13 @@ void Install(Ps2GameInfo& game, const ModernCamera::Layout& camera, const Biohaz
     g_gameMouseStick = game.mouseStick;
     game.mouseStick = MouseStick;
 
-    // The camera's swap shoulder in play: R3 (taken from her pad record while the camera drives: src/modern_camera_game.h)
+    // The camera's own controls in play: swap shoulder R3 (taken from her pad record while the camera drives:
+    // src/modern_camera_game.h), recenter L3, the Alt view L3 and R3 at once
     static std::vector<Ps2GameControl> controls;
     controls.assign(game.controls, game.controls + game.controlCount);
     controls.push_back({"camera_shoulder", "Modern camera: swap shoulder", "r3", "Mouse Middle, X", ModeNamed(game, "Play")});
+    controls.push_back({"camera_recenter", "Modern camera: recenter behind her", "l3", "C", ModeNamed(game, "Play")});
+    controls.push_back({"camera_alt_view", "Modern camera: Alt view", "l3+r3", "V", ModeNamed(game, "Play")});
     game.controls = controls.data();
     game.controlCount = static_cast<int>(controls.size());
 }

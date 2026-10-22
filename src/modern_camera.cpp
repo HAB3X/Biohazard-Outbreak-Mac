@@ -29,6 +29,7 @@ constexpr float MaxDt = 0.1f;
 constexpr float RefreezeDistance = 25.0f; // the game moved the camera when the eye is this far from ours
 constexpr float HeadingEpsilon = 0.4f;    // degrees: smaller heading corrections aren't written
 constexpr float LookThreshold = 0.12f;
+constexpr float RecenterTime = 0.3f;     // seconds the recenter swings the camera behind her for
 constexpr float MoveDeadzone = 0.2f;
 constexpr uint32_t MaxCuts = 64;
 constexpr float LockTurn = 0.25f;         // the aim lock turns the camera onto its target by SmoothAlpha(this) a frame
@@ -80,6 +81,7 @@ struct State
     float zoom = 1.0f; // the boom's length as a share of the framing's, set by the wheel (kept across rooms)
     bool aimPrev = false, aimWas = false;
     float recenterTimer = 0;
+    bool altView = false; // the Alt view's rig in the main one's place (L3+R3)
     float mouseDx = 0, mouseDy = 0; // the smoothed mouse
     float resumeYaw = 0;            // back in play: the direction swung from to behind her, and how far through
     float resumeLeft = 0;
@@ -705,10 +707,20 @@ void DriverFrame()
     s.aimAmount += ((aiming ? 1.0f : 0.0f) - s.aimAmount) * SmoothAlpha(std::clamp(blend, 0.02f, 1.0f), dt);
     bool aimingNow = s.aimAmount > 0.1f;
 
-    // Swap shoulder: R3 (the middle mouse button)
-    if ((pressed & GamePad::R3) != 0 && !s.locked)
+    // L3 and R3 together (V): the Alt view and back; R3 alone (the middle mouse button): swap shoulder; L3 alone (C): recenter,
+    // the camera swung behind her
+    const uint32_t sticks = pressed & (GamePad::L3 | GamePad::R3);
+    if (sticks == (GamePad::L3 | GamePad::R3))
+    {
+        s.altView = !s.altView;
+    }
+    else if (sticks == GamePad::R3 && !s.locked)
     {
         s.shoulderTarget = -s.shoulderTarget;
+    }
+    else if (sticks == GamePad::L3 && !s.locked)
+    {
+        s.recenterTimer = RecenterTime;
     }
 
     // Her position
@@ -734,7 +746,7 @@ void DriverFrame()
     s.pitch += mdy * msens * pdir * lookScale;
 
     Rig hipRig, aimRig;
-    Presets(c, &hipRig, &aimRig);
+    Presets(c, s.altView, &hipRig, &aimRig);
     float aimTrim = s.aimAmount > 0.001f ? aimRig.pitchTrim : 0.0f;
     float gunLimit = std::clamp(c.gunPitchMax, 1.0f, 45.0f);
     float aimZero = std::clamp(c.aimZeroDeg, -gunLimit, gunLimit);
