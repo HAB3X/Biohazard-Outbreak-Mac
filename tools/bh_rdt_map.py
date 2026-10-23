@@ -25,6 +25,7 @@ import base64
 import io
 
 import bh_archive as archive
+import bh_enemies as enemies_module
 import bh_items as items_module
 import bh_nbd as nbd
 import bh_rdt as rdt
@@ -76,6 +77,10 @@ def build(game, scenario, names, variants):
         scenario_items = items_module.Items(game, scenario)
     except FileNotFoundError:
         scenario_items = None
+    try:
+        scenario_enemies = enemies_module.Enemies(game, scenario)
+    except FileNotFoundError:
+        scenario_enemies = None
     for (number, variant), (member, room) in sorted(rooms.items()):
         entry = {"id": number, "variant": variant, "file": member, "name": names.get(member.lower(), ""), "capacity": room.capacity(), "cameras": [], "areas": []}
         for index, cam in enumerate(room.cameras):
@@ -104,6 +109,9 @@ def build(game, scenario, names, variants):
                           for i, n in enumerate(sgl.nodes(number | (variant << 16)) if sgl else [])]
         entry["items"] = [{"i": n.number, "kind": next(iter(n.kinds.values()), (0, 0))[0], "qty": next(iter(n.kinds.values()), (0, 0))[1],
                            "pos": [round(v, 1) for v in n.position]} for n in (scenario_items.items if scenario_items and not variant else []) if n.room == number]
+        entry["enemies"] = [{"i": e.number, "id": e.id, "cls": e.kind, "facing": e.facing, "pos": list(e.position)}
+                            for e in (scenario_enemies.enemies if scenario_enemies else [])
+                            if e.room == number and (e.variant == variant or (not variant and (number, e.variant) not in rooms))]
         entry["lights"] = [{"i": i, "pos": [round(v, 1) for v in l.position], "att": l.attenuation, "range": l.range, "col": [round(v, 4) for v in l.colour],
                             "col2": [round(v, 4) for v in l.colour2]} for i, l in enumerate(room.lights)]
         entry["zones"] = [{"i": i, "sound": z.sound, "box": [list(p) for p in z.box]} for i, z in enumerate(room.sound_zones)]
