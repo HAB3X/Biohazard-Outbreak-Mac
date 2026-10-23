@@ -2,6 +2,7 @@
 """A summary of the games' script instruction handlers, read off the recompiled game code (the C that `cmake` generates from the disc):
 
     bh_script_ops.py GAME OPTABLE.json [OPS...]
+    bh_script_ops.py GAME OPTABLE.json --markdown    a table of every op (name, uses in the rooms' scripts, what its handler touches)
 
 Every script (the rooms' section 1 and the scenario's .evb) is a list of records that the game's interpreter (File 2: game_006d72b0 in the
 game overlay) runs: a record's first word is (class << 24) | op, its length 2 ** class words, and the op number indexes a table of
@@ -71,11 +72,33 @@ def summarise(game, address):
     return {"args": dict(sorted(args.items())), "fixed": sorted(fixed), "gp": sorted(gp), "calls": calls}
 
 
+def markdown(game, table):
+    """The table of all ops as Markdown: what each handler reads and touches (mechanical) next to the names bh_rdt.OPS gives"""
+    import collections
+
+    import bh_rdt
+
+    uses = collections.Counter(ins.op for _, _, node in bh_rdt.rooms(game) for ins in bh_rdt.Room(node.read()).script_instructions())
+    print(f"# Script ops of {game}: what each handler touches\n\nMade by `tools/bh_script_ops.py {game} docs/research/{game}-optable.json --markdown`. "
+          "`uses` counts the records in the rooms' scripts; `args` are the handler's loads from its argument words (offset:bits); `memory` the fixed addresses "
+          "it reads (r) or writes (w); `calls` the functions it calls. The names are `bh_rdt.OPS`'s (what was read or measured: docs/research/script-ops.md).\n")
+    print("| op | name | uses | handler | args | memory | calls |\n|---|---|---|---|---|---|---|")
+    for op in sorted(int(k) for k in table):
+        handler, flags = table[str(op)]
+        info = summarise(game, handler) or {"args": {}, "fixed": [], "gp": [], "calls": []}
+        name = bh_rdt.OPS[op][0] if op in bh_rdt.OPS else ""
+        args = " ".join(f"{o}:{w}" for o, w in info["args"].items())
+        print(f"| {op:#x} | {name} | {uses.get(op, 0)} | {handler:#x} | {args} | {' '.join(info['fixed'] + info['gp'])} | {' '.join(info['calls'])} |")
+
+
 def main(argv):
     if len(argv) < 3:
         print(__doc__)
         return 1
     game, table = argv[1], json.load(open(argv[2]))
+    if "--markdown" in argv:
+        markdown(game, table)
+        return 0
     wanted = [int(a, 0) for a in argv[3:]] or sorted(int(k) for k in table)
     for op in wanted:
         handler, flags = table[str(op)]
