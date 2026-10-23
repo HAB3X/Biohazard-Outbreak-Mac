@@ -195,3 +195,9 @@ samples of the two partners' positions a run): unedited, the partners wandered o
 sideways gave no difference the samples could show (their count near a node is too dense to tell). Not decoded: the kinds (1 to 4: 846, 1770, 1555 and 1461 of File 2's) and what the twelve words are for.
 What was checked: the saved edit reached the game's memory (a node's position 13175 -> 13250 and a word 0 -> -254 read back from the running
 game's copy at 0x80F28C).
+
+## Textures in the 3D view (verified visually, room 3 of File 2)
+
+- NBD UVs are array 10, per-mesh materials array 5, per-strip materials array 6; the TID chunk maps a material to a member index in the room pack.
+- A texture is member N of the pack, decoded with `bh_sld.unpack` then `tm2.pictures()[0].image()`; the editor serves it at `/tex?index=N`.
+- Wrap mode is REPEAT; alpha below 0.35 is discarded. A few floor strips look stretched, which comes from their source UVs, not the decoder.

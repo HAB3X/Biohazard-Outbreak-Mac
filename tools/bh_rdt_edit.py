@@ -36,7 +36,7 @@ const EDIT3D = (() => {
   const panel = document.createElement("div"); panel.style.display = "none"; side.appendChild(panel);
   const MODELS = {};           // nbd file -> {bones, orig, meshes: [{mesh, bone, count, vb, ib, pickColour}], world}
   let pending = {};            // saved model edits, applied when a model loads
-  let current = null, file = null, selected = null, show = {areas: true, cameras: true, zones: true, lights: true, nodes: true}, on = false;
+  let current = null, file = null, selected = null, show = {areas: true, cameras: true, zones: true, lights: true, nodes: true, textures: true}, on = false;
   const cam = {yaw: 0.6, pitch: 0.7, dist: 4000, target: [0, 0, 0]};
   const clone = o => JSON.parse(JSON.stringify(o));
   // ---- matrices (column-major)
@@ -71,26 +71,43 @@ const EDIT3D = (() => {
   }
   const VS = "#version 300 es\nuniform mat4 uVP, uModel; in vec3 aPos; out vec3 vW; void main(){ vec4 w = uModel * vec4(aPos, 1.0); vW = w.xyz; gl_Position = uVP * w; }";
   const shaded = program(VS, "#version 300 es\nprecision highp float; uniform vec3 uColour; in vec3 vW; out vec4 o; void main(){ vec3 n = normalize(cross(dFdx(vW), dFdy(vW))); float l = 0.3 + 0.7 * abs(dot(n, normalize(vec3(0.4, 0.8, 0.3)))); o = vec4(uColour * l, 1.0); }");
+  const TVS = "#version 300 es\nuniform mat4 uVP, uModel; in vec3 aPos; in vec2 aUV; out vec3 vW; out vec2 vUV; void main(){ vec4 w = uModel * vec4(aPos, 1.0); vW = w.xyz; vUV = aUV; gl_Position = uVP * w; }";
+  const textured = program(TVS, "#version 300 es\nprecision highp float; uniform sampler2D uTex; uniform vec3 uTint; in vec3 vW; in vec2 vUV; out vec4 o; void main(){ vec4 t = texture(uTex, vUV); if (t.a < 0.35) discard; vec3 n = normalize(cross(dFdx(vW), dFdy(vW))); float l = 0.55 + 0.45 * abs(dot(n, normalize(vec3(0.4, 0.8, 0.3)))); o = vec4(t.rgb * uTint * l, 1.0); }");
   const flat = program(VS, "#version 300 es\nprecision highp float; uniform vec3 uColour; out vec4 o; void main(){ o = vec4(uColour, 1.0); }");
   const lineP = program("#version 300 es\nuniform mat4 uVP; in vec3 aPos; void main(){ gl_Position = uVP * vec4(aPos, 1.0); }", "#version 300 es\nprecision highp float; uniform vec3 uColour; out vec4 o; void main(){ o = vec4(uColour, 1.0); }");
   const lineBuf = gl.createBuffer();
   let pickFbo = null, pickTex = null, pickDepth = null;
   const b64 = (s, T) => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); };
+  const texCache = {};
+  function getTex(index) {
+    if (texCache[index]) return texCache[index].tex;
+    const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([160, 160, 170, 255]));
+    texCache[index] = {tex};
+    const img = new Image();
+    img.onload = () => { gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img); gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT); render(); };
+    img.src = "/tex?index=" + index;
+    return tex;
+  }
   async function load(nbd) {
     if (MODELS[nbd]) return MODELS[nbd];
     const res = await fetch("/model?file=" + encodeURIComponent(nbd)); const j = await res.json();
     if (j.error) throw new Error(j.error);
-    const model = {bones: j.bones, orig: clone(j.bones), meshes: []};
+    const model = {bones: j.bones, orig: clone(j.bones), meshes: [], tids: j.tids || []};
     j.meshes.forEach((m, n) => {
-      const pos = b64(m.p, Float32Array), idx = b64(m.i, Uint32Array);
+      const pos = b64(m.p, Float32Array), uv = b64(m.uv, Float32Array);
       const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
-      const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
-      const id = n + 1; model.meshes.push({mesh: m.mesh, bone: m.bone, count: idx.length, vb, ib, id, pickColour: [(id & 255) / 255, ((id >> 8) & 255) / 255, ((id >> 16) & 255) / 255], vertices: pos.length / 3});
+      const ub = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ub); gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
+      const groups = m.groups.map(g => { const idx = b64(g.i, Uint32Array); const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW); return {material: g.m, ib, count: idx.length}; });
+      const id = n + 1; model.meshes.push({mesh: m.mesh, bone: m.bone, vb, ub, groups, id, pickColour: [(id & 255) / 255, ((id >> 8) & 255) / 255, ((id >> 16) & 255) / 255], vertices: pos.length / 3});
     });
     const saved = pending[nbd];
     if (saved) for (const [k, d] of Object.entries(saved.bones || {})) { const b = model.bones[+k]; if (!b) continue; if (d.scale) b[1] = d.scale; if (d.rotation) b[2] = d.rotation; if (d.offset) b[3] = d.offset; }
     MODELS[nbd] = model; return model;
   }
+
   function frame(model) {
     model.world = worlds(model.bones);
     let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
@@ -105,17 +122,23 @@ const EDIT3D = (() => {
   }
   const hidden = b => Math.abs(b[1][0]) < 0.001 || Math.abs(b[1][1]) < 0.001 || Math.abs(b[1][2]) < 0.001;
   function drawMeshes(prog, model, vp, picking) {
+    const useTex = !picking && show.textures;
+    prog = useTex ? textured : prog;
     gl.useProgram(prog);
     gl.uniformMatrix4fv(gl.getUniformLocation(prog, "uVP"), false, vp);
-    const loc = gl.getAttribLocation(prog, "aPos");
+    const loc = gl.getAttribLocation(prog, "aPos"), uvLoc = useTex ? gl.getAttribLocation(prog, "aUV") : -1;
     for (const m of model.meshes) {
-      if (hidden(model.bones[m.bone]) && !picking) continue;
-      if (hidden(model.bones[m.bone]) && picking) continue;
+      if (hidden(model.bones[m.bone])) continue;
       gl.uniformMatrix4fv(gl.getUniformLocation(prog, "uModel"), false, model.world[m.bone]);
       const sel = selected && selected.mesh === m.mesh;
-      gl.uniform3fv(gl.getUniformLocation(prog, "uColour"), picking ? m.pickColour : sel ? [1, 0.55, 0.1] : [0.62, 0.64, 0.7]);
+      if (useTex) gl.uniform3fv(gl.getUniformLocation(prog, "uTint"), sel ? [1.6, 0.9, 0.4] : [1, 1, 1]);
+      else gl.uniform3fv(gl.getUniformLocation(prog, "uColour"), picking ? m.pickColour : sel ? [1, 0.55, 0.1] : [0.62, 0.64, 0.7]);
       gl.bindBuffer(gl.ARRAY_BUFFER, m.vb); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ib); gl.drawElements(gl.TRIANGLES, m.count, gl.UNSIGNED_INT, 0);
+      if (useTex) { gl.bindBuffer(gl.ARRAY_BUFFER, m.ub); gl.enableVertexAttribArray(uvLoc); gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0); }
+      for (const g of m.groups) {
+        if (useTex) { const tid = model.tids[g.material]; gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, getTex(tid === undefined ? 0 : tid)); gl.uniform1i(gl.getUniformLocation(prog, "uTex"), 0); }
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.ib); gl.drawElements(gl.TRIANGLES, g.count, gl.UNSIGNED_INT, 0);
+      }
     }
   }
   const tagColour = tag => { const h = (TAGS[tag] || ["", "#ccc"])[1]; return [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255]; };
@@ -227,7 +250,7 @@ const EDIT3D = (() => {
     sel.style.cssText = "display:block;margin:6px 0;max-width:220px;background:#222;color:#ddd";
     DATA.forEach(r => { const o = document.createElement("option"); o.value = r.file.replace(".rdt", ".nbd"); o.textContent = r.id + " " + r.name; if (o.value === file) o.selected = true; sel.appendChild(o); });
     sel.onchange = () => openRoom(sel.value); panel.appendChild(sel);
-    for (const k of ["areas", "cameras", "zones", "lights", "nodes"]) { const l = document.createElement("label"); const c = document.createElement("input"); c.type = "checkbox"; c.checked = show[k]; c.onchange = () => { show[k] = c.checked; render(); }; l.append(c, " show " + k); panel.appendChild(l); }
+    for (const k of ["textures", "areas", "cameras", "zones", "lights", "nodes"]) { const l = document.createElement("label"); const c = document.createElement("input"); c.type = "checkbox"; c.checked = show[k]; c.onchange = () => { show[k] = c.checked; render(); }; l.append(c, " show " + k); panel.appendChild(l); }
     const goto = document.createElement("div"); goto.className = "row"; goto.append("object # ");
     const gin = document.createElement("input"); gin.type = "number"; gin.style.width = "60px"; goto.appendChild(gin);
     const gbt = document.createElement("button"); gbt.textContent = "select"; gbt.onclick = () => selectMesh(+gin.value); goto.appendChild(gbt); panel.appendChild(goto);
@@ -642,15 +665,22 @@ def model_json(game, scenario, file):
     for index, mesh in enumerate(nbd.meshes(data, amo[1], amo[2])):
         import math
 
-        triangles = [t for t in mesh.triangles() if max(t) < len(mesh.positions)
-                     and max(math.dist(mesh.positions[t[i]], mesh.positions[t[(i + 1) % 3]]) for i in range(3)) < 6000]
-        if not mesh.positions or not triangles:
+        textured = [t for t in mesh.textured_triangles() if max(t[:3]) < len(mesh.positions)
+                    and max(math.dist(mesh.positions[t[i]], mesh.positions[t[(i + 1) % 3]]) for i in range(3)) < 6000]
+        if not mesh.positions or not textured:
             continue
         flat = [c for p in mesh.positions for c in p]
+        uvs = [c for uv in (mesh.uvs if len(mesh.uvs) == len(mesh.positions) else [(0.0, 0.0)] * len(mesh.positions)) for c in uv]
+        groups = {}
+        for a, b, c, material in textured:
+            groups.setdefault(material, []).extend((a, b, c))
         meshes.append({"mesh": index, "bone": index + 2,
                        "p": base64.b64encode(struct.pack(f"<{len(flat)}f", *flat)).decode(),
-                       "i": base64.b64encode(struct.pack(f"<{3 * len(triangles)}I", *[v for t in triangles for v in t])).decode()})
-    return {"bones": bones, "meshes": meshes}
+                       "uv": base64.b64encode(struct.pack(f"<{len(uvs)}f", *uvs)).decode(),
+                       "groups": [{"m": material, "i": base64.b64encode(struct.pack(f"<{len(ids)}I", *ids)).decode()} for material, ids in groups.items()]})
+    tid = next((c for c in table if c[0] == "TID"), None)
+    tids = list(struct.unpack_from(f"<{tid[2] // 4}I", data, tid[1])) if tid else []
+    return {"bones": bones, "meshes": meshes, "tids": tids}
 
 
 def messages_json(game, scenario):
@@ -696,6 +726,29 @@ def messages_json(game, scenario):
     return out
 
 
+def texture_png(game, scenario, index):
+    """The scenario's texture number `index` (the index into the pack's first members, which r0xx_h.bin counts as the textures) as PNG bytes, or None"""
+    import io
+
+    import bh_archive as archive
+    import bh_sld
+    import tm2
+
+    disc = archive.Archive(game)
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            members = disc.open(f"{dat}/r{scenario:03d}.afs").members()
+        except FileNotFoundError:
+            continue
+        if not 0 <= index < len(members):
+            return None
+        pictures = tm2.pictures(bh_sld.unpack(members[index][1].read()))
+        buffer = io.BytesIO()
+        pictures[0].image().convert("RGBA").save(buffer, "PNG")
+        return buffer.getvalue()
+    return None
+
+
 def serve(game, scenario, names, port, out):
     data = maps.build(game, scenario, names, False)
     ops = json.dumps({str(k): list(v) for k, v in rdt.OPS.items()})
@@ -720,6 +773,12 @@ def serve(game, scenario, names, port, out):
         def do_GET(self):
             if self.path == "/":
                 self.send(200, page, "text/html; charset=utf-8")
+            elif self.path.startswith("/tex?"):
+                index = int(self.path.split("=", 1)[1])
+                if ("tex", index) not in models:
+                    models[("tex", index)] = texture_png(game, scenario, index)
+                png = models[("tex", index)]
+                self.send(200 if png else 404, png or b"", "image/png")
             elif self.path == "/messages":
                 if "messages" not in models:
                     models["messages"] = messages_json(game, scenario)
