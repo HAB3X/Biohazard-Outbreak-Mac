@@ -140,6 +140,23 @@ class SoundPoint:
         self.rest = struct.unpack_from(f"<{(len(record) - 20) // 4}i", record, 20)
 
 
+class Light:
+    """A character light (section 11): 52 bytes of 13 floats: position x, y, z, an attenuation (0.001 to 0.007 in File 2's rooms), a
+    range, a colour (red, green, blue), a pad, a second colour (red, green, blue) and a pad. Found by their shape (the section's
+    header isn't decoded), 1849 in File 2's rooms, 99% of them within 3000 of their room's trigger areas. Measured in File 2's zoo
+    (the characters' colours in the picture, the surroundings unchanged): moving all eight next to the characters lit them (+1.3
+    in red, green and blue), the colour's red set to 4 added +1.7 in red only, the second colour's red added more (+2.5 against 1.3 with
+    the move alone), and a zero attenuation or a range of 4 put the light out; the surroundings never changed: they light characters only"""
+
+    def __init__(self, floats, start):
+        self.start = start
+        self.position = tuple(floats[0:3])
+        self.attenuation = floats[3]
+        self.range = floats[4]
+        self.colour = tuple(floats[5:8])
+        self.colour2 = tuple(floats[9:12])
+
+
 class Room:
     def __init__(self, data):
         self.original = bytes(data)
@@ -165,7 +182,33 @@ class Room:
                 raise ValueError(f"a trigger area at {at} leaves its section")
         self.area_offsets = offsets
         self._sounds()
+        self._lights()
         return [Area(bytes(self.data[offset + at:offset + at + AREA_SIZE])) for at in offsets]
+
+    def _lights(self):
+        self.lights = []
+        offset, size = self.sections[11]
+        last = -52
+        for start in range(0, max(0, size - 52) + 1, 4):
+            f = struct.unpack_from("<13f", self.data, offset + start)
+            if (all(abs(v) < 1e5 for v in f) and 0 < f[3] < 0.2 and 5 < f[4] < 50000 and abs(f[0]) > 100 and abs(f[2]) > 100
+                    and all(0 <= v <= 4 for v in f[5:8]) and f[8] == 0 and f[12] == 0 and start >= last + 52):
+                self.lights.append(Light(f, start))
+                last = start
+
+    def set_light(self, index, position=None, attenuation=None, range=None, colour=None, colour2=None):
+        base = self.sections[11][0] + self.lights[index].start
+        if position is not None:
+            self._put(base, "<3f", *map(float, position))
+        if attenuation is not None:
+            self._put(base + 12, "<f", float(attenuation))
+        if range is not None:
+            self._put(base + 16, "<f", float(range))
+        if colour is not None:
+            self._put(base + 20, "<3f", *map(float, colour))
+        if colour2 is not None:
+            self._put(base + 36, "<3f", *map(float, colour2))
+        self._lights()
 
     def _sounds(self):
         """The sound zones and sound points of section 16 (empty lists when the section is empty)"""

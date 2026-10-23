@@ -143,3 +143,14 @@ halfword at +0x176 of her record (0x1234 inside, 1 outside, the surrounding zone
 (the footsteps' kind). The sounds the numbers stand for (1, 8, 12 and 16648 are in the room looked at) weren't mapped to anything audible: comparing audio dumps
 of two runs doesn't work (two runs of the same game differ about as much as an edited one). The sources' kind and the rest of their
 numbers are undecoded; moving a source and its effect haven't been heard.
+
+**Character lights** (section 11, now decoded in part; `Room.lights`, `set_light`, the editor's light markers with their range as a circle). The section holds 52 byte
+records of 13 floats found by their shape (`bh_rdt.Light`): position x, y, z, an attenuation, a range, a colour (red, green, blue), a pad, a
+second colour and a pad: 1849 in File 2's rooms, 99% of them within 3000 of their room's areas. They light the CHARACTERS only (the picture's
+ground and sky never changed): in the zoo's first room, with the lights moved next to the characters their colours went up by about 1 in each
+channel, a red of 4 in the first colour gave +1.7 in red only, the second colour's red gave more (+2.5), and an attenuation of 0 or a range
+of 4 switched a light off; the effects are small because the room's lights are dim and a character takes a few. The section also holds
+colour triples before the lights: the one at byte 132 (0.51, 0.56, 0.46 in the room looked at) and the one at 148 (0.1, 0.1, 0.1) raised the
+characters' red by 1.1 and 0.7 when set to red 4; the ones at 88 and 104 did nothing in that view. The header (4, 2, 16, 548) and the
+block-like numbers before them (fog-like: -200, 7200, 0x222222 ...) aren't decoded, and only the first seven of the eight light-like
+records in that room fit the shape (the eighth sits where a second block starts).
