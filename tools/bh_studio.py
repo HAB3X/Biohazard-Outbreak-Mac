@@ -106,7 +106,7 @@ class Studio:
         out.parent.mkdir(parents=True, exist_ok=True)
         base = [str(self.english_patch())] if english and self.english_patch() else []
         started = time.time()
-        report = studio_build.compose(self.game, edits, str(out), base)
+        report = studio_build.compose(self.game, scenery_as_models(edits), str(out), base)
         return {"patch": str(out), "report": report, "seconds": round(time.time() - started, 2), "bytes": out.stat().st_size}
 
     def play(self, patch, hops=None, at=None):
@@ -129,6 +129,16 @@ class Studio:
         if self.process and self.process.poll() is None:
             self.process.terminate()
         self.process = None
+
+
+def scenery_as_models(edits):
+    """The page keeps a room's moved objects under the room (`scenery`: object number -> scale, rotation, offset); the patch builder reads them as the room model's bones (object i stands on bone i + 2)"""
+    models = {name: dict(spec) for name, spec in edits.get("models", {}).items()}
+    for file, spec in edits.get("rooms", {}).items():
+        for number, change in spec.get("scenery", {}).items():
+            bones = models.setdefault(file.replace(".rdt", ".nbd"), {}).setdefault("bones", {})
+            bones[str(int(number) + 2)] = change
+    return {**edits, "models": models}
 
 
 def make_handler(studio):

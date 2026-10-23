@@ -99,6 +99,22 @@ function positionSection(ref, o, label = "Position") {
 }
 
 const FORMS = {
+  scenery(ref, o) {
+    const orig = store.orig.rooms.find((r) => r.file === ref.file).scenery.find((x) => x.i === o.i);
+    const factor = o.scale[0] / (orig.scale[0] || 1);
+    const hid = o.scale[0] < 0.001;
+    const turn = set(ref, "Turn object", (obj, v) => { obj.rot = [obj.rot[0], v * Math.PI / 180, obj.rot[2]]; });
+    const size = set(ref, "Resize object", (obj, v) => { obj.scale = orig.scale.map((s) => s * v / 100); });
+    const show = set(ref, "Show or hide object", (obj, v) => { obj.scale = v ? clone(orig.scale) : [0.0001, 0.0001, 0.0001]; });
+    return [
+      positionSection(ref, o, "Where it stands"),
+      section("Shape",
+        field("Turn", number(Math.round(o.rot[1] * 180 / Math.PI * 10) / 10, turn.live, turn.done, { step: 5, unit: "°" })),
+        field("Size", range(Math.round((hid ? 1 : factor) * 100), 10, 300, 5, size.live, size.done), "Size stays in proportion"),
+        field("Shown", chips([{ value: 1, label: "Shown" }, { value: 0, label: "Hidden" }], (v) => (v === 1) !== hid, (v) => { show.live(v); show.done(); render(); }))),
+      section("", el("div", { class: "note" }, "This is one of the room's own objects. Moving, turning, resizing or hiding it is written into the room's model.")),
+    ];
+  },
   areas(ref, o) {
     const out = [];
     const d = describe("areas", o);

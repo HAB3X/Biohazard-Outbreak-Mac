@@ -5,6 +5,7 @@ import * as overlay from "./overlay.js";
 import { store, on, emit, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe, addWall } from "./scene.js";
 import { PLACE, FIXED, THINGS, place, ground, snapTo } from "./tools.js";
 import { api } from "./api.js";
+import { attach, sync } from "./scenery.js";
 
 export class Viewport {
   constructor() {
@@ -40,7 +41,7 @@ export class Viewport {
       try {
         if (!store.models[r.file]) {
           const json = await api.model(file);
-          if (!json.error) { store.models[r.file] = true; this.renderer.add(r.file, json); }
+          if (!json.error) { store.models[r.file] = true; this.renderer.add(r.file, json); attach(this.renderer, r.file); }
         }
       } catch (e) { /* a room without a model is drawn without one */ }
       progress && progress(++done, rooms.length);
@@ -75,6 +76,7 @@ export class Viewport {
 
   draw() {
     if (!store.scene) return;
+    sync(this.renderer, store.scene);
     const rooms = this.visibleRooms();
     const dim = {};
     for (const f of rooms) dim[f] = f === store.room ? 1 : 0.5;

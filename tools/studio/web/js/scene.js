@@ -1,6 +1,7 @@
 // The scene: the scenario's rooms and what is in them, the edits made to it, undo and redo. Everything the editor changes goes through `commit`.
 // The edits are the JSON tools/bh_room_patch.py reads; the scene after any number of undos is the pristine scene with the edits applied, so history is a list of edits.
 import { compile } from "./rules.js";
+import * as sceneryOf from "./scenery.js";
 
 export const clone = (o) => JSON.parse(JSON.stringify(o));
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -31,6 +32,7 @@ export const COLLECTIONS = {
   spawns: { key: "spawn", label: "Start spot", color: "spawn", icon: "spawn" },
   items: { key: "item", label: "Item", color: "item", icon: "item" },
   enemies: { key: "enemy", label: "Enemy", color: "enemy", icon: "enemy" },
+  scenery: { key: "scenery", label: "Object", color: "accent", icon: "cube" },
 };
 
 export function describe(coll, obj) {
@@ -47,6 +49,7 @@ export function centre(coll, o) {
     }
     case "walls": return [(o.a[0] + o.b[0]) / 2, (o.y[0] + o.y[1]) / 2, (o.a[1] + o.b[1]) / 2];
     case "cameras": return o.eye;
+    case "scenery": return o.wc;
     case "zones": {
       const b = o.box;
       return [(b[0][0] + b[1][0] + b[2][0] + b[3][0]) / 4, (b[0][1] + b[4][1]) / 2, (b[0][2] + b[1][2] + b[2][2] + b[3][2]) / 4];
@@ -72,6 +75,9 @@ export function translate(coll, o, dx, dy, dz) {
       break;
     case "zones":
       o.box = o.box.map(add);
+      break;
+    case "scenery":
+      sceneryOf.move(o, dx, dy, dz);
       break;
     default:
       o.pos = add(o.pos);
@@ -129,6 +135,7 @@ export function diffs(scene, orig) {
       if (z.sound !== oz.sound) d.sound = z.sound;
       put("sound_zones", z.i, d);
     }
+    { const sc = sceneryOf.diff(r, o); if (Object.keys(sc).length) out.scenery = sc; }
     { const sw = {}; r.script.forEach((v, k) => { if (v !== o.script[k]) sw[k] = v; }); if (Object.keys(sw).length) out.script_words = sw; }
     for (const n of r.nodes) {
       const on = o.nodes.find((x) => x.i === n.i), d = {};
@@ -259,6 +266,7 @@ export function applyEdits(scene, edits) {
     for (const [i, d] of Object.entries(spec.items || {})) { const n = r.items.find((x) => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.quantity !== undefined) n.qty = d.quantity; } }
     for (const [i, d] of Object.entries(spec.nodes || {})) { const n = r.nodes.find((x) => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.id !== undefined) n.id = d.id; for (const [k, v] of Object.entries(d.words || {})) n.words[+k] = v; } }
     for (const [i, v] of Object.entries(spec.script_words || {})) r.script[+i] = v;
+    if (spec.scenery) sceneryOf.applyEdits(r, spec.scenery);
     if (spec.rules) r.rules = clone(spec.rules);
     for (const [i, d] of Object.entries(spec.start_spots || {})) { const sp = r.spawns.find((x) => x.i === +i); if (sp) { if (d.x !== undefined) sp.pos = [d.x, sp.pos[1], sp.pos[2]]; if (d.z !== undefined) sp.pos = [sp.pos[0], sp.pos[1], d.z]; if (d.facing !== undefined) sp.facing = d.facing; } }
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find((x) => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }

@@ -197,6 +197,26 @@ export function draw(ctx, camera, dpr, rooms, hover) {
       }
     }
 
+    if (current && r.scenery && (store.tool === "scenery" || store.selection.some((s) => s.c === "scenery"))) {
+      const EDGES = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
+      for (const s of r.scenery) {
+        const ref = { c: "scenery", file, i: s.i }, sel = selected(ref), hov = hovered(ref), tool = store.tool === "scenery";
+        if (!tool && !sel) continue;
+        const pts = s.cs.map((p) => P(p));
+        if (pts.some((p) => p[2] < -0.9)) continue;
+        const col = colour("accent"), hid = s.scale[0] < 0.001;
+        const x0 = Math.min(...pts.map((p) => p[0])), x1 = Math.max(...pts.map((p) => p[0])), y0 = Math.min(...pts.map((p) => p[1])), y1 = Math.max(...pts.map((p) => p[1]));
+        layers.push({ order: 5, run() {
+          ctx.strokeStyle = rgba(col, sel ? 1 : hov ? 0.95 : hid ? 0.25 : 0.5); ctx.lineWidth = sel ? 2 : 1;
+          if (hid) ctx.setLineDash([3, 3]);
+          if (camera.mode === "plan") { ctx.strokeRect(x0, y0, x1 - x0, y1 - y0); if (sel || hov) { ctx.fillStyle = rgba(col, 0.14); ctx.fillRect(x0, y0, x1 - x0, y1 - y0); } }
+          else { ctx.beginPath(); for (const [a, b] of EDGES) { ctx.moveTo(pts[a][0], pts[a][1]); ctx.lineTo(pts[b][0], pts[b][1]); } ctx.stroke(); }
+          ctx.setLineDash([]); ctx.lineWidth = 1;
+        } });
+        hits.push({ ref, order: 5, centre: [(x0 + x1) / 2, (y0 + y1) / 2], test: polyTest([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], 3) });
+      }
+    }
+
     if (show.nodes) {
       for (const n of r.nodes) {
         const ref = { c: "nodes", file, i: n.i }, col = colour("node"), p = P(n.pos), sel = selected(ref);
@@ -311,6 +331,7 @@ function segDist(x, y, a, b) {
 export function pick(sx, sy) {
   let best = null, bd = 1e9;
   for (const h of hits) {
+    if (store.tool === "scenery" && h.ref.c !== "scenery") continue;
     const d = h.test(sx, sy);
     if (d >= 0 && d < bd + (h.order >= 6 ? -6 : 0)) { bd = d; best = h; }   // items and enemies sit on top of areas
   }

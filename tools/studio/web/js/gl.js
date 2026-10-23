@@ -136,9 +136,20 @@ export class Renderer {
         }
         return { material: g.m, ib, count: idx.length };
       });
-      meshes.push({ vb, ub, groups, bone: m.bone, hide });
+      const lop = [1e9, 1e9, 1e9], hip = [-1e9, -1e9, -1e9];
+      for (let i = 0; i < pos.length; i += 3) for (let k = 0; k < 3; k++) { if (pos[i + k] < lop[k]) lop[k] = pos[i + k]; if (pos[i + k] > hip[k]) hip[k] = pos[i + k]; }
+      meshes.push({ vb, ub, groups, bone: m.bone, hide, mesh: m.mesh, lo: lop, hi: hip });
     });
     this.models[file] = { bones, world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
+  }
+
+  // the skeleton with some bones replaced ({bone: [parent, scale, rotation, offset]}): the objects move on screen as they will in the game
+  setBones(file, changes) {
+    const m = this.models[file];
+    if (!m) return;
+    const bones = m.bones.map((b, i) => changes[i] || b);
+    m.world = worlds(bones);
+    for (const mesh of m.meshes) mesh.hide = !m.world[mesh.bone] || hidden(bones[mesh.bone]);
   }
 
   texture(index) {

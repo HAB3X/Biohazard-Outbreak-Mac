@@ -95,6 +95,8 @@ function buildToolbar() {
   const bar = document.getElementById("toolbar");
   bar.innerHTML = "";
   const sel = el("button", { class: "btn", "data-tool": "select", title: "Select and move  (V)", html: icon("select", 18) + " Select" });
+  const objs = el("button", { class: "btn", "data-tool": "scenery", title: "Pick the room's objects to move, turn, resize or hide  (O)", html: icon("cube", 18) + " Objects" });
+  objs.addEventListener("click", () => setTool("scenery"));
   const hand = el("button", { class: "btn icon", "data-tool": "pan", title: "Move the view  (H, or hold Space)", html: icon("pan", 18) });
   sel.addEventListener("click", () => setTool("select")); hand.addEventListener("click", () => setTool("pan"));
   const add = el("div", { class: "menu" });
@@ -108,7 +110,7 @@ function buildToolbar() {
   const am = pop("up center", grid);
   ab.addEventListener("click", (e) => { e.stopPropagation(); am.classList.toggle("on"); });
   add.append(ab, am); closeOnOutside(add, am);
-  bar.append(sel, hand, el("span", { class: "vsep" }), add);
+  bar.append(sel, objs, hand, el("span", { class: "vsep" }), add);
   syncRail();
 }
 const syncRail = () => {
@@ -150,6 +152,7 @@ function updateHint() {
   const a = ADD.find((x) => x.id === store.tool);
   const t = [...PLACE, ...THINGS, WALL].find((x) => x.id === store.tool);
   if (a && t) { b.innerHTML = `<b>${a.label}</b> — ${t.hint} <kbd>Esc</kbd> to stop.`; b.classList.add("on"); }
+  else if (store.tool === "scenery") { b.innerHTML = "Click an object to pick it: drag to move it, or turn and resize it in the panel. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }
   else if (store.tool === "pan") { b.innerHTML = "Drag to move the view. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }
   else if (!bannerSeen && !localStorage.getItem("studio-hint")) { b.innerHTML = "Click anything to edit it. Use <b>Add</b> to put new things down. Scroll to zoom. <button class='link' id='gotit' style='margin-left:8px'>Got it</button>"; b.classList.add("on"); const g = b.querySelector("#gotit"); if (g) g.onclick = () => { localStorage.setItem("studio-hint", "1"); bannerSeen = true; b.classList.remove("on"); }; }
   else b.classList.remove("on");
@@ -312,7 +315,7 @@ function keys(openPalette) {
     else if (e.key === "[") togglePanel("no-side");
     else if (e.key === "]") togglePanel("no-inspector");
     else {
-      const all = [{ id: "select", key: "V" }, { id: "pan", key: "H" }, ...ADD];
+      const all = [{ id: "select", key: "V" }, { id: "scenery", key: "O" }, { id: "pan", key: "H" }, ...ADD];
       const t = all.find((x) => x.key === e.key.toUpperCase());
       if (t) setTool(t.id);
     }
