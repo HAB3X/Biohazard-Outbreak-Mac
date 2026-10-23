@@ -98,6 +98,49 @@ class Picture:
         raise ValueError(f"image type {self.img_type}: not handled")
 
 
+def restyle(data, image):
+    """The TIM2 file `data` with its first picture painted over by `image` (any size: scaled to the picture's), its own colours replaced: a palette picture gets a new palette of
+    the image's colours (256, or 16 for 4 bit pictures), the others the pixels as they are. Returns the new bytes (the same size as the old file)"""
+    pic = pictures(data)[0]
+    w, h = pic.width, pic.height
+    image = image.convert("RGBA").resize((w, h), Image.LANCZOS)
+    out = bytearray(data)
+    if pic.img_type in (4, 5):
+        n = 16 if pic.img_type == 4 else 256
+        q = image.quantize(colors=n, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
+        flat = q.getpalette("RGBA") or []
+        colors = [tuple(flat[i * 4:i * 4 + 4]) for i in range(len(flat) // 4)]
+        colors += [(0, 0, 0, 255)] * (n - len(colors))
+        idx = np.asarray(q, dtype=np.uint8).reshape(-1)
+        kind = pic.clut_type & 0x3F
+        step = {1: 2, 2: 3, 3: 4}[kind]
+        swizzled = pic.img_type == 5 and pic.clut_type & 0x80 == 0 and pic.clut_size // step == 256
+        raw = bytearray()
+        order = range(len(colors))
+        slots = [None] * len(colors)
+        for i in order:
+            j = (i & ~0x18) | ((i & 0x08) << 1) | ((i & 0x10) >> 1) if swizzled else i
+            slots[j] = colors[i]
+        for r, g, b, a in slots:
+            if kind == 1:
+                raw += struct.pack("<H", (r >> 3) | (g >> 3) << 5 | (b >> 3) << 10 | (a >= 128) << 15)
+            elif kind == 2:
+                raw += bytes((r, g, b))
+            else:
+                raw += bytes((r, g, b, (a + 1) // 2))
+        raw = bytes(raw[:pic.clut_size]).ljust(pic.clut_size, b"\0")
+        out[pic.clut_at:pic.clut_at + pic.clut_size] = raw
+        if pic.img_type == 4:
+            idx = np.concatenate([idx, np.zeros(len(idx) % 2, np.uint8)])
+            pixels = (idx[0::2] | idx[1::2] << 4).astype(np.uint8).tobytes()
+        else:
+            pixels = idx.tobytes()
+    else:
+        pixels = pic.encoded(image)
+    out[pic.img_at:pic.img_at + len(pixels)] = pixels[:pic.img_size]
+    return bytes(out)
+
+
 def files(data):
     """[(offset, [Picture])] of the TIM2 files one after another from the start of data (a .tex's are padded with zero bytes
     between them)."""

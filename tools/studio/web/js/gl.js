@@ -192,6 +192,18 @@ export class Renderer {
     return tex;
   }
 
+  // a picture of the room painted over by an image (a data: URL), or back as the disc has it (url null)
+  setPicture(index, url) {
+    const gl = this.gl, tex = this.texture(index), img = new Image();
+    img.onload = () => {
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      this.onTexture();
+    };
+    img.src = url || `/api/tex?index=${index}&v=${Date.now()}`;
+  }
+
   resize(w, h, dpr) {
     const c = this.canvas;
     const pw = Math.floor(w * dpr), ph = Math.floor(h * dpr);

@@ -782,7 +782,21 @@ def model_json(game, scenario, file):
                        "uv": base64.b64encode(struct.pack(f"<{len(uvs)}f", *uvs)).decode(),
                        "groups": [{"m": material, "i": base64.b64encode(struct.pack(f"<{len(ids)}I", *ids)).decode()} for material, ids in groups.items()]})
     tid = next((c for c in table if c[0] == "TID"), None)
-    tids = list(struct.unpack_from(f"<{tid[2] // 4}I", data, tid[1])) if tid else []
+    tids = []
+    if tid:
+        # the TID chunk: a count, then the pack's picture numbers. A material's picture is the TID entry its descriptor names (the first word of the model's kind 10 list's children:
+        # measured: it matches the pictures' sizes 35 times in 37, the material's own number only 14) 
+        words = struct.unpack_from(f"<{tid[2] // 4}I", data, tid[1])
+        root, at = amo[1], amo[1] + 12
+        while at < root + amo[2]:
+            flags, count, size = struct.unpack_from("<III", data, at)
+            if flags & 0xFFFF == 10:
+                inner = at + 12
+                for _ in range(count):
+                    tids.append(words[1 + struct.unpack_from("<I", data, inner + 12)[0]])
+                    inner += struct.unpack_from("<I", data, inner + 8)[0]
+                break
+            at += size
     return {"bones": bones, "meshes": meshes, "tids": tids}
 
 

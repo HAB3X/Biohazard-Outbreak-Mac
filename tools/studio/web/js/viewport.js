@@ -49,6 +49,17 @@ export class Viewport {
     }
   }
 
+  // the pictures you replaced are painted onto the models as they change (and put back when undone)
+  syncPictures() {
+    this.pictures = this.pictures || {};
+    for (const index of new Set([...Object.keys(this.pictures), ...Object.keys(store.textures)])) {
+      const want = store.textures[index] || null;
+      if ((this.pictures[index] || null) === want) continue;
+      this.renderer.setPicture(+index, want);
+      if (want) this.pictures[index] = want; else delete this.pictures[index];
+    }
+  }
+
   floorAt(file, x, z, below) {
     const m = this.renderer.models[file];
     return m ? m.floors.heightAt(x, z, below) : null;
@@ -77,6 +88,7 @@ export class Viewport {
   draw() {
     if (!store.scene) return;
     sync(this.renderer, store.scene);
+    this.syncPictures();
     const rooms = this.visibleRooms();
     const dim = {};
     for (const f of rooms) dim[f] = f === store.room ? 1 : 0.5;

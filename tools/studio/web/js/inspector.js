@@ -81,6 +81,7 @@ function roomPanel() {
     el("span", {}, "Enemies"), el("b", {}, n("enemies")),
     el("span", {}, "Cameras"), el("b", {}, n("cameras")))));
   box.append(rulesSection(r, render));
+  if ((r.pictures || []).length) box.append(section("Pictures in this room", pictures(r, shownPicture, (m) => { shownPicture = m; render(); })));
   box.append(el("div", { class: "empty", style: "padding:28px 22px;text-align:left" },
     el("p", {}, "Click something in the picture to edit it."),
     el("p", {}, "Use ", el("b", { style: "color:var(--dim)" }, "Add"), " at the bottom to put new things down."),
@@ -102,15 +103,44 @@ function positionSection(ref, o, label = "Position") {
   return section(label, field("Centre", vec3(c, live, done, { step: store.snap > 1 ? store.snap : 1 })));
 }
 
+let shownPicture = 0;
 // the room's pictures as small squares to pick from
 function pictures(room, current, pick) {
   const box = el("div", { class: "pictures" });
+  const seen = new Set(), now = (room.pictures || [])[current];
   (room.pictures || []).forEach((tex, m) => {
-    const b = el("button", { type: "button", class: m === current ? "on" : "", title: `Picture ${m}` }, el("img", { src: "/api/tex?index=" + tex, loading: "lazy" }));
+    if (seen.has(tex)) return;           // a picture used by several materials is shown once
+    seen.add(tex);
+    const b = el("button", { type: "button", class: tex === now ? "on" : "", title: `Picture ${tex}` }, el("img", { src: store.textures[tex] || "/api/tex?index=" + tex, loading: "lazy" }));
     b.addEventListener("click", () => pick(m));
     box.append(b);
   });
-  return box;
+  const tex = (room.pictures || [])[current];
+  const own = el("button", { type: "button", class: "ghost" }, "Paint it with my own image…");
+  own.addEventListener("click", () => {
+    const file = el("input", { type: "file", accept: "image/*" });
+    file.addEventListener("change", () => {
+      if (!file.files[0]) return;
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas"), k = Math.min(1, 256 / Math.max(img.width, img.height));
+        c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        store.textures[tex] = c.toDataURL("image/png");
+        commit("Paint picture");
+        render();
+      };
+      img.src = URL.createObjectURL(file.files[0]);
+    });
+    file.click();
+  });
+  const wrap = el("div", {}, box, el("div", { class: "note", style: "margin:8px 0 6px" }, "A picture is shared by everything in the scenario that uses it."), own);
+  if (store.textures[tex]) {
+    const back = el("button", { type: "button", class: "ghost", style: "margin-left:8px" }, "Put the original back");
+    back.addEventListener("click", () => { delete store.textures[tex]; commit("Restore picture"); render(); });
+    wrap.append(back);
+  }
+  return wrap;
 }
 
 const FORMS = {

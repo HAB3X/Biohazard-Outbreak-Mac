@@ -198,7 +198,7 @@ export function diffs(scene, orig) {
     if (r.floors.length) out.collision = { ...out.collision, ground_boxes: r.floors.map((f) => ({ min: f.min, max: f.max, y: -f.y })) };   // the ground file's heights are the player's, negated (measured)
     if (Object.keys(out).length) edits[r.file] = out;
   });
-  return { rooms: edits };
+  return Object.keys(store.textures).length ? { rooms: edits, textures: store.textures } : { rooms: edits };
 }
 
 // ---- applying edits to a scene (the pristine one, or what the page loaded)
@@ -305,6 +305,7 @@ export const emit = (event, ...args) => (listeners[event] || []).forEach((fn) =>
 export const store = {
   game: "", scenario: 0, scenarios: [], ops: {},
   scene: null, orig: null,
+  textures: {},               // the room's pictures you replaced: the picture's number -> a data: URL of your image
   models: {},                 // room file -> the model's JSON, once loaded
   tool: "select",
   room: null,                 // the room being worked in (its file)
@@ -332,7 +333,8 @@ export function loadScene(data, saved) {
   store.at = 0;
   store.selection = [];
   store.room = store.scene.rooms[0] ? store.scene.rooms[0].file : null;
-  if (saved && saved.edits && Object.keys(saved.edits.rooms || {}).length) {
+  store.textures = clone((saved && saved.edits && saved.edits.textures) || {});
+  if (saved && saved.edits && (Object.keys(saved.edits.rooms || {}).length || Object.keys(store.textures).length)) {
     applyEdits(store.scene, saved.edits);
     store.history = [{ rooms: {} }, clone(saved.edits)];
     store.at = 1;
@@ -356,6 +358,7 @@ export function commit(label) {
 
 function restore(edits) {
   store.scene = clone(store.orig);
+  store.textures = clone(edits.textures || {});
   applyEdits(store.scene, edits);
   store.selection = store.selection.filter((s) => objectOf(s));
   store.dirty = true;

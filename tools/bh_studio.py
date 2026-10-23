@@ -106,7 +106,7 @@ class Studio:
         out.parent.mkdir(parents=True, exist_ok=True)
         base = [str(self.english_patch())] if english and self.english_patch() else []
         started = time.time()
-        report = studio_build.compose(self.game, scenery_as_models(edits), str(out), base, members=grown_models(self.game, self.scenario, edits))
+        report = studio_build.compose(self.game, scenery_as_models(edits), str(out), base, members={**grown_models(self.game, self.scenario, edits), **repainted(self.game, self.scenario, edits)})
         return {"patch": str(out), "report": report, "seconds": round(time.time() - started, 2), "bytes": out.stat().st_size}
 
     def play(self, patch, hops=None, at=None):
@@ -172,6 +172,35 @@ def grown_models(game, scenario, edits):
         for number, change in spec.get("scenery", {}).items():
             bh_nbd.set_bone(data, records[int(number) + 2], **change)
         out[(f"r{scenario:03d}.afs", name)] = bytes(data)
+    return out
+
+
+def repainted(game, scenario, edits):
+    """{(pack, member): bytes} of the room pictures painted over with your images (edits["textures"]: the picture's number in the pack -> a data: URL)"""
+    import base64
+    import io
+
+    from PIL import Image
+
+    import bh_sld
+    import tm2
+
+    out = {}
+    if not edits.get("textures"):
+        return out
+    disc = archive.Archive(game)
+    pack = f"r{scenario:03d}.afs"
+    members = None
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            members = disc.open(f"{dat}/{pack}").members()
+            break
+        except FileNotFoundError:
+            continue
+    for index, url in edits["textures"].items():
+        name, node = members[int(index)]
+        image = Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1])))
+        out[(pack, name)] = bh_sld.pack(tm2.restyle(bh_sld.unpack(node.read()), image))
     return out
 
 
