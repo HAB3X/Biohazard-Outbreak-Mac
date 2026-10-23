@@ -250,6 +250,22 @@ def build(game, edits, replacements=None):
             import bh_collision
 
             scenario = pack[1:4]
+            if "wall_segments" in spec["collision"]:
+                name = f"w{member[1:].rsplit('.', 1)[0]}.bin"
+                original = bh_collision.Collision(dict(rdt_pack_members(game, pack))[name].read())
+                _, others = bh_collision.segments(original)
+                triangles = list(others)
+                for seg in spec["collision"]["wall_segments"]:
+                    triangles += bh_collision.wall_triangles({"a": tuple(seg["a"]), "b": tuple(seg["b"]), "y": seg["y"], "flags": seg.get("flags", 0x2F0000), "n": tuple(seg["n"])})
+                original.triangles = triangles
+                bounds = original.bounds()
+                if bounds:
+                    ox, oz = original.origin
+                    cw, cd = original.cell
+                    original.origin = (min(ox, int(bounds[0] // cw * cw)), min(oz, int(bounds[1] // cd * cd)))
+                    original.size = (max(original.size[0], int((bounds[2] - original.origin[0]) // cw) + 1), max(original.size[1], int((bounds[3] - original.origin[1]) // cd) + 1))
+                replacements[(pack, name)] = original.tobytes()
+                report.append(f"{pack}/{name}: {len(spec['collision']['wall_segments'])} wall segments")
             for key, prefix in (("walls", "w"), ("ground", "g")):
                 if key not in spec["collision"]:
                     continue

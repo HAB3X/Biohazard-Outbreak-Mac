@@ -2,7 +2,7 @@
 import { Camera } from "./camera.js";
 import { Renderer } from "./gl.js";
 import * as overlay from "./overlay.js";
-import { store, on, emit, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe } from "./scene.js";
+import { store, on, emit, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe, addWall } from "./scene.js";
 import { PLACE, FIXED, THINGS, place, ground, snapTo } from "./tools.js";
 import { api } from "./api.js";
 
@@ -28,7 +28,7 @@ export class Viewport {
     on("changed", () => this.redraw());
     on("room", () => this.redraw());
     on("mode", () => { this.camera.setMode(store.mode === "3d" ? "orbit" : "plan"); this.redraw(); });
-    on("tool", () => { this.updateCursor(); this.redraw(); });
+    on("tool", () => { this.wallStart = null; if (store.tool === "wall") store.show.walls = true; this.updateCursor(); this.redraw(); });
   }
 
   // ---- loading the models in the background, the room being worked in first
@@ -103,6 +103,13 @@ export class Viewport {
   }
 
   drawGhost() {
+    if (store.tool === "wall" && this.wallStart && this.cursor) {
+      const g = ground(this.camera, this.cursor[0], this.cursor[1], this.renderer);
+      if (g) {
+        const a = this.camera.project([this.wallStart[0], g[1], this.wallStart[1]]), b = this.camera.project([snapTo(g[0]), g[1], snapTo(g[2])]), ctx = this.ctx;
+        ctx.save(); ctx.strokeStyle = "#fff"; ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.restore();
+      }
+    }
     const tool = [...PLACE, ...THINGS].find((t) => t.id === store.tool);
     if (!tool || !this.cursor || this.drag) return;
     const at = ground(this.camera, this.cursor[0], this.cursor[1], this.renderer);
@@ -146,7 +153,7 @@ export class Viewport {
   // ---- the pointer
   updateCursor() {
     const t = store.tool;
-    this.ov.style.cursor = t === "pan" ? "grab" : [...PLACE, ...THINGS].some((p) => p.id === t) ? "crosshair" : "default";
+    this.ov.style.cursor = t === "pan" ? "grab" : (t === "wall" || [...PLACE, ...THINGS].some((p) => p.id === t)) ? "crosshair" : "default";
   }
 
   local(e) { const r = this.ov.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
@@ -188,6 +195,7 @@ export class Viewport {
     const pan = e.button === 1 || e.button === 2 || this.space || tool === "pan";
     if (pan) { this.drag = { ...start, type: e.altKey && this.camera.mode === "orbit" ? "orbit" : "pan" }; this.ov.style.cursor = "grabbing"; return; }
     if (e.button !== 0) return;
+    if (tool === "wall") { this.drag = { ...start, type: "wall" }; return; }
     const placing = [...PLACE, ...THINGS].find((p) => p.id === tool);
     if (placing) { this.drag = { ...start, type: "place", tool: placing }; return; }
     const fixed = FIXED.find((p) => p.id === tool);
@@ -220,7 +228,7 @@ export class Viewport {
       const changed = !(ref === this.hover || refEq(ref, this.hover));
       this.hover = ref;
       if (store.tool === "select") this.ov.style.cursor = overlay.pickHandle(x, y) ? "grab" : ref ? "pointer" : "default";
-      if (changed || [...PLACE, ...THINGS].some((p) => p.id === store.tool)) this.redraw();
+      if (changed || store.tool === "wall" || [...PLACE, ...THINGS].some((p) => p.id === store.tool)) this.redraw();
       emit("pointer", this.worldAt(x, y));
       return;
     }
@@ -239,7 +247,19 @@ export class Viewport {
     this.drag = null;
     this.updateCursor();
     if (!d) return;
-    if (d.type === "place" && !d.moved) {
+    if (d.type === "wall") {
+      const g = ground(this.camera, d.x, d.y, this.renderer);
+      if (g) {
+        const p = [snapTo(g[0]), snapTo(g[2])];
+        if (!this.wallStart) this.wallStart = p;
+        else if (Math.hypot(p[0] - this.wallStart[0], p[1] - this.wallStart[1]) > 5) {
+          const w = addWall(roomOf(store.room), this.wallStart, p, g[1]);
+          commit("Add wall");
+          select([{ c: "walls", file: store.room, i: w.i }]);
+          this.wallStart = p;
+        }
+      }
+    } else if (d.type === "place" && !d.moved) {
       const at = this.groundAt || ground(this.camera, d.x, d.y, this.renderer);
       if (at) place(d.tool, at);
     } else if (d.type === "move" && d.moved) commit(`Move ${d.refs.length > 1 ? d.refs.length + " things" : describe(d.plane.c, objectOf(d.plane) || {}).label.toLowerCase()}`);
@@ -280,6 +300,8 @@ export class Viewport {
     const id = h.id;
     if (id.startsWith("corner")) { const n = +id.slice(6); o.quad = o.quad.map((q, i) => (i === n ? [sx, sz] : q)); }
     else if (id === "target") o.target = [sx, o.target[1], sz];
+    else if (id === "wa") o.a = [sx, sz];
+    else if (id === "wb") o.b = [sx, sz];
     else if (id.startsWith("box")) { const n = +id.slice(3); o.box = o.box.map((q, i) => (i === n || i === n + 4 ? [sx, q[1], sz] : q)); }
     else if (id.startsWith("zone")) { const n = +id.slice(4); o.box = o.box.map((q, i) => (i === n || i === n + 4 ? [sx, q[1], sz] : q)); }
     else if (id === "facing") {

@@ -29,6 +29,9 @@ export function handlesOf(ref) {
     o.box.slice(0, 4).forEach((p, n) => out.push({ id: "box" + n, p, kind: "square", dim: true }));
   }
   if (ref.c === "zones") o.box.slice(0, 4).forEach((p, n) => out.push({ id: "zone" + n, p, kind: "square" }));
+  if (ref.c === "walls") {
+    out.push({ id: "wa", p: [o.a[0], o.y[0], o.a[1]], kind: "square" }, { id: "wb", p: [o.b[0], o.y[0], o.b[1]], kind: "square" });
+  }
   if (ref.c === "spawns") {
     const a = o.facing / 65536 * Math.PI * 2;
     out.push({ id: "facing", p: [o.pos[0] + Math.sin(a) * 150, floorY(ref.file, o.pos[0], o.pos[2]), o.pos[2] + Math.cos(a) * 150], kind: "ring" });
@@ -170,6 +173,27 @@ export function draw(ctx, camera, dpr, rooms, hover) {
           if (sel || (hovered(ref) && current)) pill(sp.i === 0 ? "player start" : `partner ${sp.i} start`, p[0], p[1] - 22, col, sel);
         } });
         hits.push({ ref, order: 8, test: pointTest(p, 13) });
+      }
+    }
+
+    if (show.walls && current) {
+      for (const w of r.walls) {
+        const ref = { c: "walls", file, i: w.i }, col = colour("wall"), sel = selected(ref), hov = hovered(ref);
+        const a = P([w.a[0], w.y[0], w.a[1]]), b = P([w.b[0], w.y[0], w.b[1]]);
+        if (a[2] < -0.9 || b[2] < -0.9) continue;
+        const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+        const nrm = P([(w.a[0] + w.b[0]) / 2 + w.n[0] * 90, w.y[0], (w.a[1] + w.b[1]) / 2 + w.n[1] * 90]);
+        layers.push({ order: 3, run() {
+          ctx.strokeStyle = rgba(col, sel ? 1 : hov ? 0.95 : 0.75); ctx.lineWidth = sel ? 3 : 2;
+          if (camera.mode !== "plan") {
+            const a2 = P([w.a[0], w.y[1], w.a[1]]), b2 = P([w.b[0], w.y[1], w.b[1]]);
+            ctx.fillStyle = rgba(col, sel ? 0.22 : 0.1); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(b2[0], b2[1]); ctx.lineTo(a2[0], a2[1]); ctx.closePath(); ctx.fill();
+          }
+          ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+          if (sel || hov) { ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(nrm[0], nrm[1]); ctx.stroke(); }
+          ctx.lineWidth = 1;
+        } });
+        hits.push({ ref, order: 3.5, test: (sx, sy) => { const d = segDist(sx, sy, a, b); return d <= 6 ? d : -1; } });
       }
     }
 

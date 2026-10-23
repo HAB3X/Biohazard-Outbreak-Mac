@@ -124,6 +124,37 @@ class Collision:
         return (min(xs), min(zs), max(xs), max(zs)) if xs else None
 
 
+def segments(collision):
+    """([{"a": (x, z), "b": (x, z), "y": [low, high], "flags": n, "n": (nx, nz)}], the other triangles): the standing triangles of the walls as wall segments (two triangles make one),
+    the rest (slopes, ceilings) left as they are"""
+    segs, others = {}, []
+    for t in collision.triangles:
+        pts = {(round(v[0], 2), round(v[2], 2)) for v in t.p}
+        if len(pts) == 2 and abs(t.normal[1]) < 0.2:
+            a, b = sorted(pts)
+            y0, y1 = min(v[1] for v in t.p), max(v[1] for v in t.p)
+            s = segs.setdefault((a, b), {"a": a, "b": b, "y": [y0, y1], "flags": t.flags, "n": (t.normal[0], t.normal[2])})
+            s["y"] = [min(s["y"][0], y0), max(s["y"][1], y1)]
+        else:
+            others.append(t)
+    return list(segs.values()), others
+
+
+def wall_triangles(seg):
+    """The two standing triangles of a wall segment, wound so the plane's normal is the segment's "n" (the side that is open)"""
+    (ax, az), (bx, bz) = seg["a"], seg["b"]
+    y0, y1 = seg["y"]
+    one = [(ax, y0, az), (ax, y1, az), (bx, y0, bz)]
+    two = [(ax, y1, az), (bx, y1, bz), (bx, y0, bz)]
+    out = []
+    for tri in (one, two):
+        n, _ = plane(tri)
+        if n[0] * seg["n"][0] + n[2] * seg["n"][1] < 0:
+            tri = [tri[0], tri[2], tri[1]]
+        out.append(Triangle(int(seg.get("flags", 0x2F0000)), tri))
+    return out
+
+
 def main(argv):
     if len(argv) != 4:
         print(__doc__)

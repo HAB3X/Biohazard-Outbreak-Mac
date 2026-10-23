@@ -1,5 +1,6 @@
 // Icons: 24 x 24, drawn with the current colour. icon(name, size) gives the SVG text.
 const P = {
+  wall: '<path d="M3 8h18M3 16h18M8 8v8M14 8v8M20 8v8"/>',
   more: '<path d="M6 12h.01M12 12h.01M18 12h.01" stroke-width="2.6"/>',
   down: '<path d="M6 9l6 6 6-6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',

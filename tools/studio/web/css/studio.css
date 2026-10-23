@@ -18,7 +18,7 @@
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --door: #6ea8ff; --exit: #e9a65b; --roomdoor: #8cc57d; --item: #e6c85a; --enemy: #ee6f7c; --spawn: #54d6b8;
-  --camera: #cfcf6a; --light: #e6d089; --zone: #5ccbd6; --message: #9bd36a; --node: #8a91a2; --ladder: #c4a27d; --marker: #8f98f0;
+  --camera: #cfcf6a; --light: #e6d089; --zone: #5ccbd6; --message: #9bd36a; --node: #8a91a2; --ladder: #c4a27d; --marker: #8f98f0; --wall: #c9b8a4;
 }
 
 * { box-sizing: border-box; }

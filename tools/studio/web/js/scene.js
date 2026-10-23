@@ -26,6 +26,7 @@ export const COLLECTIONS = {
   zones: { key: "zone", label: "Sound zone", color: "zone", icon: "zone" },
   points: { key: "sound", label: "Sound source", color: "zone", icon: "zone" },
   nodes: { key: "node", label: "AI node", color: "node", icon: "node" },
+  walls: { key: "wall", label: "Wall", color: "wall", icon: "wall" },
   spawns: { key: "spawn", label: "Start spot", color: "spawn", icon: "spawn" },
   items: { key: "item", label: "Item", color: "item", icon: "item" },
   enemies: { key: "enemy", label: "Enemy", color: "enemy", icon: "enemy" },
@@ -43,6 +44,7 @@ export function centre(coll, o) {
       const q = o.quad;
       return [(q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, (o.h[0] + o.h[1]) / 2, (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4];
     }
+    case "walls": return [(o.a[0] + o.b[0]) / 2, (o.y[0] + o.y[1]) / 2, (o.a[1] + o.b[1]) / 2];
     case "cameras": return o.eye;
     case "zones": {
       const b = o.box;
@@ -58,6 +60,9 @@ export function translate(coll, o, dx, dy, dz) {
     case "areas":
       o.quad = o.quad.map((p) => [p[0] + dx, p[1] + dz]);
       o.h = [o.h[0] + dy, o.h[1] + dy];
+      break;
+    case "walls":
+      o.a = [o.a[0] + dx, o.a[1] + dz]; o.b = [o.b[0] + dx, o.b[1] + dz];
       break;
     case "cameras":
       o.eye = add(o.eye);
@@ -174,6 +179,8 @@ export function diffs(scene, orig) {
       if (p.kind !== op.kind) d.kind = p.kind;
       put("sound_points", p.i, d);
     }
+    const strip = (w) => JSON.stringify(w.map(({ a, b, y, flags, n }) => ({ a, b, y, flags, n })));
+    if (strip(r.walls) !== strip(o.walls)) out.collision = { wall_segments: JSON.parse(strip(r.walls)) };
     if (Object.keys(out).length) edits[r.file] = out;
   });
   return { rooms: edits };
@@ -253,6 +260,7 @@ export function applyEdits(scene, edits) {
     for (const [i, d] of Object.entries(spec.start_spots || {})) { const sp = r.spawns.find((x) => x.i === +i); if (sp) { if (d.x !== undefined) sp.pos = [d.x, sp.pos[1], sp.pos[2]]; if (d.z !== undefined) sp.pos = [sp.pos[0], sp.pos[1], d.z]; if (d.facing !== undefined) sp.facing = d.facing; } }
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find((x) => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }
     for (const [i, d] of Object.entries(spec.sound_points || {})) { const p = r.points.find((x) => x.i === +i); if (p) { if (d.position) p.pos = d.position; if (d.kind !== undefined) p.kind = d.kind; } }
+    if (spec.collision && spec.collision.wall_segments) r.walls = spec.collision.wall_segments.map((w, i) => ({ ...clone(w), i }));
     for (const n of spec.new_items || []) addItem(r, n);
     for (const n of spec.new_enemies || []) addEnemy(r, n);
     for (const n of spec.new_areas || []) addArea(r, n.like, n, scene);
@@ -348,3 +356,18 @@ export function select(refs, additive = false) {
 export function setRoom(file) { store.room = file; emit("room"); }
 export function setTool(tool) { store.tool = tool; emit("tool"); }
 export function setMode(mode) { store.mode = mode; emit("mode"); }
+
+// a new wall between two points on the ground, solid on the side its normal points to (the segment's left by default)
+export function addWall(room, a, b, y) {
+  const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz) || 1;
+  const like = room.walls[0];
+  // the open side faces the middle of the room (where its doors and things are), so a new wall keeps people in
+  const pts = room.areas.filter((x) => !x.isNew).map((x) => centre("areas", x)).filter((p) => Math.abs(p[0]) < 1e6);
+  const cx = pts.length ? pts.reduce((t, p) => t + p[0], 0) / pts.length : a[0], cz = pts.length ? pts.reduce((t, p) => t + p[2], 0) / pts.length : a[1];
+  let toward = [-dz / len, dx / len];
+  if (toward[0] * (cx - (a[0] + b[0]) / 2) + toward[1] * (cz - (a[1] + b[1]) / 2) < 0) toward = [-toward[0], -toward[1]];
+  const next = Math.max(-1, ...room.walls.map((w) => w.i)) + 1;
+  const w = { i: next, a: [a[0], a[1]], b: [b[0], b[1]], y: like ? clone(like.y) : [y - 100, y + 800], flags: like ? like.flags : 0x2F0000, n: toward, isNew: true };
+  room.walls.push(w);
+  return w;
+}

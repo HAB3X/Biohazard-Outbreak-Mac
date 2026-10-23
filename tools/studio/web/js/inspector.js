@@ -35,13 +35,13 @@ function header(ref, o) {
   const acts = el("div", { class: "acts" });
   const mk = (ic, tip, fn, disabled) => { const b = el("button", { class: "btn icon", title: tip, disabled: disabled || false, html: icon(ic, 16) }); b.addEventListener("click", fn); return b; };
   acts.append(mk("target", "Show it in the view", () => emit("focus", ref)));
-  if (o.isNew) acts.append(mk("trash", "Delete", () => remove(ref)));
+  if (o.isNew || ref.c === "walls") acts.append(mk("trash", "Delete", () => remove(ref)));
   return el("div", { class: "head" }, el("span", { class: "dot", style: `background:${color}` }), el("div", {}, el("h2", {}, d.label), el("small", {}, `${roomName(r)}${o.isNew ? " · new" : ""}`)), acts);
 }
 function remove(ref) {
   const r = roomOf(ref.file), list = r[ref.c];
   const k = list.findIndex((x) => x.i === ref.i);
-  if (k < 0 || !list[k].isNew) return;
+  if (k < 0 || (!list[k].isNew && ref.c !== "walls")) return;
   list.splice(k, 1);
   select([]);
   commit("Delete");
@@ -190,6 +190,19 @@ const FORMS = {
         field("Position", vec3(o.pos, p.live, p.done, { step: 10 }))),
       section("", el("div", { class: "note" }, "Item numbers: herbs 300–317, ammunition 250–262, weapons 400+, files 309+. The kind and quantity are written to every difficulty's table.")),
     ];
+  },
+
+  walls(ref, o) {
+    const a = set(ref, "Move wall end", (obj, v) => { obj.a = [v[0], v[2]]; });
+    const b = set(ref, "Move wall end", (obj, v) => { obj.b = [v[0], v[2]]; });
+    const y = set(ref, "Change wall height", (obj, v) => { obj.y = v; });
+    const flip = el("button", { class: "btn line" }, "Switch the solid side");
+    flip.addEventListener("click", () => { o.n = [-o.n[0], -o.n[1]]; commit("Flip wall"); });
+    return [section("Wall",
+      field("Starts at", vec3([o.a[0], o.y[0], o.a[1]], a.live, a.done, { step: 10 })),
+      field("Ends at", vec3([o.b[0], o.y[0], o.b[1]], b.live, b.done, { step: 10 })),
+      field("Reaches", el("div", { class: "vec", style: "grid-template-columns:1fr 1fr" }, number(o.y[0], (v) => y.live([v, o.y[1]]), (v) => { o.y = [v, o.y[1]]; y.done(); }, { axis: "y", step: 10, scrub: false }), number(o.y[1], (v) => y.live([o.y[0], v]), (v) => { o.y = [o.y[0], v]; y.done(); }, { axis: "y", step: 10, scrub: false })), "From and to, in height."),
+      flip, el("div", { class: "note", style: "margin-top:10px" }, "Characters are stopped from the side the little tick points to. Press Delete to remove the wall."))];
   },
 
   spawns(ref, o) {
