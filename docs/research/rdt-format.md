@@ -284,11 +284,9 @@ Each word of the zoo's room-4 record (id 32, 7200 HP) had its bytes changed (XOR
 
 HP wasn't among them: it isn't in the words tried (a different word or the kind's own table). The editor edits id, class, facing, position and the mode mask; the rest are kept.
 
-## Where script-spawned enemies might get their places (leads, not measured)
+## The script-spawned "enemies" (corrected): they are scripted events
 
-The zombies a room's script spawns (SpawnEnemy, class 13 in rooms 4, 5 and 6 of File 2's first scenario) have no record in `sgl_e040.emd` (room 4's variant 0 has none; only the 7200 HP one is there), and the script's five words aren't
-positions (they are bookkeeping numbers: the first indexes a table of which enemies were killed, game_0065f600). Not tried: forcing the spawn in the game (it is gated by story flags: poking flag A69 and entering room 4 did not
-make them appear). A lead: `r40.rtp` (884 bytes) holds enemy **routes**: groups of 5 to 7 waypoints as float triples (x, y, z; z flagged 0x80000000 at a route's end) in the zoo's rooms: room 4's runs (10812, 0, 9223), (10416, 0, 9705), (9740, 0, 10077), (8354, 0, 10081),
-(7106, 0, 10079), (6684, 0, 9506), (6531, 0, 8907) from beside the 7200 HP enemy to the door in room 4's west. The `.rtp` isn't edited by the tools yet.
-Also not decoded: the positional sound sources' kinds (33 kinds in File 2, 0 to 61 and 0x8000+: they don't map to anything audible that could be compared headless), the enemies' HP (not in words 0 to 23 of its record), and the
-~65 rarely used script ops.
+The script ops 0xD0 and 0xD1 were named SpawnEnemy at first; reading the code showed they start *events* (script-ops.md): a per-class state machine per stage. Class 13 (rooms 4 to 6 of File 2's first scenario) puts an effect at one of ten
+fixed positions (a table of x, 0, z floats at /BIN/2.DAT offset 2140160, 12 bytes each: (9615, 10337), (8400, 9840), (7353, 10324), (6826, 8927) in room 4; (10446, 7168), (10591, 8082), (11044, 7373) in room 5; (8150, 7240), (8899, 7201), (6232, 6868) in room 6).
+So there is no separate list of script-spawned zombies to find: the enemies that stand in a room are exactly the records of `sgl_e040.emd` (50 in the scenario), which the tools edit. (Patching the script's flag tests out of room 4 so that the event
+ran didn't show anything in the game's enemy table either, as expected.) `r40.rtp` holds enemy routes (waypoints as float triples; room 4's run from beside the boss to the room's west door), not edited yet.
