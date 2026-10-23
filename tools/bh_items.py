@@ -3,7 +3,7 @@
 
     bh_items.py GAME SCENARIO     the items of the scenario (number, room, position, kind and quantity in each variant's table)
 
-The items' places are in the scenario's item0NN.dat (r040.afs: item040.dat): after a 24 byte head and tables, 9 word records from byte 2944 (File 2's first scenario; the
+The items' places are in the scenario's item0NN.dat (r040.afs: item040.dat): after a 24 byte head and tables, 9 word records from the head's third word + 8 (2944 in File 2's first scenario; the
 count is the tbl's) with the item's number from 1: [room number byte, 0, item number halfword, x, y, z (floats), 3 words (0, a flag word, a
 second flag word kept as they are), x2, 1.0 or 2.0, z2]. What each one is, is in the scenario's item0NNxx.tbl files (item04000.tbl ... item04019.tbl: one for
 each of the game's variants; the first sixteen have all 173 records, the last four the first 57): an 8 byte head (a count 4 and 0xAD) then 12 byte records, the
@@ -19,7 +19,6 @@ import sys
 
 import bh_archive as archive
 
-DAT_START = 2944
 DAT_SIZE = 36
 TBL_START = 8
 
@@ -61,12 +60,13 @@ class Items:
             raise FileNotFoundError(f"{game}: r{scenario:03d}.afs has no item{scenario:03d}.dat")
         self.tbls = {n: node for n, node in members.items() if n.lower().startswith(f"item{scenario:03d}") and n.lower().endswith(".tbl")}
         data = self.dat.read()
+        self.start = struct.unpack_from("<I", data, 8)[0] + 8   # the head's third word is where the item table's own head is: its records follow 8 bytes on
         tables = {name: node.read() for name, node in self.tbls.items()}
         count = max((struct.unpack_from("<I", t, 4)[0] for t in tables.values()), default=0)
         self.strides = {name: stride(table) for name, table in tables.items()}
         self.items = []
         for n in range(1, count + 1):
-            at = DAT_START + DAT_SIZE * (n - 1)
+            at = self.start + DAT_SIZE * (n - 1)
             if at + DAT_SIZE > len(data) or struct.unpack_from("<H", data, at + 2)[0] != n:
                 break
             kinds = {}
@@ -88,7 +88,7 @@ class Items:
             if not 1 <= number <= len(self.items):
                 raise SystemExit(f"item {number}: the scenario has {len(self.items)}")
             if "position" in change:
-                at = self.dat.offset + DAT_START + DAT_SIZE * (number - 1) + 4
+                at = self.dat.offset + self.start + DAT_SIZE * (number - 1) + 4
                 out.append((at, struct.pack("<3f", *map(float, change["position"])), 0))
             for name, node in self.tbls.items():
                 if name not in self.items[number - 1].kinds:
