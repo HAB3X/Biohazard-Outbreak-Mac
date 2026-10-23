@@ -243,6 +243,7 @@ export function draw(ctx, camera, dpr, rooms, hover) {
 
     if (show.enemies && (current || camera.mode === "plan" && px > 0.08)) {
       for (const n of r.enemies) {
+        if (n.modes === 0 && !store.selection.some((s) => s.c === "enemies" && s.file === file && s.i === n.i)) continue;
         const ref = { c: "enemies", file, i: n.i }, col = colour("enemy"), p = P(n.pos), sel = selected(ref), hov = hovered(ref);
         if (p[2] < -0.9) continue;
         const a = n.facing / 65536 * Math.PI * 2;

@@ -2,6 +2,7 @@
 import { store, on, emit, objectOf, roomOf, commit, describe, centre, translate, select, clone, AREA_TAGS } from "./scene.js";
 import { icon } from "./icons.js";
 import { section_ as rulesSection } from "./rules.js";
+import { isDoor } from "./scenery.js";
 import { el, number, vec3, select as selectBox, chips, dial, colour, field, section, range, hex, unhex, toast } from "./ui.js";
 
 const host = () => document.getElementById("inspector");
@@ -36,12 +37,13 @@ function header(ref, o) {
   const acts = el("div", { class: "acts" });
   const mk = (ic, tip, fn, disabled) => { const b = el("button", { class: "btn icon", title: tip, disabled: disabled || false, html: icon(ic, 16) }); b.addEventListener("click", fn); return b; };
   acts.append(mk("target", "Show it in the view", () => emit("focus", ref)));
-  if (o.isNew || ref.c === "walls") acts.append(mk("trash", "Delete", () => remove(ref)));
+  if (o.isNew || ref.c === "walls" || ref.c === "enemies") acts.append(mk("trash", ref.c === "enemies" && !o.isNew ? "Remove from the game" : "Delete", () => remove(ref)));
   return el("div", { class: "head" }, el("span", { class: "dot", style: `background:${color}` }), el("div", {}, el("h2", {}, d.label), el("small", {}, `${roomName(r)}${o.isNew ? " · new" : ""}`)), acts);
 }
 function remove(ref) {
   const r = roomOf(ref.file), list = r[ref.c];
   const k = list.findIndex((x) => x.i === ref.i);
+  if (k >= 0 && ref.c === "enemies" && !list[k].isNew) { list[k].modes = 0; select([]); commit("Remove enemy"); return; }   // never appears in any play mode
   if (k < 0 || (!list[k].isNew && ref.c !== "walls")) return;
   list.splice(k, 1);
   select([]);
@@ -111,7 +113,8 @@ const FORMS = {
       section("Shape",
         field("Turn", number(Math.round(o.rot[1] * 180 / Math.PI * 10) / 10, turn.live, turn.done, { step: 5, unit: "°" })),
         field("Size", range(Math.round((hid ? 1 : factor) * 100), 10, 300, 5, size.live, size.done), "Size stays in proportion"),
-        field("Shown", chips([{ value: 1, label: "Shown" }, { value: 0, label: "Hidden" }], (v) => (v === 1) !== hid, (v) => { show.live(v); show.done(); render(); }))),
+        isDoor(roomOf(ref.file), o) ? el("div", { class: "note" }, "This is part of a door, so it can't be hidden.")
+          : field("Shown", chips([{ value: 1, label: "Shown" }, { value: 0, label: "Hidden" }], (v) => (v === 1) !== hid, (v) => { show.live(v); show.done(); render(); }))),
       section("", el("div", { class: "note" }, "This is one of the room's own objects. Moving, turning, resizing or hiding it is written into the room's model.")),
     ];
   },

@@ -317,3 +317,5 @@ reached x 11493 (through the wall at x 11575) when the room's walls were left em
 
 A wall made in the editor (two triangles from y -200 to 1000 along a line at x 11700, z 11100 to 11300 in room 3) stopped the player walking left from (11912, 11109) at x 11749 when its normal pointed to the player's side (+x), and let him through (x 11636) when it pointed
 the other way: **a wall stops people on the side its normal points to** (the open side). The editor draws a tick on that side.
+
+**Hiding objects (measured with a snapshot, file 2 room 3):** scaling 56 of the room's objects to 0.0001 removed the lamp cages and the bench from the picture and the room played on. Doing it to every other object (door objects included) crashed the game in the area loader (game_005975c0 -> game_0059c120, SIGBUS), so Studio won't hide an object that stands on a door, exit or inner door area. `snap NAME` on the runtime's --control pipe saves a picture (`--snapshots DIR`), also headless.

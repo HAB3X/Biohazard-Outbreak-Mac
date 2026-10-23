@@ -93,3 +93,11 @@ export function sync(renderer, scene) {
 }
 
 export const hidden = (s) => Math.abs(s.scale[0]) < 0.001;
+
+// an object standing where a door, exit or inner door is belongs to it: hiding it crashed the game (measured), so the panel won't
+export function isDoor(room, s) {
+  return room.areas.some((a) => [0, 1, 2].includes(a.tag) && (() => {
+    const xs = a.quad.map((p) => p[0]), zs = a.quad.map((p) => p[1]), sx = s.cs.map((p) => p[0]), sz = s.cs.map((p) => p[2]);
+    return Math.min(...sx) < Math.max(...xs) + 200 && Math.max(...sx) > Math.min(...xs) - 200 && Math.min(...sz) < Math.max(...zs) + 200 && Math.max(...sz) > Math.min(...zs) - 200;
+  })());
+}
