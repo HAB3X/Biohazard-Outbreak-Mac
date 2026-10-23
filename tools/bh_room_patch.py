@@ -185,8 +185,9 @@ def model_patches(game, models):
     return patches, report
 
 
-def build(game, edits):
-    """([(disc offset, bytes, 0)], a line per room changed) for the edits of a loaded EDITS.json"""
+def build(game, edits, replacements=None):
+    """([(disc offset, bytes, 0)], a line per room changed) for the edits of a loaded EDITS.json. With `replacements` (a dict) rooms may grow past their
+    sectors: a room whose size changed is put there as {(pack, member): its new bytes} for tools/bh_vdisc.py to lay, instead of being patched in place"""
     wanted = {name.lower(): spec for name, spec in edits.get("rooms", {}).items()}
     patches, report = [], []
     for pack, member, node in rdt.rooms(game):
@@ -194,6 +195,7 @@ def build(game, edits):
         if spec is None:
             continue
         room = rdt.Room(node.read())
+        room.unlimited = replacements is not None
         for new in spec.get("new_areas", []):
             room.add_area(new["like"], quad=new.get("quad"), height=new.get("height"),
                           fields={int(k): v for k, v in new.get("fields", {}).items()} or None)
@@ -254,6 +256,10 @@ def build(game, edits):
                 raise SystemExit(f"{member} fog {number}: unknown {sorted(unknown)}")
             room.set_fog(int(number), ints={int(k): v for k, v in change.get("ints", {}).items()},
                          floats={int(k): v for k, v in change.get("floats", {}).items()})
+        if replacements is not None and len(room.data) != len(room.original):
+            replacements[(pack, member)] = bytes(room.data)
+            report.append(f"{pack}/{member}: grown to {len(room.data)} bytes (the rebuilt disc lays it)")
+            continue
         runs = room.changes()
         patches += [(node.offset + offset, data, 0) for offset, data in runs]
         if len(room.data) != len(room.original):

@@ -6,7 +6,11 @@
 // says when a range is laid: 0 always, 1 while the prompts are the keyboard's, 2 while they're a PlayStation pad's (and a
 // Nintendo Switch pad's), 3 while they're an Xbox pad's, where the patch has any (else 2's): the PC menus' Button prompts, the
 // device used last unless one is chosen. A game's pictures and font with its buttons' prompts drawn for each: what's read
-// follows the prompts as it's read
+// follows the prompts as it's read. Version 3 adds ranges COPIED from the image itself: a range whose variant has bit 8 set (0x100) carries
+// no bytes but a u64 source offset in the image and its length is the copy's: the sectors it covers are read from there (as the image
+// is, before any patch), the data being the same size or not: this lets a file be moved to the end of the disc and be rebuilt from pieces of
+// the original and new bytes without writing the whole file into the patch. A sector past the image's end reads as zeroes before the
+// patches are laid over it, so a patch can also extend the disc.
 #include "runtime.h"
 
 #include "ps2/runtime.h"
@@ -33,6 +37,9 @@ struct Patch
     u64 offset;
     u32 variant; // 0 always, 1 the keyboard's prompts, 2 a PlayStation pad's, 3 an Xbox pad's
     std::vector<u8> bytes;
+    bool copy = false; // a range copied from the image: `source` and `length` instead of bytes
+    u64 source = 0;
+    u64 length = 0;
 };
 std::vector<Patch> g_patches;
 bool g_xboxVariant = false; // the patch has variant 3
@@ -60,11 +67,13 @@ bool ReadRaw(u32 lsn, u32 count, u8* out)
     return true;
 }
 
+bool ReadPatched(u32 lsn, u32 count, u8* out);
+
 std::vector<Entry> ListDir(u32 lsn, u32 size)
 {
     std::vector<u8> data((size + 2047) & ~2047u);
     std::vector<Entry> out;
-    if (!ReadRaw(lsn, static_cast<u32>(data.size() / 2048), data.data()))
+    if (!ReadPatched(lsn, static_cast<u32>(data.size() / 2048), data.data()))
     {
         return out;
     }
@@ -164,9 +173,9 @@ bool DiscLoadPatch(const std::string& path)
 {
     std::ifstream f(path, std::ios::binary);
     u32 head[3];
-    if (!f.read(reinterpret_cast<char*>(head), 12) || head[0] != 0x54415044 /* "DPAT" */ || (head[1] != 1 && head[1] != 2))
+    if (!f.read(reinterpret_cast<char*>(head), 12) || head[0] != 0x54415044 /* "DPAT" */ || head[1] < 1 || head[1] > 3)
     {
-        Log("--patch %s: not a disc patch file (version 1 or 2)", path.c_str());
+        Log("--patch %s: not a disc patch file (version 1, 2 or 3)", path.c_str());
         return false;
     }
     u64 bytes = 0;
@@ -177,10 +186,21 @@ bool DiscLoadPatch(const std::string& path)
         u32 length;
         p.variant = 0;
         if (!f.read(reinterpret_cast<char*>(&p.offset), 8) || !f.read(reinterpret_cast<char*>(&length), 4) ||
-            (head[1] == 2 && !f.read(reinterpret_cast<char*>(&p.variant), 4)))
+            (head[1] >= 2 && !f.read(reinterpret_cast<char*>(&p.variant), 4)))
         {
             Log("--patch %s: cut short at entry %u", path.c_str(), i);
             return false;
+        }
+        if (head[1] == 3 && (p.variant & 0x100) != 0)
+        {
+            p.variant &= ~0x100u;
+            p.copy = true;
+            p.length = length;
+            if (!f.read(reinterpret_cast<char*>(&p.source), 8))
+            {
+                Log("--patch %s: cut short at entry %u", path.c_str(), i);
+                return false;
+            }
         }
         if (p.variant > 3)
         {
@@ -188,11 +208,14 @@ bool DiscLoadPatch(const std::string& path)
             return false;
         }
         variants[p.variant]++;
-        p.bytes.resize(length);
-        if (!f.read(reinterpret_cast<char*>(p.bytes.data()), length))
+        if (!p.copy)
         {
-            Log("--patch %s: cut short at entry %u", path.c_str(), i);
-            return false;
+            p.bytes.resize(length);
+            if (!f.read(reinterpret_cast<char*>(p.bytes.data()), length))
+            {
+                Log("--patch %s: cut short at entry %u", path.c_str(), i);
+                return false;
+            }
         }
         bytes += length;
         g_patches.push_back(std::move(p));
@@ -254,12 +277,44 @@ bool DiscFind(const std::string& path, u32& lsn, u32& size)
     return true;
 }
 
-bool DiscReadSectors(u32 lsn, u32 count, u8* out)
+namespace
 {
-    std::lock_guard<std::mutex> lock(g_discLock);
-    if (!ReadRaw(lsn, count, out))
+// `count` bytes of the image itself (no patches) from byte `offset`, the part past its end as zeroes
+void ReadImageBytes(u64 offset, u64 count, u8* out)
+{
+    std::vector<u8> sector(2048);
+    while (count > 0)
     {
-        return false;
+        const u32 lsn = static_cast<u32>(offset / 2048);
+        const u32 inside = static_cast<u32>(offset % 2048);
+        const u32 take = static_cast<u32>(std::min<u64>(count, 2048 - inside));
+        if (!ReadRaw(lsn, 1, sector.data()))
+        {
+            std::memset(out, 0, take);
+        }
+        else
+        {
+            std::memcpy(out, sector.data() + inside, take);
+        }
+        out += take;
+        offset += take;
+        count -= take;
+    }
+}
+
+// the sectors with the copied ranges and then the patches laid over them (the caller holds the lock)
+bool ReadPatched(u32 lsn, u32 count, u8* out)
+{
+    for (u32 i = 0; i < count; i++)
+    {
+        if (!ReadRaw(lsn + i, 1, out + i * 2048))
+        {
+            if (g_patches.empty())
+            {
+                return false;
+            }
+            std::memset(out + i * 2048, 0, 2048); // past the image's end: a patch may have put something there
+        }
     }
     const u64 start = static_cast<u64>(lsn) * 2048, end = start + static_cast<u64>(count) * 2048;
     // ps2_prompt_style: 0 the keyboard, 1 PlayStation, 2 Xbox, 3 Nintendo Switch
@@ -271,13 +326,28 @@ bool DiscReadSectors(u32 lsn, u32 count, u8* out)
         {
             continue;
         }
-        const u64 from = std::max(start, p.offset), to = std::min(end, p.offset + p.bytes.size());
+        const u64 size = p.copy ? p.length : p.bytes.size();
+        const u64 from = std::max(start, p.offset), to = std::min(end, p.offset + size);
         if (from < to)
         {
-            std::memcpy(out + (from - start), p.bytes.data() + (from - p.offset), to - from);
+            if (p.copy)
+            {
+                ReadImageBytes(p.source + (from - p.offset), to - from, out + (from - start));
+            }
+            else
+            {
+                std::memcpy(out + (from - start), p.bytes.data() + (from - p.offset), to - from);
+            }
         }
     }
     return true;
+}
+}
+
+bool DiscReadSectors(u32 lsn, u32 count, u8* out)
+{
+    std::lock_guard<std::mutex> lock(g_discLock);
+    return ReadPatched(lsn, count, out);
 }
 
 bool DiscReadFile(const std::string& path, std::vector<u8>& out)

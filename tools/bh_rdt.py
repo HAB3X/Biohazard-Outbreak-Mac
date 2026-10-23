@@ -440,6 +440,8 @@ class Room:
     def capacity(self):
         """The bytes the room file can still grow by: the member sits in whole 2048 byte sectors and the archive's table can say
         any size inside the last sector (measured: a member given one byte less boots, one given a sector more doesn't)"""
+        if getattr(self, "unlimited", False):
+            return 1 << 30   # a rebuilt disc (tools/bh_vdisc.py) can give any member any size
         return (-len(self.original)) % 2048 + (len(self.original) - len(self.data))
 
     def _replace_section(self, index, content):

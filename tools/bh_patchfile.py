@@ -21,3 +21,30 @@ def write_patch(path, patches):
         f.write(struct.pack("<III", MAGIC, 2, len(patches)))
         for off, data, variant in patches:
             f.write(struct.pack("<QII", off, len(data), variant) + data)
+
+
+def write_patch_v3(path, entries):
+    """A version 3 patch (tools/bh_vdisc.py): entries [(disc offset, ("data", bytes) or ("copy", source offset, length), variant)] (the variant may be left out: 0): a copy range
+    is laid from the image itself by the runtime, so a whole moved file costs a few entries, not its bytes. Entries are laid in the order given"""
+    entries = [(e[0], e[1], e[2] if len(e) > 2 else 0) for e in entries]
+    with open(path, "wb") as f:
+        f.write(struct.pack("<III", MAGIC, 3, len(entries)))
+        for offset, what, variant in entries:
+            if what[0] == "data":
+                f.write(struct.pack("<QII", offset, len(what[1]), variant) + what[1])
+            else:
+                f.write(struct.pack("<QII", offset, what[2], variant | 0x100) + struct.pack("<Q", what[1]))
+
+
+def read_patch(path):
+    """[(disc offset, bytes, variant)] of a version 1 or 2 patch file (the kind the tools write for a patch in place)"""
+    with open(path, "rb") as f:
+        magic, version, count = struct.unpack("<III", f.read(12))
+        if magic != MAGIC or version not in (1, 2):
+            raise ValueError(f"{path}: not a version 1 or 2 patch")
+        out = []
+        for _ in range(count):
+            offset, length = struct.unpack("<QI", f.read(12))
+            variant = struct.unpack("<I", f.read(4))[0] if version == 2 else 0
+            out.append((offset, f.read(length), variant))
+    return out
