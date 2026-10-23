@@ -204,6 +204,9 @@ OPS = {
     0x70: ("Op70", "number: calls f_001b9800(0, number), a long routine of the executable (seen with values up to 47)"),
     0x120: ("Op120", "number: game_006957f0(number, ...) (its partner op 0x121 passes 0; not read further)"),
     0x121: ("Op121", "number: game_006957f0(number, 0): the partner of op 0x120"),
+    0x100: ("SetCharacterCommand", "value: in the current character's record (0x47C804 + 0x1100 * the slot at 0x4912BD) writes byte +0 = 1, byte +1 = the value and halfword +2 = 0xFFFF (read from the code)"),
+    0xF1: ("MarkActor", "number: sets a byte to 1 in the actor table (0x800000 + 22768 + ...) indexed by the number and calls game_005aeaf0 first when the list at gp-24180 is empty (read from the code)"),
+    0x132: ("Op132", "halfword: calls game_00543140 with it (not read further)"),
     0x1A0: ("CallOverlay", "three words: handed to the dynamic function at 0x7D6340"),
 }
 
