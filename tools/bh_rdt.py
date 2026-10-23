@@ -4,12 +4,19 @@ cameras.
 
     bh_rdt.py GAME check          every room on the disc: the sections tile the file and the cameras are plausible
     bh_rdt.py GAME cams ROOM      a room's cameras (ROOM like r0300100.rdt, or just r0300100)
+    bh_rdt.py GAME areas ROOM     a room's trigger areas (doors, messages, desks ...)
+    bh_rdt.py GAME doors          each scenario's doors as room -> rooms
 
 The file: 32 sections as (offset, size) pairs of int32, then the sections' contents one after another (checked: the offsets
 tile the file with no gaps on every room of both discs). Section 0 holds the cameras: an int32 tag (1), the camera count and
 that many offsets (from the section's start) to 320 byte camera records. The layout was learned from a community 010 Editor
 template (Dchaps' rdt_temp.bt: reference only, no licence) and then checked against the running game: File 2's classic
-camera's eye and target in the zoo's first room are camera 2's of r0300100.rdt. The other fields of a camera are listed as
+camera's eye and target in the zoo's first room are camera 2's of r0300100.rdt. Section 10 holds the trigger areas (same source: Dchaps' NETBIO_AOT.ms): an int32 tag, a count and that many offsets, to records
+of 176 bytes (every one of the 4281 in File 2): tag, subtype, a quad as four (x, z) corners (ints 2..9), the height range (ints
+10 and 11) and then data that depends on the tag. A tag 0 record is a door: int 12 its number in the room, int 13 the number of
+the room it leads to (the yy of r0yyyy00.rdt: of 370 door links in File 2, 359 are returned by the room they lead to). The
+other tags (1 3 4 5 6 7 10 11 12 13) are kept as they are.
+The other fields of a camera are listed as
 they are found, with what they were checked against; the rest of the sections
 (1 a script, 2 and 3 sound banks, 7, 10 doors and trigger zones, 11 lights, 13 fog, 15, 16 sound zones) are kept as bytes.
 
@@ -28,6 +35,7 @@ import bh_archive as archive
 
 SECTIONS = 32
 CAMERA_SIZE = 320
+AREA_SIZE = 176
 
 
 class Camera:
@@ -38,6 +46,21 @@ class Camera:
         self.eye = struct.unpack_from("<3i", record, 39 * 4)
         self.aim = struct.unpack_from("<3i", record, 42 * 4)
         self.target = struct.unpack_from("<3i", record, 45 * 4)
+
+
+class Area:
+    """A trigger area of section 10"""
+
+    def __init__(self, record):
+        self.tag, self.subtype = struct.unpack_from("<ii", record, 0)
+        self.quad = [struct.unpack_from("<ii", record, 8 + 8 * i) for i in range(4)]
+        self.height = struct.unpack_from("<ii", record, 40)
+        self.fields = struct.unpack_from("<30i", record, 48)
+
+    @property
+    def leads_to(self):
+        """The room number a door (tag 0) leads to"""
+        return self.fields[1] if self.tag == 0 else None
 
 
 class Room:
@@ -51,6 +74,18 @@ class Room:
         offsets = struct.unpack_from(f"<{count}i", data, offset + 8)
         self.cameras = [Camera(data[offset + o:offset + o + CAMERA_SIZE]) for o in offsets]
         self.camera_offsets = offsets
+        self.areas = self._areas()
+
+    def _areas(self):
+        offset, size = self.sections[10]
+        if not size:
+            return []
+        tag, count = struct.unpack_from("<ii", self.data, offset)
+        offsets = struct.unpack_from(f"<{count}i", self.data, offset + 8)
+        for at in offsets:
+            if at < 0 or at + AREA_SIZE > size:
+                raise ValueError(f"a trigger area at {at} leaves its section")
+        return [Area(self.data[offset + at:offset + at + AREA_SIZE]) for at in offsets]
 
     def check(self):
         """The problems found (an empty list when the sections tile the file and the cameras fit)"""
@@ -89,7 +124,7 @@ def rooms(game):
 
 
 def main(argv):
-    if len(argv) < 3 or argv[2] not in ("check", "cams"):
+    if len(argv) < 3 or argv[2] not in ("check", "cams", "areas", "doors"):
         print(__doc__)
         return 1
     game = argv[1]
@@ -108,10 +143,25 @@ def main(argv):
                 print(f"{pack}/{member}: {'; '.join(problems)}")
         print(f"{game}: {count} rooms, {cameras} cameras, {bad} with problems")
         return 1 if bad else 0
+    if argv[2] == "doors":
+        links = {}
+        for pack, member, node in rooms(game):
+            number = int(member[4:6])
+            room = Room(node.read())
+            links.setdefault(pack, {}).setdefault(number, set()).update(a.leads_to for a in room.areas if a.tag == 0)
+        for pack, rooms_of in sorted(links.items()):
+            print(pack, {n: sorted(d) for n, d in sorted(rooms_of.items())})
+        return 0
     wanted = argv[3].lower().removesuffix(".rdt") + ".rdt"
     for pack, member, node in rooms(game):
         if member.lower() == wanted:
             room = Room(node.read())
+            if argv[2] == "areas":
+                print(f"{pack}/{member}: {len(room.areas)} trigger areas")
+                for index, area in enumerate(room.areas):
+                    extra = f" leads to room {area.leads_to}" if area.tag == 0 else ""
+                    print(f"  {index}: tag {area.tag} subtype {area.subtype} quad {area.quad} height {area.height}{extra}")
+                return 0
             print(f"{pack}/{member}: {len(room.cameras)} cameras")
             for index, cam in enumerate(room.cameras):
                 print(f"  {index}: type {cam.kind} fov {cam.fov[0]:g}/{cam.fov[1]:g} eye {cam.eye} target {cam.target}")
