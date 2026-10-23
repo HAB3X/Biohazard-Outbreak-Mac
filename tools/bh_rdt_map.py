@@ -57,7 +57,7 @@ def build(game, scenario, names, variants):
         raise SystemExit(f"{game}: no rooms in {wanted}.afs")
     out = []
     for (number, variant), (member, room) in sorted(rooms.items()):
-        entry = {"id": number, "variant": variant, "file": member, "name": names.get(member.lower(), ""), "cameras": [], "areas": []}
+        entry = {"id": number, "variant": variant, "file": member, "name": names.get(member.lower(), ""), "capacity": room.capacity(), "cameras": [], "areas": []}
         for index, cam in enumerate(room.cameras):
             try:
                 fog = list(room.fog(index))

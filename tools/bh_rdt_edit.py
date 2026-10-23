@@ -37,13 +37,20 @@ const style = document.createElement("style");
 style.textContent = "#edit input[type=number]{width:62px;background:#222;color:#ddd;border:1px solid #444;padding:1px 3px}#edit button{margin:2px 2px 2px 0;padding:3px 8px;background:#2d3a4a;color:#ddd;border:1px solid #567;border-radius:4px;cursor:pointer}#edit .row{margin:2px 0}#edit .msg{color:#9c9;white-space:pre-wrap;margin-top:6px}#edit b{color:#fc6}";
 document.head.appendChild(style);
 function itemOf(sel) { return sel.kind === "area" ? sel.room.areas.find(a => a.i === sel.index) : sel.room.cameras.find(c => c.i === sel.index); }
-function origOf(sel) { const r = ORIG.find(r => r.file === sel.room.file); return sel.kind === "area" ? r.areas.find(a => a.i === sel.index) : r.cameras.find(c => c.i === sel.index); }
+function origOf(sel) { const r = ORIG.find(r => r.file === sel.room.file); if (itemOf(sel).isNew) return null; return sel.kind === "area" ? r.areas.find(a => a.i === sel.index) : r.cameras.find(c => c.i === sel.index); }
 function changed(a, b) { return JSON.stringify(a) !== JSON.stringify(b); }
+const COST = {area: 180, camera: 324};
+function added(r) { return r.areas.filter(a => a.isNew).length * COST.area + r.cameras.filter(c => c.isNew).length * COST.camera; }
 function diffs() {
   const edits = {};
   DATA.forEach((r, ri) => {
     const o = ORIG[ri], rooms = {};
+    const newAreas = r.areas.filter(a => a.isNew).map(a => { const f = {}; a.fields.forEach((v, k) => { f[12 + k] = v; }); return {like: a.like, quad: a.quad, height: a.h, fields: f}; });
+    const newCameras = r.cameras.filter(c => c.isNew).map(c => ({like: c.like, eye: c.eye, target: c.target, fov: c.fov, box: c.box}));
+    if (newAreas.length) rooms.new_areas = newAreas;
+    if (newCameras.length) rooms.new_cameras = newCameras;
     for (const c of r.cameras) {
+      if (c.isNew) continue;
       const oc = o.cameras.find(x => x.i === c.i), d = {};
       if (changed(c.eye, oc.eye)) d.eye = c.eye;
       if (changed(c.target, oc.target)) d.target = c.target;
@@ -53,6 +60,7 @@ function diffs() {
       if (c.fog && oc.fog) { const f = {}; c.fog.forEach((v, k) => { if (v !== oc.fog[k]) f[k] = v; }); if (Object.keys(f).length) (rooms.fog = rooms.fog || {})[c.i] = {ints: f}; }
     }
     for (const a of r.areas) {
+      if (a.isNew) continue;
       const oa = o.areas.find(x => x.i === a.i), d = {};
       if (changed(a.quad, oa.quad)) d.quad = a.quad;
       if (changed(a.h, oa.h)) d.height = a.h;
@@ -61,13 +69,15 @@ function diffs() {
       if (Object.keys(f).length) d.fields = f;
       if (Object.keys(d).length) (rooms.areas = rooms.areas || {})[a.i] = d;
     }
-    if (rooms.cameras || rooms.areas || rooms.fog) edits[r.file] = rooms;
+    if (rooms.cameras || rooms.areas || rooms.fog || rooms.new_areas || rooms.new_cameras) edits[r.file] = rooms;
   });
   return {rooms: edits};
 }
 function apply(edits) {
   for (const [file, spec] of Object.entries(edits.rooms || {})) {
     const r = room(file); if (!r) continue;
+    for (const n of spec.new_areas || []) addArea(r, n.like, n);
+    for (const n of spec.new_cameras || []) addCamera(r, n.like, n);
     for (const [i, d] of Object.entries(spec.cameras || {})) { const c = r.cameras.find(x => x.i === +i); if (c) Object.assign(c, d); }
     for (const [i, d] of Object.entries(spec.fog || {})) { const c = r.cameras.find(x => x.i === +i); if (c && c.fog) for (const [k, v] of Object.entries(d.ints || {})) c.fog[+k] = v; }
     for (const [i, d] of Object.entries(spec.areas || {})) {
@@ -85,6 +95,26 @@ function colourRow(label, value, set) {
   const input = document.createElement("input"); input.type = "color"; input.value = value;
   input.addEventListener("change", () => { remember(); set(input.value); draw(); refreshPanel(); });
   row.appendChild(input); return row;
+}
+function addArea(r, like, values) {
+  const base = r.areas.find(a => a.i === like); if (!base) return null;
+  const n = clone(base); delete n.arrival; n.isNew = true; n.like = like; n.i = r.areas.length;
+  if (values && values.quad) { n.quad = clone(values.quad); n.h = clone(values.height); Object.entries(values.fields || {}).forEach(([k, v]) => n.fields[+k - 12] = v); }
+  else n.quad = n.quad.map(p => [p[0] + 60, p[1] + 60]);
+  r.areas.push(n); return n;
+}
+function addCamera(r, like, values) {
+  const base = r.cameras.find(c => c.i === like); if (!base) return null;
+  const n = clone(base); n.isNew = true; n.like = like; n.i = r.cameras.length;
+  if (values && values.eye) { n.eye = clone(values.eye); n.target = clone(values.target); n.fov = clone(values.fov); n.box = clone(values.box); }
+  else { n.eye = [n.eye[0] + 100, n.eye[1], n.eye[2] + 100]; n.target = [n.target[0] + 100, n.target[1], n.target[2] + 100]; n.box = n.box.map(p => [p[0] + 100, p[1], p[2] + 100]); }
+  r.cameras.push(n); return n;
+}
+function removeNew(sel) {
+  const r = sel.room, list = sel.kind === "area" ? r.areas : r.cameras;
+  const at = list.findIndex(x => x.i === sel.index); if (at < 0 || !list[at].isNew) return;
+  list.splice(at, 1); list.forEach((x, k) => { if (x.isNew) x.i = k; });
+  selected = null;
 }
 function remember() { if (selected) undo.push({sel: selected, value: clone(itemOf(selected))}); if (undo.length > 200) undo.shift(); }
 function pointerWorld(e) { const [mx, my] = toCanvas(e); return [(mx - cv.width / 2) / view.s + view.x, -(my - cv.height / 2) / view.s + view.y]; }
@@ -155,18 +185,18 @@ function num(label, value, set) {
 function refreshPanel() {
   panel.innerHTML = "<hr><b>Editor</b><div class='row'><label><input type='checkbox' id='snapbox' " + (snapStep > 1 ? "checked" : "") + "> snap to 10</label></div>";
   panel.querySelector("#snapbox").onchange = e => { snapStep = e.target.checked ? 10 : 1; };
-  const total = diffs(), n = Object.values(total.rooms).reduce((a, r) => a + Object.keys(r.cameras || {}).length + Object.keys(r.areas || {}).length, 0);
+  const total = diffs(), n = Object.values(total.rooms).reduce((a, r) => a + Object.keys(r.cameras || {}).length + Object.keys(r.areas || {}).length + (r.new_areas || []).length + (r.new_cameras || []).length, 0);
   const info = document.createElement("div"); info.className = "row";
   if (selected) {
     const it = itemOf(selected), r = selected.room;
-    info.innerHTML = selected.kind === "area" ? "room " + r.id + " area " + it.i + " (tag " + it.tag + ", subtype " + it.sub + ")" : "room " + r.id + " camera " + it.i + " (type " + it.kind + ")";
+    info.innerHTML = (selected.kind === "area" ? "room " + r.id + " area " + it.i + " (tag " + it.tag + ", subtype " + it.sub + ")" : "room " + r.id + " camera " + it.i + " (type " + it.kind + ")") + (it.isNew ? " <b>new, copy of " + it.like + "</b>" : "") + "<br><small>room has " + (r.capacity - added(r)) + " bytes free to add into</small>";
     panel.appendChild(info);
     const rows = [];
     if (selected.kind === "area") {
       it.quad.forEach((p, k) => { const d = document.createElement("div"); d.className = "row"; d.append("corner " + k + " ", num("x", p[0], v => it.quad[k] = [v, it.quad[k][1]]), num("z", p[1], v => it.quad[k] = [it.quad[k][0], v])); panel.appendChild(d); });
       const d = document.createElement("div"); d.className = "row"; d.append("height ", num("from", it.h[0], v => it.h = [v, it.h[1]]), num("to", it.h[1], v => it.h = [it.h[0], v])); panel.appendChild(d);
       const f = document.createElement("div"); f.className = "row"; f.append("fields (int 12 on): ");
-      it.fields.forEach((v, k) => { if (v !== 0 || ORIG.find(o => o.file === r.file).areas.find(a => a.i === it.i).fields[k] !== 0) f.appendChild(num(String(12 + k), v, x => it.fields[k] = x)); });
+      it.fields.forEach((v, k) => { if (v !== 0 || (!it.isNew && ORIG.find(o => o.file === r.file).areas.find(a => a.i === it.i).fields[k] !== 0)) f.appendChild(num(String(12 + k), v, x => it.fields[k] = x)); });
       panel.appendChild(f);
     } else {
       const e = document.createElement("div"); e.className = "row"; e.append("eye ", num("x", it.eye[0], v => it.eye = [v, it.eye[1], it.eye[2]]), num("y", it.eye[1], v => it.eye = [it.eye[0], v, it.eye[2]]), num("z", it.eye[2], v => it.eye = [it.eye[0], it.eye[1], v])); panel.appendChild(e);
@@ -184,9 +214,18 @@ function refreshPanel() {
           [1, 3, 5].forEach((p, n) => it.fog[9 + n] = f2i(parseInt(v.slice(p, p + 2), 16) / 255)); }));
       }
     }
-    const revert = document.createElement("button"); revert.textContent = "Revert this";
-    revert.onclick = () => { remember(); const o = clone(origOf(selected)); const target = itemOf(selected); Object.keys(o).forEach(k => target[k] = o[k]); refreshPanel(); draw(); };
-    panel.appendChild(revert);
+    if (!it.isNew) {
+      const revert = document.createElement("button"); revert.textContent = "Revert this";
+      revert.onclick = () => { remember(); const o = clone(origOf(selected)); const target = itemOf(selected); Object.keys(o).forEach(k => target[k] = o[k]); refreshPanel(); draw(); };
+      panel.appendChild(revert);
+    }
+    const kindName = selected.kind === "area" ? "area" : "camera";
+    const free = r.capacity - added(r), cost = COST[kindName];
+    const add = document.createElement("button"); add.textContent = "Add " + kindName + " like this (" + cost + " of " + free + " bytes free)";
+    add.disabled = free < cost;
+    add.onclick = () => { const n = selected.kind === "area" ? addArea(r, it.isNew ? it.like : it.i) : addCamera(r, it.isNew ? it.like : it.i); if (n) { selected = {kind: selected.kind, room: r, index: n.i}; } refreshPanel(); draw(); };
+    panel.appendChild(add);
+    if (it.isNew) { const rm = document.createElement("button"); rm.textContent = "Remove this new " + kindName; rm.onclick = () => { removeNew(selected); refreshPanel(); draw(); }; panel.appendChild(rm); }
   } else { info.textContent = "click a shape"; panel.appendChild(info); }
   const undoB = document.createElement("button"); undoB.textContent = "Undo (" + undo.length + ")";
   undoB.onclick = () => { const u = undo.pop(); if (!u) return; const target = itemOf(u.sel); Object.keys(u.value).forEach(k => target[k] = u.value[k]); refreshPanel(); draw(); };

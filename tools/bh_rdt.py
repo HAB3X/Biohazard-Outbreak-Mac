@@ -191,10 +191,11 @@ class Room:
         self._reparse()
 
     def _fog_base(self, camera):
+        """Where fog record `camera` is (a record number: the cameras name theirs in int 61)"""
         offset, size = self.sections[13]
         tag, count = struct.unpack_from("<ii", self.data, offset)
         if not 0 <= camera < count:
-            raise IndexError(f"fog {camera}: the room has {count} (one for each camera)")
+            raise IndexError(f"fog {camera}: the room has {count}")
         return offset + struct.unpack_from("<i", self.data, offset + 8 + 4 * camera)[0]
 
     def fog(self, camera):
@@ -213,10 +214,69 @@ class Room:
                 raise ValueError(f"fog number {number} is outside the record (0 to 23)")
             self._put(base + 4 * number, "<f", float(value))
 
+    # Growing: a room can take up to the end of its last sector (see capacity()), by moving the sections after the one that grows
+    def capacity(self):
+        """The bytes the room file can still grow by: the member sits in whole 2048 byte sectors and the archive's table can say
+        any size inside the last sector (measured: a member given one byte less boots, one given a sector more doesn't)"""
+        return (-len(self.original)) % 2048 + (len(self.original) - len(self.data))
+
+    def _replace_section(self, index, content):
+        """Section `index`'s bytes replaced by `content` (any length), the later sections moved after it, the header's offsets
+        and sizes rewritten; the file's size changes by the difference"""
+        table = list(self.sections)
+        old_offset, old_size = table[index]
+        delta = len(content) - old_size
+        if delta > self.capacity():
+            raise ValueError(f"the room has {self.capacity()} bytes to grow by, this needs {delta}")
+        data = bytearray(self.data[:old_offset]) + content + self.data[old_offset + old_size:]
+        for i in range(SECTIONS - 1):
+            offset, size = table[i]
+            if i == index:
+                table[i] = (offset, len(content))
+            elif offset >= old_offset + old_size and (size or offset > old_offset):
+                table[i] = (offset + delta, size)
+        for i, (offset, size) in enumerate(table[:SECTIONS - 1]):
+            struct.pack_into("<ii", data, 8 * i, offset, size)
+        self.data = data
+        self.sections = [struct.unpack_from("<ii", data, 8 * i) for i in range(SECTIONS)]
+        self._reparse()
+
+    def add_area(self, like, quad=None, height=None, fields=None):
+        """A new trigger area at the end: a copy of area `like`'s record with the given changes; returns its number. The
+        section grows by the record and its offset (180 bytes)"""
+        offset, size = self.sections[10]
+        base = self._area_base(like)
+        record = bytes(self.data[base:base + AREA_SIZE])
+        tag, count = struct.unpack_from("<ii", self.data, offset)
+        old = struct.unpack_from(f"<{count}i", self.data, offset + 8)
+        header = struct.pack("<ii", tag, count + 1) + struct.pack(f"<{count}i", *[o + 4 for o in old]) + struct.pack("<i", size + 4)
+        content = header + bytes(self.data[offset + 8 + 4 * count:offset + size]) + record
+        self._replace_section(10, content)
+        index = len(self.areas) - 1
+        self.set_area(index, quad=quad, height=height, fields=fields)
+        return index
+
+    def add_camera(self, like, **changes):
+        """A new camera at the end: a copy of camera `like` with the changes (set_camera's: eye, target, fov, box); returns its
+        number. The camera section grows by 324 bytes. The copy keeps the fog record the original uses (the record's int 61 is an
+        index into the fog section, which has a record for each distinct fog, not for each camera)"""
+        base = self._camera_base(like)
+        record = bytes(self.data[base:base + CAMERA_SIZE])
+        offset, size = self.sections[0]
+        tag, count = struct.unpack_from("<ii", self.data, offset)
+        old = struct.unpack_from(f"<{count}i", self.data, offset + 8)
+        header = struct.pack("<ii", tag, count + 1) + struct.pack(f"<{count}i", *[o + 4 for o in old]) + struct.pack("<i", size + 4)
+        self._replace_section(0, header + bytes(self.data[offset + 8 + 4 * count:offset + size]) + record)
+        index = len(self.cameras) - 1
+        if changes:
+            self.set_camera(index, **changes)
+        return index
+
     def _reparse(self):
         offset = self.sections[0][0]
         tag, count = struct.unpack_from("<ii", self.data, offset)
         offsets = struct.unpack_from(f"<{count}i", self.data, offset + 8)
+        self.camera_offsets = offsets
         self.cameras = [Camera(bytes(self.data[offset + o:offset + o + CAMERA_SIZE])) for o in offsets]
         self.areas = self._areas()
 
@@ -224,6 +284,10 @@ class Room:
         """[(offset in the file, the new bytes)] of the runs of bytes that differ from the file as read"""
         runs = []
         start = None
+        if len(self.data) != len(self.original):
+            # sections moved: everything from the first difference to the new end
+            first = next((i for i, (a, b) in enumerate(zip(self.original, self.data)) if a != b), min(len(self.original), len(self.data)))
+            return [(first, bytes(self.data[first:]))]
         for i, (a, b) in enumerate(zip(self.original, self.data)):
             if a != b and start is None:
                 start = i

@@ -108,3 +108,18 @@ in blue only, 0x0000FF00 in green only, 0x00FF0000 in red only; 0 gave -5 in eac
 (7000: zero made the picture brighter by 9, 12 and 18 in red, green and blue, four times it made it a little darker: the fog's reach);
 number 1 is a float that lightens a little when raised (-200 to -800). Numbers 0, 5 to 8 and 12 to 23 showed no change in that view (they
 may matter in other rooms, cameras or the shadows). The editor's camera panel has the ambient colour and the fog distance.
+
+**Adding areas and cameras** (`Room.add_area`, `add_camera`, `new_areas` / `new_cameras` in the edits, "Add ... like this" in the editor). A room file can't
+change the number of sectors the archive gives it, but it can grow to the end of its last sector (`Room.capacity()`: a median of
+808 bytes in File 1's rooms and 1008 in File 2's; some have under 200 and a few none). A new area is a copy of an existing one at
+the end of section 10 (180 bytes with its offset), a new camera a copy of a camera at the end of section 0 (324 bytes); the sections
+after the one that grows move later, the header's offsets are rewritten, and the member's size is written in both places the
+archive keeps it (`bh_room_patch.size_entries`). Measured in the game (File 2):
+- a section made 180 bytes longer with nothing in it: the room loaded and played;
+- a new exit (tag 1, a copy of room 4's exit) in room 4: standing in it led to room 3, as the copied exit does;
+- a new camera in room 2 (a copy of a following camera, with its own box): the game switched to it standing in its box (the eye read
+  from memory changed; it follows the player, as the copy's type 2 does), where without it the camera stayed;
+- a new DOOR (tag 0) with door number 2, in a room with doors 0 and 1, crashed the game on loading the room (a wild address): the
+  doors are tied to door objects in the room's model, so a door needs its object. Exits (tag 1) and the other areas need none.
+A camera's fog record isn't copied: a camera's int 61 is the number of the fog record it uses (the fog section has a record for each
+distinct fog: 2 in room 2 for its 5 cameras, 11 in room 3 for its 11), and the copy keeps its original's.
