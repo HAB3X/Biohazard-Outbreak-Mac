@@ -123,3 +123,13 @@ archive keeps it (`bh_room_patch.size_entries`). Measured in the game (File 2):
   doors are tied to door objects in the room's model, so a door needs its object. Exits (tag 1) and the other areas need none.
 A camera's fog record isn't copied: a camera's int 61 is the number of the fog record it uses (the fog section has a record for each
 distinct fog: 2 in room 2 for its 5 cameras, 11 in room 3 for its 11), and the copy keeps its original's.
+
+**Room models in 3D and editing the objects** (`tools/bh_nbd.py` `bone_records` / `set_bone`, `models` in the edits, the editor's "Open the 3D view"). A room's .nbd stage is a skeleton
+(AHI) with an object (mesh) on each bone, the mesh i on bone i + 2. A bone is its parent's number, a scale, a rotation (Euler angles
+in radians) and an offset from the parent, 256 byte records edited in place, so the file's size never changes. Measured in the zoo's
+first room (File 2): object 48 (bone 50) is the right lamp's cage. Scaled to 0.0001 it vanished and the bulb stayed; its offset's y
+raised by 300 (from the editor's "y+100" three times, saved, run) put the cage in the air above the lamp in the picture. The 3D view is a WebGL2 page of
+the model (flat shaded, the bones' chain applied as the game's own placement does), the room's areas as boxes and its cameras
+as crosses and lines; a click picks an object (an off-screen picture of object numbers), the panel moves it along world x, y or z (the
+move is turned into the parent bone's own space), turns, scales or hides it. Not done: textures (the room's pictures are in the scenario's
+.sld files by the TID chunk), editing the meshes' vertices, and moving an object's animation (doors move by other data).

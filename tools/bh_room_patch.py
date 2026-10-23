@@ -10,6 +10,9 @@ EDITS.json (the room editor writes it):
         "fog":     {"2": {"ints": {"4": 4278190335}, "floats": {"9": 1.0}}},
         "new_cameras": [{"like": 0, "eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}],
         "new_areas": [{"like": 0, "quad": [[x, z] x4], "height": [low, high], "fields": {"13": 3}}]}}}
+    "models": {"r0400300.nbd": {"bones": {"50": {"scale": [x, y, z], "rotation": [x, y, z], "offset": [x, y, z]}}}}}
+        (a room model's skeleton: a bone is a number of the room's objects, the object (mesh) i standing on bone i + 2; its scale, its
+        rotation in radians and its offset from its parent bone; scale of 0.0001 hides an object)
         (a camera's fog record: numbers 0 to 23; new_areas add areas at the end, each a copy of area `like` with those changes,
         numbered from the room's area count on, in order: the room file grows by 180 bytes each, inside the sector it ends in)
 A room is named by its file; cameras and areas by their numbers in the room (tools/bh_rdt.py lists them); every key is optional.
@@ -21,6 +24,7 @@ import struct
 import sys
 
 import bh_archive as archive
+import bh_nbd as nbd
 import bh_rdt as rdt
 from bh_patchfile import write_patch
 
@@ -45,6 +49,53 @@ def size_entries(game, pack, member, size):
         raise SystemExit(f"{member}: {size} bytes need a different number of sectors than the {old} it has")
     packed = struct.pack("<I", size)
     return [(afs.offset + 8 + 8 * index + 4, packed, 0), (afs.offset + name_offset + 48 * index + 44, packed, 0)]
+
+
+def model_patches(game, models):
+    """([(disc offset, bytes, 0)], report lines) for the room models' skeleton edits"""
+    wanted = {name.lower(): spec for name, spec in models.items()}
+    patches, report = [], []
+    disc = archive.Archive(game)
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            top = disc.open(dat)
+        except FileNotFoundError:
+            continue
+        for pack, node in top.members():
+            if not pack.lower().endswith(".afs") or pack == "romdata.afs":
+                continue
+            for member, model in node.members():
+                spec = wanted.pop(member.lower(), None)
+                if spec is None:
+                    continue
+                data = bytearray(model.read())
+                table = nbd.chunks(bytes(data))
+                ahi = next((c for c in table if c[0] == "AHI"), None)
+                if ahi is None:
+                    raise SystemExit(f"{member}: no skeleton")
+                records = nbd.bone_records(bytes(data), ahi[1], ahi[2])
+                original = bytes(data)
+                for number, change in spec.get("bones", {}).items():
+                    unknown = set(change) - {"scale", "rotation", "offset"}
+                    if unknown:
+                        raise SystemExit(f"{member} bone {number}: unknown {sorted(unknown)}")
+                    if not 0 <= int(number) < len(records):
+                        raise SystemExit(f"{member}: bone {number} (the model has {len(records)})")
+                    nbd.set_bone(data, records[int(number)], **change)
+                runs, start = [], None
+                for i, (a, b) in enumerate(zip(original, data)):
+                    if a != b and start is None:
+                        start = i
+                    elif a == b and start is not None:
+                        runs.append((start, bytes(data[start:i])))
+                        start = None
+                if start is not None:
+                    runs.append((start, bytes(data[start:])))
+                patches += [(model.offset + o, b, 0) for o, b in runs]
+                report.append(f"{pack}/{member}: {sum(len(b) for _, b in runs)} bytes in {len(runs)} runs")
+    if wanted:
+        raise SystemExit(f"models not on this disc: {', '.join(sorted(wanted))}")
+    return patches, report
 
 
 def build(game, edits):
@@ -85,6 +136,10 @@ def build(game, edits):
         report.append(f"{pack}/{member}: {sum(len(d) for _, d in runs)} bytes in {len(runs)} runs")
     if wanted:
         raise SystemExit(f"not on this disc: {', '.join(sorted(wanted))}")
+    if edits.get("models"):
+        more, lines = model_patches(game, edits["models"])
+        patches += more
+        report += lines
     return patches, report
 
 

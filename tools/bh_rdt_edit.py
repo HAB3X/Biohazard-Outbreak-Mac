@@ -24,6 +24,251 @@ from bh_patchfile import write_patch
 
 ROOT = Path(__file__).resolve().parent.parent
 
+EDITOR3D = r"""<script>
+// The 3D view: a room's model (its objects each on a bone of the skeleton) with the room's areas and cameras drawn in it; click an
+// object to select it, then move, turn, scale or hide it (the bone's numbers: they are patched into the model file in place)
+const EDIT3D = (() => {
+  const view = document.getElementById("view"), side = document.getElementById("side");
+  const c3 = document.createElement("canvas"); c3.style.cssText = "position:absolute;inset:0;width:100%;height:100%;display:none;background:#0b0b0d";
+  view.appendChild(c3);
+  const gl = c3.getContext("webgl2", {antialias: true});
+  const panel = document.createElement("div"); panel.style.display = "none"; side.appendChild(panel);
+  const MODELS = {};           // nbd file -> {bones, orig, meshes: [{mesh, bone, count, vb, ib, pickColour}], world}
+  let pending = {};            // saved model edits, applied when a model loads
+  let current = null, file = null, selected = null, show = {areas: true, cameras: true}, on = false;
+  const cam = {yaw: 0.6, pitch: 0.7, dist: 4000, target: [0, 0, 0]};
+  const clone = o => JSON.parse(JSON.stringify(o));
+  // ---- matrices (column-major)
+  const mul = (a, b) => { const o = new Float32Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = s; } return o; };
+  const ident = () => { const m = new Float32Array(16); m[0] = m[5] = m[10] = m[15] = 1; return m; };
+  const trans = (x, y, z) => { const m = ident(); m[12] = x; m[13] = y; m[14] = z; return m; };
+  const scal = (x, y, z) => { const m = ident(); m[0] = x; m[5] = y; m[10] = z; return m; };
+  const rotX = a => { const m = ident(), c = Math.cos(a), s = Math.sin(a); m[5] = c; m[6] = s; m[9] = -s; m[10] = c; return m; };
+  const rotY = a => { const m = ident(), c = Math.cos(a), s = Math.sin(a); m[0] = c; m[2] = -s; m[8] = s; m[10] = c; return m; };
+  const rotZ = a => { const m = ident(), c = Math.cos(a), s = Math.sin(a); m[0] = c; m[1] = s; m[4] = -s; m[5] = c; return m; };
+  function persp(fov, aspect, n, f) { const t = 1 / Math.tan(fov / 2), m = new Float32Array(16); m[0] = t / aspect; m[5] = t; m[10] = (f + n) / (n - f); m[11] = -1; m[14] = 2 * f * n / (n - f); return m; }
+  function lookAt(e, t, u) {
+    const z = norm(sub(e, t)), x = norm(cross(u, z)), y = cross(z, x), m = ident();
+    m[0] = x[0]; m[4] = x[1]; m[8] = x[2]; m[1] = y[0]; m[5] = y[1]; m[9] = y[2]; m[2] = z[0]; m[6] = z[1]; m[10] = z[2];
+    m[12] = -dot(x, e); m[13] = -dot(y, e); m[14] = -dot(z, e); return m;
+  }
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const norm = a => { const l = Math.hypot(...a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+  // a bone's local matrix: offset, then rotation about x, y, z (x applied first), then scale; the world matrix is the parent's times it
+  const local = b => mul(trans(...b[3]), mul(rotZ(b[2][2]), mul(rotY(b[2][1]), mul(rotX(b[2][0]), scal(...b[1])))));
+  function worlds(bones) {
+    const out = new Array(bones.length);
+    const get = i => { if (out[i]) return out[i]; const p = bones[i][0]; out[i] = p >= 0 && p !== i && p < bones.length ? mul(get(p), local(bones[i])) : local(bones[i]); return out[i]; };
+    bones.forEach((_, i) => get(i)); return out;
+  }
+  // ---- GL programs
+  function program(vs, fs) {
+    const p = gl.createProgram();
+    for (const [t, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); gl.attachShader(p, s); }
+    gl.linkProgram(p); return p;
+  }
+  const VS = "#version 300 es\nuniform mat4 uVP, uModel; in vec3 aPos; out vec3 vW; void main(){ vec4 w = uModel * vec4(aPos, 1.0); vW = w.xyz; gl_Position = uVP * w; }";
+  const shaded = program(VS, "#version 300 es\nprecision highp float; uniform vec3 uColour; in vec3 vW; out vec4 o; void main(){ vec3 n = normalize(cross(dFdx(vW), dFdy(vW))); float l = 0.3 + 0.7 * abs(dot(n, normalize(vec3(0.4, 0.8, 0.3)))); o = vec4(uColour * l, 1.0); }");
+  const flat = program(VS, "#version 300 es\nprecision highp float; uniform vec3 uColour; out vec4 o; void main(){ o = vec4(uColour, 1.0); }");
+  const lineP = program("#version 300 es\nuniform mat4 uVP; in vec3 aPos; void main(){ gl_Position = uVP * vec4(aPos, 1.0); }", "#version 300 es\nprecision highp float; uniform vec3 uColour; out vec4 o; void main(){ o = vec4(uColour, 1.0); }");
+  const lineBuf = gl.createBuffer();
+  let pickFbo = null, pickTex = null, pickDepth = null;
+  const b64 = (s, T) => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); };
+  async function load(nbd) {
+    if (MODELS[nbd]) return MODELS[nbd];
+    const res = await fetch("/model?file=" + encodeURIComponent(nbd)); const j = await res.json();
+    if (j.error) throw new Error(j.error);
+    const model = {bones: j.bones, orig: clone(j.bones), meshes: []};
+    j.meshes.forEach((m, n) => {
+      const pos = b64(m.p, Float32Array), idx = b64(m.i, Uint32Array);
+      const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
+      const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+      const id = n + 1; model.meshes.push({mesh: m.mesh, bone: m.bone, count: idx.length, vb, ib, id, pickColour: [(id & 255) / 255, ((id >> 8) & 255) / 255, ((id >> 16) & 255) / 255], vertices: pos.length / 3});
+    });
+    const saved = pending[nbd];
+    if (saved) for (const [k, d] of Object.entries(saved.bones || {})) { const b = model.bones[+k]; if (!b) continue; if (d.scale) b[1] = d.scale; if (d.rotation) b[2] = d.rotation; if (d.offset) b[3] = d.offset; }
+    MODELS[nbd] = model; return model;
+  }
+  function frame(model) {
+    model.world = worlds(model.bones);
+    let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const m of model.meshes) { const w = model.world[m.bone]; if (!w) continue; for (const k of [0, 1, 2]) { lo[k] = Math.min(lo[k], w[12 + k]); hi[k] = Math.max(hi[k], w[12 + k]); } }
+    cam.target = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
+    cam.dist = Math.max(1500, Math.hypot(hi[0] - lo[0], hi[2] - lo[2]) * 0.9);
+  }
+  function viewProj() {
+    const w = c3.width, h = c3.height, cp = Math.cos(cam.pitch);
+    const eye = [cam.target[0] + cam.dist * cp * Math.sin(cam.yaw), cam.target[1] + cam.dist * Math.sin(cam.pitch), cam.target[2] + cam.dist * cp * Math.cos(cam.yaw)];
+    return mul(persp(0.9, w / h, 20, 200000), lookAt(eye, cam.target, [0, 1, 0]));
+  }
+  const hidden = b => Math.abs(b[1][0]) < 0.001 || Math.abs(b[1][1]) < 0.001 || Math.abs(b[1][2]) < 0.001;
+  function drawMeshes(prog, model, vp, picking) {
+    gl.useProgram(prog);
+    gl.uniformMatrix4fv(gl.getUniformLocation(prog, "uVP"), false, vp);
+    const loc = gl.getAttribLocation(prog, "aPos");
+    for (const m of model.meshes) {
+      if (hidden(model.bones[m.bone]) && !picking) continue;
+      if (hidden(model.bones[m.bone]) && picking) continue;
+      gl.uniformMatrix4fv(gl.getUniformLocation(prog, "uModel"), false, model.world[m.bone]);
+      const sel = selected && selected.mesh === m.mesh;
+      gl.uniform3fv(gl.getUniformLocation(prog, "uColour"), picking ? m.pickColour : sel ? [1, 0.55, 0.1] : [0.62, 0.64, 0.7]);
+      gl.bindBuffer(gl.ARRAY_BUFFER, m.vb); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ib); gl.drawElements(gl.TRIANGLES, m.count, gl.UNSIGNED_INT, 0);
+    }
+  }
+  const tagColour = tag => { const h = (TAGS[tag] || ["", "#ccc"])[1]; return [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255]; };
+  function overlay(vp) {
+    const room = DATA.find(r => r.file.replace(".rdt", ".nbd") === file); if (!room) return;
+    const groups = [];
+    if (show.areas) for (const a of room.areas) {
+      if (!okQuad(a.quad)) continue; const pts = [];
+      const y0 = a.h[0], y1 = a.h[1];
+      for (let i = 0; i < 4; i++) { const p = a.quad[i], q = a.quad[(i + 1) % 4]; pts.push(p[0], y0, p[1], q[0], y0, q[1], p[0], y1, p[1], q[0], y1, q[1], p[0], y0, p[1], p[0], y1, p[1]); }
+      groups.push({pts, colour: tagColour(a.tag)});
+    }
+    if (show.cameras) for (const c of room.cameras) {
+      if (!okCam(c)) continue; const e = c.eye, t = c.target, s = 40;
+      groups.push({pts: [e[0] - s, e[1], e[2], e[0] + s, e[1], e[2], e[0], e[1] - s, e[2], e[0], e[1] + s, e[2], e[0], e[1], e[2] - s, e[0], e[1], e[2] + s, e[0], e[1], e[2], t[0], t[1], t[2]], colour: [1, 1, 0.3]});
+    }
+    gl.useProgram(lineP); gl.uniformMatrix4fv(gl.getUniformLocation(lineP, "uVP"), false, vp);
+    const loc = gl.getAttribLocation(lineP, "aPos");
+    for (const g of groups) {
+      gl.uniform3fv(gl.getUniformLocation(lineP, "uColour"), g.colour);
+      gl.bindBuffer(gl.ARRAY_BUFFER, lineBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g.pts), gl.DYNAMIC_DRAW);
+      gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0); gl.drawArrays(gl.LINES, 0, g.pts.length / 3);
+    }
+  }
+  function render() {
+    if (!on || !current) return;
+    const dpr = devicePixelRatio, w = Math.floor(view.clientWidth * dpr), h = Math.floor(view.clientHeight * dpr);
+    if (c3.width !== w || c3.height !== h) { c3.width = w; c3.height = h; }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
+    gl.clearColor(0.04, 0.04, 0.05, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
+    current.world = worlds(current.bones);
+    const vp = viewProj();
+    drawMeshes(shaded, current, vp, false);
+    gl.disable(gl.DEPTH_TEST); overlay(vp);
+  }
+  function pickAt(px, py) {
+    const w = c3.width, h = c3.height;
+    if (!pickFbo || pickFbo.w !== w || pickFbo.h !== h) {
+      pickFbo = gl.createFramebuffer(); pickFbo.w = w; pickFbo.h = h; gl.bindFramebuffer(gl.FRAMEBUFFER, pickFbo);
+      pickTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, pickTex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pickTex, 0);
+      pickDepth = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, pickDepth); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, pickDepth);
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, pickFbo); gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
+    drawMeshes(flat, current, viewProj(), true);
+    const px4 = new Uint8Array(4); gl.readPixels(px, h - 1 - py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px4); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const id = px4[0] | (px4[1] << 8) | (px4[2] << 16);
+    return current.meshes.find(m => m.id === id) || null;
+  }
+  // ---- interaction
+  let drag = null;
+  c3.addEventListener("mousedown", e => { drag = {x: e.clientX, y: e.clientY, moved: false, button: e.button, shift: e.shiftKey}; });
+  addEventListener("mouseup", e => {
+    if (drag && !drag.moved && on && current && e.target === c3) { const r = c3.getBoundingClientRect(); selected = pickAt((e.clientX - r.left) * devicePixelRatio, (e.clientY - r.top) * devicePixelRatio); refresh(); render(); }
+    drag = null;
+  });
+  addEventListener("mousemove", e => {
+    if (!drag || !on) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true; if (!drag.moved) return;
+    drag.x = e.clientX; drag.y = e.clientY;
+    if (drag.button === 2 || drag.shift) {
+      const k = cam.dist * 0.0015, cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+      cam.target[0] += (-dx * cy) * k; cam.target[2] += (dx * sy) * k; cam.target[1] += dy * k;
+    } else { cam.yaw -= dx * 0.008; cam.pitch = Math.max(-1.5, Math.min(1.5, cam.pitch + dy * 0.008)); }
+    render();
+  });
+  c3.addEventListener("contextmenu", e => e.preventDefault());
+  c3.addEventListener("wheel", e => { e.preventDefault(); cam.dist = Math.max(100, Math.min(120000, cam.dist * Math.exp(e.deltaY * 0.0015))); render(); }, {passive: false});
+  addEventListener("resize", () => render());
+  // ---- the panel
+  function numbers(label, values, set, step) {
+    const row = document.createElement("div"); row.className = "row"; row.append(label + " ");
+    values.forEach((v, k) => { const i = document.createElement("input"); i.type = "number"; i.step = step; i.style.width = "64px"; i.value = +v.toFixed(4); i.onchange = () => { set(k, +i.value); render(); refresh(); }; row.appendChild(i); row.append(" "); });
+    return row;
+  }
+  function moveWorld(bone, d) {
+    const b = current.bones[bone], p = b[0] >= 0 ? current.world[b[0]] : ident();
+    // the world delta as the parent's own: the inverse of its 3 x 3 part times d
+    const a = [[p[0], p[4], p[8]], [p[1], p[5], p[9]], [p[2], p[6], p[10]]];
+    const det = a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) - a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) + a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+    if (Math.abs(det) < 1e-12) return;
+    const inv = [[(a[1][1] * a[2][2] - a[1][2] * a[2][1]) / det, (a[0][2] * a[2][1] - a[0][1] * a[2][2]) / det, (a[0][1] * a[1][2] - a[0][2] * a[1][1]) / det],
+                 [(a[1][2] * a[2][0] - a[1][0] * a[2][2]) / det, (a[0][0] * a[2][2] - a[0][2] * a[2][0]) / det, (a[0][2] * a[1][0] - a[0][0] * a[1][2]) / det],
+                 [(a[1][0] * a[2][1] - a[1][1] * a[2][0]) / det, (a[0][1] * a[2][0] - a[0][0] * a[2][1]) / det, (a[0][0] * a[1][1] - a[0][1] * a[1][0]) / det]];
+    for (let k = 0; k < 3; k++) b[3][k] += inv[k][0] * d[0] + inv[k][1] * d[1] + inv[k][2] * d[2];
+  }
+  function diffsModels() {
+    const out = {};
+    for (const [nbd, m] of Object.entries(MODELS)) {
+      const bones = {};
+      m.bones.forEach((b, k) => { const o = m.orig[k], d = {}; if (JSON.stringify(b[1]) !== JSON.stringify(o[1])) d.scale = b[1]; if (JSON.stringify(b[2]) !== JSON.stringify(o[2])) d.rotation = b[2]; if (JSON.stringify(b[3]) !== JSON.stringify(o[3])) d.offset = b[3]; if (Object.keys(d).length) bones[k] = d; });
+      if (Object.keys(bones).length) out[nbd] = {bones};
+    }
+    return out;
+  }
+  function refresh() {
+    panel.innerHTML = "<hr><b>3D view</b> ";
+    const back = document.createElement("button"); back.textContent = "Back to the plan"; back.onclick = () => toggle(false); panel.appendChild(back);
+    const sel = document.createElement("select");
+    sel.style.cssText = "display:block;margin:6px 0;max-width:220px;background:#222;color:#ddd";
+    DATA.forEach(r => { const o = document.createElement("option"); o.value = r.file.replace(".rdt", ".nbd"); o.textContent = r.id + " " + r.name; if (o.value === file) o.selected = true; sel.appendChild(o); });
+    sel.onchange = () => openRoom(sel.value); panel.appendChild(sel);
+    for (const k of ["areas", "cameras"]) { const l = document.createElement("label"); const c = document.createElement("input"); c.type = "checkbox"; c.checked = show[k]; c.onchange = () => { show[k] = c.checked; render(); }; l.append(c, " show " + k); panel.appendChild(l); }
+    const goto = document.createElement("div"); goto.className = "row"; goto.append("object # ");
+    const gin = document.createElement("input"); gin.type = "number"; gin.style.width = "60px"; goto.appendChild(gin);
+    const gbt = document.createElement("button"); gbt.textContent = "select"; gbt.onclick = () => selectMesh(+gin.value); goto.appendChild(gbt); panel.appendChild(goto);
+    const help = document.createElement("small"); help.textContent = "drag turns, shift-drag or right-drag pans, wheel zooms, click picks an object"; panel.appendChild(help);
+    if (current && selected) {
+      const b = current.bones[selected.bone], o = current.orig[selected.bone];
+      const info = document.createElement("div"); info.className = "row"; info.innerHTML = "<br><b>object " + selected.mesh + "</b> (bone " + selected.bone + ", " + selected.vertices + " vertices)" + (hidden(b) ? " — hidden" : ""); panel.appendChild(info);
+      panel.appendChild(numbers("offset", b[3], (k, v) => b[3][k] = v, 10));
+      panel.appendChild(numbers("turn (rad)", b[2], (k, v) => b[2][k] = v, 0.1));
+      panel.appendChild(numbers("scale", b[1], (k, v) => b[1][k] = v, 0.1));
+      const mv = document.createElement("div"); mv.className = "row"; mv.append("move ");
+      for (const [label, axis] of [["x", 0], ["y", 1], ["z", 2]]) for (const d of [-100, -10, 10, 100]) {
+        const bt = document.createElement("button"); bt.textContent = label + (d > 0 ? "+" : "") + d; bt.style.padding = "1px 4px";
+        bt.onclick = () => { const v = [0, 0, 0]; v[axis] = d; current.world = worlds(current.bones); moveWorld(selected.bone, v); render(); refresh(); }; mv.appendChild(bt);
+      }
+      panel.appendChild(mv);
+      const hide = document.createElement("button"); hide.textContent = hidden(b) ? "Show" : "Hide";
+      hide.onclick = () => { b[1] = hidden(b) ? clone(o[1]).map(v => Math.abs(v) < 0.001 ? 1 : v) : [0.0001, 0.0001, 0.0001]; render(); refresh(); };
+      const rev = document.createElement("button"); rev.textContent = "Revert object"; rev.onclick = () => { current.bones[selected.bone] = clone(o); render(); refresh(); };
+      panel.append(hide, rev);
+    } else { const t = document.createElement("div"); t.className = "row"; t.textContent = "click an object to edit it"; panel.appendChild(t); }
+    const changedNow = Object.values(diffsModels()).reduce((n, m) => n + Object.keys(m.bones).length, 0);
+    const save = document.createElement("button"); save.textContent = "Save patch (" + changedNow + " object changes + plan edits)";
+    save.onclick = async () => { const res = await fetch("/save", {method: "POST", body: JSON.stringify(diffs())}); const body = await res.json(); msg.textContent = res.ok ? "saved: " + body.patch + "\n" + body.report.join("\n") : "not saved: " + body.error; };
+    panel.append(document.createElement("br"), save);
+    const msg = document.createElement("div"); msg.className = "msg"; panel.appendChild(msg);
+  }
+  function selectMesh(n) { if (!current) return; const m = current.meshes.find(x => x.mesh === n); if (!m) return; selected = m; const w = current.world[m.bone]; if (w) cam.target = [w[12], w[13], w[14]]; cam.dist = Math.min(cam.dist, 2500); refresh(); render(); }
+  async function openRoom(nbd) {
+    file = nbd; selected = null; current = null; refresh();
+    try { current = await load(nbd); frame(current); } catch (err) { panel.appendChild(Object.assign(document.createElement("div"), {textContent: "could not load: " + err.message})); return; }
+    refresh(); render();
+  }
+  function toggle(state) {
+    on = state; c3.style.display = on ? "block" : "none"; cv.style.display = on ? "none" : "block"; info.style.display = on ? "none" : "";
+    panel.style.display = on ? "" : "none"; document.getElementById("edit").style.display = on ? "none" : "";
+    for (const el of side.children) if (el !== panel && el.id !== "edit") el.style.display = on ? "none" : "";
+    if (on) { openRoom(file || DATA[0].file.replace(".rdt", ".nbd")); } else { draw(); }
+  }
+  // a button in the plan's panel
+  const open = document.createElement("button"); open.textContent = "Open the 3D view"; open.style.cssText = "margin:6px 0;padding:3px 8px;background:#2d3a4a;color:#ddd;border:1px solid #567;border-radius:4px;cursor:pointer";
+  open.onclick = () => toggle(true); side.insertBefore(open, side.children[1]);
+  return {diffs: diffsModels, apply(models) { pending = models || {}; }, toggle, selectMesh, state: () => ({file, selected: selected && selected.mesh, bones: current && current.bones.length})};
+})();
+const baseDiffs3 = diffs;
+diffs = function () { const d = baseDiffs3(); const m = EDIT3D.diffs(); if (Object.keys(m).length) d.models = m; return d; };
+fetch("/edits").then(r => r.json()).then(e => EDIT3D.apply(e.models));
+</script>
+"""
+
 EDITOR = r"""
 <script>
 const EDIT = true;
@@ -243,12 +488,52 @@ refreshPanel();
 """
 
 
+def model_json(game, scenario, file):
+    """A room's model for the 3D view as JSON: the skeleton ([parent, scale xyz, rotation xyz, offset xyz]) and each mesh's bone (i + 2),
+    positions (little-endian floats) and triangle indices (uint32), both base64"""
+    import base64
+    import struct
+
+    import bh_archive as archive
+    import bh_nbd as nbd
+
+    disc = archive.Archive(game)
+    node = None
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            node = disc.open(f"{dat}/r{scenario:03d}.afs/{file}")
+            break
+        except FileNotFoundError:
+            continue
+    if node is None:
+        return {"error": f"{file}: not on the disc"}
+    data = node.read()
+    table = nbd.chunks(data)
+    amo = next(c for c in table if c[0] == "AMO")
+    ahi = next(c for c in table if c[0] == "AHI")
+    bones = [[b[0], list(b[1][:3]), list(b[2][:3]), list(b[3][:3])] for b in nbd.skeleton(data, ahi[1], ahi[2])]
+    meshes = []
+    for index, mesh in enumerate(nbd.meshes(data, amo[1], amo[2])):
+        import math
+
+        triangles = [t for t in mesh.triangles() if max(t) < len(mesh.positions)
+                     and max(math.dist(mesh.positions[t[i]], mesh.positions[t[(i + 1) % 3]]) for i in range(3)) < 6000]
+        if not mesh.positions or not triangles:
+            continue
+        flat = [c for p in mesh.positions for c in p]
+        meshes.append({"mesh": index, "bone": index + 2,
+                       "p": base64.b64encode(struct.pack(f"<{len(flat)}f", *flat)).decode(),
+                       "i": base64.b64encode(struct.pack(f"<{3 * len(triangles)}I", *[v for t in triangles for v in t])).decode()})
+    return {"bones": bones, "meshes": meshes}
+
+
 def serve(game, scenario, names, port, out):
     data = maps.build(game, scenario, names, False)
-    page = maps.render(game, scenario, data, EDITOR)
+    page = maps.render(game, scenario, data, EDITOR + EDITOR3D)
     out.mkdir(parents=True, exist_ok=True)
     edits_path, patch_path = out / f"room-edits-{game}.json", out / f"rooms-{game}.patch"
     mine = {r["file"].lower() for r in data}
+    models = {}
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -265,8 +550,13 @@ def serve(game, scenario, names, port, out):
         def do_GET(self):
             if self.path == "/":
                 self.send(200, page, "text/html; charset=utf-8")
+            elif self.path.startswith("/model?"):
+                file = self.path.split("=", 1)[1]
+                if file not in models:
+                    models[file] = model_json(game, scenario, file)
+                self.send(200, json.dumps(models[file]))
             elif self.path == "/edits":
-                self.send(200, edits_path.read_text() if edits_path.exists() else '{"rooms": {}}')
+                self.send(200, edits_path.read_text() if edits_path.exists() else '{"rooms": {}, "models": {}}')
             else:
                 self.send(404, "{}")
 
@@ -279,7 +569,11 @@ def serve(game, scenario, names, port, out):
                 kept = {}
                 if edits_path.exists():
                     kept = {k: v for k, v in json.loads(edits_path.read_text()).get("rooms", {}).items() if k.lower() not in mine}
-                edits = {"rooms": {**kept, **mine_now.get("rooms", {})}}
+                prefix = f"r{scenario:03d}"
+                kept_models = {}
+                if edits_path.exists():
+                    kept_models = {k: v for k, v in json.loads(edits_path.read_text()).get("models", {}).items() if not k.lower().startswith(prefix)}
+                edits = {"rooms": {**kept, **mine_now.get("rooms", {})}, "models": {**kept_models, **mine_now.get("models", {})}}
                 patches, report = roompatch.build(game, edits)
                 edits_path.write_text(json.dumps(edits, indent=1))
                 write_patch(str(patch_path), patches)

@@ -120,6 +120,31 @@ def meshes(data, offset, size):
     return found
 
 
+def bone_records(data, offset, size):
+    """[the file offset of each bone's 256 byte record] of the AHI chunk (skeleton() reads the same nodes)"""
+    out = []
+    pos = offset + 12
+    while pos + 12 <= offset + size:
+        flags, count, node_size = struct.unpack_from("<III", data, pos)
+        if node_size < 12 or pos + node_size > offset + size:
+            break
+        if flags & 0xF0000000 == 0x40000000 and node_size >= 12 + 64:
+            out.append(pos + 12)
+        pos += node_size
+    return out
+
+
+def set_bone(data, record, scale=None, rotation=None, offset=None):
+    """The bone record at file offset `record` overwritten in a bytearray `data`: scale (x, y, z), rotation (x, y, z radians),
+    offset from its parent (x, y, z); the 4th number of each is left (1)"""
+    if scale is not None:
+        struct.pack_into("<3f", data, record + 16, *map(float, scale))
+    if rotation is not None:
+        struct.pack_into("<3f", data, record + 32, *map(float, rotation))
+    if offset is not None:
+        struct.pack_into("<3f", data, record + 48, *map(float, offset))
+
+
 def skeleton(data, offset, size):
     """[(parent, scale, rotation, offset)] of the AHI chunk's bones: a 12 byte header, then nodes of 12 bytes and 256 more, those
     flagged 0x4000000n the bones; in a bone's 256: index, parent, first child, next sibling, scale (x y z w), rotation (x y z
