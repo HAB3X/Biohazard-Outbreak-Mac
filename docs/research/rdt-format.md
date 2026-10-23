@@ -65,6 +65,8 @@ hold, the camera types (1, 2, 7), the camera record's remaining fields, and how 
 **For an editor**: moving or adding cameras, doors, lights and fog is a change inside the room file; the file's size can't change
 (the archive's members can't grow: `tools/bh_character_patch.py`), so every edit has to fit the section it is in.
 
+**The room models under the map** (`tools/bh_nbd.py`): a room's .nbd has two AMO chunks (the stage and an effect) with a skeleton (AHI) each; the stage's mesh i sits on bone i + 2 and a bone's chain of offsets gives the mesh's place in the shared world (the root bone of r0400300 is at 12300, 500, 13000: inside the room's own coordinates). On File 2's r0400300, 99.3% of the stage's vertices land in the floor region the room's camera boxes give. The bones' rotations are Euler angles in radians (not quaternions); the order they apply in isn't established (the rooms looked at turn about one axis). The map draws floors (triangles whose highest corner is within 120 of the room's floor height, found as the lowest height with most flat area) as grey blocks and walls as outlines, in a plan; ceilings and triangles with an edge over 3000 are left out.
+
 **The map** (`tools/bh_rdt_map.py GAME SCENARIO [OUT.html] [--names rooms.md] [--variants]`): one self-contained page per scenario, every
 room in its shared world coordinates with its cameras' eyes and aims, switch boxes, doors, exits (with the arrival spot each leads
 to) and the other areas coloured by tag; the wheel zooms, a drag pans, hovering lists a shape's fields. Written into `work/` (not
