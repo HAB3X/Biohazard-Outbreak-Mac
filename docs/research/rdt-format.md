@@ -201,3 +201,16 @@ game's copy at 0x80F28C).
 - NBD UVs are array 10, per-mesh materials array 5, per-strip materials array 6; the TID chunk maps a material to a member index in the room pack.
 - A texture is member N of the pack, decoded with `bh_sld.unpack` then `tm2.pictures()[0].image()`; the editor serves it at `/tex?index=N`.
 - Wrap mode is REPEAT; alpha below 0.35 is discarded. A few floor strips look stretched, which comes from their source UVs, not the decoder.
+
+
+## Area tags 10, 12 and 13 (read from the code and the data, no live test)
+
+`fields[n]` below is the nth word after the area's 48 byte head (runtime offset +64 + 4 n in the game's area list).
+
+- **Tag 13 (subtype 6; 8 in File 1, 7 in File 2)** is a marked spot: `fields[0]` an id, `fields[4..6]` a position as three floats and `fields[7]` a facing (65536 to a turn: 16384, 32768, -16384 ...). The
+  position is next to the record's own quad: 4 of the 15 records have it inside, the rest within about 120 units outside (measured on all 15), so the quad is a trigger and the spot is where a character is put or stands. The script ops 0xF6 and its twin (game_00671620) switch these on: they walk the
+  area list for tag 13 whose `fields[1]` equals the script's number, set the active byte (+60) and store the second word in the halfword at +98.
+- **Tag 12 (subtype 3; 7 in File 1, 26 in File 2)** is switched on by the script ops 0x157 and 0x167 (game_006734c0, game_00673ba0): the loop takes the tag 12 areas whose `fields[0]` is 0 and `fields[1]` the script's number, sets the active byte, then
+  looks for a character (a record of the character list, the team byte at +3009 or the player slot's +2992) and tests it against the area with game_005ae910. So a tag 12 is a zone a script waits on for a character to stand in it.
+- **Tag 10 (7 in all)** has no fields at all in any record; no handler for it was found among the ops that walk the list.
+- **Tag 6** (ladders by the rooms' pictures: subtypes 0, 1, 3, with `fields[3]` 1 to 6) still unproven.
