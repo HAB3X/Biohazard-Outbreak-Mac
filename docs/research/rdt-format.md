@@ -263,3 +263,23 @@ in range); only File 2's zoo was tried in the game, so File 1's items are decode
   at a time (a selector, normal = 1).
 - **Items**: the same item `.dat` and `.tbl` files (101 items in the first scenario). Item 1's position and quantity, edited, read back in File 1's item table (0x3967D0 + 0x3C * n: x 9243 -> 8000, z 13525 -> 13000, quantity 1 -> 3).
   The kind wasn't told apart (the edit was to the value the game already showed: it reads a different variant's table than the first).
+
+## What an enemy record's other words do (File 2's room-4 enemy, one word at a time)
+
+Each word of the zoo's room-4 record (id 32, 7200 HP) had its bytes changed (XOR 0x01 in each byte, or one byte) in a copy of the game's disc patch, and the game's whole enemy record (0xDB0 bytes) was compared against two unchanged runs
+(which were identical, so no noise): `tools/bh_enemies.py` has the table in its header.
+
+| word | what changed in the runtime record |
+|---|---|
+| w0 class byte | about 25 bytes (model and animation parts: +51, +180 to +190, +246, +490 to +562, +912, +944, +1314, +3026); HP stayed 7200 |
+| w0 id byte | id 33 was not created at all (id 0, HP 0): the id is the enemy kind |
+| w1 | +2996 (0xBB4: the AI control flag the partner AI uses) and +3145 |
+| w2 | a non-zero value made the boss a zombie (id 1, 450 HP), so w2 is an override of the kind (0 in the record) |
+| w7 byte 2 (0x0F) | clearing a bit stopped the enemy being created in the mode played: a mask of the four modes it is placed in |
+| w7 byte 3 | +3007 |
+| w8, w18 | any change: the enemy wasn't created (id 0, HP 0) |
+| w10 to w16 | one small group each of the AI block: +3013..3016, +3017..3020, +5 and +3021, +3044..3050 and +3237/8, +3003, +3140..3145 and +3240..3245, +3233..3236 |
+| w17 | +180 to +190 |
+| w9, w19 to w23 | nothing |
+
+HP wasn't among them: it isn't in the words tried (a different word or the kind's own table). The editor edits id, class, facing, position and the mode mask; the rest are kept.
