@@ -575,6 +575,22 @@ if __name__ == "__main__":
     sys.exit(main(sys.argv))
 
 
+class Node:
+    """An entity record of a room's .sgl block (64 bytes): byte 0 active (1), byte 1 a kind (1 to 4 in the zoo's first room), a halfword id at +2,
+    a position (x, y, z floats at +4, +8, +12; the y of some kinds isn't a float) and 12 more words, kept as they are (neighbour numbers and
+    costs, from their shape). What the game does with them: a function in the single-player overlay (single_007d70e0) walks the room's records,
+    takes the ones with a given id (or any) and finds the nearest to a position (within 50), and the partners' AI code (single_007e3560) calls it:
+    they are the AI's navigation nodes"""
+
+    SIZE = 64
+
+    def __init__(self, record, offset):
+        self.offset = offset
+        self.active, self.kind, self.id = struct.unpack_from("<BBH", record, 0)
+        self.position = struct.unpack_from("<3f", record, 4)
+        self.words = struct.unpack_from("<12i", record, 16)
+
+
 class Sgl:
     """A scenario's .sgl (r0xx.sgl in the pack): the rooms' scripts and entity tables as the game runs them. Header: a magic word, a count, the offset
     of an index (5728 in File 2's r040.sgl), ...; the index is a count then (room id, offset of the room's block, 0) for each room, the id being
@@ -598,6 +614,19 @@ class Sgl:
                 later = [o for o in self.starts if o > offset]
                 return offset, (later[0] if later else len(self.data))
         return None
+
+    def nodes(self, room_id):
+        """[Node] of the room's entity records (the variant's block first, then the room's), each with its byte offset in the file"""
+        for candidate in (room_id, room_id & 0xFFFF):
+            block = self.block(candidate)
+            if block is None:
+                continue
+            start = block[0]
+            count = struct.unpack_from("<I", self.data, start + 8)[0]
+            if not 0 < count < 1000 or start + 12 + count * Node.SIZE > block[1]:
+                continue
+            return [Node(self.data[start + 12 + i * Node.SIZE:start + 12 + (i + 1) * Node.SIZE], start + 12 + i * Node.SIZE) for i in range(count)]
+        return []
 
     def find_script(self, room_id, words):
         """The byte offset of the room's script (`words`, the room file's section 1) in its block, or None; the variant's own block first

@@ -183,3 +183,14 @@ scenario's own event script at points of its story (keys, bosses, timers) that t
 
 **Scripts, corrected**: the game doesn't run the room file's section 1; it runs the same script from the pack's `.sgl` (docs/research/script-ops.md). Every claim
 above that the section-1 records "weren't read" is true of that copy. `bh_room_patch.py` writes script word edits into both.
+
+**The .sgl's entity records (AI navigation nodes; `bh_rdt.Sgl.nodes`, `Node`, the editor's "AI node" squares, `nodes` in the edits)**. A room's block in the pack's
+`.sgl` starts with two offsets (the script's, and another), a count (29 in the zoo's first room) and then that many records of 64 bytes from byte 12: byte 0 active
+(1 in every one of the 5634 in File 2 and 3279 in File 1), byte 1 a kind (1 to 4; a few 0), a halfword id at +2, a position as three floats at +4, +8, +12 and
+twelve more words (neighbour numbers and costs by their shape: not decoded; for some kinds the y word isn't a float). All 5634 positions in File 2 and all 3279 in File 1
+lie within 3000 of their room's trigger areas. What they are, from the game's code only (not seen in behaviour): the single-player overlay's function
+`single_007d70e0` walks a room's records, takes the ones with a given id (or any), finds the nearest to a position within 50 and returns it, and the partner
+AI code (`single_007e3560`) calls it: so they are the AI's navigation nodes. Moving all 29 of the zoo's first room's 3000 units sideways changed nothing visible in the first
+seconds, because the partners stand still until the player moves and then did not move at all there either (the same in an unedited run), so no behavioural
+effect was shown. What was checked: the saved edit reached the game's memory (a node's position 13175 -> 13250 and a word 0 -> -254 read back from the running
+game's copy at 0x80F28C).

@@ -36,7 +36,7 @@ const EDIT3D = (() => {
   const panel = document.createElement("div"); panel.style.display = "none"; side.appendChild(panel);
   const MODELS = {};           // nbd file -> {bones, orig, meshes: [{mesh, bone, count, vb, ib, pickColour}], world}
   let pending = {};            // saved model edits, applied when a model loads
-  let current = null, file = null, selected = null, show = {areas: true, cameras: true, zones: true, lights: true}, on = false;
+  let current = null, file = null, selected = null, show = {areas: true, cameras: true, zones: true, lights: true, nodes: true}, on = false;
   const cam = {yaw: 0.6, pitch: 0.7, dist: 4000, target: [0, 0, 0]};
   const clone = o => JSON.parse(JSON.stringify(o));
   // ---- matrices (column-major)
@@ -135,6 +135,7 @@ const EDIT3D = (() => {
       groups.push({pts, colour: [0.15, 0.78, 0.85]});
     }
     if (show.lights) for (const l of room.lights) { const p = l.pos, k = 30; groups.push({pts: [p[0] - k, p[1], p[2], p[0] + k, p[1], p[2], p[0], p[1] - k, p[2], p[0], p[1] + k, p[2], p[0], p[1], p[2] - k, p[0], p[1], p[2] + k], colour: [1, 0.84, 0.3]}); }
+    if (show.nodes) for (const n of room.nodes) { const p = n.pos, k = 20; groups.push({pts: [p[0] - k, p[1], p[2], p[0] + k, p[1], p[2], p[0], p[1], p[2] - k, p[0], p[1], p[2] + k], colour: [1, 0.54, 0.4]}); }
     if (show.cameras) for (const c of room.cameras) {
       if (!okCam(c)) continue; const e = c.eye, t = c.target, s = 40;
       groups.push({pts: [e[0] - s, e[1], e[2], e[0] + s, e[1], e[2], e[0], e[1] - s, e[2], e[0], e[1] + s, e[2], e[0], e[1], e[2] - s, e[0], e[1], e[2] + s, e[0], e[1], e[2], t[0], t[1], t[2]], colour: [1, 1, 0.3]});
@@ -226,7 +227,7 @@ const EDIT3D = (() => {
     sel.style.cssText = "display:block;margin:6px 0;max-width:220px;background:#222;color:#ddd";
     DATA.forEach(r => { const o = document.createElement("option"); o.value = r.file.replace(".rdt", ".nbd"); o.textContent = r.id + " " + r.name; if (o.value === file) o.selected = true; sel.appendChild(o); });
     sel.onchange = () => openRoom(sel.value); panel.appendChild(sel);
-    for (const k of ["areas", "cameras", "zones", "lights"]) { const l = document.createElement("label"); const c = document.createElement("input"); c.type = "checkbox"; c.checked = show[k]; c.onchange = () => { show[k] = c.checked; render(); }; l.append(c, " show " + k); panel.appendChild(l); }
+    for (const k of ["areas", "cameras", "zones", "lights", "nodes"]) { const l = document.createElement("label"); const c = document.createElement("input"); c.type = "checkbox"; c.checked = show[k]; c.onchange = () => { show[k] = c.checked; render(); }; l.append(c, " show " + k); panel.appendChild(l); }
     const goto = document.createElement("div"); goto.className = "row"; goto.append("object # ");
     const gin = document.createElement("input"); gin.type = "number"; gin.style.width = "60px"; goto.appendChild(gin);
     const gbt = document.createElement("button"); gbt.textContent = "select"; gbt.onclick = () => selectMesh(+gin.value); goto.appendChild(gbt); panel.appendChild(goto);
@@ -298,12 +299,14 @@ function itemOf(sel) {
   if (sel.kind === "zone") return sel.room.zones.find(z => z.i === sel.index);
   if (sel.kind === "spoint") return sel.room.points.find(p => p.i === sel.index);
   if (sel.kind === "light") return sel.room.lights.find(l => l.i === sel.index);
+  if (sel.kind === "node") return sel.room.nodes.find(n => n.i === sel.index);
   return sel.room.cameras.find(c => c.i === sel.index);
 }
 function origOf(sel) { const r = ORIG.find(r => r.file === sel.room.file); if (itemOf(sel).isNew) return null;
   if (sel.kind === "zone") return r.zones.find(z => z.i === sel.index);
   if (sel.kind === "spoint") return r.points.find(p => p.i === sel.index);
   if (sel.kind === "light") return r.lights.find(l => l.i === sel.index);
+  if (sel.kind === "node") return r.nodes.find(n => n.i === sel.index);
   return sel.kind === "area" ? r.areas.find(a => a.i === sel.index) : r.cameras.find(c => c.i === sel.index); }
 function changed(a, b) { return JSON.stringify(a) !== JSON.stringify(b); }
 const COST = {area: 180, camera: 324};
@@ -338,9 +341,10 @@ function diffs() {
     }
     for (const z of r.zones) { const oz = o.zones.find(x => x.i === z.i), d = {}; if (changed(z.box, oz.box)) d.box = z.box; if (z.sound !== oz.sound) d.sound = z.sound; if (Object.keys(d).length) (rooms.sound_zones = rooms.sound_zones || {})[z.i] = d; }
     { const sw = {}; r.script.forEach((v, k) => { if (v !== o.script[k]) sw[k] = v; }); if (Object.keys(sw).length) rooms.script_words = sw; }
+    for (const n of r.nodes) { const on = o.nodes.find(x => x.i === n.i), d = {}; if (changed(n.pos, on.pos)) d.position = n.pos; if (n.kind !== on.kind) d.kind = n.kind; if (n.id !== on.id) d.id = n.id; const wv = {}; n.words.forEach((v, k) => { if (v !== on.words[k]) wv[k] = v; }); if (Object.keys(wv).length) d.words = wv; if (Object.keys(d).length) (rooms.nodes = rooms.nodes || {})[n.i] = d; }
     for (const l of r.lights) { const ol = o.lights.find(x => x.i === l.i), d = {}; if (changed(l.pos, ol.pos)) d.position = l.pos; if (l.att !== ol.att) d.attenuation = l.att; if (l.range !== ol.range) d.range = l.range; if (changed(l.col, ol.col)) d.colour = l.col; if (changed(l.col2, ol.col2)) d.colour2 = l.col2; if (Object.keys(d).length) (rooms.lights = rooms.lights || {})[l.i] = d; }
     for (const p of r.points) { const op = o.points.find(x => x.i === p.i), d = {}; if (changed(p.pos, op.pos)) d.position = p.pos; if (p.kind !== op.kind) d.kind = p.kind; if (Object.keys(d).length) (rooms.sound_points = rooms.sound_points || {})[p.i] = d; }
-    if (rooms.cameras || rooms.areas || rooms.fog || rooms.new_areas || rooms.new_cameras || rooms.sound_zones || rooms.sound_points || rooms.lights || rooms.script_words) edits[r.file] = rooms;
+    if (rooms.cameras || rooms.areas || rooms.fog || rooms.new_areas || rooms.new_cameras || rooms.sound_zones || rooms.sound_points || rooms.lights || rooms.script_words || rooms.nodes) edits[r.file] = rooms;
   });
   return {rooms: edits};
 }
@@ -348,6 +352,7 @@ function apply(edits) {
   for (const [file, spec] of Object.entries(edits.rooms || {})) {
     const r = room(file); if (!r) continue;
     for (const [i, d] of Object.entries(spec.sound_zones || {})) { const z = r.zones.find(x => x.i === +i); if (z) { if (d.box) z.box = d.box; if (d.sound !== undefined) z.sound = d.sound; } }
+    for (const [i, d] of Object.entries(spec.nodes || {})) { const n = r.nodes.find(x => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.id !== undefined) n.id = d.id; for (const [k, v] of Object.entries(d.words || {})) n.words[+k] = v; } }
     for (const [i, v] of Object.entries(spec.script_words || {})) { r.script[+i] = v; }
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find(x => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }
     for (const [i, d] of Object.entries(spec.sound_points || {})) { const p = r.points.find(x => x.i === +i); if (p) { if (d.position) p.pos = d.position; if (d.kind !== undefined) p.kind = d.kind; } }
@@ -400,6 +405,7 @@ function handles() {
   else if (selected.kind === "zone") it.box.slice(0, 4).forEach((p, k) => out.push({k: "zonecorner", n: k, x: p[0], z: p[2]}));
   else if (selected.kind === "spoint") out.push({k: "spoint", x: it.pos[0], z: it.pos[2]});
   else if (selected.kind === "light") out.push({k: "light", x: it.pos[0], z: it.pos[2]});
+  else if (selected.kind === "node") out.push({k: "node", x: it.pos[0], z: it.pos[2]});
   else {
     out.push({k: "eye", x: it.eye[0], z: it.eye[2]}, {k: "aim", x: it.target[0], z: it.target[2]});
     it.box.slice(0, 4).forEach((p, k) => out.push({k: "boxcorner", n: k, x: p[0], z: p[2]}));
@@ -416,6 +422,11 @@ draw = function () {
       ctx.beginPath(); q.forEach((p, i) => i ? ctx.lineTo(sx(p[0]), sy(p[1])) : ctx.moveTo(sx(p[0]), sy(p[1]))); ctx.closePath();
       ctx.fillStyle = "#26c6da33"; ctx.fill(); ctx.strokeStyle = "#26c6da"; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
       addShape("zone", q, "room " + r.id + " sound zone " + z.i + " (floor sound " + z.sound + ")", {room: r, zone: z});
+    }
+    for (const n of r.nodes) {
+      const x = sx(n.pos[0]), y = sy(n.pos[2]), col = ["#bbb", "#ff8a65", "#4dd0e1", "#ba68c8", "#aed581"][n.kind] || "#bbb";
+      ctx.fillStyle = col; ctx.fillRect(x - 3, y - 3, 6, 6);
+      addShape("node", [[n.pos[0], n.pos[2]]], "room " + r.id + " AI node " + n.i + " (kind " + n.kind + ", id " + n.id + ")", {room: r, node: n});
     }
     for (const l of r.lights) {
       const x = sx(l.pos[0]), y = sy(l.pos[2]), rad = l.range * view.s;
@@ -447,12 +458,12 @@ cv.addEventListener("mousedown", e => {
   const h = hitHandle(e);
   if (h) { remember(); dragging = {h, last: pointerWorld(e)}; e.stopImmediatePropagation(); e.preventDefault(); return; }
   const [mx, my] = toCanvas(e), s = pick(mx, my);
-  if (s && (s.kind === "area" || s.kind === "cam" || s.kind === "box" || s.kind === "zone" || s.kind === "spoint" || s.kind === "light")) {
-    const sel = s.kind === "light" ? {kind: "light", room: s.extra.room, index: s.extra.light.i} : s.kind === "zone" ? {kind: "zone", room: s.extra.room, index: s.extra.zone.i} : s.kind === "spoint" ? {kind: "spoint", room: s.extra.room, index: s.extra.point.i}
+  if (s && (s.kind === "area" || s.kind === "cam" || s.kind === "box" || s.kind === "zone" || s.kind === "spoint" || s.kind === "light" || s.kind === "node")) {
+    const sel = s.kind === "node" ? {kind: "node", room: s.extra.room, index: s.extra.node.i} : s.kind === "light" ? {kind: "light", room: s.extra.room, index: s.extra.light.i} : s.kind === "zone" ? {kind: "zone", room: s.extra.room, index: s.extra.zone.i} : s.kind === "spoint" ? {kind: "spoint", room: s.extra.room, index: s.extra.point.i}
       : {kind: s.kind === "area" ? "area" : "cam", room: s.extra.room, index: s.kind === "area" ? s.extra.area.i : s.extra.cam.i};
     const same = selected && selected.kind === sel.kind && selected.room === sel.room && selected.index === sel.index;
     selected = sel; refreshPanel(); draw();
-    if (sel.kind === "area" || sel.kind === "zone" || sel.kind === "spoint" || sel.kind === "light") { remember(); dragging = {body: true, last: pointerWorld(e)}; e.stopImmediatePropagation(); e.preventDefault(); }
+    if (sel.kind === "area" || sel.kind === "zone" || sel.kind === "spoint" || sel.kind === "light" || sel.kind === "node") { remember(); dragging = {body: true, last: pointerWorld(e)}; e.stopImmediatePropagation(); e.preventDefault(); }
     return;
   }
   selected = null; refreshPanel(); draw();
@@ -474,7 +485,7 @@ addEventListener("mousemove", e => {
     else if (h.k === "eye") { it.eye = [x, it.eye[1], z]; }
     else if (h.k === "aim") { it.target = [x, it.target[1], z]; }
     else if (h.k === "zonecorner") { it.box[h.n] = [x, it.box[h.n][1], z]; it.box[h.n + 4] = [x, it.box[h.n + 4][1], z]; }
-    else if (h.k === "spoint" || h.k === "light") { it.pos = [x, it.pos[1], z]; }
+    else if (h.k === "spoint" || h.k === "light" || h.k === "node") { it.pos = [x, it.pos[1], z]; }
     else if (h.k === "boxcorner") { it.box[h.n] = [x, it.box[h.n][1], z]; it.box[h.n + 4] = [x, it.box[h.n + 4][1], z]; }
     h.x = x; h.z = z;
   }
@@ -490,11 +501,19 @@ function num(label, value, set) {
 function refreshPanel() {
   panel.innerHTML = "<hr><b>Editor</b><div class='row'><label><input type='checkbox' id='snapbox' " + (snapStep > 1 ? "checked" : "") + "> snap to 10</label></div>";
   panel.querySelector("#snapbox").onchange = e => { snapStep = e.target.checked ? 10 : 1; };
-  const total = diffs(), n = Object.values(total.rooms).reduce((a, r) => a + Object.keys(r.cameras || {}).length + Object.keys(r.areas || {}).length + (r.new_areas || []).length + (r.new_cameras || []).length + Object.keys(r.sound_zones || {}).length + Object.keys(r.sound_points || {}).length + Object.keys(r.lights || {}).length + Object.keys(r.script_words || {}).length, 0);
+  const total = diffs(), n = Object.values(total.rooms).reduce((a, r) => a + Object.keys(r.cameras || {}).length + Object.keys(r.areas || {}).length + (r.new_areas || []).length + (r.new_cameras || []).length + Object.keys(r.sound_zones || {}).length + Object.keys(r.sound_points || {}).length + Object.keys(r.lights || {}).length + Object.keys(r.script_words || {}).length + Object.keys(r.nodes || {}).length, 0);
   const info = document.createElement("div"); info.className = "row";
   if (selected) {
     const it = itemOf(selected), r = selected.room;
-    if (selected.kind === "light") {
+    if (selected.kind === "node") {
+      info.innerHTML = "room " + r.id + " AI node " + it.i; panel.appendChild(info);
+      const p = document.createElement("div"); p.className = "row"; p.append("position ", num("x", it.pos[0], v => it.pos[0] = v), num("y", it.pos[1], v => it.pos[1] = v), num("z", it.pos[2], v => it.pos[2] = v)); panel.appendChild(p);
+      const q = document.createElement("div"); q.className = "row"; q.append("kind ", num("", it.kind, v => it.kind = v), " id ", num("", it.id, v => it.id = v)); panel.appendChild(q);
+      const w = document.createElement("div"); w.className = "row"; w.append("words: ");
+      it.words.forEach((v, k) => w.appendChild(num(String(k), v, x => it.words[k] = x))); panel.appendChild(w);
+      const note = document.createElement("small"); note.textContent = "the AI's navigation nodes: the game finds the one nearest a position (by id); the words are not decoded (neighbours and costs, by their shape)"; panel.appendChild(note);
+      const revert = document.createElement("button"); revert.textContent = "Revert this"; revert.onclick = () => { remember(); const o = clone(origOf(selected)); const target = itemOf(selected); Object.keys(o).forEach(k => target[k] = o[k]); refreshPanel(); draw(); }; panel.appendChild(revert);
+    } else if (selected.kind === "light") {
       info.innerHTML = "room " + r.id + " character light " + it.i; panel.appendChild(info);
       const p = document.createElement("div"); p.className = "row"; p.append("position ", num("x", it.pos[0], v => it.pos[0] = v), num("y", it.pos[1], v => it.pos[1] = v), num("z", it.pos[2], v => it.pos[2] = v)); panel.appendChild(p);
       const q = document.createElement("div"); q.className = "row"; q.append("range ", num("", it.range, v => it.range = v), " attenuation ", num("", it.att, v => it.att = v)); panel.appendChild(q);

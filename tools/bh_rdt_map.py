@@ -41,6 +41,20 @@ def room_names(path):
     return names
 
 
+def scenario_sgl(game, scenario):
+    """The scenario's .sgl as an rdt.Sgl, or None"""
+    disc = archive.Archive(game)
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            pack = disc.open(f"{dat}/r{scenario:03d}.afs")
+        except FileNotFoundError:
+            continue
+        for name, node in pack.members():
+            if name.lower().endswith(".sgl"):
+                return rdt.Sgl(node.read())
+    return None
+
+
 def build(game, scenario, names, variants):
     wanted = f"r{scenario:03d}"
     members = [(m, node) for pack, m, node in rdt.rooms(game) if pack.lower() == f"{wanted}.afs"]
@@ -56,6 +70,7 @@ def build(game, scenario, names, variants):
     if not rooms:
         raise SystemExit(f"{game}: no rooms in {wanted}.afs")
     out = []
+    sgl = scenario_sgl(game, scenario)
     for (number, variant), (member, room) in sorted(rooms.items()):
         entry = {"id": number, "variant": variant, "file": member, "name": names.get(member.lower(), ""), "capacity": room.capacity(), "cameras": [], "areas": []}
         for index, cam in enumerate(room.cameras):
@@ -80,6 +95,8 @@ def build(game, scenario, names, variants):
                     item["facing"] = area.facing
             entry["areas"].append(item)
         entry["script"] = room.script_words()
+        entry["nodes"] = [{"i": i, "kind": n.kind, "id": n.id, "pos": [round(v, 1) for v in n.position], "words": list(n.words)}
+                          for i, n in enumerate(sgl.nodes(number | (variant << 16)) if sgl else [])]
         entry["lights"] = [{"i": i, "pos": [round(v, 1) for v in l.position], "att": l.attenuation, "range": l.range, "col": [round(v, 4) for v in l.colour],
                             "col2": [round(v, 4) for v in l.colour2]} for i, l in enumerate(room.lights)]
         entry["zones"] = [{"i": i, "sound": z.sound, "box": [list(p) for p in z.box]} for i, z in enumerate(room.sound_zones)]

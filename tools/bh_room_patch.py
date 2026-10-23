@@ -8,6 +8,7 @@ EDITS.json (the room editor writes it):
         "cameras": {"2": {"eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}},
         "areas":   {"5": {"quad": [[x, z] x4], "height": [low, high], "fields": {"13": 4}}},
         "fog":     {"2": {"ints": {"4": 4278190335}, "floats": {"9": 1.0}}},
+        "nodes": {"3": {"position": [x, y, z], "kind": 2, "id": 5, "words": {"8": 10}}},   (the room's entity records in the .sgl: AI navigation nodes)
         "script_words": {"67": 123},   (the script's words by number, in place)
         "lights": {"0": {"position": [x, y, z], "range": 600, "attenuation": 0.001, "colour": [r, g, b], "colour2": [r, g, b]}},
         "sound_zones": {"2": {"box": [[x, y, z] x8], "sound": 8}}, "sound_points": {"0": {"position": [x, y, z]}},
@@ -54,6 +55,50 @@ def sgl_script_patches(game, pack, member, original_words, edits):
     if at is None:
         return [], f"{member}: its script isn't in the .sgl: only the room file's copy was changed"
     return [(sgl_node.offset + at + 4 * int(i), struct.pack("<i", int(v)), 0) for i, v in edits.items()], None
+
+
+def _pack_sgl(game, pack):
+    disc = archive.Archive(game)
+    afs = None
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            afs = disc.open(f"{dat}/{pack}")
+            break
+        except FileNotFoundError:
+            continue
+    return next((node for name, node in afs.members() if name.lower().endswith(".sgl")), None)
+
+
+def sgl_node_patches(game, pack, member, edits):
+    """[(disc offset, bytes, 0)] for edits {node number: {"position": [x, y, z], "kind": n, "id": n, "words": {word number: value}}} of the room's
+    entity records (AI navigation nodes) in the pack's .sgl"""
+    import re
+
+    sgl_node = _pack_sgl(game, pack)
+    if sgl_node is None:
+        raise SystemExit(f"{pack} has no .sgl: its entity records can't be edited")
+    sgl = rdt.Sgl(sgl_node.read())
+    match = re.fullmatch(r"r\d{3}(\d\d)(\d\d)\.rdt", member.lower())
+    nodes = sgl.nodes(int(match.group(1)) | (int(match.group(2)) << 16))
+    out = []
+    for number, change in edits.items():
+        unknown = set(change) - {"position", "kind", "id", "words"}
+        if unknown:
+            raise SystemExit(f"{member} node {number}: unknown {sorted(unknown)}")
+        if not 0 <= int(number) < len(nodes):
+            raise SystemExit(f"{member}: node {number} (the room has {len(nodes)})")
+        base = sgl_node.offset + nodes[int(number)].offset
+        if "position" in change:
+            out.append((base + 4, struct.pack("<3f", *map(float, change["position"])), 0))
+        if "kind" in change:
+            out.append((base + 1, struct.pack("<B", int(change["kind"])), 0))
+        if "id" in change:
+            out.append((base + 2, struct.pack("<H", int(change["id"])), 0))
+        for word, value in change.get("words", {}).items():
+            if not 0 <= int(word) < 12:
+                raise SystemExit(f"{member} node {number}: word {word} is outside the record's 12 (0 to 11)")
+            out.append((base + 16 + 4 * int(word), struct.pack("<i", int(value)), 0))
+    return out
 
 
 def size_entries(game, pack, member, size):
@@ -137,6 +182,10 @@ def build(game, edits):
         for new in spec.get("new_areas", []):
             room.add_area(new["like"], quad=new.get("quad"), height=new.get("height"),
                           fields={int(k): v for k, v in new.get("fields", {}).items()} or None)
+        if spec.get("nodes"):
+            more = sgl_node_patches(game, pack, member, spec["nodes"])
+            patches += more
+            report.append(f"{pack}/{member}: {len(spec['nodes'])} entity records in the .sgl")
         script_words = room.script_words()
         for index, value in spec.get("script_words", {}).items():
             room.set_script_word(int(index), value)
