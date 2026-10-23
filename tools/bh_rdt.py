@@ -186,7 +186,7 @@ OPS = {
     0xD0: ("SpawnEnemy", "class byte, slot byte, then five words stored at +96..+112 of the 272 byte enemy record at 0x388E70 + 2720 * mode + 272 * slot (not positions: e.g. 3, 33, 6, 0, 2); the record is cleared and set up by game_0058e0a0 first; nothing runs when the record's first byte is set (read from the code)"),
     0xD1: ("SetupEnemy", "the same shape as SpawnEnemy (game_00670770), with the other table at 0x720000 - 30720 for the model words"),
     0x45: ("SetOption", "flag, value, index (below 8), number: two small tables at 0x491258 and 0x491268"),
-    0x110: ("SetVar", "index (below 8), value: stores the value in the table at 0x491268"),
+    0x110: ("SetVar", "index (below 8), value: stores the value in the table at 0x491268; measured: room 14's three SetVars (values edited to 11, 22, 33) read back as 11, 22, 33 at 0x491268"),
     0x20: ("SelectCharacter", "slot number: stored at 0x3134CE (the current character) only when it is below 4 and the character record 0x3B1780 + 1672 * n (halfword +0) is non-zero; measured: 0 is taken, 7 leaves 255"),
     0x13: ("SetHudState", "byte, halfword: stored at 0x3B31D5 and 0x3B31D6 (with two more bytes), by game_005952d0"),
     0x10: ("EnableSlot", "slot number: writes the byte at the start of the 536 byte record 0x3B3200 + 536 * n (op 0x11 writes 0 there)"),
