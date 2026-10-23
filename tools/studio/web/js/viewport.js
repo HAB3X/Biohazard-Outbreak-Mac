@@ -20,6 +20,7 @@ export class Viewport {
     this.space = false;
     this.pending = false;
     this.renderer.onTexture = () => this.redraw();
+    overlay.setFloorLookup((file, x, z) => { const h = this.floorAt(file, x, z, 600); return h === null ? 0 : h; });
     new ResizeObserver(() => this.resize()).observe(this.view);
     this.bind();
     this.resize();

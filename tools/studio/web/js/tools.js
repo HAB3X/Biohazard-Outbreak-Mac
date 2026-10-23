@@ -23,12 +23,11 @@ export const PLACE = [
   { id: "camera", label: "Camera", icon: "camera", key: "C", hint: "Click to put a camera. It follows the player or stays put, as the one it copies does." },
 ];
 
-export const FIXED = [
-  { id: "spawn", label: "Spawn point", icon: "spawn", key: "S", soon: "Spawn points: next stage." },
-];
+export const FIXED = [];
 export const THINGS = [
   { id: "item", label: "Item", icon: "item", key: "I", hint: "Click to put an item on the floor. Pick what it is and how many in the panel." },
   { id: "enemy", label: "Enemy", icon: "enemy", key: "N", hint: "Click to put an enemy. It faces the way you set in the panel; pick its health there too." },
+  { id: "spawn", label: "Player start", icon: "spawn", key: "S", hint: "Click to move the player's start spot in this room (the partners follow the other start spots)." },
 ];
 
 export const snapTo = (v, step = store.snap) => (step > 1 ? Math.round(v / step) * step : Math.round(v));
@@ -57,6 +56,14 @@ export function place(tool, at) {
   const room = roomOf(store.room);
   if (!room) return null;
   const x = snapTo(at[0]), z = snapTo(at[2]), y = Math.round(at[1]);
+  if (tool.id === "spawn") {
+    const sp = room.spawns[0];
+    if (!sp) { emit("note", "This room has no start spots to move.", "warn"); return null; }
+    sp.pos = [x, y, z];
+    commit("Move player start");
+    select([{ c: "spawns", file: room.file, i: sp.i }]);
+    return sp;
+  }
   if (tool.id === "item") {
     const o = addItem(room, { position: [x, y, z] });
     commit("Add item");

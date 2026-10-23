@@ -12,6 +12,9 @@ let hits = [];            // what was drawn last frame, in drawing order: {ref, 
 let handleList = [];      // the selected thing's handles, on the screen
 
 export const lastHandles = () => handleList;
+let floorLookup = () => 0;
+export const setFloorLookup = (fn) => { floorLookup = fn; };
+const floorY = (file, x, z) => floorLookup(file, x, z);
 
 // ---- what a selected thing can be pulled by
 export function handlesOf(ref) {
@@ -26,6 +29,10 @@ export function handlesOf(ref) {
     o.box.slice(0, 4).forEach((p, n) => out.push({ id: "box" + n, p, kind: "square", dim: true }));
   }
   if (ref.c === "zones") o.box.slice(0, 4).forEach((p, n) => out.push({ id: "zone" + n, p, kind: "square" }));
+  if (ref.c === "spawns") {
+    const a = o.facing / 65536 * Math.PI * 2;
+    out.push({ id: "facing", p: [o.pos[0] + Math.sin(a) * 150, floorY(ref.file, o.pos[0], o.pos[2]), o.pos[2] + Math.cos(a) * 150], kind: "ring" });
+  }
   if (ref.c === "enemies") {
     const a = o.facing / 65536 * Math.PI * 2;
     out.push({ id: "facing", p: [o.pos[0] + Math.sin(a) * 160, o.pos[1], o.pos[2] + Math.cos(a) * 160], kind: "ring" });
@@ -143,6 +150,25 @@ export function draw(ctx, camera, dpr, rooms, hover) {
           glyph("light", p[0], p[1], col, sel, base);
         } });
         hits.push({ ref, order: 5, test: pointTest(p, 10) });
+      }
+    }
+
+    if (show.spawns !== false) {
+      for (const sp of r.spawns) {
+        const ref = { c: "spawns", file, i: sp.i }, col = colour("spawn"), sel = selected(ref);
+        const y = floorY(file, sp.pos[0], sp.pos[2]), p0 = [sp.pos[0], y, sp.pos[2]], p = P(p0);
+        if (p[2] < -0.9) continue;
+        const a = sp.facing / 65536 * Math.PI * 2, f = P([sp.pos[0] + Math.sin(a) * 150, y, sp.pos[2] + Math.cos(a) * 150]);
+        layers.push({ order: 8, run() {
+          ctx.strokeStyle = rgba(col, sel ? 1 : 0.9 * base); ctx.lineWidth = 2.2;
+          ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(f[0], f[1]); ctx.stroke();
+          ctx.fillStyle = rgba(col, (sel ? 1 : 0.95) * base); ctx.strokeStyle = sel ? "#fff" : "rgba(0,0,0,.6)"; ctx.lineWidth = sel ? 1.8 : 1;
+          ctx.beginPath(); ctx.moveTo(p[0], p[1] - 10); ctx.lineTo(p[0] + 8, p[1] + 6); ctx.lineTo(p[0] - 8, p[1] + 6); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.lineWidth = 1;
+          ctx.fillStyle = "#06201a"; ctx.font = "bold 9px -apple-system, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(sp.i + 1), p[0], p[1] + 1);
+          ctx.font = "11px -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif";
+          if (sel || (hovered(ref) && current)) pill(sp.i === 0 ? "player start" : `partner ${sp.i} start`, p[0], p[1] - 22, col, sel);
+        } });
+        hits.push({ ref, order: 8, test: pointTest(p, 13) });
       }
     }
 

@@ -436,6 +436,25 @@ class Room:
                 raise ValueError(f"fog number {number} is outside the record (0 to 23)")
             self._put(base + 4 * number, "<f", float(value))
 
+    # The characters' start spots (section 7): a count (4) and a 32 byte record for each: x, z, a facing (65536 to a turn), five zeros. Measured in File 2's zoo: the first
+    # scenario's start in room 3 puts the player at record 0's place (11912, 11109) and the partners at the others'
+    def start_spots(self):
+        offset, size = self.sections[7]
+        if size < 4:
+            return []
+        count = struct.unpack_from("<i", self.data, offset)[0]
+        if not 0 < count <= 8 or 4 + 32 * count > size:
+            return []
+        return [struct.unpack_from("<3i", self.data, offset + 4 + 32 * i) for i in range(count)]
+
+    def set_start_spot(self, index, x=None, z=None, facing=None):
+        offset, _ = self.sections[7]
+        base = offset + 4 + 32 * index
+        if not 0 <= index < len(self.start_spots()):
+            raise IndexError(f"start spot {index}: the room has {len(self.start_spots())}")
+        cur = struct.unpack_from("<3i", self.data, base)
+        self._put(base, "<3i", int(cur[0] if x is None else x), int(cur[1] if z is None else z), int(cur[2] if facing is None else facing))
+
     # Growing: a room can take up to the end of its last sector (see capacity()), by moving the sections after the one that grows
     def capacity(self):
         """The bytes the room file can still grow by: the member sits in whole 2048 byte sectors and the archive's table can say

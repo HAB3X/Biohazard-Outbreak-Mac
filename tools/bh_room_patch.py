@@ -12,6 +12,7 @@ EDITS.json (the room editor writes it):
         "items": {"6": {"position": [x, y, z], "kind": 300, "quantity": 2}},   (the scenario's items by number from 1: place in the item .dat, kind and quantity in each .tbl)
         "nodes": {"3": {"position": [x, y, z], "kind": 2, "id": 5, "words": {"8": 10}}},   (the room's entity records in the .sgl: AI navigation nodes)
         "script_words": {"67": 123},   (the script's words by number, in place)
+        "start_spots": {"0": {"x": 11500, "z": 11300, "facing": 0}},   (the characters' start spots, section 7: the first is the player's)
         "lights": {"0": {"position": [x, y, z], "range": 600, "attenuation": 0.001, "colour": [r, g, b], "colour2": [r, g, b]}},
         "sound_zones": {"2": {"box": [[x, y, z] x8], "sound": 8}}, "sound_points": {"0": {"position": [x, y, z]}},
         "new_cameras": [{"like": 0, "eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}],
@@ -240,6 +241,11 @@ def build(game, edits, replacements=None):
             more, warning = sgl_script_patches(game, pack, member, script_words, spec["script_words"])
             patches += more
             report.append(warning or f"{pack}/{member}: {len(more)} script words in the .sgl")
+        for number, change in spec.get("start_spots", {}).items():
+            unknown = set(change) - {"x", "z", "facing"}
+            if unknown:
+                raise SystemExit(f"{member} start spot {number}: unknown {sorted(unknown)}")
+            room.set_start_spot(int(number), **change)
         for number, change in spec.get("lights", {}).items():
             unknown = set(change) - {"position", "attenuation", "range", "colour", "colour2"}
             if unknown:

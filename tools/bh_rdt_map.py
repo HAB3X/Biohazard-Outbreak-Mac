@@ -113,6 +113,7 @@ def build(game, scenario, names, variants):
         entry["enemies"] = [{"i": e.number, "mode": e.mode, "modes": e.modes, "chars": e.chars, "hp": e.hp_tier, "id": e.id, "cls": e.kind, "facing": e.facing, "pos": list(e.position)}
                             for e in (scenario_enemies.enemies if scenario_enemies else [])
                             if e.room == number and (e.variant == variant or (not variant and (number, e.variant) not in rooms))]
+        entry["spawns"] = [{"i": i, "pos": [float(s[0]), 0.0, float(s[1])], "facing": s[2]} for i, s in enumerate(room.start_spots())]
         entry["lights"] = [{"i": i, "pos": [round(v, 1) for v in l.position], "att": l.attenuation, "range": l.range, "col": [round(v, 4) for v in l.colour],
                             "col2": [round(v, 4) for v in l.colour2]} for i, l in enumerate(room.lights)]
         entry["zones"] = [{"i": i, "sound": z.sound, "box": [list(p) for p in z.box]} for i, z in enumerate(room.sound_zones)]

@@ -20,6 +20,7 @@ function leaves(r, c) {
       else label = `${d.label} ${o.fields[0] || ""}`.trim();
     } else if (c === "enemies") label = `Enemy ${o.id}`;
     else if (c === "items") label = `Item ${o.kind.toString(16).toUpperCase()} ×${o.qty}`;
+    else if (c === "spawns") label = o.i === 0 ? "Player start" : `Partner ${o.i} start`;
     else label = `${d.label} ${o.i}`;
     return { ref: { c, file: r.file, i: o.i }, label, color: d.color, o, isNew: o.isNew };
   });
@@ -46,7 +47,7 @@ function renderTree() {
   tree.innerHTML = "";
   for (const r of store.scene.rooms) {
     const groups = [];
-    for (const c of ["areas", "enemies", "items", "cameras", "lights", "zones", "nodes"]) {
+    for (const c of ["spawns", "areas", "enemies", "items", "cameras", "lights", "zones", "nodes"]) {
       const ls = leaves(r, c).filter((l) => matches(l.label) || matches(r.name || "") || matches(String(r.id)));
       if (ls.length) groups.push({ c, ls });
     }

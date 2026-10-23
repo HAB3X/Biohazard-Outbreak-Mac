@@ -26,6 +26,7 @@ export const COLLECTIONS = {
   zones: { key: "zone", label: "Sound zone", color: "zone", icon: "zone" },
   points: { key: "sound", label: "Sound source", color: "zone", icon: "zone" },
   nodes: { key: "node", label: "AI node", color: "node", icon: "node" },
+  spawns: { key: "spawn", label: "Start spot", color: "spawn", icon: "spawn" },
   items: { key: "item", label: "Item", color: "item", icon: "item" },
   enemies: { key: "enemy", label: "Enemy", color: "enemy", icon: "enemy" },
 };
@@ -151,6 +152,13 @@ export function diffs(scene, orig) {
       if (n.hp !== on.hp) d.hp_tier = n.hp;
       put("enemies", n.i, d);
     }
+    for (const sp of r.spawns) {
+      const os = o.spawns.find((x) => x.i === sp.i), d = {};
+      if (sp.pos[0] !== os.pos[0]) d.x = sp.pos[0];
+      if (sp.pos[2] !== os.pos[2]) d.z = sp.pos[2];
+      if (sp.facing !== os.facing) d.facing = sp.facing;
+      put("start_spots", sp.i, d);
+    }
     for (const l of r.lights) {
       const ol = o.lights.find((x) => x.i === l.i), d = {};
       if (moved(l.pos, ol.pos)) d.position = l.pos;
@@ -242,6 +250,7 @@ export function applyEdits(scene, edits) {
     for (const [i, d] of Object.entries(spec.items || {})) { const n = r.items.find((x) => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.quantity !== undefined) n.qty = d.quantity; } }
     for (const [i, d] of Object.entries(spec.nodes || {})) { const n = r.nodes.find((x) => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.id !== undefined) n.id = d.id; for (const [k, v] of Object.entries(d.words || {})) n.words[+k] = v; } }
     for (const [i, v] of Object.entries(spec.script_words || {})) r.script[+i] = v;
+    for (const [i, d] of Object.entries(spec.start_spots || {})) { const sp = r.spawns.find((x) => x.i === +i); if (sp) { if (d.x !== undefined) sp.pos = [d.x, sp.pos[1], sp.pos[2]]; if (d.z !== undefined) sp.pos = [sp.pos[0], sp.pos[1], d.z]; if (d.facing !== undefined) sp.facing = d.facing; } }
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find((x) => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }
     for (const [i, d] of Object.entries(spec.sound_points || {})) { const p = r.points.find((x) => x.i === +i); if (p) { if (d.position) p.pos = d.position; if (d.kind !== undefined) p.kind = d.kind; } }
     for (const n of spec.new_items || []) addItem(r, n);

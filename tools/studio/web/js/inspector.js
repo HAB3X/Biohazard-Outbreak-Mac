@@ -200,6 +200,15 @@ const FORMS = {
     ];
   },
 
+  spawns(ref, o) {
+    const p = set(ref, "Move start", (obj, v) => { obj.pos = [v[0], obj.pos[1], v[2]]; });
+    const f = set(ref, "Turn start", (obj, v) => { obj.facing = v; });
+    return [section(ref.i === 0 ? "Player start" : `Partner ${ref.i} start`,
+      field("Position", vec3(o.pos, p.live, p.done, { step: 10 })),
+      field("Facing", dial(o.facing, f.live, f.done)),
+      el("div", { class: "note" }, "Where the characters stand when the scenario starts in this room. The first is the player; the others are the partners.")) ];
+  },
+
   enemies(ref, o) {
     const p = set(ref, "Move enemy", (obj, v) => { obj.pos = v; });
     const f = set(ref, "Turn enemy", (obj, v) => { obj.facing = v; });
