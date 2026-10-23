@@ -1,88 +1,80 @@
-// The outliner: the scenario's rooms and what is in each, searchable; click to go to a thing.
-import { store, on, emit, select, setRoom, roomOf, describe, refEq, COLLECTIONS, AREA_TAGS } from "./scene.js";
-import { icon } from "./icons.js";
+// The side panel: the scenario's rooms, and under them what is in the room you are in. Click a room to go there, a thing to select it.
+import { store, on, emit, select, setRoom, roomOf, describe, refEq, AREA_TAGS } from "./scene.js";
 import { el } from "./ui.js";
 
-const host = () => document.getElementById("outline");
-let open = new Set();
+const host = () => document.getElementById("side");
 let query = "";
-
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue("--" + name).trim();
+const roomName = (r) => r.name || `Room ${r.id}`;
 
-function leaves(r, c) {
-  const list = r[c];
-  return list.map((o) => {
-    const d = describe(c, o);
-    let label = d.label;
-    if (c === "areas") {
-      if (o.tag === 0) label = `Door ${o.door} → ${o.to}`;
-      else if (o.tag === 1) label = `Exit → ${o.to}`;
-      else label = `${d.label} ${o.fields[0] || ""}`.trim();
-    } else if (c === "enemies") label = `Enemy ${o.id}`;
-    else if (c === "items") label = `Item ${o.kind.toString(16).toUpperCase()} ×${o.qty}`;
-    else if (c === "spawns") label = o.i === 0 ? "Player start" : `Partner ${o.i} start`;
-    else label = `${d.label} ${o.i}`;
-    return { ref: { c, file: r.file, i: o.i }, label, color: d.color, o, isNew: o.isNew };
-  });
+// friendly groups: doors and exits together, the other areas as "Triggers"
+const GROUPS = [
+  { title: "Start spots", c: "spawns", pick: () => true },
+  { title: "Doors and exits", c: "areas", pick: (o) => o.tag === 0 || o.tag === 1 },
+  { title: "Items", c: "items", pick: () => true },
+  { title: "Enemies", c: "enemies", pick: () => true },
+  { title: "Cameras", c: "cameras", pick: () => true },
+  { title: "Triggers", c: "areas", pick: (o) => o.tag !== 0 && o.tag !== 1 },
+];
+
+function label(c, o) {
+  if (c === "areas") {
+    if (o.tag === 0) return `Door to room ${o.to}`;
+    if (o.tag === 1) return `Exit to room ${o.to}`;
+    return `${describe(c, o).label}${o.fields[0] ? " " + o.fields[0] : ""}`;
+  }
+  if (c === "spawns") return o.i === 0 ? "Player" : `Partner ${o.i}`;
+  if (c === "enemies") return `Enemy ${o.id}`;
+  if (c === "items") return `Item ${o.kind.toString(16).toUpperCase()} × ${o.qty}`;
+  return `${describe(c, o).label} ${o.i}`;
 }
-
-function matches(text) { return !query || text.toLowerCase().includes(query); }
 
 export function render() {
   const h = host();
   h.innerHTML = "";
-  h.append(el("div", { class: "panel-head" }, "Rooms", el("span", { class: "spacer" }), el("span", { class: "pill" }, `${store.scene.rooms.length}`)));
-  const search = el("div", { class: "search", html: icon("search", 14) });
-  const input = el("input", { placeholder: "Search rooms and things", value: query });
-  input.addEventListener("input", () => { query = input.value.trim().toLowerCase(); renderTree(); });
+  h.append(el("div", { class: "side-title" }, "Rooms"));
+  const search = el("div", { class: "search" });
+  const input = el("input", { placeholder: "Find a room", value: query });
+  input.addEventListener("input", () => { query = input.value.trim().toLowerCase(); renderRooms(); });
   search.append(input);
-  h.append(search);
-  h.append(el("div", { id: "tree" }));
-  renderTree();
+  h.append(search, el("div", { id: "rooms" }), el("div", { class: "things", id: "things" }));
+  renderRooms(); renderThings();
 }
 
-function renderTree() {
-  const tree = document.getElementById("tree");
-  if (!tree) return;
-  tree.innerHTML = "";
+function renderRooms() {
+  const box = document.getElementById("rooms");
+  if (!box) return;
+  box.innerHTML = "";
   for (const r of store.scene.rooms) {
-    const groups = [];
-    for (const c of ["spawns", "areas", "enemies", "items", "cameras", "lights", "zones", "nodes"]) {
-      const ls = leaves(r, c).filter((l) => matches(l.label) || matches(r.name || "") || matches(String(r.id)));
-      if (ls.length) groups.push({ c, ls });
-    }
-    const nameHit = matches(`${r.id} ${r.name || ""}`);
-    if (query && !nameHit && !groups.length) continue;
-    const isOpen = open.has(r.file) || !!query;
-    const room = el("div", { class: "room" + (r.file === store.room ? " current" : "") + (isOpen ? " open" : "") });
-    const total = r.areas.length + r.items.length + r.enemies.length + r.cameras.length;
-    const head = el("div", { class: "room-head" },
-      el("span", { class: "chev", html: icon("chevron", 12) }),
-      el("span", { class: "num" }, String(r.id) + (r.variant ? "·" + r.variant : "")),
-      el("span", { class: "name", title: r.name || r.file }, r.name || r.file.replace(".rdt", "")),
-      el("span", { class: "count" }, String(total)));
-    head.addEventListener("click", (e) => {
-      if (e.target.closest(".chev")) { open.has(r.file) ? open.delete(r.file) : open.add(r.file); renderTree(); return; }
-      setRoom(r.file); emit("frame", r.file);
-    });
-    head.addEventListener("dblclick", () => { open.has(r.file) ? open.delete(r.file) : open.add(r.file); renderTree(); });
-    room.append(head);
-    const body = el("div", { class: "room-body" });
-    for (const g of groups) {
-      const meta = g.c === "areas" ? { label: "Areas" } : COLLECTIONS[g.c];
-      body.append(el("div", { class: "group-label" }, meta.label + " (" + g.ls.length + ")"));
-      for (const l of g.ls) {
-        const leaf = el("div", { class: "leaf" + (store.selection.some((s) => refEq(s, l.ref)) ? " sel" : "") },
-          el("span", { class: "sw", style: `background:${css(l.color)}` }), l.label, l.isNew ? el("span", { class: "tag" }, "new") : null);
-        leaf.addEventListener("click", () => { select([l.ref]); emit("focus", l.ref); });
-        body.append(leaf);
-      }
-    }
-    room.append(body);
-    tree.append(room);
+    const text = `${r.id} ${roomName(r)}`.toLowerCase();
+    if (query && !text.includes(query)) continue;
+    const row = el("div", { class: "room" + (r.file === store.room ? " cur" : "") }, el("span", { class: "n" }, String(r.id)), el("span", { class: "t", title: roomName(r) }, roomName(r)));
+    row.addEventListener("click", () => { setRoom(r.file); emit("frame", r.file); });
+    box.append(row);
   }
 }
 
-on("selection", () => { if (store.scene) { const f = store.selection[0] && store.selection[0].file; if (f) open.add(f); renderTree(); } });
-on("room", () => store.scene && renderTree());
-on("changed", () => store.scene && renderTree());
+function renderThings() {
+  const box = document.getElementById("things");
+  if (!box) return;
+  box.innerHTML = "";
+  const r = roomOf(store.room);
+  if (!r) return;
+  box.append(el("h6", {}, `In room ${r.id}`));
+  for (const g of GROUPS) {
+    const list = r[g.c].filter(g.pick);
+    if (!list.length) continue;
+    box.append(el("h6", {}, `${g.title} · ${list.length}`));
+    for (const o of list.slice(0, 30)) {
+      const ref = { c: g.c, file: r.file, i: o.i }, d = describe(g.c, o);
+      const leaf = el("div", { class: "leaf" + (store.selection.some((s) => refEq(s, ref)) ? " sel" : "") }, el("i", { style: `background:${css(d.color)}` }), label(g.c, o), o.isNew ? el("em", {}, "new") : null);
+      leaf.addEventListener("click", () => { select([ref]); emit("focus", ref); });
+      box.append(leaf);
+    }
+    if (list.length > 30) box.append(el("div", { class: "quiet", style: "padding:2px 8px" }, `and ${list.length - 30} more`));
+  }
+}
+
+on("selection", () => store.scene && renderThings());
+on("room", () => { if (store.scene) { renderRooms(); renderThings(); } });
+on("changed", () => store.scene && renderThings());

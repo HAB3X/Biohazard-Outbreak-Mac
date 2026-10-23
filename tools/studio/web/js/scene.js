@@ -285,7 +285,7 @@ export const store = {
   selection: [],              // [{c: collection, file, i}]
   mode: "plan",               // plan or 3d
   snap: 10,
-  show: { models: true, textures: true, areas: true, cameras: true, lights: true, zones: false, nodes: false, items: true, enemies: true, labels: true, grid: true },
+  show: { models: true, textures: true, areas: true, triggers: false, cameras: false, lights: false, zones: false, nodes: false, items: true, enemies: true, labels: true, grid: true },
   history: [],                // the edits after each step, the first being "nothing"
   at: 0,
   dirty: false,

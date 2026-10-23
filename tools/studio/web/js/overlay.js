@@ -85,6 +85,7 @@ export function draw(ctx, camera, dpr, rooms, hover) {
     if (show.areas) {
       for (const a of r.areas) {
         if (!current && a.tag !== 0 && a.tag !== 1) continue;
+        if (a.tag !== 0 && a.tag !== 1 && !show.triggers && !selected({ c: "areas", file, i: a.i }) && !hovered({ c: "areas", file, i: a.i })) continue;
         const ref = { c: "areas", file, i: a.i }, d = describe("areas", a), col = colour(d.color);
         const y = (a.h[0] + a.h[1]) / 2;
         const lo = a.quad.map((p) => P([p[0], a.h[0], p[1]])), pts = a.quad.map((p) => P([p[0], y, p[1]]));
@@ -153,7 +154,7 @@ export function draw(ctx, camera, dpr, rooms, hover) {
       }
     }
 
-    if (show.spawns !== false) {
+    if (show.spawns !== false && current) {
       for (const sp of r.spawns) {
         const ref = { c: "spawns", file, i: sp.i }, col = colour("spawn"), sel = selected(ref);
         const y = floorY(file, sp.pos[0], sp.pos[2]), p0 = [sp.pos[0], y, sp.pos[2]], p = P(p0);

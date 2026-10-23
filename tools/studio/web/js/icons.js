@@ -1,6 +1,9 @@
 // Icons: 24 x 24, drawn with the current colour. icon(name, size) gives the SVG text.
 const P = {
-  logo: '<path d="M12 2l8.5 5v10L12 22l-8.5-5V7z" fill="url(#lg)" stroke="none"/><path d="M12 7.5v9M7.8 9.8L12 12l4.2-2.2" stroke="#0d0f14" stroke-width="1.7" fill="none" stroke-linecap="round"/>',
+  more: '<path d="M6 12h.01M12 12h.01M18 12h.01" stroke-width="2.6"/>',
+  down: '<path d="M6 9l6 6 6-6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  logo: '<path d="M12 2l8.5 5v10L12 22l-8.5-5V7z" fill="url(#lg)" stroke="none"/><path d="M12 7.5v9M7.8 9.8L12 12l4.2-2.2" stroke="#0d0f14" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
   undo: '<path d="M9 7L4 12l5 5"/><path d="M4 12h10a6 6 0 010 12" transform="translate(0 -4)"/>',
   redo: '<path d="M15 7l5 5-5 5"/><path d="M20 12H10a6 6 0 000 12" transform="translate(0 -4)"/>',
   play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/>',
@@ -43,5 +46,5 @@ const P = {
 export function icon(name, size = 20, extra = "") {
   const body = P[name] || P.hex;
   const defs = name === "logo" ? '<defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6aa5ff"/><stop offset="1" stop-color="#a98bff"/></linearGradient></defs>' : "";
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" ${extra}>${defs}${body}</svg>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" ${extra}>${defs}${body}</svg>`;
 }

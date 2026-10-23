@@ -6,7 +6,7 @@ import { el, number, vec3, select as selectBox, chips, dial, colour, field, sect
 const host = () => document.getElementById("inspector");
 let quiet = false;       // set while this panel is the one that changed the scene (it is not redrawn under the pointer)
 
-const roomName = (r) => `${r.id}${r.variant ? "·" + r.variant : ""}  ${r.name || ""}`.trim();
+const roomName = (r) => r.name || `Room ${r.id}`;
 const roomOptions = () => store.scene.rooms.map((r) => ({ value: r.id, label: roomName(r) }));
 const bitsToF = (i) => { const b = new DataView(new ArrayBuffer(4)); b.setInt32(0, i | 0); return b.getFloat32(0); };
 const fToBits = (f) => { const b = new DataView(new ArrayBuffer(4)); b.setFloat32(0, f); return b.getInt32(0); };
@@ -32,17 +32,12 @@ const MODES = [{ value: 0, label: "Mode 1", tip: "the first of the four play mod
 function header(ref, o) {
   const d = describe(ref.c, o), r = roomOf(ref.file);
   const color = getComputedStyle(document.documentElement).getPropertyValue("--" + d.color).trim();
-  const title = ref.c === "areas" ? d.label : d.label;
-  const actions = el("div", { class: "insp-actions" });
-  const mk = (ic, tip, fn, disabled) => { const b = el("button", { class: "btn icon ghost", title: tip, disabled: disabled || false }, ""); b.innerHTML = icon(ic, 16); b.addEventListener("click", fn); return b; };
-  actions.append(mk("target", "Centre the view on it", () => emit("focus", ref)));
-  actions.append(mk("trash", o.isNew ? "Delete" : "Only things you added can be deleted", () => remove(ref), !o.isNew));
-  return el("div", { class: "insp-head" },
-    el("div", { class: "badge", style: `color:${color};background:${color}22`, html: icon(d.icon, 19) }),
-    el("div", {}, el("h2", {}, `${title} ${o.i}`), el("small", {}, `Room ${roomName(r)}`)),
-    actions);
+  const acts = el("div", { class: "acts" });
+  const mk = (ic, tip, fn, disabled) => { const b = el("button", { class: "btn icon", title: tip, disabled: disabled || false, html: icon(ic, 16) }); b.addEventListener("click", fn); return b; };
+  acts.append(mk("target", "Show it in the view", () => emit("focus", ref)));
+  if (o.isNew) acts.append(mk("trash", "Delete", () => remove(ref)));
+  return el("div", { class: "head" }, el("span", { class: "dot", style: `background:${color}` }), el("div", {}, el("h2", {}, d.label), el("small", {}, `${roomName(r)}${o.isNew ? " · new" : ""}`)), acts);
 }
-
 function remove(ref) {
   const r = roomOf(ref.file), list = r[ref.c];
   const k = list.findIndex((x) => x.i === ref.i);
@@ -58,8 +53,8 @@ export function render() {
   const sel = store.selection;
   if (sel.length === 0) return h.append(roomPanel());
   if (sel.length > 1) {
-    h.append(el("div", { class: "insp-head" }, el("div", { class: "badge", html: icon("select", 19) }), el("div", {}, el("h2", {}, `${sel.length} things selected`), el("small", {}, "Drag to move them together"))));
-    h.append(section("", el("div", { class: "note" }, "Shift-click adds or removes a thing. Select one to edit it.")));
+    h.append(el("div", { class: "head" }, el("div", {}, el("h2", {}, `${sel.length} things selected`), el("small", {}, "Drag any of them to move them together"))));
+    h.append(section("", el("div", { class: "note" }, "Click one thing to edit it.")));
     return;
   }
   const ref = sel[0], o = objectOf(ref);
@@ -73,20 +68,17 @@ function roomPanel() {
   const r = roomOf(store.room);
   const box = el("div", {});
   if (!r) return box;
-  box.append(el("div", { class: "insp-head" }, el("div", { class: "badge", html: icon("plan", 19) }), el("div", {}, el("h2", {}, `Room ${roomName(r)}`), el("small", {}, r.file))));
-  const count = (k) => r[k].length;
-  box.append(section("In this room",
-    el("div", { class: "kv" },
-      el("span", {}, "Areas (doors, exits, triggers)"), el("b", {}, count("areas")),
-      el("span", {}, "Cameras"), el("b", {}, count("cameras")),
-      el("span", {}, "Items"), el("b", {}, count("items")),
-      el("span", {}, "Enemies"), el("b", {}, count("enemies")),
-      el("span", {}, "Lights"), el("b", {}, count("lights")),
-      el("span", {}, "Sound zones"), el("b", {}, count("zones")))));
-  box.append(section("Tips", el("div", { class: "note" },
-    "Click a thing to select it, drag to move it, drag its white handles to reshape it. ",
-    el("kbd", {}, "D"), " door · ", el("kbd", {}, "E"), " exit · ", el("kbd", {}, "C"), " camera. ",
-    "Scroll zooms, drag on empty ground pans (plan) or orbits (3D). ", el("kbd", {}, "⌘Z"), " undoes.")));
+  box.append(el("div", { class: "head" }, el("div", {}, el("h2", {}, roomName(r)), el("small", {}, `Room ${r.id}`))));
+  const n = (k) => r[k].length;
+  box.append(section("In this room", el("div", { class: "kv" },
+    el("span", {}, "Doors and exits"), el("b", {}, r.areas.filter((a) => a.tag === 0 || a.tag === 1).length),
+    el("span", {}, "Items"), el("b", {}, n("items")),
+    el("span", {}, "Enemies"), el("b", {}, n("enemies")),
+    el("span", {}, "Cameras"), el("b", {}, n("cameras")))));
+  box.append(el("div", { class: "empty", style: "padding:28px 22px;text-align:left" },
+    el("p", {}, "Click something in the picture to edit it."),
+    el("p", {}, "Use ", el("b", { style: "color:var(--dim)" }, "Add"), " at the bottom to put new things down."),
+    el("p", {}, "Press ", el("kbd", {}, "⌘Z"), " if you change your mind.")));
   return box;
 }
 
