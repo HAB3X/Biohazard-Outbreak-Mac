@@ -37,14 +37,14 @@ function header(ref, o) {
   const acts = el("div", { class: "acts" });
   const mk = (ic, tip, fn, disabled) => { const b = el("button", { class: "btn icon", title: tip, disabled: disabled || false, html: icon(ic, 16) }); b.addEventListener("click", fn); return b; };
   acts.append(mk("target", "Show it in the view", () => emit("focus", ref)));
-  if (o.isNew || ref.c === "walls" || ref.c === "enemies") acts.append(mk("trash", ref.c === "enemies" && !o.isNew ? "Remove from the game" : "Delete", () => remove(ref)));
+  if (o.isNew || ref.c === "walls" || ref.c === "floors" || ref.c === "enemies") acts.append(mk("trash", ref.c === "enemies" && !o.isNew ? "Remove from the game" : "Delete", () => remove(ref)));
   return el("div", { class: "head" }, el("span", { class: "dot", style: `background:${color}` }), el("div", {}, el("h2", {}, d.label), el("small", {}, `${roomName(r)}${o.isNew ? " · new" : ""}`)), acts);
 }
 function remove(ref) {
   const r = roomOf(ref.file), list = r[ref.c];
   const k = list.findIndex((x) => x.i === ref.i);
   if (k >= 0 && ref.c === "enemies" && !list[k].isNew) { list[k].modes = 0; select([]); commit("Remove enemy"); return; }   // never appears in any play mode
-  if (k < 0 || (!list[k].isNew && ref.c !== "walls")) return;
+  if (k < 0 || (!list[k].isNew && ref.c !== "walls" && ref.c !== "floors")) return;
   list.splice(k, 1);
   select([]);
   commit("Delete");
@@ -217,6 +217,17 @@ const FORMS = {
     ];
   },
 
+  floors(ref, o) {
+    const h = set(ref, "Change floor height", (obj, v) => { obj.y = v; });
+    const a = set(ref, "Resize floor", (obj, v) => { obj.min = [v[0], v[2]]; });
+    const b = set(ref, "Resize floor", (obj, v) => { obj.max = [v[0], v[2]]; });
+    return [
+      section("Floor", field("Height", number(o.y, h.live, h.done, { step: 10 }), "The surface people stand on, in the room's own height"),
+        field("One corner", vec3([o.min[0], o.y, o.min[1]], a.live, a.done, { step: store.snap > 1 ? store.snap : 1 })),
+        field("Opposite corner", vec3([o.max[0], o.y, o.max[1]], b.live, b.done, { step: store.snap > 1 ? store.snap : 1 }))),
+      section("", el("div", { class: "note" }, "The old ground is cut out under this rectangle and a flat floor put in. It changes where people can stand, not what is drawn: put a block from Objects under it. Press Delete to remove it.")),
+    ];
+  },
   walls(ref, o) {
     const a = set(ref, "Move wall end", (obj, v) => { obj.a = [v[0], v[2]]; });
     const b = set(ref, "Move wall end", (obj, v) => { obj.b = [v[0], v[2]]; });

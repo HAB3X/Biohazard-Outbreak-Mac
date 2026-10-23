@@ -32,6 +32,7 @@ export function handlesOf(ref) {
   if (ref.c === "walls") {
     out.push({ id: "wa", p: [o.a[0], o.y[0], o.a[1]], kind: "square" }, { id: "wb", p: [o.b[0], o.y[0], o.b[1]], kind: "square" });
   }
+  if (ref.c === "floors") out.push({ id: "fa", p: [o.min[0], o.y, o.min[1]], kind: "square" }, { id: "fb", p: [o.max[0], o.y, o.max[1]], kind: "square" });
   if (ref.c === "spawns") {
     const a = o.facing / 65536 * Math.PI * 2;
     out.push({ id: "facing", p: [o.pos[0] + Math.sin(a) * 150, floorY(ref.file, o.pos[0], o.pos[2]), o.pos[2] + Math.cos(a) * 150], kind: "ring" });
@@ -177,6 +178,16 @@ export function draw(ctx, camera, dpr, rooms, hover) {
     }
 
     if (show.walls && current) {
+      for (const f of r.floors) {
+        const ref = { c: "floors", file, i: f.i }, col = colour("wall"), sel = selected(ref), hov = hovered(ref);
+        const pts = [[f.min[0], f.min[1]], [f.max[0], f.min[1]], [f.max[0], f.max[1]], [f.min[0], f.max[1]]].map((p) => P([p[0], f.y, p[1]]));
+        if (pts.some((p) => p[2] < -0.9)) continue;
+        layers.push({ order: 2, run() {
+          ctx.fillStyle = rgba(col, sel ? 0.3 : hov ? 0.24 : 0.14); ctx.strokeStyle = rgba(col, sel ? 1 : 0.7); ctx.lineWidth = sel ? 2 : 1.2; ctx.setLineDash([2, 3]);
+          path(pts); ctx.fill(); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1;
+        } });
+        hits.push({ ref, order: 2, test: polyTest(pts, 4) });
+      }
       for (const w of r.walls) {
         const ref = { c: "walls", file, i: w.i }, col = colour("wall"), sel = selected(ref), hov = hovered(ref);
         const a = P([w.a[0], w.y[0], w.a[1]]), b = P([w.b[0], w.y[0], w.b[1]]);

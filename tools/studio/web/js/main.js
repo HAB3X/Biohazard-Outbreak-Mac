@@ -5,7 +5,7 @@ import { el, toast } from "./ui.js";
 import * as scene from "./scene.js";
 import { store, on, emit, loadScene, commit, undo, redo, canUndo, canRedo, setTool, setMode, setRoom, select, currentEdits, roomOf, objectOf } from "./scene.js";
 import { Viewport } from "./viewport.js";
-import { PLACE, FIXED, THINGS, WALL } from "./tools.js";
+import { PLACE, FIXED, THINGS, WALL, FLOOR } from "./tools.js";
 import { render as renderInspector } from "./inspector.js";
 import { render as renderOutline } from "./outliner.js";
 
@@ -24,6 +24,7 @@ const ADD = [
   { id: "examine", label: "Examine spot", about: "Something to look at", icon: "message", key: "M" },
   { id: "pickup", label: "Pickup trigger", about: "An item's pickup area", icon: "item", key: "P" },
   { id: "wall", label: "Wall", about: "A solid line nobody can cross", icon: "wall", key: "W" },
+  { id: "floor", label: "Floor", about: "A flat place to stand, raised or not", icon: "grid", key: "F" },
   { id: "ladder", label: "Ladder", about: "Something to climb", icon: "ladder", key: "L" },
   { id: "zone", label: "Script zone", about: "A zone a script can wait on", icon: "zone", key: "Z" },
 ];
@@ -126,7 +127,7 @@ function buildViewMenu() {
   host.innerHTML = "";
   const btn = el("button", { class: "btn line", html: icon("eye", 16) + " View" });
   const p = pop("down right");
-  const rows = [["walls", "Walls (what blocks you)"], ["areas", "Doors and exits"], ["triggers", "Triggers (examine spots, locks…)"], ["items", "Items"], ["enemies", "Enemies"], ["cameras", "Cameras"], ["lights", "Lights"], ["zones", "Sound zones"], ["nodes", "AI paths"], ["labels", "Names on things"], ["grid", "Grid"]];
+  const rows = [["walls", "Walls and floors (what you stand on)"], ["areas", "Doors and exits"], ["triggers", "Triggers (examine spots, locks…)"], ["items", "Items"], ["enemies", "Enemies"], ["cameras", "Cameras"], ["lights", "Lights"], ["zones", "Sound zones"], ["nodes", "AI paths"], ["labels", "Names on things"], ["grid", "Grid"]];
   for (const [k, label] of rows) {
     const row = el("label", { class: "check" }, el("input", { type: "checkbox", checked: store.show[k] }), label);
     row.firstChild.addEventListener("change", () => { store.show[k] = row.firstChild.checked; viewport.redraw(); });
@@ -150,7 +151,7 @@ function updateHint() {
   const b = document.getElementById("banner");
   if (!b) return;
   const a = ADD.find((x) => x.id === store.tool);
-  const t = [...PLACE, ...THINGS, WALL].find((x) => x.id === store.tool);
+  const t = [...PLACE, ...THINGS, WALL, FLOOR].find((x) => x.id === store.tool);
   if (a && t) { b.innerHTML = `<b>${a.label}</b> — ${t.hint} <kbd>Esc</kbd> to stop.`; b.classList.add("on"); }
   else if (store.tool === "scenery") { b.innerHTML = "Click an object to pick it: drag to move it, or turn and resize it in the panel. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }
   else if (store.tool === "pan") { b.innerHTML = "Drag to move the view. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }
@@ -306,7 +307,7 @@ function keys(openPalette) {
     else if (meta) return;
     else if (e.key === " ") { viewport.space = true; viewport.ov.style.cursor = "grab"; e.preventDefault(); }
     else if (e.key === "Escape") { select([]); setTool("select"); }
-    else if (e.key === "Delete" || e.key === "Backspace") { const s = store.selection[0]; if (s && store.selection.length === 1) { const o = objectOf(s); if (o && s.c === "enemies" && !o.isNew) { o.modes = 0; select([]); commit("Remove enemy"); } else if (o && (o.isNew || s.c === "walls")) { const r = roomOf(s.file); r[s.c].splice(r[s.c].findIndex((x) => x.i === s.i), 1); select([]); commit("Delete"); } else toast("Only things you added, walls and enemies can be deleted", "err"); } }
+    else if (e.key === "Delete" || e.key === "Backspace") { const s = store.selection[0]; if (s && store.selection.length === 1) { const o = objectOf(s); if (o && s.c === "enemies" && !o.isNew) { o.modes = 0; select([]); commit("Remove enemy"); } else if (o && (o.isNew || s.c === "walls" || s.c === "floors")) { const r = roomOf(s.file); r[s.c].splice(r[s.c].findIndex((x) => x.i === s.i), 1); select([]); commit("Delete"); } else toast("Only things you added, walls and enemies can be deleted", "err"); } }
     else if (e.key === "1") setMode("plan");
     else if (e.key === "2") setMode("3d");
     else if (e.key === "Tab") { e.preventDefault(); setMode(store.mode === "plan" ? "3d" : "plan"); }

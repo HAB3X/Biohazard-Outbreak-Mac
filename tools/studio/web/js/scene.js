@@ -32,6 +32,7 @@ export const COLLECTIONS = {
   spawns: { key: "spawn", label: "Start spot", color: "spawn", icon: "spawn" },
   items: { key: "item", label: "Item", color: "item", icon: "item" },
   enemies: { key: "enemy", label: "Enemy", color: "enemy", icon: "enemy" },
+  floors: { key: "floor", label: "Floor", color: "wall", icon: "grid" },
   scenery: { key: "scenery", label: "Object", color: "accent", icon: "cube" },
 };
 
@@ -47,6 +48,7 @@ export function centre(coll, o) {
       const q = o.quad;
       return [(q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, (o.h[0] + o.h[1]) / 2, (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4];
     }
+    case "floors": return [(o.min[0] + o.max[0]) / 2, o.y, (o.min[1] + o.max[1]) / 2];
     case "walls": return [(o.a[0] + o.b[0]) / 2, (o.y[0] + o.y[1]) / 2, (o.a[1] + o.b[1]) / 2];
     case "cameras": return o.eye;
     case "scenery": return o.wc;
@@ -64,6 +66,9 @@ export function translate(coll, o, dx, dy, dz) {
     case "areas":
       o.quad = o.quad.map((p) => [p[0] + dx, p[1] + dz]);
       o.h = [o.h[0] + dy, o.h[1] + dy];
+      break;
+    case "floors":
+      o.min = [o.min[0] + dx, o.min[1] + dz]; o.max = [o.max[0] + dx, o.max[1] + dz]; o.y += dy;
       break;
     case "walls":
       o.a = [o.a[0] + dx, o.a[1] + dz]; o.b = [o.b[0] + dx, o.b[1] + dz];
@@ -190,6 +195,7 @@ export function diffs(scene, orig) {
     if (r.rules && r.rules.length) { out.rules = r.rules; out.script_prepend = compile(r.rules); }
     const strip = (w) => JSON.stringify(w.map(({ a, b, y, flags, n }) => ({ a, b, y, flags, n })));
     if (strip(r.walls) !== strip(o.walls)) out.collision = { wall_segments: JSON.parse(strip(r.walls)) };
+    if (r.floors.length) out.collision = { ...out.collision, ground_boxes: r.floors.map((f) => ({ min: f.min, max: f.max, y: -f.y })) };   // the ground file's heights are the player's, negated (measured)
     if (Object.keys(out).length) edits[r.file] = out;
   });
   return { rooms: edits };
@@ -271,6 +277,7 @@ export function applyEdits(scene, edits) {
     for (const [i, d] of Object.entries(spec.start_spots || {})) { const sp = r.spawns.find((x) => x.i === +i); if (sp) { if (d.x !== undefined) sp.pos = [d.x, sp.pos[1], sp.pos[2]]; if (d.z !== undefined) sp.pos = [sp.pos[0], sp.pos[1], d.z]; if (d.facing !== undefined) sp.facing = d.facing; } }
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find((x) => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }
     for (const [i, d] of Object.entries(spec.sound_points || {})) { const p = r.points.find((x) => x.i === +i); if (p) { if (d.position) p.pos = d.position; if (d.kind !== undefined) p.kind = d.kind; } }
+    if (spec.collision && spec.collision.ground_boxes) r.floors = spec.collision.ground_boxes.map((b, i) => ({ i, min: clone(b.min), max: clone(b.max), y: -b.y }));
     if (spec.collision && spec.collision.wall_segments) r.walls = spec.collision.wall_segments.map((w, i) => ({ ...clone(w), i }));
     for (const n of spec.new_items || []) addItem(r, n);
     for (const n of spec.new_enemies || []) addEnemy(r, n);
@@ -318,6 +325,7 @@ export const refEq = (a, b) => a && b && a.c === b.c && a.file === b.file && a.i
 
 export function loadScene(data, saved) {
   store.game = data.game; store.scenario = data.scenario; store.scenarios = data.scenarios; store.ops = data.ops;
+  data.rooms.forEach((r) => { r.floors = r.floors || []; });
   store.orig = clone({ rooms: data.rooms });
   store.scene = clone({ rooms: data.rooms });
   store.history = [{ rooms: {} }];
@@ -367,6 +375,14 @@ export function select(refs, additive = false) {
 export function setRoom(file) { store.room = file; emit("room"); }
 export function setTool(tool) { store.tool = tool; emit("tool"); }
 export function setMode(mode) { store.mode = mode; emit("mode"); }
+
+// a flat floor over a rectangle of the room's ground at a height (up): the old ground is cut out where it lies
+export function addFloor(room, a, b, y) {
+  const next = Math.max(-1, ...room.floors.map((f) => f.i)) + 1;
+  const f = { i: next, min: [Math.min(a[0], b[0]), Math.min(a[1], b[1])], max: [Math.max(a[0], b[0]), Math.max(a[1], b[1])], y, isNew: true };
+  room.floors.push(f);
+  return f;
+}
 
 // a new wall between two points on the ground, solid on the side its normal points to (the segment's left by default)
 export function addWall(room, a, b, y) {

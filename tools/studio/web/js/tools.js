@@ -25,6 +25,7 @@ export const PLACE = [
 
 export const FIXED = [];
 export const WALL = { id: "wall", label: "Wall", hint: "Click where it starts, then where it ends; keep clicking to chain walls. The little tick shows the open side." };
+export const FLOOR = { id: "floor", label: "Floor", hint: "Click one corner, then the opposite corner: a flat floor is laid there, which you can raise in the panel. Walk-on surfaces only: the picture is not changed." };
 export const THINGS = [
   { id: "item", label: "Item", icon: "item", key: "I", hint: "Click to put an item on the floor. Pick what it is and how many in the panel." },
   { id: "enemy", label: "Enemy", icon: "enemy", key: "N", hint: "Click to put an enemy. It faces the way you set in the panel; pick its health there too." },
