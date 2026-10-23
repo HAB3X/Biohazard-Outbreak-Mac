@@ -283,6 +283,19 @@ def build(game, edits, replacements=None):
         script_words = room.script_words()
         for index, value in spec.get("script_words", {}).items():
             room.set_script_word(int(index), value)
+        if spec.get("script_prepend"):
+            if replacements is None:
+                raise SystemExit("new script lines need the rebuilt disc")
+            added = [int(w) for line in spec["script_prepend"] for w in line]
+            room.insert_script(spec.get("script_at", room.first_instruction()), added)
+            sgl_node = _pack_sgl(game, pack)
+            sgl = rdt.Sgl(sgl_node.read())
+            m2 = re.fullmatch(r"r\d{3}(\d\d)(\d\d)\.rdt", member.lower())
+            rid = int(m2.group(1)) | (int(m2.group(2)) << 16)
+            sgl_name = next(n for n, nd in rdt_pack_members(game, pack) if nd.offset == sgl_node.offset)
+            replacements[(pack, sgl_name)] = sgl.replace_script(rid, script_words, room.script_words())
+            report.append(f"{pack}/{member}: {len(added)} words of new script at the start (the room's and the .sgl's copies)")
+            spec = {**spec, "script_words": {}}
         if spec.get("script_words"):
             more, warning = sgl_script_patches(game, pack, member, script_words, spec["script_words"])
             patches += more

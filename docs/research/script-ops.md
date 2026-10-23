@@ -105,3 +105,6 @@ SetExamine and SetDoorLock.
   **0x106** takes `4, x, y, z, facing` (14 uses in File 2's first scenarios: 2600, 0, 3820, 49152): a place and a facing for the current character. Both are editable as plain words in the editor's script list.
 - **0x01, 0x07, 0x0A** only move the thread's block counter at 0x490000 + ... (with the skip/end markers 228, 229 and 10: the block structure).
 - **0xA8** stores five words (1, 430, 400, 300, 800 ...) at 0x491178 to 0x491184 and calls game_005b2030.
+
+## Growing a room's script (measured)
+A script can grow: `bh_room_patch` key `script_prepend` (lines of words) inserts them at thread 0's first instruction (the thread's block starts with a data word, so an instruction put before it doesn't run), moves header words 0, 1, 8, 9 on, and rewrites both the room file and the scenario's .sgl block (its later blocks' index offsets move). **Measured**: a prepended `SetVar 7, 5` in file 2 room 3 reads back as 5 at `0x491268 + 4*7` in the game (the table is words).

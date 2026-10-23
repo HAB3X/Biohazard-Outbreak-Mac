@@ -322,6 +322,28 @@ class Room:
                 i += 1
         return out
 
+    def first_instruction(self):
+        """The word index of thread 0's first instruction (its block starts with a data word, which an instruction put before it would break: measured)"""
+        script = self.script_words()
+        i = script[8] // 4
+        while i < len(script) and (script[i] & 0xFFFFFFFF) >> 24 not in (1, 2, 3):
+            i += 1
+        return i
+
+    def insert_script(self, at_word, words):
+        """Instruction words put into the script at word `at_word` (a record's start, e.g. first_instruction()): the script grows, the header's offsets
+        that were beyond it move on (words 0, 1, 8 and 9). The room file grows (needs the rebuilt disc), and so must the scenario's .sgl block (Sgl.replace_script)"""
+        script = self.script_words()
+        if not self.SCRIPT_HEADER <= at_word <= len(script):
+            raise IndexError(f"script word {at_word}: the script's records start at {self.SCRIPT_HEADER}")
+        delta = 4 * len(words)
+        for k in (0, 1, 8, 9):
+            if script[k] >= 4 * at_word:
+                script[k] += delta
+        script[at_word:at_word] = [int(w) for w in words]
+        offset, size = self.sections[1]
+        self._replace_section(1, struct.pack(f"<{len(script)}i", *script))
+
     def set_script_word(self, index, value):
         offset, size = self.sections[1]
         if not 0 <= index < size // 4:
@@ -691,6 +713,25 @@ class Sgl:
                 continue
             return [Node(self.data[start + 12 + i * Node.SIZE:start + 12 + (i + 1) * Node.SIZE], start + 12 + i * Node.SIZE) for i in range(count)]
         return []
+
+    def replace_script(self, room_id, old_words, new_words):
+        """The .sgl's bytes with the room's script (`old_words`, found in its block, which it ends) replaced by `new_words` and the later blocks' offsets in the index moved on"""
+        at = self.find_script(room_id, old_words)
+        if at is None:
+            raise ValueError("the room's script isn't in the .sgl")
+        end = at + 4 * len(old_words)
+        delta = 4 * (len(new_words) - len(old_words))
+        data = bytearray(self.data[:at] + struct.pack(f"<{len(new_words)}i", *new_words) + self.data[end:])
+        count = struct.unpack_from("<I", data, self.data_index_at())[0]
+        base = self.data_index_at() + 4
+        for k in range(count):
+            room, offset, third = struct.unpack_from("<3I", data, base + 12 * k)
+            if offset >= end:
+                struct.pack_into("<3I", data, base + 12 * k, room, offset + delta, third)
+        return bytes(data)
+
+    def data_index_at(self):
+        return struct.unpack_from("<4I", self.data, 0)[2]
 
     def find_script(self, room_id, words):
         """The byte offset of the room's script (`words`, the room file's section 1) in its block, or None; the variant's own block first
