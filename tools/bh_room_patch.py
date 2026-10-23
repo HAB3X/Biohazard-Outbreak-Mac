@@ -299,7 +299,7 @@ def build(game, edits, replacements=None):
             if replacements is None:
                 raise SystemExit("new script lines need the rebuilt disc")
             added = [int(w) for line in spec["script_prepend"] for w in line]
-            room.insert_script(spec.get("script_at", room.first_instruction()), added)
+            room.insert_script(spec.get("script_at", room.first_instruction(spec.get("script_thread", 0))), added)
             sgl_node = _pack_sgl(game, pack)
             sgl = rdt.Sgl(sgl_node.read())
             m2 = re.fullmatch(r"r\d{3}(\d\d)(\d\d)\.rdt", member.lower())

@@ -322,10 +322,10 @@ class Room:
                 i += 1
         return out
 
-    def first_instruction(self):
-        """The word index of thread 0's first instruction (its block starts with a data word, which an instruction put before it would break: measured)"""
+    def first_instruction(self, thread=0):
+        """The word index of a thread's first instruction (thread 0 runs once as the room starts; thread 1 is run again and again, so a test put there is a trigger). A thread's block starts with a data word, which an instruction put before it would break (measured)"""
         script = self.script_words()
-        i = script[8] // 4
+        i = script[8 + thread] // 4
         while i < len(script) and (script[i] & 0xFFFFFFFF) >> 24 not in (1, 2, 3):
             i += 1
         return i

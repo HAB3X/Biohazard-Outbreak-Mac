@@ -192,7 +192,7 @@ export function diffs(scene, orig) {
       if (p.kind !== op.kind) d.kind = p.kind;
       put("sound_points", p.i, d);
     }
-    if (r.rules && r.rules.length) { out.rules = r.rules; out.script_prepend = compile(r.rules); }
+    if (r.rules && r.rules.length) { out.rules = r.rules; out.script_prepend = compile(r.rules); out.script_thread = 1; }
     const strip = (w) => JSON.stringify(w.map(({ a, b, y, flags, n }) => ({ a, b, y, flags, n })));
     if (strip(r.walls) !== strip(o.walls)) out.collision = { wall_segments: JSON.parse(strip(r.walls)) };
     if (r.floors.length) out.collision = { ...out.collision, ground_boxes: r.floors.map((f) => ({ min: f.min, max: f.max, y: -f.y })) };   // the ground file's heights are the player's, negated (measured)
