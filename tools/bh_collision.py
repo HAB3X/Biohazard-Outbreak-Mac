@@ -155,6 +155,51 @@ def wall_triangles(seg):
     return out
 
 
+def floor_triangles(box):
+    """The two triangles of a floor box {"min": [x, z], "max": [x, z], "y": height}, wound so the normal points up"""
+    (x0, z0), (x1, z1), y = box["min"], box["max"], box["y"]
+    out = []
+    for tri in ([(x0, y, z0), (x1, y, z0), (x1, y, z1)], [(x0, y, z0), (x1, y, z1), (x0, y, z1)]):
+        n, _ = plane(tri)
+        out.append(Triangle(0, tri if n[1] > 0 else [tri[0], tri[2], tri[1]]))
+    return out
+
+
+def _clip(poly, axis, bound, keep_below):
+    """The convex polygon (3D points) cut by the plane axis = bound, keeping the side below it (or above)"""
+    out = []
+    for i, p in enumerate(poly):
+        q = poly[(i + 1) % len(poly)]
+        p_in = p[axis] <= bound if keep_below else p[axis] >= bound
+        q_in = q[axis] <= bound if keep_below else q[axis] >= bound
+        if p_in:
+            out.append(p)
+        if p_in != q_in:
+            t = (bound - p[axis]) / (q[axis] - p[axis])
+            out.append(tuple(p[k] + t * (q[k] - p[k]) for k in range(3)))
+    return out
+
+
+def without_box(triangle, box):
+    """The triangle with the floor box's ground cut out of it: up to four convex pieces, as triangles on the same plane (the triangle itself when it doesn't touch the box)"""
+    x0, z0 = box["min"]
+    x1, z1 = box["max"]
+    if not _overlaps(triangle.p, x0, z0, x1, z1):
+        return [triangle]
+    poly = triangle.p
+    pieces = [_clip(poly, 0, x0, True), _clip(poly, 0, x1, False)]
+    middle = _clip(_clip(poly, 0, x0, False), 0, x1, True)
+    pieces += [_clip(middle, 2, z0, True), _clip(middle, 2, z1, False)]
+    out = []
+    for piece in pieces:
+        for i in range(1, len(piece) - 1):
+            tri = [piece[0], piece[i], piece[i + 1]]
+            area = (tri[1][0] - tri[0][0]) * (tri[2][2] - tri[0][2]) - (tri[2][0] - tri[0][0]) * (tri[1][2] - tri[0][2])
+            if abs(area) > 1.0:
+                out.append(Triangle(triangle.flags, tri, triangle.normal, triangle.d))
+    return out
+
+
 def main(argv):
     if len(argv) != 4:
         print(__doc__)

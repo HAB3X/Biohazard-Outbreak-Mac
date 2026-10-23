@@ -266,6 +266,18 @@ def build(game, edits, replacements=None):
                     original.size = (max(original.size[0], int((bounds[2] - original.origin[0]) // cw) + 1), max(original.size[1], int((bounds[3] - original.origin[1]) // cd) + 1))
                 replacements[(pack, name)] = original.tobytes()
                 report.append(f"{pack}/{name}: {len(spec['collision']['wall_segments'])} wall segments")
+            if "ground_boxes" in spec["collision"]:
+                name = f"g{member[1:].rsplit('.', 1)[0]}.bin"
+                original = bh_collision.Collision(dict(rdt_pack_members(game, pack))[name].read())
+                for box in spec["collision"]["ground_boxes"]:
+                    original.triangles = [piece for tr in original.triangles for piece in bh_collision.without_box(tr, box)] + bh_collision.floor_triangles(box)
+                bounds = original.bounds()
+                ox, oz = original.origin
+                cw, cd = original.cell
+                original.origin = (min(ox, int(bounds[0] // cw * cw)), min(oz, int(bounds[1] // cd * cd)))
+                original.size = (max(original.size[0], int((bounds[2] - original.origin[0]) // cw) + 1), max(original.size[1], int((bounds[3] - original.origin[1]) // cd) + 1))
+                replacements[(pack, name)] = original.tobytes()
+                report.append(f"{pack}/{name}: {len(spec['collision']['ground_boxes'])} floor boxes added")
             for key, prefix in (("walls", "w"), ("ground", "g")):
                 if key not in spec["collision"]:
                     continue
