@@ -208,6 +208,16 @@ OPS = {
     0x100: ("SetCharacterCommand", "value: in the current character's record (0x47C804 + 0x1100 * the slot at 0x4912BD) writes byte +0 = 1, byte +1 = the value and halfword +2 = 0xFFFF (read from the code)"),
     0xF1: ("MarkActor", "number: sets a byte to 1 in the actor table (0x800000 + 22768 + ...) indexed by the number and calls game_005aeaf0 first when the list at gp-24180 is empty (read from the code)"),
     0x132: ("Op132", "halfword: calls game_00543140 with it (not read further)"),
+    0x52: ("EnableItem2", "id, halfword: the item and lock areas (tags 3 and 4) with that id: activates them and stores the halfword at +88, as op 0x58 does (read from the code)"),
+    0x53: ("ItemAreas2", "id: the item and lock areas (tags 3 and 4) with that id, the partner of 0x52 (sets the active byte; not told apart from 0x59 by the code)"),
+    0x5B: ("ExitAreas", "id: the exit areas (tag 1) with that id, the partner of 0x5C DisableExit (sets the active byte)"),
+    0x5D: ("ExitAndDoorAreas", "id: the exit and room door areas (tags 1 and 2) with that id (sets the active byte)"),
+    0x5E: ("RoomDoorAreas", "id: the room door areas (tag 2) with that id (sets the active byte)"),
+    0x134: ("SetExamine3", "id and four more words: the examine areas (tag 5) with that id take their fields and are activated (the same loop as op 0x131)"),
+    0x160: ("PlaceCharacter", "slot, flag, x, y, z, facing: writes a character record's position (+0x38, +0x3C, +0x40) and facing (+0x92) at the table 0x400000 + ...: moves a character to a place (read from the code; 21 uses, e.g. 1, 1, 2580, 0, 840, 32768)"),
+    0xA8: ("Op0A8", "five words (1, 430, 400, 300, 800 ...): stored at 0x491178 to 0x491184 and handed to game_005b2030 with a flag at 0x49010A (read from the code, purpose not known)"),
+    0x0A: ("EndBlock", "(with 0x01 and 0x07: the block structure's markers: they move the thread's block counter at 0x490000 + ..., read from the code)"),
+    0x106: ("PlaceSpot", "4, x, y, z, facing (+ two zeros): stored for the current character (0x4912BD): 14 uses, e.g. 4, 2600, 0, 3820, 49152 in File 2's first scenario's room 2: a position and facing (read from the code's argument widths; not measured)"),
     0x1A0: ("CallOverlay", "three words: handed to the dynamic function at 0x7D6340"),
 }
 

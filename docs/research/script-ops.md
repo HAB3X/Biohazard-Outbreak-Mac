@@ -95,3 +95,13 @@ SetExamine and SetDoorLock.
 - Only about 25 of the 258 ops are read (the scenario's .evb and the .sgl use many more: 0x39, 0x40, 0x1A0, 0xF2, 0xF4, 0x16A, 0x31, 0x37, 0x30, 0x69 ...).
 - The .sgl's room block before the script (the entity records) isn't decoded.
 - The room file's own section 1 is a copy the game doesn't use for these rooms; it is still edited with the .sgl's so the two stay the same.
+
+
+## Third pass (names from the code, none measured in the game)
+
+- **Area families** (they walk the area list like 0x55 to 0x5F and set the active byte at +60): 0x52 and 0x53 act on the item and lock areas (tags 3 and 4) like 0x58 and 0x59 (0x52 also stores a halfword at +88);
+  0x5B on the exits (tag 1), 0x5D on exits and room doors (tags 1 and 2), 0x5E on room doors (tag 2); 0x134 on the examine areas (tag 5) like 0x131. Which of a pair enables and which disables isn't told apart by the code.
+- **0x160** takes a slot, a flag, x, y, z and a facing and writes them into a character record's position and facing (+0x38 to +0x40, +0x92): the scenario's moves of a character (e.g. 1, 1, 2580, 0, 840, 32768 in r0210100).
+  **0x106** takes `4, x, y, z, facing` (14 uses in File 2's first scenarios: 2600, 0, 3820, 49152): a place and a facing for the current character. Both are editable as plain words in the editor's script list.
+- **0x01, 0x07, 0x0A** only move the thread's block counter at 0x490000 + ... (with the skip/end markers 228, 229 and 10: the block structure).
+- **0xA8** stores five words (1, 430, 400, 300, 800 ...) at 0x491178 to 0x491184 and calls game_005b2030.
