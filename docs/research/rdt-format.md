@@ -255,3 +255,11 @@ the room, the next byte its variant, then 0x0F and a counter; `w8` on kept as th
 
 The reader takes the table's start from the head (third word + 8) and the stride from each table's size, and it reads all 5 of File 1's scenarios and 12 of File 2's (101 to 275 items each, room numbers
 in range); only File 2's zoo was tried in the game, so File 1's items are decoded by shape and not yet measured.
+
+## File 1: enemies and items measured in the game (the bar of the first scenario, normal)
+
+- **Enemies**: File 1 has the same `sgl_eNNN.emd` format (361 enemies in its first scenario), but it keeps a copy of a room's group for each difficulty (4: `bh_enemies.Enemy.mode` counts them). The bar (room 1, normal) read the
+  second copy: patching the same record in all four copies to x 8468, 8568, 8668 and 8768 left the enemy standing at 8568 (the second copy's), at File 1's enemy table (0x3FFCA0 + 0xD90 * n, +0x38 position). The editor draws one copy
+  at a time (a selector, normal = 1).
+- **Items**: the same item `.dat` and `.tbl` files (101 items in the first scenario). Item 1's position and quantity, edited, read back in File 1's item table (0x3967D0 + 0x3C * n: x 9243 -> 8000, z 13525 -> 13000, quantity 1 -> 3).
+  The kind wasn't told apart (the edit was to the value the game already showed: it reads a different variant's table than the first).
