@@ -174,3 +174,9 @@ and from watching the game read it:
   nothing in what the area at (11630, 13225) showed ("The high wall goes on"), so what the record is for isn't shown by that.
 The editor lists the records with their numbers editable (the file's size stays the same) and saves the changed words: a way to experiment,
 not a decoded script language.
+
+**Scripts, a longer try**: with a read watch (a trace build; the instrumentation was reverted) on the zoo's first room's script copy in RAM, four minutes of the
+game played by a script (teleports into every area, the action key three times in each, the stick, room changes back and forth)
+read only the header and the first two bytes of the tail table (a function at 0x550700, from 0x690e30): the 1300 bytes of records in
+between were not read once. So the records don't run for anything those inputs cause; they are most likely consulted by the
+scenario's own event script at points of its story (keys, bosses, timers) that this didn't reach.
