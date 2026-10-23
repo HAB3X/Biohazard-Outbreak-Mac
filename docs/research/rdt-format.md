@@ -215,7 +215,9 @@ game's copy at 0x80F28C).
 - **Tag 12 (subtype 3; 7 in File 1, 26 in File 2)** is switched on by the script ops 0x157 and 0x167 (game_006734c0, game_00673ba0): the loop takes the tag 12 areas whose `fields[0]` is 0 and `fields[1]` the script's number, sets the active byte, then
   looks for a character (a record of the character list, the team byte at +3009 or the player slot's +2992) and tests it against the area with game_005ae910. So a tag 12 is a zone a script waits on for a character to stand in it.
 - **Tag 10 (7 in all)** has no fields at all in any record; no handler for it was found among the ops that walk the list.
-- **Tag 6** (ladders by the rooms' pictures: subtypes 0, 1, 3, with `fields[3]` 1 to 6) still unproven.
+- **Tag 6 is a ladder (measured in the game).** Room 12 has three areas with the same footprint (x 11141 to 11261, z 2709 to 2789): subtype 0 with heights 0 to 100 (the foot), subtype 0 with heights 600 to 700 and `fields[3]` 1 (the top)
+  and subtype 3 with heights 0 to 650 (the climbing column); `fields[2]` is the facing (16383 = a quarter turn, 49152 in room 23's, whose areas run below the floor: heights -400 to -150). Standing at the foot facing it and pressing the action key put the
+  character on the ladder (x 11173.8 -> 11193.7, y 0 -> 50), and holding the forward key raised y to 300 (the key then released; the character stays on the ladder). The roles of the subtypes beyond that (foot and top entries) are read from the heights, not measured.
 
 ## File 1 live check (2026-10-23)
 
