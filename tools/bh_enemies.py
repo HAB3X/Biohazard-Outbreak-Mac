@@ -8,8 +8,11 @@ at other offsets and is edited with it). Its head is a table of (offset, size) p
 one a 4 byte end mark): each group is a room's (and variant's) enemies, a record 96 bytes: 24 words:
   w0  bytes: 1, the enemy's number in its group, its id (byte 2: the game's enemy id, 0x20 = 32 for the one standing in the zoo's room 4, which the game's record shows at +3), a class byte (room 1's first: 0x10, and the room's SpawnEnemy script op names class 16)
   w3  the facing (16 bit, 65536 to a turn)     w4, w5, w6  the position x, y, z (integers)
-  w7  low byte the room number, the next byte its variant (1: a room's second variant), then 0x0F and a counter; w8 and the others kept as they are
-  (the enemy's own parameters: not decoded)
+  w7  low byte the room number, the next byte its variant (1: a room's second variant), then a mask of the four modes it is placed in (0x0F: all; a bit cleared took the enemy out of the mode the
+      zoo was played in: the record's runtime enemy was not created), then a byte read at runtime +0xBBF
+  w1  flags that change the runtime record's +0xBB4 (the AI control flag) and +0xC49;  w2  a non-zero value turned the room-4 boss (id 32, 7200 HP) into a plain zombie (id 1, 450 HP)
+  w10..w16  one parameter each of the AI block (runtime +0xBB9 .. +0xCAE); w17  runtime +0xB4 .. +0xBE; w8 and w18: changing either stopped the enemy being created at all; w9 and w19 to w23: no effect found
+  (measured by changing each word's bytes in the zoo's room-4 record and comparing the game's whole enemy record against an unchanged run: docs/research/rdt-format.md)
 File 1's scenarios repeat a room's group for each difficulty (4 copies in the first), so `mode` counts the copies before a group's: the bar of File 1's first scenario (normal) read the
 second (mode 1): an edit of enemy 18 (the second copy's) moved the enemy standing at (8368, 0, 13722) to x 8568, and the same record's other copies (8, 28, 38) did not. Measured in the game (File 2's zoo, room 4, reached by the exit in room 3): the enemy there (kind 32, 7200 HP) stood at (10671, 0, 9710) with the facing 28236, as the record says;
 an edit of the record's x in sgl_e040.emd (10671 -> 10171) moved it to 10171 (an edit of e040.emd alone changed nothing in single play).
@@ -36,6 +39,7 @@ class Enemy:
         self.position = (w[4], w[5], w[6])
         self.room = w[7] & 0xFF
         self.variant = (w[7] >> 8) & 0xFF
+        self.modes = (w[7] >> 16) & 0xFF   # the modes the enemy is placed in (a bit for each of the four: 0x0F in all of File 2's)
         self.mode = 0  # which copy of the room's enemies this is (File 1 keeps one for each difficulty), set by Enemies
 
 
@@ -83,7 +87,7 @@ class Enemies:
                 seen[room] = seen.get(room, 0) + 1
 
     def patches(self, edits):
-        """[(disc offset, bytes, 0)] for edits {enemy number: {"position": [x, y, z], "facing": n, "id": n, "class": n}}: in the sgl_ file, and in the plain file at the record that has the
+        """[(disc offset, bytes, 0)] for edits {enemy number: {"position": [x, y, z], "facing": n, "id": n, "class": n, "modes": mask}}: in the sgl_ file, and in the plain file at the record that has the
         same first words and position (when it has one)"""
         out = []
         other_name = next((n for n in self.files if not n.lower().startswith("sgl_")), None)
@@ -92,7 +96,7 @@ class Enemies:
             data = self.files[other_name].read()
             other = [(offset + RECORD * k, data[offset + RECORD * k:offset + RECORD * (k + 1)]) for offset, size in groups(data) for k in range(size // RECORD)]
         for number, change in edits.items():
-            unknown = set(change) - {"position", "facing", "id", "class"}
+            unknown = set(change) - {"position", "facing", "id", "class", "modes"}
             if unknown:
                 raise SystemExit(f"enemy {number}: unknown {sorted(unknown)}")
             number = int(number)
@@ -111,6 +115,8 @@ class Enemies:
                     out.append((base + at + 12, struct.pack("<i", int(change["facing"]) & 0xFFFF), 0))
                 if "id" in change:
                     out.append((base + at + 2, struct.pack("<B", int(change["id"])), 0))
+                if "modes" in change:
+                    out.append((base + at + 30, struct.pack("<B", int(change["modes"])), 0))
                 if "class" in change:
                     out.append((base + at + 3, struct.pack("<B", int(change["class"])), 0))
         return out
