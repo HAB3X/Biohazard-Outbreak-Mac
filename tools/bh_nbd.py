@@ -310,7 +310,56 @@ if __name__ == "__main__":
     sys.exit(main(sys.argv))
 
 
-def clone_object(data, number, offset=None):
+def make_mesh_node(template, positions, uvs, triangles, material, colour=None):
+    """A mesh node (a kind 4 node as the file holds them) for the given geometry, laid out like `template`'s: positions [(x, y, z)] in the object's own space, uvs [(u, v)] (v 0 at the picture's top),
+    triangles [(a, b, c)] of vertex numbers (each a strip of its own), `material` the picture's number among the model's materials, `colour` (r, g, b, a) per vertex as the game stores them
+    (floats up to 255; the template's own average when none). Normals are the triangles' averages at each vertex."""
+    n = len(positions)
+    if len(uvs) != n:
+        raise ValueError("a position needs a uv each")
+    normals = [[0.0, 0.0, 0.0] for _ in positions]
+    for a, b, c in triangles:
+        pa, pb, pc = positions[a], positions[b], positions[c]
+        u = [pb[k] - pa[k] for k in range(3)]
+        v = [pc[k] - pa[k] for k in range(3)]
+        cross = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]
+        for i in (a, b, c):
+            for k in range(3):
+                normals[i][k] += cross[k]
+    for nv in normals:
+        length = math.sqrt(sum(x * x for x in nv)) or 1.0
+        nv[:] = [x / length for x in nv]
+    # the template's pieces by kind
+    pieces, at = {}, 12
+    while at < len(template):
+        flags, count, size = struct.unpack_from("<III", template, at)
+        pieces[(flags >> 16) & 0xFF] = template[at:at + size]
+        at += size
+    if colour is None:
+        old = pieces[11]
+        rows = struct.unpack_from(f"<{(len(old) - 12) // 4}f", old, 12)
+        count = len(rows) // 4
+        colour = tuple(sum(rows[i * 4 + k] for i in range(count)) / count for k in range(4)) if count else (128.0, 128.0, 128.0, 255.0)
+
+    def node(kind, count, payload):
+        return struct.pack("<III", kind << 16, count, 12 + len(payload)) + payload
+
+    strips = b"".join(struct.pack("<4I", 3, a, b, c) for a, b, c in triangles)
+    strip_node = struct.pack("<III", 3 << 16, len(triangles), 12 + len(strips)) + strips
+    holder = struct.pack("<III", 5, 1, 12 + len(strip_node)) + strip_node
+    parts = [holder,
+             node(5, 1, struct.pack("<I", material)),
+             node(6, len(triangles), bytes(4 * len(triangles))),
+             node(7, n, b"".join(struct.pack("<3f", *p) for p in positions)),
+             node(8, n, b"".join(struct.pack("<3f", *v) for v in normals)),
+             node(10, n, b"".join(struct.pack("<2f", *uv) for uv in uvs)),
+             node(11, n, struct.pack("<4f", *colour) * n),
+             pieces[15]]
+    body = b"".join(parts)
+    return struct.pack("<III", 4, 8, 12 + len(body)) + body
+
+
+def clone_object(data, number, offset=None, geometry=None):
     """The model's bytes with object (mesh) `number` copied as a new last object on a new last bone: a copy of its bone, moved by `offset` (a distance in the parent's space,
     added to the bone's own), linked in as the last of the root's children (the game walks the skeleton by those links). Returns (bytes, the new object's number). The file
     grows: the AMO tree's sizes, the AHI's bone count and size, and the chunk table's later offsets (each chunk on a 64 byte boundary)."""
@@ -337,6 +386,8 @@ def clone_object(data, number, offset=None):
     if not 0 <= number < len(nodes):
         raise IndexError(f"object {number}: the model has {len(nodes)}")
     copy = bytes(data[nodes[number][0]:nodes[number][0] + nodes[number][1]])
+    if geometry is not None:     # a model of your own in the copy's place: the copy's bone is made plain (no scale or turn) so the model stands as it was made
+        copy = make_mesh_node(copy, geometry["positions"], geometry["uvs"], geometry["triangles"], geometry["material"], geometry.get("colour"))
     end_of_list = holder + hsize
     records = bone_records(bytes(data), ahi[1], ahi[2])
     bone_at = records[number + 2] - 12
@@ -346,6 +397,9 @@ def clone_object(data, number, offset=None):
     struct.pack_into("<i", bone, 12 + 8, -1)
     struct.pack_into("<i", bone, 12 + 12, -1)
     struct.pack_into("<i", bone, 12 + 64, hcount)       # the number of the object the bone carries (its own copy's: with the original's number the original lost its picture)
+    if geometry is not None:
+        struct.pack_into("<4f", bone, 12 + 16, 1.0, 1.0, 1.0, 1.0)
+        struct.pack_into("<4f", bone, 12 + 32, 0.0, 0.0, 0.0, 1.0)
     if offset is not None:
         old = struct.unpack_from("<3f", bone, 12 + 48)
         struct.pack_into("<3f", bone, 12 + 48, *(a + b for a, b in zip(old, offset)))
