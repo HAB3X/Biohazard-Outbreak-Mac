@@ -8,6 +8,7 @@ EDITS.json (the room editor writes it):
         "cameras": {"2": {"eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}},
         "areas":   {"5": {"quad": [[x, z] x4], "height": [low, high], "fields": {"13": 4}}},
         "fog":     {"2": {"ints": {"4": 4278190335}, "floats": {"9": 1.0}}},
+        "sound_zones": {"2": {"box": [[x, y, z] x8], "sound": 8}}, "sound_points": {"0": {"position": [x, y, z]}},
         "new_cameras": [{"like": 0, "eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}],
         "new_areas": [{"like": 0, "quad": [[x, z] x4], "height": [low, high], "fields": {"13": 3}}]}}}
     "models": {"r0400300.nbd": {"bones": {"50": {"scale": [x, y, z], "rotation": [x, y, z], "offset": [x, y, z]}}}}}
@@ -110,6 +111,16 @@ def build(game, edits):
         for new in spec.get("new_areas", []):
             room.add_area(new["like"], quad=new.get("quad"), height=new.get("height"),
                           fields={int(k): v for k, v in new.get("fields", {}).items()} or None)
+        for number, change in spec.get("sound_zones", {}).items():
+            unknown = set(change) - {"box", "sound"}
+            if unknown:
+                raise SystemExit(f"{member} sound zone {number}: unknown {sorted(unknown)}")
+            room.set_sound_zone(int(number), **change)
+        for number, change in spec.get("sound_points", {}).items():
+            unknown = set(change) - {"position", "kind"}
+            if unknown:
+                raise SystemExit(f"{member} sound point {number}: unknown {sorted(unknown)}")
+            room.set_sound_point(int(number), **change)
         for new in spec.get("new_cameras", []):
             room.add_camera(new["like"], **{k: new[k] for k in ("eye", "target", "fov", "box") if k in new})
         for number, change in spec.get("cameras", {}).items():

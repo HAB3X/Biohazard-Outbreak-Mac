@@ -79,6 +79,8 @@ def build(game, scenario, names, variants):
                     item["other"] = area.other_door
                     item["facing"] = area.facing
             entry["areas"].append(item)
+        entry["zones"] = [{"i": i, "sound": z.sound, "box": [list(p) for p in z.box]} for i, z in enumerate(room.sound_zones)]
+        entry["points"] = [{"i": i, "kind": p.kind, "pos": [round(v, 1) for v in p.position], "rest": list(p.rest)} for i, p in enumerate(room.sound_points)]
         out.append(entry)
     return out
 

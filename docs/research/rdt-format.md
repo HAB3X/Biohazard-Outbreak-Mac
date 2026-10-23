@@ -133,3 +133,13 @@ the model (flat shaded, the bones' chain applied as the game's own placement doe
 as crosses and lines; a click picks an object (an off-screen picture of object numbers), the panel moves it along world x, y or z (the
 move is turned into the parent bone's own space), turns, scales or hides it. Not done: textures (the room's pictures are in the scenario's
 .sld files by the TID chunk), editing the meshes' vertices, and moving an object's animation (doors move by other data).
+
+**Sound zones and sound sources** (section 16; `Room.sound_zones`, `sound_points`, `set_sound_zone`, `set_sound_point`; drawn and editable in the plan and the 3D view). A header
+(the number of zones, the number of sources, then their offsets), then the zones (104 bytes: tag 1, eight corners as the lower four and
+the upper four (x, y, z ints), and a sound number; 51 rooms of File 2 have a few of 124 bytes, not looked at) and the sources (28 or 48
+bytes: tag, a kind, a position as three floats, then more numbers: not decoded). Measured in the zoo's first room by giving a zone the number
+0x1234 and reading the game's memory with the player standing inside it and outside: the number is what the game keeps for the player in the
+halfword at +0x176 of her record (0x1234 inside, 1 outside, the surrounding zone's), so a zone's number is the floor sound at her feet
+(the footsteps' kind). The sounds the numbers stand for (1, 8, 12 and 16648 are in the room looked at) weren't mapped to anything audible: comparing audio dumps
+of two runs doesn't work (two runs of the same game differ about as much as an edited one). The sources' kind and the rest of their
+numbers are undecoded; moving a source and its effect haven't been heard.

@@ -118,6 +118,28 @@ class Area:
         return None
 
 
+class SoundZone:
+    """A box (section 16, first block) that gives the character standing in it a floor sound: 104 bytes, tag 1, eight corners (x, y,
+    z ints: the four at the lower height, then the same four higher) and the sound's number (int 25). Measured in File 2's zoo: the
+    number is what the game keeps for the player in the halfword at 0x176 of her record (a zone given the number 0x1234 put
+    0x1234 there when she stood in it and 1, the surrounding zone's, outside)"""
+
+    def __init__(self, record):
+        self.tag = struct.unpack_from("<i", record, 0)[0]
+        self.box = [struct.unpack_from("<3i", record, 4 + 12 * i) for i in range(8)]
+        self.sound = struct.unpack_from("<i", record, 100)[0]
+
+
+class SoundPoint:
+    """A positional sound (section 16, second block; 28 or 48 bytes): tag, a kind number, a position (x, y, z floats), then numbers
+    not decoded. The position is in the room's coordinates; what the kind and the rest mean isn't known"""
+
+    def __init__(self, record):
+        self.tag, self.kind = struct.unpack_from("<ii", record, 0)
+        self.position = struct.unpack_from("<3f", record, 8)
+        self.rest = struct.unpack_from(f"<{(len(record) - 20) // 4}i", record, 20)
+
+
 class Room:
     def __init__(self, data):
         self.original = bytes(data)
@@ -142,7 +164,46 @@ class Room:
             if at < 0 or at + AREA_SIZE > size:
                 raise ValueError(f"a trigger area at {at} leaves its section")
         self.area_offsets = offsets
+        self._sounds()
         return [Area(bytes(self.data[offset + at:offset + at + AREA_SIZE])) for at in offsets]
+
+    def _sounds(self):
+        """The sound zones and sound points of section 16 (empty lists when the section is empty)"""
+        self.sound_zones, self.sound_points, self.sound_zone_offsets, self.sound_point_offsets = [], [], [], []
+        offset, size = self.sections[16]
+        if size < 8:
+            return
+        zones, points = struct.unpack_from("<ii", self.data, offset)
+        offsets = struct.unpack_from(f"<{zones + points}i", self.data, offset + 8)
+        ends = list(offsets[1:]) + [size]
+        for k, (start, end) in enumerate(zip(offsets, ends)):
+            record = bytes(self.data[offset + start:offset + end])
+            if k < zones and len(record) >= 104:
+                self.sound_zones.append(SoundZone(record))
+                self.sound_zone_offsets.append(start)
+            elif k >= zones and len(record) >= 20:
+                self.sound_points.append(SoundPoint(record))
+                self.sound_point_offsets.append(start)
+
+    def set_sound_zone(self, index, box=None, sound=None):
+        """box the eight corners (x, y, z), sound the floor sound's number"""
+        base = self.sections[16][0] + self.sound_zone_offsets[index]
+        if box is not None:
+            if len(box) != 8:
+                raise ValueError("a sound zone's box has eight corners")
+            for i, point in enumerate(box):
+                self._put(base + 4 + 12 * i, "<3i", *map(int, point))
+        if sound is not None:
+            self._put(base + 100, "<i", int(sound))
+        self._sounds()
+
+    def set_sound_point(self, index, position=None, kind=None):
+        base = self.sections[16][0] + self.sound_point_offsets[index]
+        if position is not None:
+            self._put(base + 8, "<3f", *map(float, position))
+        if kind is not None:
+            self._put(base + 4, "<i", int(kind))
+        self._sounds()
 
     # Editing: the file's size never changes (the archive's members can't grow), so an edit overwrites numbers where they are
     def _put(self, at, fmt, *values):
