@@ -32,6 +32,30 @@ import bh_rdt as rdt
 from bh_patchfile import write_patch
 
 
+def sgl_script_patches(game, pack, member, original_words, edits):
+    """[(disc offset, bytes, 0)] writing the script word edits {index: value} into the pack's .sgl too: that copy is the one the game runs"""
+    import re
+
+    disc = archive.Archive(game)
+    afs = None
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            afs = disc.open(f"{dat}/{pack}")
+            break
+        except FileNotFoundError:
+            continue
+    sgl_node = next((node for name, node in afs.members() if name.lower().endswith(".sgl")), None)
+    if sgl_node is None:
+        return [], f"{pack} has no .sgl: only the room file's copy of the script was changed"
+    sgl = rdt.Sgl(sgl_node.read())
+    match = re.fullmatch(r"r\d{3}(\d\d)(\d\d)\.rdt", member.lower())
+    room_id = int(match.group(1)) | (int(match.group(2)) << 16)
+    at = sgl.find_script(room_id, original_words)
+    if at is None:
+        return [], f"{member}: its script isn't in the .sgl: only the room file's copy was changed"
+    return [(sgl_node.offset + at + 4 * int(i), struct.pack("<i", int(v)), 0) for i, v in edits.items()], None
+
+
 def size_entries(game, pack, member, size):
     """The two places the archive keeps a member's size (its table's entry and its name record), written as `size`: a member
     may be given any size inside the sectors it already has (measured: one byte less boots; a sector more doesn't)"""
@@ -113,8 +137,13 @@ def build(game, edits):
         for new in spec.get("new_areas", []):
             room.add_area(new["like"], quad=new.get("quad"), height=new.get("height"),
                           fields={int(k): v for k, v in new.get("fields", {}).items()} or None)
+        script_words = room.script_words()
         for index, value in spec.get("script_words", {}).items():
             room.set_script_word(int(index), value)
+        if spec.get("script_words"):
+            more, warning = sgl_script_patches(game, pack, member, script_words, spec["script_words"])
+            patches += more
+            report.append(warning or f"{pack}/{member}: {len(more)} script words in the .sgl")
         for number, change in spec.get("lights", {}).items():
             unknown = set(change) - {"position", "attenuation", "range", "colour", "colour2"}
             if unknown:

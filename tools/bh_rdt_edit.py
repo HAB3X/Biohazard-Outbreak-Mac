@@ -281,6 +281,9 @@ EDITOR = r"""
 <script>
 const EDIT = true;
 const OPS = __OPS__;
+let MESSAGES = [];
+fetch('/messages').then(r => r.json()).then(m => { MESSAGES = m; });
+const MESSAGE_ARG = {85: 1, 95: 1};   // SetExamine's and SetDoorLock's second word is a message number
 const ORIG = JSON.parse(JSON.stringify(DATA));
 const room = (file) => DATA.find(r => r.file === file);
 let selected = null, undo = [], dragging = null, snapStep = 10, savedMessage = "", scriptRoomFile = null, scriptOpen = false;
@@ -566,7 +569,11 @@ function refreshPanel() {
       const width = 2 ** top, row = document.createElement("div"); row.style.marginBottom = "2px";
       const opn = w[i] & 0xFFFFFF, known = OPS[String(opn)];
       const lab = document.createElement("span"); lab.textContent = "w" + i + " " + (known ? known[0] : "op 0x" + opn.toString(16)) + " "; lab.title = known ? known[1] : "not read in the game's code yet"; lab.style.color = known ? "#9cf" : "#bbb"; row.appendChild(lab);
-      for (let k = 1; k < width && i + k < w.length; k++) { const idx = i + k; const inp = document.createElement("input"); inp.type = "number"; inp.value = w[idx]; inp.style.cssText = "width:70px;background:#222;color:#ddd;border:1px solid #444;padding:0 2px"; inp.onchange = () => { sroom.script[idx] = +inp.value; refreshPanel(); }; row.appendChild(inp); }
+      const msgArg = MESSAGE_ARG[opn];
+      let hint = null; if (msgArg !== undefined) { hint = document.createElement("small"); hint.style.cssText = "display:block;color:#9c9"; }
+      const showHint = (idx) => { if (hint) { const lines = MESSAGES[sroom.script[idx] - 1]; hint.textContent = "message " + sroom.script[idx] + ": " + (lines ? lines.join(" / ") : "(none)"); } };
+      for (let k = 1; k < width && i + k < w.length; k++) { const idx = i + k; if (hint && k === 1 + msgArg) showHint(idx); const inp = document.createElement("input"); inp.type = "number"; inp.value = w[idx]; inp.style.cssText = "width:70px;background:#222;color:#ddd;border:1px solid #444;padding:0 2px"; inp.onchange = () => { sroom.script[idx] = +inp.value; refreshPanel(); }; row.appendChild(inp); }
+      if (hint) row.appendChild(hint);
       list.appendChild(row); i += width;
     }
     sd.appendChild(list);
@@ -627,6 +634,49 @@ def model_json(game, scenario, file):
     return {"bones": bones, "meshes": meshes}
 
 
+def messages_json(game, scenario):
+    """The stage's messages as text, in the game's numbering (message N is the file's record N - 1, measured), English where the translation has it: [[line, ...], ...]"""
+    import re
+    import struct
+
+    import bh_archive as archive
+    import bh_text
+
+    translations = {}
+    path = ROOT / "translations" / game.replace("file", "file") / "rooms.tsv"
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            parts = line.split("\t")
+            if len(parts) >= 2:
+                translations[parts[0]] = parts[1]
+    disc = archive.Archive(game)
+    node = None
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            node = disc.open(f"{dat}/r{scenario:03d}.afs/r{scenario:03d}.bin")
+            break
+        except FileNotFoundError:
+            continue
+    if node is None:
+        return []
+    data = node.read()
+    end, arrays = struct.unpack_from("<II", data, 0)
+    records = [struct.unpack_from("<II", data, 8 + 8 * i) for i in range((arrays - 8) // 8)]
+    out = []
+    for count, offset in records:
+        lines = []
+        for k in range(count):
+            start = struct.unpack_from("<I", data, offset + 4 * k)[0]
+            try:
+                raw = data[start:data.index(b"\r\n\0", start)]
+            except ValueError:
+                continue
+            text = translations.get(bh_text.unit_id(raw)) or raw.decode("cp932", "replace")
+            lines.append(re.sub(r"<[^>]*>", "", text))
+        out.append(lines)
+    return out
+
+
 def serve(game, scenario, names, port, out):
     data = maps.build(game, scenario, names, False)
     ops = json.dumps({str(k): list(v) for k, v in rdt.OPS.items()})
@@ -651,6 +701,10 @@ def serve(game, scenario, names, port, out):
         def do_GET(self):
             if self.path == "/":
                 self.send(200, page, "text/html; charset=utf-8")
+            elif self.path == "/messages":
+                if "messages" not in models:
+                    models["messages"] = messages_json(game, scenario)
+                self.send(200, json.dumps(models["messages"]))
             elif self.path.startswith("/model?"):
                 file = self.path.split("=", 1)[1]
                 if file not in models:

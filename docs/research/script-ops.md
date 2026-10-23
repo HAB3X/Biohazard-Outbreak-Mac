@@ -36,7 +36,7 @@ argument pointer, the fixed addresses it touches, the functions it calls). Addre
 | 0xEE, 0x08, 0x113 | other ifs | | conditional blocks (they call the skip function); their tests aren't read |
 | 0xB0 / 0xB1 | ShowObject / HideObject | object number | clears / sets bit 7 of the flag byte at 0x475080 + n (the room's objects: the models' meshes), n taken through the script's 32 byte table (header word 1) |
 | 0xB5 | SetActorState | id, byte | stores the byte at +113 of every actor with that id |
-| 0x55 | SetExamine | id, message, parameter | activates the examine areas (tag 5) with field 12 = id; their field 16 = the message number, field 22 = the parameter |
+| 0x55 | SetExamine | id, message, parameter | activates the examine areas (tag 5) with field 12 = id; their field 16 = the message number (the stage message file's record number - 1), field 22 = the parameter. Verified in the game |
 | 0x56 | ResetExamine | id | calls 0x59a7c0 for the examine areas with that id |
 | 0x58 / 0x59 | EnableItem / DisableItem | id (, value) | activates / deactivates the item and lock areas (tag 3 subtypes 1 and 3, tag 4) with that id; tag 3's field 18 is set to the value |
 | 0x5C | DisableExit | id | deactivates the exit areas (tag 1) with that id |
@@ -54,8 +54,25 @@ Not read yet: the rest of the 258 (e.g. 0x20, 0x70, 0xF8, 0x135 and 0x131 are am
   numbers 200 to 209, the stage's door messages ("locked from inside", ...). So the editor's script list is where a message area's text is chosen.
 - A door's lock text is set by SetDoorLock (0x5F); the room script of the zoo's first room runs `SetDoorLock 1, 201`.
 
+## Where the game runs the room scripts, and the proof
+
+The game runs the rooms' scripts from the pack's `.sgl` (`r040.sgl`, 195 KB, loaded at 0x80AA80 in File 2's memory; thread 1's program counter
+walks 0x80D000 to 0x836000), not from the room file's section 1 (0x8c7e40 in memory, which the interpreter doesn't read). `bh_rdt.Sgl` reads its
+index (the room id with the variant in the high half, then the offset of the room's block): a block holds the room's entity records and then
+the script, the same words as the room file's section 1. Measured end to end in the zoo's first room (File 2), standing at the examine area whose id is 4 and pressing the action key:
+
+| the script word (SetExamine, id 4) | what the game showed |
+|---|---|
+| 122 (as shipped) | "The high wall goes on" |
+| 111 written into the .sgl | "There's a plan / Already memorized" |
+| 113 written by `bh_room_patch.py` (the editor's save: the room file's copy and the .sgl's) | "A vintage cash register counter" |
+
+So a message number N in a script is the stage message file's record N - 1 (the first record is number 1); and writing the .sgl's copy is what changes the game
+(the room file's copy alone changed nothing: 101, 105 and 111 there showed the same "The high wall goes on"). The editor's script list shows the message text for
+SetExamine and SetDoorLock.
+
 ## Still open
 
-- When a room's script (section 1) runs. The interpreter reads the scenario's .evb (the `r040.evb`: 15 KB, header [128, 164, 5224 ... 14372 ...]) continually; the room script's records were not
-  read in four minutes of play in the zoo's first room (see rdt-format.md), though its ops (SetExamine, SetDoorLock) belong to the room.
-  Changing a SetExamine's message number there didn't change what the area showed, so the room script may run at moments the tests didn't reach (a scenario's first entry into the room, a flag).
+- Only about 25 of the 258 ops are read (the scenario's .evb and the .sgl use many more: 0x39, 0x40, 0x1A0, 0xF2, 0xF4, 0x16A, 0x31, 0x37, 0x30, 0x69 ...).
+- The .sgl's room block before the script (the entity records) isn't decoded.
+- The room file's own section 1 is a copy the game doesn't use for these rooms; it is still edited with the .sgl's so the two stay the same.

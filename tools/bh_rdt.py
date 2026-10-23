@@ -573,3 +573,41 @@ def main(argv):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
+
+
+class Sgl:
+    """A scenario's .sgl (r0xx.sgl in the pack): the rooms' scripts and entity tables as the game runs them. Header: a magic word, a count, the offset
+    of an index (5728 in File 2's r040.sgl), ...; the index is a count then (room id, offset of the room's block, 0) for each room, the id being
+    the room number with the variant in the high half (65540: room 4, variant 1); a room's block runs to the next block's offset and holds, from
+    its start, two offsets (5232 and 5752 for room 3), a count and the room's entity records, then the script, the same words as the room file's
+    section 1 (found whole in the pack's .sgl for 249 of File 2's 271 rooms and 164 of File 1's 166). Measured in the zoo's first room: the game
+    runs THIS copy: changing a SetExamine's message number here changed the text on screen, changing the room file's copy did not."""
+
+    def __init__(self, data):
+        self.data = data
+        header = struct.unpack_from("<4I", data, 0)
+        index = header[2]
+        count = struct.unpack_from("<I", data, index)[0]
+        self.index = [struct.unpack_from("<3I", data, index + 4 + 12 * i) for i in range(count)]
+        self.starts = sorted(offset for _, offset, _ in self.index)
+
+    def block(self, room_id):
+        """(start, end) in bytes of the room's block, or None"""
+        for found, offset, _ in self.index:
+            if found == room_id:
+                later = [o for o in self.starts if o > offset]
+                return offset, (later[0] if later else len(self.data))
+        return None
+
+    def find_script(self, room_id, words):
+        """The byte offset of the room's script (`words`, the room file's section 1) in its block, or None; the variant's own block first
+        and then the room's (the variants without a block of their own)"""
+        needle = struct.pack(f"<{len(words)}i", *words)
+        for candidate in (room_id, room_id & 0xFFFF):
+            block = self.block(candidate)
+            if block is None:
+                continue
+            at = self.data.find(needle, block[0], block[1])
+            if at >= 0:
+                return at
+        return None

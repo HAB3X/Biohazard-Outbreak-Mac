@@ -180,3 +180,6 @@ game played by a script (teleports into every area, the action key three times i
 read only the header and the first two bytes of the tail table (a function at 0x550700, from 0x690e30): the 1300 bytes of records in
 between were not read once. So the records don't run for anything those inputs cause; they are most likely consulted by the
 scenario's own event script at points of its story (keys, bosses, timers) that this didn't reach.
+
+**Scripts, corrected**: the game doesn't run the room file's section 1; it runs the same script from the pack's `.sgl` (docs/research/script-ops.md). Every claim
+above that the section-1 records "weren't read" is true of that copy. `bh_room_patch.py` writes script word edits into both.
