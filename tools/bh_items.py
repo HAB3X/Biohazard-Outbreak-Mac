@@ -55,7 +55,8 @@ class Items:
         if pack is None:
             raise FileNotFoundError(f"{game}: no r{scenario:03d}.afs")
         members = dict(pack.members())
-        self.dat = members.get(f"item{scenario:03d}.dat")
+        self.dat_name = f"item{scenario:03d}.dat"
+        self.dat = members.get(self.dat_name)
         if self.dat is None:
             raise FileNotFoundError(f"{game}: r{scenario:03d}.afs has no item{scenario:03d}.dat")
         self.tbls = {n: node for n, node in members.items() if n.lower().startswith(f"item{scenario:03d}") and n.lower().endswith(".tbl")}
@@ -99,6 +100,58 @@ class Items:
                 if "quantity" in change:
                     out.append((row + 2, struct.pack("<B", int(change["quantity"])), 0))
         return out
+
+
+def grown(items, new, edits=None):
+    """{member name: new bytes} for the scenario's item files with `new` items added at the end ([{"room": n, "position": [x, y, z], "kind": n, "quantity": n, "like": item number}]):
+    the dat's item table gets a 36 byte record for each (a copy of item `like`'s, set to the room, place and next number) and its count and sizes are rewritten, every tbl gets a row.
+    Needs a rebuilt disc (tools/bh_vdisc.py): the files are bigger"""
+    dat = bytearray(items.dat.read())
+    head = list(struct.unpack_from("<6I", dat, 0))       # (offset, size) of three sections
+    start = items.start - 8                              # the item table's own head: [3, count]
+    count = struct.unpack_from("<I", dat, start + 4)[0]
+    records = bytearray()
+    kinds = {name: bytearray(node.read()) for name, node in items.tbls.items()}
+    for number, change in (edits or {}).items():
+        number = int(number)
+        if "position" in change:
+            struct.pack_into("<3f", dat, items.start + DAT_SIZE * (number - 1) + 4, *map(float, change["position"]))
+        for name, table in kinds.items():
+            if name in items.items[number - 1].kinds:
+                row = TBL_START + items.strides[name] * (number - 1)
+                if "kind" in change:
+                    struct.pack_into("<H", table, row, int(change["kind"]))
+                if "quantity" in change:
+                    table[row + 2] = int(change["quantity"])
+    for k, spec in enumerate(new):
+        number = count + k + 1
+        like = items.items[int(spec.get("like", 1)) - 1]
+        rec = bytearray(dat[items.start + DAT_SIZE * (like.number - 1):items.start + DAT_SIZE * like.number])
+        x, y, z = spec["position"]
+        struct.pack_into("<BBH", rec, 0, int(spec["room"]), 0, number)
+        struct.pack_into("<3f", rec, 4, float(x), float(y), float(z))
+        struct.pack_into("<f", rec, 24, float(x) - 1.0)
+        struct.pack_into("<f", rec, 32, float(z) + 1.0)
+        records += rec
+        for name, table in kinds.items():
+            stride_ = items.strides[name]
+            row = bytearray(table[TBL_START + stride_ * (like.number - 1):TBL_START + stride_ * like.number])
+            struct.pack_into("<H", row, 0, int(spec["kind"]))
+            row[2] = int(spec["quantity"])
+            table += row
+    for name, table in kinds.items():
+        struct.pack_into("<I", table, 4, count + len(new))
+    insert = len(records)
+    at = items.start + DAT_SIZE * count
+    dat[at:at] = records
+    struct.pack_into("<I", dat, start + 4, count + len(new))
+    # the sections: the item table (the head's second pair) grows, the one after it moves
+    head[3] += insert
+    head[4] += insert
+    struct.pack_into("<6I", dat, 0, *head)
+    out = {items.dat_name: bytes(dat)}
+    out.update({name: bytes(table) for name, table in kinds.items()})
+    return out
 
 
 def main(argv):

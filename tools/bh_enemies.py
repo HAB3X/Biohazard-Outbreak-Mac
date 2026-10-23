@@ -42,6 +42,7 @@ class Enemy:
         self.room = w[7] & 0xFF
         self.variant = (w[7] >> 8) & 0xFF
         self.hp_tier = (w[12] >> 24) & 0xFF   # an index into the kind's table of hit points (File 1's zombie: 600, 650, 700, 750, 780, 800, 820, 850; File 2's room-4 boss, id 32: 5800 for 0 and 2, 7200 for 4 and 6; 8 and up: 32767)
+        self.chars = (w[18] >> 8) & 0xFF      # the characters it is placed for (a bit each: 0x0F all four; a record for one character holds 1, 2, 4 or 8)
         self.modes = (w[7] >> 16) & 0xFF   # the modes the enemy is placed in (a bit for each of the four: 0x0F in all of File 2's)
         self.mode = 0  # which copy of the room's enemies this is (File 1 keeps one for each difficulty), set by Enemies
 
@@ -125,6 +126,103 @@ class Enemies:
                 if "class" in change:
                     out.append((base + at + 3, struct.pack("<B", int(change["class"])), 0))
         return out
+
+
+def _rebuild(data, extra_by_group):
+    """The file with the 96 byte `extra_by_group[g]` records appended to group g's data: the head's (offset, size) pairs rewritten, the groups after moved on"""
+    count = struct.unpack_from("<I", data, 0)[0] // 8
+    table = [struct.unpack_from("<II", data, 8 * i) for i in range(count)]
+    blobs = []
+    for i, (offset, size) in enumerate(table):
+        blob = bytes(data[offset:offset + size])
+        if size >= RECORD and size % RECORD == 0:
+            g = sum(1 for j in range(i) if table[j][1] >= RECORD and table[j][1] % RECORD == 0)
+            blob += b"".join(extra_by_group.get(g, []))
+        blobs.append(blob)
+    out = bytearray()
+    position = 8 * count
+    for blob in blobs:
+        out += struct.pack("<II", position, len(blob))
+        position += len(blob)
+    return bytes(out) + b"".join(blobs)
+
+
+def grown(enemies, new, edits=None):
+    """{member name: new bytes} for the scenario's enemy files with `new` enemies added ([{"room": n, "variant": n, "position": [x, y, z], "facing": n, "id": n, "class": n,
+    "modes": mask, "hp_tier": n, "like": enemy number}]) and the changes `edits` made to existing ones (as `patches` takes them). A new enemy is a copy of enemy `like`'s record set
+    to the room, place and the rest, appended to the room's group (File 1 keeps a group for each difficulty: one is added to each). Needs a rebuilt disc (tools/bh_vdisc.py)"""
+    out = {}
+    for name, node in enemies.files.items():
+        data = bytearray(node.read())
+        sgl = name.lower().startswith("sgl_")
+        # the existing enemies' changes, written into the bytes
+        if edits:
+            for number, change in edits.items():
+                enemy = enemies.enemies[int(number)]
+                at = enemy.offset
+                if not sgl:
+                    match = [e for e in _records(bytes(data)) if struct.unpack_from("<7i", e[1], 0) == tuple(enemy.words[:7])]
+                    if len(match) != 1:
+                        continue
+                    at = match[0][0]
+                _write_changes(data, at, change)
+        table = [struct.unpack_from("<II", data, 8 * i) for i in range(struct.unpack_from("<I", data, 0)[0] // 8)]
+        group_list = [(o, s) for o, s in table if s >= RECORD and s % RECORD == 0]
+        extra = {}
+        for spec in new:
+            targets = []
+            for g, (offset, size) in enumerate(group_list):
+                if size and struct.unpack_from("<i", data, offset + 28)[0] & 0xFF == int(spec["room"]):   # a group is a room's (its records may be of different variants)
+                    targets.append(g)
+            if not targets:
+                continue
+            like = enemies.enemies[int(spec.get("like", 0))]
+            for g in targets:
+                offset, size = group_list[g]
+                record = bytearray(bytes(data[offset:offset + RECORD]) if int(spec.get("like", -1)) < 0 else _record_like(data, like, sgl))
+                index = size // RECORD + len(extra.get(g, []))
+                w0 = struct.unpack_from("<i", record, 0)[0]
+                record[1] = index
+                record[73] = 0x0F          # placed for every character (the game picks records by this mask and the mode's)
+                _write_changes(record, 0, spec)
+                w7 = struct.unpack_from("<i", record, 28)[0]
+                struct.pack_into("<i", record, 28, (w7 & ~0xFFFF) | int(spec["room"]) | (int(spec.get("variant", 0)) << 8))
+                extra.setdefault(g, []).append(bytes(record))
+        out[name] = _rebuild(bytes(data), extra)
+    return out
+
+
+def _records(data):
+    count = struct.unpack_from("<I", data, 0)[0] // 8
+    out = []
+    for i in range(count):
+        offset, size = struct.unpack_from("<II", data, 8 * i)
+        if size >= RECORD and size % RECORD == 0:
+            for k in range(size // RECORD):
+                out.append((offset + RECORD * k, data[offset + RECORD * k:offset + RECORD * (k + 1)]))
+    return out
+
+
+def _record_like(data, enemy, sgl):
+    for at, rec in _records(bytes(data)):
+        if struct.unpack_from("<7i", rec, 0) == tuple(enemy.words[:7]):
+            return bytes(rec)
+    raise SystemExit("the enemy to copy isn't in this file")
+
+
+def _write_changes(buffer, at, change):
+    if "position" in change:
+        struct.pack_into("<3i", buffer, at + 16, *map(int, change["position"]))
+    if "facing" in change:
+        struct.pack_into("<i", buffer, at + 12, int(change["facing"]) & 0xFFFF)
+    if "id" in change:
+        buffer[at + 2] = int(change["id"])
+    if "class" in change:
+        buffer[at + 3] = int(change["class"])
+    if "modes" in change:
+        buffer[at + 30] = int(change["modes"])
+    if "hp_tier" in change:
+        buffer[at + 51] = int(change["hp_tier"])
 
 
 def main(argv):

@@ -67,13 +67,17 @@ def compose(game, edits, out_path, base_patches=()):
         else:
             for offset, data in [x for x in stream if x[2] == 0 and ranges[path][0] <= x[0] < ranges[path][0] + ranges[path][1]]:
                 ropes[path].patch_original(offset, data)
+    by_pack = {}
     for (pack, member), data in replacements.items():
         path = container_of_pack(disc.arc, pack)
         rope = ropes[path]
         inner = rope.member(pack)
         inner.set_member(member, data)
         rope.set_member(pack, inner)
-        report.append(f"{pack}/{member}: {len(data)} bytes laid in the rebuilt {path}")
+        by_pack.setdefault((pack, path), []).append(member)
+    for (pack, path), members in by_pack.items():
+        shown = ", ".join(members[:3]) + (f" and {len(members) - 3} more" if len(members) > 3 else "")
+        report.append(f"{pack}: {len(members)} files rebuilt ({shown})")
     placed = {path: disc.move(path, rope) for path, rope in ropes.items()}
     # the variant ranges at their file's new places
     extra = []

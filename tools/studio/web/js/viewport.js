@@ -3,7 +3,7 @@ import { Camera } from "./camera.js";
 import { Renderer } from "./gl.js";
 import * as overlay from "./overlay.js";
 import { store, on, emit, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe } from "./scene.js";
-import { PLACE, FIXED, place, ground, snapTo } from "./tools.js";
+import { PLACE, FIXED, THINGS, place, ground, snapTo } from "./tools.js";
 import { api } from "./api.js";
 
 export class Viewport {
@@ -102,12 +102,12 @@ export class Viewport {
   }
 
   drawGhost() {
-    const tool = PLACE.find((t) => t.id === store.tool);
+    const tool = [...PLACE, ...THINGS].find((t) => t.id === store.tool);
     if (!tool || !this.cursor || this.drag) return;
     const at = ground(this.camera, this.cursor[0], this.cursor[1], this.renderer);
     if (!at) return;
     const ctx = this.ctx, x = snapTo(at[0]), z = snapTo(at[2]);
-    const pts = tool.id === "camera" ? null : [[x + 50, z - 50], [x - 50, z - 50], [x - 50, z + 50], [x + 50, z + 50]].map((p) => this.camera.project([p[0], at[1], p[1]]));
+    const pts = (tool.id === "camera" || tool.id === "item" || tool.id === "enemy") ? null : [[x + 50, z - 50], [x - 50, z - 50], [x - 50, z + 50], [x + 50, z + 50]].map((p) => this.camera.project([p[0], at[1], p[1]]));
     ctx.save();
     ctx.strokeStyle = "#fff"; ctx.fillStyle = "rgba(255,255,255,.16)"; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5;
     if (pts) { ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); ctx.fill(); ctx.stroke(); }
@@ -145,7 +145,7 @@ export class Viewport {
   // ---- the pointer
   updateCursor() {
     const t = store.tool;
-    this.ov.style.cursor = t === "pan" ? "grab" : PLACE.some((p) => p.id === t) ? "crosshair" : "default";
+    this.ov.style.cursor = t === "pan" ? "grab" : [...PLACE, ...THINGS].some((p) => p.id === t) ? "crosshair" : "default";
   }
 
   local(e) { const r = this.ov.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
@@ -187,7 +187,7 @@ export class Viewport {
     const pan = e.button === 1 || e.button === 2 || this.space || tool === "pan";
     if (pan) { this.drag = { ...start, type: e.altKey && this.camera.mode === "orbit" ? "orbit" : "pan" }; this.ov.style.cursor = "grabbing"; return; }
     if (e.button !== 0) return;
-    const placing = PLACE.find((p) => p.id === tool);
+    const placing = [...PLACE, ...THINGS].find((p) => p.id === tool);
     if (placing) { this.drag = { ...start, type: "place", tool: placing }; return; }
     const fixed = FIXED.find((p) => p.id === tool);
     if (fixed) { emit("note", fixed.soon, "warn"); return; }
@@ -219,7 +219,7 @@ export class Viewport {
       const changed = !(ref === this.hover || refEq(ref, this.hover));
       this.hover = ref;
       if (store.tool === "select") this.ov.style.cursor = overlay.pickHandle(x, y) ? "grab" : ref ? "pointer" : "default";
-      if (changed || PLACE.some((p) => p.id === store.tool)) this.redraw();
+      if (changed || [...PLACE, ...THINGS].some((p) => p.id === store.tool)) this.redraw();
       emit("pointer", this.worldAt(x, y));
       return;
     }

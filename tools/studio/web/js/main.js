@@ -5,7 +5,7 @@ import { el, toast } from "./ui.js";
 import * as scene from "./scene.js";
 import { store, on, emit, loadScene, commit, undo, redo, canUndo, canRedo, setTool, setMode, setRoom, select, currentEdits, roomOf, objectOf } from "./scene.js";
 import { Viewport } from "./viewport.js";
-import { PLACE, FIXED } from "./tools.js";
+import { PLACE, FIXED, THINGS } from "./tools.js";
 import { render as renderInspector } from "./inspector.js";
 import { render as renderOutline } from "./outliner.js";
 
@@ -71,6 +71,7 @@ function buildRail() {
   rail.append(el("div", { class: "rail-sep" }), el("div", { class: "rail-label" }, "Place"));
   PLACE.forEach((t) => add(t));
   rail.append(el("div", { class: "rail-sep" }));
+  THINGS.forEach((t) => add(t));
   FIXED.forEach((t) => add(t, { style: "opacity:.55" }));
   syncRail();
 }
@@ -109,7 +110,7 @@ function buildHud() {
 function updateHint() {
   const h = document.getElementById("hint");
   if (!h) return;
-  const t = PLACE.find((p) => p.id === store.tool);
+  const t = [...PLACE, ...THINGS].find((p) => p.id === store.tool);
   if (t) h.innerHTML = `<b>${t.label}</b>: ${t.hint}`;
   else if (store.tool === "pan") h.innerHTML = "<b>Pan</b>: drag to move the view. Hold <kbd>Space</kbd> any time to pan.";
   else if (FIXED.some((p) => p.id === store.tool)) h.innerHTML = `<b>${FIXED.find((p) => p.id === store.tool).label}</b>: ${FIXED.find((p) => p.id === store.tool).soon}`;
@@ -187,7 +188,7 @@ async function doBuild() {
     const out = await api.build(currentEdits());
     lastPatch = out.patch; lastBuilt = JSON.stringify(currentEdits());
     setState(store.dirty ? "Unsaved" : "Saved", store.dirty ? "dirty" : "");
-    toast("Built", "ok", out.report.join("\n") + `\n${(out.bytes / 1048576).toFixed(1)} MB patch in ${out.seconds}s`, 5200);
+    toast("Built", "ok", out.report.slice(0, 8).join("\n") + `\n${(out.bytes / 1048576).toFixed(1)} MB patch in ${out.seconds}s`, 5200);
     return out;
   } catch (e) {
     setState("Build failed", "dirty");
@@ -262,7 +263,7 @@ function keys(openPalette) {
     else if (e.key === "[") togglePanel("no-outline");
     else if (e.key === "]") togglePanel("no-inspector");
     else {
-      const all = [{ id: "select", key: "V" }, { id: "pan", key: "H" }, ...PLACE, ...FIXED];
+      const all = [{ id: "select", key: "V" }, { id: "pan", key: "H" }, ...PLACE, ...THINGS, ...FIXED];
       const t = all.find((x) => x.key === e.key.toUpperCase());
       if (t) setTool(t.id);
     }

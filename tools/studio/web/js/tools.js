@@ -1,5 +1,5 @@
 // The tools on the rail: what each puts into the scene when you click, and where a click lands on the ground.
-import { store, roomOf, addArea, addCamera, commit, select, AREA_TAGS, clone, emit } from "./scene.js";
+import { store, roomOf, addArea, addCamera, addItem, addEnemy, commit, select, AREA_TAGS, clone, emit } from "./scene.js";
 
 // A template for an area of each tag: the first one in the room being worked in, else in any room of the scenario (a new area is a copy of a record of the game's own).
 export function templateFor(tag) {
@@ -24,9 +24,11 @@ export const PLACE = [
 ];
 
 export const FIXED = [
-  { id: "item", label: "Item", icon: "item", key: "I", soon: "Adding items needs the item file to grow: next stage." },
-  { id: "enemy", label: "Enemy", icon: "enemy", key: "N", soon: "Adding enemies needs the enemy file to grow: next stage." },
   { id: "spawn", label: "Spawn point", icon: "spawn", key: "S", soon: "Spawn points: next stage." },
+];
+export const THINGS = [
+  { id: "item", label: "Item", icon: "item", key: "I", hint: "Click to put an item on the floor. Pick what it is and how many in the panel." },
+  { id: "enemy", label: "Enemy", icon: "enemy", key: "N", hint: "Click to put an enemy. It faces the way you set in the panel; pick its health there too." },
 ];
 
 export const snapTo = (v, step = store.snap) => (step > 1 ? Math.round(v / step) * step : Math.round(v));
@@ -55,6 +57,18 @@ export function place(tool, at) {
   const room = roomOf(store.room);
   if (!room) return null;
   const x = snapTo(at[0]), z = snapTo(at[2]), y = Math.round(at[1]);
+  if (tool.id === "item") {
+    const o = addItem(room, { position: [x, y, z] });
+    commit("Add item");
+    select([{ c: "items", file: room.file, i: o.i }]);
+    return o;
+  }
+  if (tool.id === "enemy") {
+    const o = addEnemy(room, { position: [x, y, z], variant: 0 });
+    commit("Add enemy");
+    select([{ c: "enemies", file: room.file, i: o.i }]);
+    return o;
+  }
   if (tool.id === "camera") {
     const like = room.cameras.find((c) => !c.isNew) || room.cameras[0];
     if (!like) return null;

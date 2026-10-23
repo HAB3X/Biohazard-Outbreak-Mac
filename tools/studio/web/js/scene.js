@@ -85,6 +85,10 @@ export function diffs(scene, orig) {
       return { like: a.like, quad: a.quad, height: a.h, fields: f };
     });
     const newCameras = r.cameras.filter((c) => c.isNew).map((c) => ({ like: c.like, eye: c.eye, target: c.target, fov: c.fov, box: c.box }));
+    const newItems = r.items.filter((x) => x.isNew).map((x) => ({ like: x.like, position: x.pos, kind: x.kind, quantity: x.qty }));
+    const newEnemies = r.enemies.filter((x) => x.isNew).map((x) => ({ like: x.like, variant: x.variant, position: x.pos, facing: x.facing, id: x.id, class: x.cls, modes: x.modes, hp_tier: x.hp }));
+    if (newItems.length) out.new_items = newItems;
+    if (newEnemies.length) out.new_enemies = newEnemies;
     if (newAreas.length) out.new_areas = newAreas;
     if (newCameras.length) out.new_cameras = newCameras;
     const put = (key, i, d) => { if (Object.keys(d).length) (out[key] = out[key] || {})[i] = d; };
@@ -129,6 +133,7 @@ export function diffs(scene, orig) {
       put("nodes", n.i, d);
     }
     for (const n of r.items) {
+      if (n.isNew) continue;
       const on = o.items.find((x) => x.i === n.i), d = {};
       if (moved(n.pos, on.pos)) d.position = n.pos;
       if (n.kind !== on.kind) d.kind = n.kind;
@@ -136,6 +141,7 @@ export function diffs(scene, orig) {
       put("items", n.i, d);
     }
     for (const n of r.enemies) {
+      if (n.isNew) continue;
       const on = o.enemies.find((x) => x.i === n.i), d = {};
       if (moved(n.pos, on.pos)) d.position = n.pos;
       if (n.facing !== on.facing) d.facing = n.facing;
@@ -197,6 +203,27 @@ export function addCamera(room, like, spec = {}) {
   return c;
 }
 
+export function addItem(room, spec = {}) {
+  const like = spec.like || (room.items.find((x) => !x.isNew) || { i: 2 }).i;
+  const base = room.items.find((x) => x.i === like) || room.items[0];
+  const all = store.scene ? store.scene.rooms : [room];
+  const next = Math.max(0, ...all.flatMap((r) => r.items.map((x) => x.i))) + 1;
+  const o = { i: next, kind: spec.kind ?? 300, qty: spec.quantity ?? 1, pos: clone(spec.position || [0, 0, 0]), isNew: true, like };
+  room.items.push(o);
+  return o;
+}
+
+export function addEnemy(room, spec = {}) {
+  const all = store.scene ? store.scene.rooms : [room];
+  const pool = all.flatMap((r) => r.enemies).filter((x) => !x.isNew && x.modes === 15 && x.chars === 15);
+  const base = pool.find((x) => x.i === spec.like) || pool[0] || room.enemies[0];
+  const next = Math.max(0, ...all.flatMap((r) => r.enemies.map((x) => x.i))) + 1;
+  const o = { i: next, mode: 0, modes: spec.modes ?? 15, chars: 15, hp: spec.hp_tier ?? (base ? base.hp : 3), id: spec.id ?? (base ? base.id : 1), cls: spec.class ?? (base ? base.cls : 8),
+    facing: spec.facing ?? 0, pos: clone(spec.position || [0, 0, 0]), isNew: true, like: base ? base.i : 0, variant: spec.variant ?? 0 };
+  room.enemies.push(o);
+  return o;
+}
+
 export function applyEdits(scene, edits) {
   for (const [file, spec] of Object.entries(edits.rooms || {})) {
     const r = scene.rooms.find((x) => x.file === file);
@@ -217,6 +244,8 @@ export function applyEdits(scene, edits) {
     for (const [i, v] of Object.entries(spec.script_words || {})) r.script[+i] = v;
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find((x) => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }
     for (const [i, d] of Object.entries(spec.sound_points || {})) { const p = r.points.find((x) => x.i === +i); if (p) { if (d.position) p.pos = d.position; if (d.kind !== undefined) p.kind = d.kind; } }
+    for (const n of spec.new_items || []) addItem(r, n);
+    for (const n of spec.new_enemies || []) addEnemy(r, n);
     for (const n of spec.new_areas || []) addArea(r, n.like, n, scene);
     for (const n of spec.new_cameras || []) addCamera(r, n.like, n);
     for (const [i, d] of Object.entries(spec.cameras || {})) { const c = r.cameras.find((x) => x.i === +i); if (c) Object.assign(c, d); }

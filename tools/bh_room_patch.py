@@ -27,6 +27,7 @@ Only the changed bytes go into the patch, at the room's place on the disc. A roo
 can't grow), and these edits only overwrite numbers in place, so none does. An unknown room, camera or area is an error.
 """
 import json
+import re
 import struct
 import sys
 
@@ -200,6 +201,7 @@ def build(game, edits, replacements=None):
     sectors: a room whose size changed is put there as {(pack, member): its new bytes} for tools/bh_vdisc.py to lay, instead of being patched in place"""
     wanted = {name.lower(): spec for name, spec in edits.get("rooms", {}).items()}
     patches, report = [], []
+    scenario_items, scenario_enemies = {}, {}
     for pack, member, node in rdt.rooms(game):
         spec = wanted.pop(member.lower(), None)
         if spec is None:
@@ -217,18 +219,20 @@ def build(game, edits, replacements=None):
             more = sgl_node_patches(game, pack, member, spec["nodes"])
             patches += more
             report.append(f"{pack}/{member}: {len(spec['nodes'])} entity records in the .sgl")
-        if spec.get("items"):
-            import bh_items
-
-            more = bh_items.Items(game, int(pack[1:4])).patches(spec["items"])
-            patches += more
-            report.append(f"{pack}/{member}: {len(spec['items'])} items (positions in the scenario's item .dat, kinds in its .tbl files)")
-        if spec.get("enemies"):
-            import bh_enemies
-
-            more = bh_enemies.Enemies(game, int(pack[1:4])).patches(spec["enemies"])
-            patches += more
-            report.append(f"{pack}/{member}: {len(spec['enemies'])} enemies (in the scenario's sgl_e and e .emd files)")
+        if spec.get("items") or spec.get("new_items"):
+            entry = scenario_items.setdefault(int(pack[1:4]), {"edits": {}, "new": [], "rooms": []})
+            entry["edits"].update(spec.get("items", {}))
+            for item in spec.get("new_items", []):
+                room_number = int(re.fullmatch(r"r\d{3}(\d\d)\d\d\.rdt", member.lower()).group(1))
+                entry["new"].append({**item, "room": item.get("room", room_number)})
+            entry["rooms"].append(f"{pack}/{member}")
+        if spec.get("enemies") or spec.get("new_enemies"):
+            entry = scenario_enemies.setdefault(int(pack[1:4]), {"edits": {}, "new": [], "rooms": []})
+            entry["edits"].update(spec.get("enemies", {}))
+            m = re.fullmatch(r"r\d{3}(\d\d)(\d\d)\.rdt", member.lower())
+            for enemy in spec.get("new_enemies", []):
+                entry["new"].append({"room": int(m.group(1)), "variant": int(m.group(2)), **enemy})
+            entry["rooms"].append(f"{pack}/{member}")
         script_words = room.script_words()
         for index, value in spec.get("script_words", {}).items():
             room.set_script_word(int(index), value)
@@ -279,6 +283,35 @@ def build(game, edits, replacements=None):
         if len(room.data) != len(room.original):
             patches += size_entries(game, pack, member, len(room.data))
         report.append(f"{pack}/{member}: {sum(len(d) for _, d in runs)} bytes in {len(runs)} runs")
+    import bh_enemies
+    import bh_items
+
+    for scenario, entry in scenario_items.items():
+        items = bh_items.Items(game, scenario)
+        if entry["new"]:
+            if replacements is None:
+                raise SystemExit("new items need the rebuilt disc (the item files grow)")
+            members = bh_items.grown(items, entry["new"], entry["edits"])
+            pack = f"r{scenario:03d}.afs"
+            for name, data in members.items():
+                replacements[(pack, name)] = data
+            report.append(f"{pack}: {len(entry['new'])} new items, {len(entry['edits'])} changed (the item files, rebuilt)")
+        else:
+            patches += items.patches(entry["edits"])
+            report.append(f"r{scenario:03d}.afs: {len(entry['edits'])} items (positions in the item .dat, kinds in its .tbl files)")
+    for scenario, entry in scenario_enemies.items():
+        enemies = bh_enemies.Enemies(game, scenario)
+        if entry["new"]:
+            if replacements is None:
+                raise SystemExit("new enemies need the rebuilt disc (the enemy files grow)")
+            members = bh_enemies.grown(enemies, entry["new"], entry["edits"])
+            pack = f"r{scenario:03d}.afs"
+            for name, data in members.items():
+                replacements[(pack, name)] = data
+            report.append(f"{pack}: {len(entry['new'])} new enemies, {len(entry['edits'])} changed (the enemy files, rebuilt)")
+        else:
+            patches += enemies.patches(entry["edits"])
+            report.append(f"r{scenario:03d}.afs: {len(entry['edits'])} enemies (in the sgl_e and e .emd files)")
     if wanted:
         raise SystemExit(f"not on this disc: {', '.join(sorted(wanted))}")
     if edits.get("models"):
