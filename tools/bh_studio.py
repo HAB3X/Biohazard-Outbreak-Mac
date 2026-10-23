@@ -165,7 +165,7 @@ def grown_models(game, scenario, edits):
             raise ValueError(f"{name}: not on the disc")
         data = node.read()
         for made in spec["new_objects"]:
-            data, _ = bh_nbd.clone_object(data, made["like"])
+            data, _ = bh_nbd.clone_object(data, made["like"], None, made.get("geometry"))
         data = bytearray(data)
         ahi = next(c for c in bh_nbd.chunks(bytes(data)) if c[0] == "AHI")
         records = bh_nbd.bone_records(bytes(data), ahi[1], ahi[2])

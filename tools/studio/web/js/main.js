@@ -5,7 +5,8 @@ import { el, toast } from "./ui.js";
 import * as scene from "./scene.js";
 import { store, on, emit, loadScene, commit, undo, redo, canUndo, canRedo, setTool, setMode, setRoom, select, currentEdits, roomOf, objectOf } from "./scene.js";
 import { Viewport } from "./viewport.js";
-import { removeCopy } from "./scenery.js";
+import { removeCopy, addModel } from "./scenery.js";
+import { parseObj } from "./objimport.js";
 import { PLACE, FIXED, THINGS, WALL, FLOOR } from "./tools.js";
 import { render as renderInspector } from "./inspector.js";
 import { render as renderOutline } from "./outliner.js";
@@ -110,11 +111,32 @@ function buildToolbar() {
     it.append(el("span", { class: "key" }, a.key));
     grid.append(it);
   }
-  const am = pop("up center", grid);
+  const own = menuItem("Your own model", "Bring in a .obj file as scenery", () => importModel(), "cube");
+  const am = pop("up center", grid, el("hr"), own);
   ab.addEventListener("click", (e) => { e.stopPropagation(); am.classList.toggle("on"); });
   add.append(ab, am); closeOnOutside(add, am);
   bar.append(sel, objs, hand, el("span", { class: "vsep" }), add);
   syncRail();
+}
+// a .obj from the disk becomes a new object in the room being worked in, standing where the view is centred
+function importModel() {
+  const pick = el("input", { type: "file", accept: ".obj" });
+  pick.addEventListener("change", async () => {
+    const file = pick.files[0];
+    if (!file) return;
+    try {
+      const room = roomOf(store.room);
+      if (!room || !room.scenery || !room.scenery.length) throw new Error("This room's model isn't loaded yet.");
+      const g = parseObj(await file.text());
+      const at = viewport.camera.target, y = viewport.floorAt(room.file, at[0], at[2], at[1] + 3000);
+      const c = addModel(room, g, viewport.renderer, [at[0], y === null ? 0 : y, at[2]]);
+      commit("Import model");
+      select([{ c: "scenery", file: room.file, i: c.i }]);
+      setTool("scenery");
+      toast("Model added", "ok", `${g.triangles.length} triangles. Pick a picture for it in the panel.`);
+    } catch (e) { toast("Couldn't use that file", "err", e.message, 6000); }
+  });
+  pick.click();
 }
 const syncRail = () => {
   document.querySelectorAll("#toolbar [data-tool]").forEach((b) => b.classList.toggle("on", b.dataset.tool === store.tool));
@@ -366,3 +388,5 @@ async function boot() {
 }
 
 boot();
+
+export const currentViewport = () => viewport;

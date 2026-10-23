@@ -1,5 +1,6 @@
 // Scenery: the objects (meshes) of a room's model. Each stands on a bone of the skeleton; moving, turning, sizing or hiding one changes that bone only, so the file's size never changes.
 import { store, clone } from "./scene.js";
+import { boundsOf } from "./objimport.js";
 
 const apply = (w, p) => [w[0] * p[0] + w[4] * p[1] + w[8] * p[2] + w[12], w[1] * p[0] + w[5] * p[1] + w[9] * p[2] + w[13], w[2] * p[0] + w[6] * p[1] + w[10] * p[2] + w[14]];
 const corners = (lo, hi) => [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [k & 1 ? hi[0] : lo[0], k & 2 ? hi[1] : lo[1], k & 4 ? hi[2] : lo[2]]);
@@ -30,7 +31,7 @@ export function attach(renderer, file) {
   }
   for (const scene of [store.scene, store.orig]) {
     const r = scene.rooms.find((x) => x.file === file);
-    if (r) { r.scenery = clone(list); r.objectBase = m.bones.length; }     // a copy's number is the first beyond the model's own objects (one per bone after the first two)
+    if (r) { r.scenery = clone(list); r.objectBase = m.bones.length; r.pictures = m.tids; }     // a copy's number is the first beyond the model's own objects (one per bone after the first two)
   }
   const saved = store.history[store.at].rooms[file];
   const r = store.scene.rooms.find((x) => x.file === file);
@@ -42,7 +43,7 @@ export function applyEdits(room, spec) {
   if (!room.scenery) return;
   (spec.new_objects || []).forEach((n) => {
     const like = (room.scenery || []).find((x) => x.i === n.like && !x.isNew);
-    if (like) duplicate(room, like, { i: nextNumber(room), silent: true });
+    if (like) { const c = duplicate(room, like, { i: nextNumber(room), silent: true }); if (n.geometry) giveGeometry(c, n.geometry); }
   });
   for (const [i, d] of Object.entries(spec.scenery || {})) {
     const s = (room.scenery || []).find((x) => x.i === +i);
@@ -73,7 +74,24 @@ export function removeCopy(room, s) {
   copies(room).forEach((c, k) => { c.i = (room.objectBase || 0) - 2 + k; c.bone = c.i + 2; });   // the numbers stay in a row
 }
 
-export const newObjects = (room) => copies(room).map((c) => ({ like: c.like }));
+// an object made from geometry: standing plain (no scale or turn) where its bone puts it
+export function giveGeometry(s, g) {
+  Object.assign(s, boundsOf(g), { geometry: g, scale: [1, 1, 1], rot: [0, 0, 0] });
+}
+
+// a new object of your own geometry; `target` is where its foot stands in the world
+export function addModel(room, g, renderer, target) {
+  const like = room.scenery.find((x) => !x.isNew);
+  const c = duplicate(room, like, { silent: true });
+  giveGeometry(c, g);
+  const m = renderer.models[room.file], pw = m.world[c.parent];
+  const inv = pw ? inverse3(pw) : [1, 0, 0, 0, 1, 0, 0, 0, 1], t = pw ? [pw[12], pw[13], pw[14]] : [0, 0, 0];
+  const d = [target[0] - t[0], target[1] - t[1], target[2] - t[2]];
+  c.off = [0, 1, 2].map((r) => inv[r * 3] * d[0] + inv[r * 3 + 1] * d[1] + inv[r * 3 + 2] * d[2]);
+  return c;
+}
+
+export const newObjects = (room) => copies(room).map((c) => (c.geometry ? { like: c.like, geometry: c.geometry } : { like: c.like }));
 
 export function diff(room, orig) {
   const out = {};
@@ -104,13 +122,13 @@ export function sync(renderer, scene) {
     if (!r.scenery || !r.scenery.length) continue;
     const m = renderer.models[r.file];
     if (!m) continue;
-    const key = JSON.stringify(r.scenery.map((s) => [s.scale, s.rot, s.off, s.like]));
+    const key = JSON.stringify(r.scenery.map((s) => [s.scale, s.rot, s.off, s.like, s.geometry && s.geometry.material]));
     if (stamps[r.file] !== key) {
       stamps[r.file] = key;
       const changes = {}, clones = [];
       for (const s of r.scenery) {
         const bone = [s.parent, s.scale, s.rot, s.off];
-        if (s.isNew) clones.push({ like: s.like, bone }); else changes[s.bone] = bone;
+        if (s.isNew) clones.push({ like: s.like, bone, geometry: s.geometry }); else changes[s.bone] = bone;
       }
       renderer.setBones(r.file, changes, clones);
     }

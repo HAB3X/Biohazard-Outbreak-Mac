@@ -66,7 +66,7 @@ export function render() {
   if (!o) return h.append(roomPanel());
   h.append(header(ref, o));
   const f = FORMS[ref.c];
-  if (f) f(ref, o).forEach((s) => h.append(s));
+  if (f) f(ref, o).filter(Boolean).forEach((s) => h.append(s));
 }
 
 function roomPanel() {
@@ -102,9 +102,20 @@ function positionSection(ref, o, label = "Position") {
   return section(label, field("Centre", vec3(c, live, done, { step: store.snap > 1 ? store.snap : 1 })));
 }
 
+// the room's pictures as small squares to pick from
+function pictures(room, current, pick) {
+  const box = el("div", { class: "pictures" });
+  (room.pictures || []).forEach((tex, m) => {
+    const b = el("button", { type: "button", class: m === current ? "on" : "", title: `Picture ${m}` }, el("img", { src: "/api/tex?index=" + tex, loading: "lazy" }));
+    b.addEventListener("click", () => pick(m));
+    box.append(b);
+  });
+  return box;
+}
+
 const FORMS = {
   scenery(ref, o) {
-    const orig = store.orig.rooms.find((r) => r.file === ref.file).scenery.find((x) => x.i === (o.isNew ? o.like : o.i));
+    const orig = o.geometry ? { scale: [1, 1, 1] } : store.orig.rooms.find((r) => r.file === ref.file).scenery.find((x) => x.i === (o.isNew ? o.like : o.i));
     const factor = o.scale[0] / (orig.scale[0] || 1);
     const hid = o.scale[0] < 0.001;
     const deg = (r) => Math.round(r * 180 / Math.PI * 10) / 10;
@@ -113,8 +124,11 @@ const FORMS = {
     const stretch = set(ref, "Stretch object", (obj, v) => { obj.scale = orig.scale.map((s, k) => s * v[k] / 100); });
     const show = set(ref, "Show or hide object", (obj, v) => { obj.scale = v ? clone(orig.scale) : [0.0001, 0.0001, 0.0001]; });
     const pct = hid ? [100, 100, 100] : o.scale.map((s, k) => Math.round(s / (orig.scale[k] || 1) * 100));
+    const room = roomOf(ref.file);
+    const picture = o.geometry ? section("Picture", pictures(room, o.geometry.material, (m) => { o.geometry.material = m; commit("Change picture"); render(); })) : null;
     return [
       positionSection(ref, o, "Where it stands"),
+      picture,
       section("Turn", field("Degrees", vec3(o.rot.map(deg), turn.live, turn.done, { step: 5 }))),
       section("Size",
         field("All together", range(Math.round((hid ? 1 : factor) * 100), 10, 300, 5, size.live, size.done)),

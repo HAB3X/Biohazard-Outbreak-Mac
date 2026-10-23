@@ -152,7 +152,22 @@ export class Renderer {
     clones.forEach((c, j) => { bones[m.base + j] = c.bone; });
     m.world = worlds(bones);
     for (const mesh of m.meshes) mesh.hide = !m.world[mesh.bone] || hidden(bones[mesh.bone]);
-    m.extra = clones.map((c, j) => ({ ...m.meshes.find((x) => x.mesh === c.like), bone: m.base + j, hide: hidden(c.bone) })).filter((x) => x.vb);
+    m.extra = clones.map((c, j) => ({ ...(c.geometry ? this.geometryMesh(c.geometry) : m.meshes.find((x) => x.mesh === c.like)), bone: m.base + j, hide: hidden(c.bone) })).filter((x) => x.vb);
+  }
+
+  // the buffers of a model made from geometry ({positions, uvs, triangles, material}); kept for as long as the geometry is the same
+  geometryMesh(g) {
+    const gl = this.gl, key = JSON.stringify([g.material, g.positions.length, g.triangles.length, g.positions[0], g.triangles[0]]);
+    this.made = this.made || new Map();
+    const old = this.made.get(g);
+    if (old && old.key === key) return old.mesh;
+    const buf = (type, data) => { const b = gl.createBuffer(); gl.bindBuffer(type, b); gl.bufferData(type, data, gl.STATIC_DRAW); return b; };
+    const mesh = {
+      vb: buf(gl.ARRAY_BUFFER, new Float32Array(g.positions.flat())), ub: buf(gl.ARRAY_BUFFER, new Float32Array(g.uvs.flat())),
+      groups: [{ material: g.material, ib: buf(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(g.triangles.flat())), count: g.triangles.length * 3 }], mesh: -1,
+    };
+    this.made.set(g, { key, mesh });
+    return mesh;
   }
 
   texture(index) {
