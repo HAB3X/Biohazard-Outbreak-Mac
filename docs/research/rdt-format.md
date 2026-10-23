@@ -30,7 +30,7 @@ against the discs and the running game.
   and the facing the character gets, int 24 a distance (150 in the one measured). The character arrives at the second point's
   x and z pushed the distance along its facing: predicted (11293.9, 10443.9) and read (11293.9, 10443.9) from the game for the
   zoo's first room exit to room 4 (facing 40960).
-- **What the other tags do**, from standing in 17 areas of the zoo's first three rooms (Wild Things rooms 1 to 3) and pressing the
+- **What the other tags do**, from standing in 33 areas of seven of Wild Things' rooms (1, 2, 3, 7, 8, 12 and 23) and pressing the
   action key, with a picture of each looked at (the pictures aren't kept: they are the game's):
   - tag 5, subtype 1: a message when you stand in it ("The gate is closed with a chain", room 3). Its fields are all zero: the text is
     chosen elsewhere, probably by the scenario's script.
@@ -42,15 +42,24 @@ against the discs and the running game.
   - tag 4, subtype 2: on the same quad as that gate's lock and showing the same prompt (probably the key or item check that goes with it).
   - tag 11, subtype 1: a message shown as you stand in it ("A trailer, wrecked it seems, is blocking the road...", room 3; "A vintage
     cash register counter", room 1), in pairs of one number with 0 and 1 and values 200 to 209 (the message numbers?).
-  - tag 2, subtype 4: "Shall we try it..." beside the restroom door in room 1 (a door that won't open?).
-  - Not looked at: tags 6, 7, 10, 12 and 13 (the three rooms have none); and the rooms past room 3 (the survey stopped there).
-  - None of the 17 tried changed the room; only tag 0 doors and the tag 1 exit did.
+  - tag 2, subtype 4: next to doors that open and close inside the room, with no room change (the offices' doors in rooms 7 and
+    8, where the door swings open as you stand in it; "Shall we try it..." beside the restroom door in room 1).
+  - tag 4, subtype 2 again: "A raccoon ornament / There's a hole at the front for a medal" with a counter on screen (room 8's desk):
+    a spot where an item is used or examined, as at the zoo gate.
+  - tag 7, subtype 0: an item sparkle on a desk (the copier in room 8); in two spots of room 7 nothing showed (the item may be
+    taken or hidden until a script puts it there).
+  - tag 6 (subtypes 0, 1, 3), rooms 12 and 23: nothing happened when stood in, and both rooms show a ladder in the picture: probably
+    climbing spots (not confirmed).
+  - tag 13, subtype 6 (room 7): nothing showed.
+  - Not looked at: tags 10 and 12 (the zoo rooms reached have none: 12 is in room 27, the Front Gate, which the survey couldn't
+    reach), and what tags 6 and 13 do. Rooms reached: 1, 2, 3, 7, 8, 12 and 23 (a door in a later room didn't take the teleport).
+  - None of the 33 tried changed the room; only tag 0 doors and the tag 1 exit did.
 
 **Sections** (the header's 32 entries; the sizes are those of the zoo's first room): 0 cameras, 1 a script (668 to 3128 bytes),
 2 and 3 sound banks (144896 bytes for 2 in every room looked at), 7, 10 doors and trigger areas, 11 lights, 13 fog (header, then
 96 byte records per camera), 15, 16 sound zones. 4 to 6, 8, 9, 12, 14 and 17 to 31 are empty in the rooms looked at.
 
-**Not known**: the script's opcodes (section 1), what the trigger areas' fields mean for tags 2 to 5 and 11 (which text or item: the fields after the quad), and tags 6, 7, 10, 12 and 13 altogether, the light records (11), what 7 and 15
+**Not known**: the script's opcodes (section 1), what the trigger areas' fields mean for tags 2 to 7 and 11 (which text or item: the fields after the quad), what tags 6 and 13 do, tags 10 and 12 altogether, the light records (11), what 7 and 15
 hold, the camera types (1, 2, 7), the camera record's remaining fields, and how the game picks a camera from the boxes.
 
 **For an editor**: moving or adding cameras, doors, lights and fog is a change inside the room file; the file's size can't change
