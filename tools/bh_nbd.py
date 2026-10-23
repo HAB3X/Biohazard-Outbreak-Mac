@@ -31,8 +31,9 @@ def chunks(data):
 
 
 class Mesh:
-    def __init__(self, positions, strips, palette, uvs=None, strip_materials=None):
+    def __init__(self, positions, strips, palette, uvs=None, strip_materials=None, positions_at=0):
         self.positions = positions
+        self.positions_at = positions_at  # where the positions' floats start in the file
         self.strips = strips
         self.palette = palette  # the skeleton's bones the mesh's vertices name (their weights' bone numbers index it)
         self.uvs = uvs or []
@@ -139,10 +140,17 @@ def meshes(data, offset, size):
             s6, c6, _ = arrays[6][0]
             per_strip = list(struct.unpack_from(f"<{c6}I", data, s6))
         strip_materials = [mesh_materials[per_strip[i]] if i < len(per_strip) and per_strip[i] < len(mesh_materials) else 0 for i in range(len(strips))]
-        found.append(Mesh(positions, strips, palette, uvs, strip_materials))
+        found.append(Mesh(positions, strips, palette, uvs, strip_materials, start))
 
     _walk(data, offset + 0, offset + size, visit)
     return found
+
+
+def set_vertex(data, mesh, index, position):
+    """Writes `position` (x, y, z) over the mesh's vertex `index` in the file's bytes (the same size: a vertex is three floats)"""
+    if not 0 <= index < len(mesh.positions):
+        raise IndexError(f"vertex {index}: the mesh has {len(mesh.positions)}")
+    struct.pack_into("<3f", data, mesh.positions_at + 12 * index, *map(float, position))
 
 
 def bone_records(data, offset, size):
