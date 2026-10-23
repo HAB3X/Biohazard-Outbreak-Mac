@@ -239,3 +239,5 @@ The item *areas* (tag 3) carry only an id; the items themselves are in the scena
 
 So the editor can place items and change what they are (herb, ammo ...) and how many; the item *areas* are the pickup triggers around them (their ids are the script's). Enemies are not the same:
 SpawnEnemy's five words aren't positions (see script-ops.md), and where an enemy stands is still not found.
+The reader takes the table's start from the head (third word + 8) and the stride from each table's size, and it reads all 5 of File 1's scenarios and 12 of File 2's (101 to 275 items each, room numbers
+in range); only File 2's zoo was tried in the game, so File 1's items are decoded by shape and not yet measured.
