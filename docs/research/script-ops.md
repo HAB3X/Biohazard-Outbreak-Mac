@@ -54,6 +54,25 @@ Not read yet: the rest of the 258 (e.g. 0x20, 0x70, 0xF8, 0x135 and 0x131 are am
   numbers 200 to 209, the stage's door messages ("locked from inside", ...). So the editor's script list is where a message area's text is chosen.
 - A door's lock text is set by SetDoorLock (0x5F); the room script of the zoo's first room runs `SetDoorLock 1, 201`.
 
+## Ops read from the handlers' code (second pass, no live test)
+
+These were read in the generated C of each handler (`bh_script_ops.py`, then the code): what each writes or calls is certain; what it is for is
+inferred and marked so in `bh_rdt.OPS`. The commonest: 0x70 (645 uses), 0x20, 0x135, 0x1A5, 0xF1, 0x73, 0x121, 0x7E, 0x11, 0x120, 0x110, 0x131.
+
+| op | what the code does |
+|---|---|
+| 0x110 | `0x491268[a0] = a1` (a0 below 8) |
+| 0x20 | stores a byte at 0x3134CE |
+| 0x10 / 0x11 | the byte at the start of a 536 byte record at 0x3B3200 + 536 n (0x11 writes 0) |
+| 0x7E / 0x7F | the 104 byte table at 0x395890 (32 entries): 0x7E sets bit 0 of an entry's flag byte when the entry is in use |
+| 0xA0 / 0xA1 | bank C, the word at 0x4900FC: 0xA1 clears the bit |
+| 0x1A5 | writes 0 or 1 to +4176 of each of the eight character records in use |
+| 0x155 | conditional: a byte of the current character's record against the argument; skips the block with `game_0066be60` |
+| 0x180 | conditional on `cheat_single_play()` |
+| 0x73 | position source: absolute (mode 2), a character's (mode 1) or none, then `f_001b8170` |
+| 0x131 / 0x135 | like SetExamine: loop the room's areas, those with tag 5 and field 12 = id are activated and get message fields |
+| 0x70, 0x120, 0x121, 0x1A0, 0xF1, 0x93, 0x94, 0xD1 | call engine routines; their effect is not understood yet |
+
 ## Where the game runs the room scripts, and the proof
 
 The game runs the rooms' scripts from the pack's `.sgl` (`r040.sgl`, 195 KB, loaded at 0x80AA80 in File 2's memory; thread 1's program counter
