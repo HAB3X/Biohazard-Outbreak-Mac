@@ -64,3 +64,10 @@ hold, the camera types (1, 2, 7), the camera record's remaining fields, and how 
 
 **For an editor**: moving or adding cameras, doors, lights and fog is a change inside the room file; the file's size can't change
 (the archive's members can't grow: `tools/bh_character_patch.py`), so every edit has to fit the section it is in.
+
+**The map** (`tools/bh_rdt_map.py GAME SCENARIO [OUT.html] [--names rooms.md] [--variants]`): one self-contained page per scenario, every
+room in its shared world coordinates with its cameras' eyes and aims, switch boxes, doors, exits (with the arrival spot each leads
+to) and the other areas coloured by tag; the wheel zooms, a drag pans, hovering lists a shape's fields. Written into `work/` (not
+in the repository: the page holds the game's room data). Checked on File 2's Wild Things (20 rooms, 496 areas, 211 cameras): the
+rooms form the zoo's layout, and a message area read in the page matches the record read from the file. Two things in the data
+the page has to skip: areas whose four corners are all zero, and a camera whose eye is -2147483648 (room 23).
