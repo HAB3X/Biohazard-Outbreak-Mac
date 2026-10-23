@@ -6,11 +6,16 @@
 CHARACTERS_TXT (the launcher writes it into the game's settings folder) has a line per costume replaced: romdata.afs's member
 ("P06_00.nbd"), a tab, the model file; a later line for the same costume wins. Each model is written over the costume's member
 of NETBIO00.DAT's romdata.afs. The archive's table is left as it is: the game reads the member's original size (the old
-model's tail after the new one is never used), and a table whose size was changed crashes File 2 two seconds into its boot
-(f_001d8e00 on a pointer of 0x1B bytes; seen with Kevin's P00_00 given a smaller model's size; why is open). So a model
-bigger than the costume it replaces can't be used: it's left out, said, and listed in OUT.skipped (a line each: the member, a
-tab, the model, a tab, its size, a tab, the costume's), which the launcher shows on the mod. An empty list makes an empty
-patch.
+model's tail after the new one is never used). Why a bigger model can't be given a bigger size: the game finds each member of
+romdata.afs by adding up the sector counts of the members before it, not from the table's offsets (measured: a member
+given 2048 bytes more, in the table and the name block both, shifts every later member, and File 2 dies two seconds into
+its boot in f_001ac9d0 when it loads one of them; one given a byte more or less, the same sector count, boots; a member
+grown and another one later shrunk by the same amount boots while the ones between are not loaded at boot, and dies when
+the shrunk one is the last but one; a table offset changed alone boots too, whether the member then loads is untried). So
+the archive can't grow in place: no member ends in a sector of zeros to give up, and which members the game never loads
+isn't known. A model bigger than the costume it replaces is left out, said, and listed in
+OUT.skipped (a line each: the member, a tab, the model, a tab, its size, a tab, the costume's), which the launcher shows on
+the mod. An empty list makes an empty patch.
 """
 import sys
 from pathlib import Path
