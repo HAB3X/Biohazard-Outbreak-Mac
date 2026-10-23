@@ -35,6 +35,7 @@ export function compile(rules) {
 }
 
 export function section_(r, host) {
+  if (store.game !== "file2") return section("When the room starts", el("div", { class: "note" }, "Rules are measured on File 2 only so far; File 1's scripts use other numbers."));
   r.rules = r.rules || [];
   const redraw = () => host();
   const done = (label) => () => { commit(label); };
