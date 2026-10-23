@@ -8,6 +8,7 @@ EDITS.json (the room editor writes it):
         "cameras": {"2": {"eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}},
         "areas":   {"5": {"quad": [[x, z] x4], "height": [low, high], "fields": {"13": 4}}},
         "fog":     {"2": {"ints": {"4": 4278190335}, "floats": {"9": 1.0}}},
+        "script_words": {"67": 123},   (the script's words by number, in place)
         "lights": {"0": {"position": [x, y, z], "range": 600, "attenuation": 0.001, "colour": [r, g, b], "colour2": [r, g, b]}},
         "sound_zones": {"2": {"box": [[x, y, z] x8], "sound": 8}}, "sound_points": {"0": {"position": [x, y, z]}},
         "new_cameras": [{"like": 0, "eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}],
@@ -112,6 +113,8 @@ def build(game, edits):
         for new in spec.get("new_areas", []):
             room.add_area(new["like"], quad=new.get("quad"), height=new.get("height"),
                           fields={int(k): v for k, v in new.get("fields", {}).items()} or None)
+        for index, value in spec.get("script_words", {}).items():
+            room.set_script_word(int(index), value)
         for number, change in spec.get("lights", {}).items():
             unknown = set(change) - {"position", "attenuation", "range", "colour", "colour2"}
             if unknown:

@@ -79,6 +79,7 @@ def build(game, scenario, names, variants):
                     item["other"] = area.other_door
                     item["facing"] = area.facing
             entry["areas"].append(item)
+        entry["script"] = room.script_words()
         entry["lights"] = [{"i": i, "pos": [round(v, 1) for v in l.position], "att": l.attenuation, "range": l.range, "col": [round(v, 4) for v in l.colour],
                             "col2": [round(v, 4) for v in l.colour2]} for i, l in enumerate(room.lights)]
         entry["zones"] = [{"i": i, "sound": z.sound, "box": [list(p) for p in z.box]} for i, z in enumerate(room.sound_zones)]

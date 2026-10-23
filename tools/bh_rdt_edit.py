@@ -281,7 +281,7 @@ EDITOR = r"""
 const EDIT = true;
 const ORIG = JSON.parse(JSON.stringify(DATA));
 const room = (file) => DATA.find(r => r.file === file);
-let selected = null, undo = [], dragging = null, snapStep = 10, savedMessage = "";
+let selected = null, undo = [], dragging = null, snapStep = 10, savedMessage = "", scriptRoomFile = null, scriptOpen = false;
 const snap = v => snapStep > 1 ? Math.round(v / snapStep) * snapStep : Math.round(v);
 const clone = o => JSON.parse(JSON.stringify(o));
 const panel = document.createElement("div"); panel.id = "edit"; document.getElementById("side").appendChild(panel);
@@ -332,9 +332,10 @@ function diffs() {
       if (Object.keys(d).length) (rooms.areas = rooms.areas || {})[a.i] = d;
     }
     for (const z of r.zones) { const oz = o.zones.find(x => x.i === z.i), d = {}; if (changed(z.box, oz.box)) d.box = z.box; if (z.sound !== oz.sound) d.sound = z.sound; if (Object.keys(d).length) (rooms.sound_zones = rooms.sound_zones || {})[z.i] = d; }
+    { const sw = {}; r.script.forEach((v, k) => { if (v !== o.script[k]) sw[k] = v; }); if (Object.keys(sw).length) rooms.script_words = sw; }
     for (const l of r.lights) { const ol = o.lights.find(x => x.i === l.i), d = {}; if (changed(l.pos, ol.pos)) d.position = l.pos; if (l.att !== ol.att) d.attenuation = l.att; if (l.range !== ol.range) d.range = l.range; if (changed(l.col, ol.col)) d.colour = l.col; if (changed(l.col2, ol.col2)) d.colour2 = l.col2; if (Object.keys(d).length) (rooms.lights = rooms.lights || {})[l.i] = d; }
     for (const p of r.points) { const op = o.points.find(x => x.i === p.i), d = {}; if (changed(p.pos, op.pos)) d.position = p.pos; if (p.kind !== op.kind) d.kind = p.kind; if (Object.keys(d).length) (rooms.sound_points = rooms.sound_points || {})[p.i] = d; }
-    if (rooms.cameras || rooms.areas || rooms.fog || rooms.new_areas || rooms.new_cameras || rooms.sound_zones || rooms.sound_points || rooms.lights) edits[r.file] = rooms;
+    if (rooms.cameras || rooms.areas || rooms.fog || rooms.new_areas || rooms.new_cameras || rooms.sound_zones || rooms.sound_points || rooms.lights || rooms.script_words) edits[r.file] = rooms;
   });
   return {rooms: edits};
 }
@@ -342,6 +343,7 @@ function apply(edits) {
   for (const [file, spec] of Object.entries(edits.rooms || {})) {
     const r = room(file); if (!r) continue;
     for (const [i, d] of Object.entries(spec.sound_zones || {})) { const z = r.zones.find(x => x.i === +i); if (z) { if (d.box) z.box = d.box; if (d.sound !== undefined) z.sound = d.sound; } }
+    for (const [i, v] of Object.entries(spec.script_words || {})) { r.script[+i] = v; }
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find(x => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }
     for (const [i, d] of Object.entries(spec.sound_points || {})) { const p = r.points.find(x => x.i === +i); if (p) { if (d.position) p.pos = d.position; if (d.kind !== undefined) p.kind = d.kind; } }
     for (const n of spec.new_areas || []) addArea(r, n.like, n);
@@ -483,7 +485,7 @@ function num(label, value, set) {
 function refreshPanel() {
   panel.innerHTML = "<hr><b>Editor</b><div class='row'><label><input type='checkbox' id='snapbox' " + (snapStep > 1 ? "checked" : "") + "> snap to 10</label></div>";
   panel.querySelector("#snapbox").onchange = e => { snapStep = e.target.checked ? 10 : 1; };
-  const total = diffs(), n = Object.values(total.rooms).reduce((a, r) => a + Object.keys(r.cameras || {}).length + Object.keys(r.areas || {}).length + (r.new_areas || []).length + (r.new_cameras || []).length + Object.keys(r.sound_zones || {}).length + Object.keys(r.sound_points || {}).length + Object.keys(r.lights || {}).length, 0);
+  const total = diffs(), n = Object.values(total.rooms).reduce((a, r) => a + Object.keys(r.cameras || {}).length + Object.keys(r.areas || {}).length + (r.new_areas || []).length + (r.new_cameras || []).length + Object.keys(r.sound_zones || {}).length + Object.keys(r.sound_points || {}).length + Object.keys(r.lights || {}).length + Object.keys(r.script_words || {}).length, 0);
   const info = document.createElement("div"); info.className = "row";
   if (selected) {
     const it = itemOf(selected), r = selected.room;
@@ -547,6 +549,26 @@ function refreshPanel() {
     if (it.isNew) { const rm = document.createElement("button"); rm.textContent = "Remove this new " + kindName; rm.onclick = () => { removeNew(selected); refreshPanel(); draw(); }; panel.appendChild(rm); }
     }
   } else { info.textContent = "click a shape"; panel.appendChild(info); }
+  const sd = document.createElement("details"); sd.style.marginTop = "6px";
+  const sroom = DATA.find(x => x.file === scriptRoomFile) || (selected ? selected.room : DATA[0]);
+  const ssum = document.createElement("summary"); ssum.textContent = "Script (room " + sroom.id + ")"; sd.appendChild(ssum); sd.open = scriptOpen; sd.ontoggle = () => { scriptOpen = sd.open; };
+  if (sd.open) {
+    const sel = document.createElement("select"); sel.style.cssText = "max-width:220px;background:#222;color:#ddd";
+    DATA.forEach(x => { const o = document.createElement("option"); o.value = x.file; o.textContent = x.id + " " + x.name; if (x === sroom) o.selected = true; sel.appendChild(o); });
+    sel.onchange = () => { scriptRoomFile = sel.value; refreshPanel(); }; sd.appendChild(sel);
+    const note = document.createElement("small"); note.textContent = "Records by the width rule (class 1, 2, 3 = 2, 4, 8 words); meanings are not decoded. Numbers are the record's words after its first; w is the word's place."; sd.appendChild(note);
+    const w = sroom.script; const start = Math.floor(w[8] / 4), end = Math.min(Math.floor(w[0] / 4), w.length);
+    let i = start; const list = document.createElement("div"); list.style.cssText = "font:11px ui-monospace,Menlo,monospace;max-height:320px;overflow:auto;margin-top:4px";
+    while (i < end) {
+      const top = (w[i] >>> 24); if (top < 1 || top > 3) { i++; continue; }
+      const width = 2 ** top, row = document.createElement("div"); row.style.marginBottom = "2px";
+      row.append("w" + i + " c" + top + " op " + ((w[i] & 0xFFFFFF).toString(16)) + " ");
+      for (let k = 1; k < width && i + k < w.length; k++) { const idx = i + k; const inp = document.createElement("input"); inp.type = "number"; inp.value = w[idx]; inp.style.cssText = "width:70px;background:#222;color:#ddd;border:1px solid #444;padding:0 2px"; inp.onchange = () => { sroom.script[idx] = +inp.value; refreshPanel(); }; row.appendChild(inp); }
+      list.appendChild(row); i += width;
+    }
+    sd.appendChild(list);
+  }
+  panel.appendChild(sd);
   const undoB = document.createElement("button"); undoB.textContent = "Undo (" + undo.length + ")";
   undoB.onclick = () => { const u = undo.pop(); if (!u) return; const target = itemOf(u.sel); Object.keys(u.value).forEach(k => target[k] = u.value[k]); refreshPanel(); draw(); };
   const save = document.createElement("button"); save.textContent = "Save patch (" + n + " changed)";

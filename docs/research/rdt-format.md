@@ -154,3 +154,23 @@ colour triples before the lights: the one at byte 132 (0.51, 0.56, 0.46 in the r
 characters' red by 1.1 and 0.7 when set to red 4; the ones at 88 and 104 did nothing in that view. The header (4, 2, 16, 548) and the
 block-like numbers before them (fog-like: -200, 7200, 0x222222 ...) aren't decoded, and only the first seven of the eight light-like
 records in that room fit the shape (the eighth sits where a second block starts).
+
+**Scripts** (section 1; `Room.script_words`, `script_header`, `script_instructions`, `set_script_word`, the editor's "Script" list; NOT decoded). What is known, from the data
+and from watching the game read it:
+- The section is 16 header words then the records. Word 0 is where a tail table starts (1416 in the zoo's first room), word 1 where a 32 byte
+  table of bytes starts (the game's function at 0x550790 returns the byte at an index below 32 from it: read through the script header's copy
+  the game makes in RAM at load), and words 8 and 9 say where two blocks of records start (64 and 796 there).
+- The records: a word whose top byte is 1, 2 or 3 starts a record of 2, 4 or 8 words; the low 24 bits are an operation number
+  (117 distinct ones in File 2's 271 scripts; the commonest are 0xC (1412 times), 0xB (1097), 0x55 (1091), 0xE6, 0xB1, 0xED, 0xE3 ...). The
+  gaps between one record's first word and the next's follow that width in most of the 14136 records (the exceptions are records followed
+  by a list of numbers), but the rule is read off the data, not off the game's reader.
+- Read at load: the copier (0x107ab8) and a function at 0x1dd190 take the first 16 words, 0x5975c0 reads word 0 and 0x550790 the
+  byte table; the records themselves were NOT read while the room loaded, nor while standing in and pressing the action key in every area of the
+  zoo's first room (a read watch on the script's copy in RAM in a trace build; a protected page of it never faulted). So these scripts run on
+  other events (a pick-up, a fight, a timer, the scenario's own script) that I haven't made happen, and the interpreter wasn't found.
+- Tried to read a meaning: a record 0x55 holds a number and a message number (the zoo's first room: 2 -> 127, 3 -> 128, 4 -> 122,
+  5 -> 130, 6 -> 131, 7 -> 126, which are the stage's messages for the blinds, a newspaper, a service gate, a trailer ... in
+  `r040.bin`'s numbering, the records of `translations/file2/rooms.tsv`); changing that 122 to 101, 105 and 111 changed
+  nothing in what the area at (11630, 13225) showed ("The high wall goes on"), so what the record is for isn't shown by that.
+The editor lists the records with their numbers editable (the file's size stays the same) and saves the changed words: a way to experiment,
+not a decoded script language.

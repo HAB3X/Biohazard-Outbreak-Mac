@@ -157,6 +157,18 @@ class Light:
         self.colour2 = tuple(floats[9:12])
 
 
+class Instruction:
+    """A script record: `cls` (1, 2 or 3: the top byte of its first word), `op` (the low 24 bits), its words (2 ** cls of them, the
+    first being the op's own), and where it starts in the script, in words"""
+
+    def __init__(self, at, words):
+        self.at = at
+        self.cls = words[0] >> 24
+        self.op = words[0] & 0xFFFFFF
+        self.words = list(words)
+        self.args = list(words[1:])
+
+
 class Room:
     def __init__(self, data):
         self.original = bytes(data)
@@ -209,6 +221,43 @@ class Room:
         if colour2 is not None:
             self._put(base + 36, "<3f", *map(float, colour2))
         self._lights()
+
+    SCRIPT_HEADER = 16  # words
+
+    def script_words(self):
+        """Section 1 (the room's script) as signed 32 bit words"""
+        offset, size = self.sections[1]
+        return list(struct.unpack_from(f"<{size // 4}i", self.data, offset))
+
+    def script_header(self):
+        """The script's first 16 words: [0] the offset of its tail table, [1] of the table after it (32 bytes indexed by a number below
+        32: the game reads it through a function that returns the byte for an index), [8] and [9] where two blocks of records start"""
+        return self.script_words()[:self.SCRIPT_HEADER]
+
+    def script_instructions(self):
+        """The records of the script's blocks (from header word 8 to the tail table) as Instruction objects, read by the width rule
+        found on the data: a word whose top byte is 1, 2 or 3 starts a record of 2, 4 or 8 words; the words between records
+        (zeros, and lists of numbers such as 33 37 162 400) are not instructions. The rule isn't confirmed by the game's own reader"""
+        words = self.script_words()
+        if len(words) <= self.SCRIPT_HEADER:
+            return []
+        start, end = words[8] // 4, min(words[0] // 4, len(words))
+        out, i = [], start
+        while i < end:
+            top = (words[i] & 0xFFFFFFFF) >> 24
+            if top in (1, 2, 3):
+                width = 2 ** top
+                out.append(Instruction(i, words[i:i + width]))
+                i += width
+            else:
+                i += 1
+        return out
+
+    def set_script_word(self, index, value):
+        offset, size = self.sections[1]
+        if not 0 <= index < size // 4:
+            raise IndexError(f"script word {index}: the script has {size // 4}")
+        self._put(offset + 4 * index, "<i", int(value))
 
     def _sounds(self):
         """The sound zones and sound points of section 16 (empty lists when the section is empty)"""
