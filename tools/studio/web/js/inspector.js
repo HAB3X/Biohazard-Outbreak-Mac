@@ -75,11 +75,25 @@ function roomPanel() {
     el("span", {}, "Items"), el("b", {}, n("items")),
     el("span", {}, "Enemies"), el("b", {}, n("enemies")),
     el("span", {}, "Cameras"), el("b", {}, n("cameras")))));
+  box.append(rulesSection(r));
   box.append(el("div", { class: "empty", style: "padding:28px 22px;text-align:left" },
     el("p", {}, "Click something in the picture to edit it."),
     el("p", {}, "Use ", el("b", { style: "color:var(--dim)" }, "Add"), " at the bottom to put new things down."),
     el("p", {}, "Press ", el("kbd", {}, "⌘Z"), " if you change your mind.")));
   return box;
+}
+
+// what the room does as it starts: for now it sets the game's counters (puzzles read them)
+function rulesSection(r) {
+  r.rules = r.rules || [];
+  const rows = r.rules.map((x, k) => el("div", { class: "rule" },
+    el("span", {}, "Counter"),
+    number(x.index, (v) => { x.index = v; }, () => commit("Edit rule"), { min: 0, max: 7, scrub: false }),
+    el("span", {}, "="),
+    number(x.value, (v) => { x.value = v; }, () => commit("Edit rule"), { scrub: false }),
+    el("button", { class: "ghost", title: "Remove", onclick: () => { r.rules.splice(k, 1); commit("Remove rule"); } }, "×")));
+  const add = el("button", { class: "ghost", onclick: () => { r.rules.push({ index: 0, value: 1 }); commit("Add rule"); } }, "Add a rule");
+  return section("When the room starts", ...rows, r.rules.length ? null : el("div", { class: "note" }, "Nothing yet. A rule sets a counter (0 to 7) to a number when you enter; puzzles in the game read the counters."), add);
 }
 
 // a field that changes the object and settles into a history step

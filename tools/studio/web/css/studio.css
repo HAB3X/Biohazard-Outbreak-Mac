@@ -183,3 +183,9 @@ kbd { font-family: var(--mono); font-size: 10.5px; padding: 1px 5px; border-radi
 #loading .bar i { display: block; height: 100%; width: 40%; background: var(--accent); animation: slide 1s infinite ease-in-out; }
 @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
 ::-webkit-scrollbar { width: 9px; height: 9px; } ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 9px; border: 2px solid var(--panel); } ::-webkit-scrollbar-track { background: transparent; }
+
+button.ghost { border: 1px solid var(--line-2); background: transparent; color: var(--dim); padding: 4px 11px; border-radius: 8px; }
+button.ghost:hover { color: var(--text); background: var(--raised); }
+.rule { display: flex; align-items: center; gap: 8px; padding: 4px 0; color: var(--dim); }
+.rule .num { width: 64px; }
+.rule button { margin-left: auto; padding: 2px 9px; }
