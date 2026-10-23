@@ -295,3 +295,14 @@ ran didn't show anything in the game's enemy table either, as expected.) `r40.rt
 
 An enemy's hit points are a **tier** (the top byte of word 12, record +51) into its kind's table: File 1's zombie (id 1, the bar): 600, 650, 700, 750, 780, 800, 820, 850 for tiers 0 to 7; File 2's room-4 boss (id 32): 5800 for tiers 0 and 2 and 7200 for tiers 4 and 6
 (the record's own tier is 7: 7200); **8 and above: 32767** (a value nothing kills). Written into the enemy's own record in the game (+0x540 in File 2, +0x544 in File 1) and read back; the editor has the tier as a field.
+
+## New things in a room, through the rebuilt disc (measured in the game, File 2's zoo room 3)
+
+- **Rooms can grow** (tools/bh_vdisc.py, bh_studio_build.py): a room file 340 KB bigger than its sectors, with an exit added, played (standing in the new exit led to room 4).
+- **Doors**: a new door area (a copy of an existing door, same number) worked at 300 to 900, and even 4000 units from the original, one to three copies; a door area at (3000, 3000), 14000 from its room, crashed the game on loading (a wild address), and
+  so did twenty-odd copies with the number unchanged placed there. 13 *exit* copies (45 areas in the room) were fine anywhere. So: keep a new door in or near its room and give it a number the room has.
+- **Items**: `item040.dat` gets a 36 byte record, every tbl a row (4 or 12 bytes) and their counts (the dat's item table head, the tbls' head) are raised; `bh_items.grown`. The game's item loader (game_00565cf0 for the compact tbl of single play, game_00565b10) makes a slot (game_005658d0:
+  room, number, kind) for every tbl row, and game_00566110 then lays the dat's position over the slot whose number matches. Measured: item 174 (new) appeared in the game's item table with the kind and place given.
+  The dat's first section (the 78, 327 and 10 of its head) is something else: item classes copied into the game's own arrays (game_00565f70).
+- **Enemies**: the loader (game_00695fb0) walks the `.emd`'s records one after another (96 bytes each, until a record whose byte +2 is 0xFF), keeping a record when its mode mask (+30) has the play mode's bit and its character mask (+73: `w18` byte 1) has the character's bit; a record
+  with mask 0 or for other characters is never made. A new record is a copy of one with both masks 0x0F, appended to its room's group (`bh_enemies.grown`): the enemy stood where it was put in the game's enemy table (id 1, near the player's start).
