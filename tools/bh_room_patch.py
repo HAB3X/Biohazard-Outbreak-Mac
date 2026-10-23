@@ -8,6 +8,7 @@ EDITS.json (the room editor writes it):
         "cameras": {"2": {"eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}},
         "areas":   {"5": {"quad": [[x, z] x4], "height": [low, high], "fields": {"13": 4}}},
         "fog":     {"2": {"ints": {"4": 4278190335}, "floats": {"9": 1.0}}},
+        "items": {"6": {"position": [x, y, z], "kind": 300, "quantity": 2}},   (the scenario's items by number from 1: place in the item .dat, kind and quantity in each .tbl)
         "nodes": {"3": {"position": [x, y, z], "kind": 2, "id": 5, "words": {"8": 10}}},   (the room's entity records in the .sgl: AI navigation nodes)
         "script_words": {"67": 123},   (the script's words by number, in place)
         "lights": {"0": {"position": [x, y, z], "range": 600, "attenuation": 0.001, "colour": [r, g, b], "colour2": [r, g, b]}},
@@ -199,6 +200,12 @@ def build(game, edits):
             more = sgl_node_patches(game, pack, member, spec["nodes"])
             patches += more
             report.append(f"{pack}/{member}: {len(spec['nodes'])} entity records in the .sgl")
+        if spec.get("items"):
+            import bh_items
+
+            more = bh_items.Items(game, int(pack[1:4])).patches(spec["items"])
+            patches += more
+            report.append(f"{pack}/{member}: {len(spec['items'])} items (positions in the scenario's item .dat, kinds in its .tbl files)")
         script_words = room.script_words()
         for index, value in spec.get("script_words", {}).items():
             room.set_script_word(int(index), value)

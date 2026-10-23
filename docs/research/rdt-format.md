@@ -223,9 +223,19 @@ A disc patch halving the field of view of every camera in every File 1 room (`bh
 one, so File 1 reads the same room files and the edit path works there too (the same code as File 2; rooms with a different fog count than cameras raise in `set_fog` and are skipped). Fog: the first try set the *character tint* (floats 9 to 11), which only tints characters, and showed nothing in the bar. Setting the scene colour (int 4 = 0xFF0000FF) in every fog record of every File 1 room
 turns the whole bar blue in the running game, so File 1's fog records have the same layout as File 2's and the editor's fog controls work there (619 records).
 
-## What item areas carry (File 2, all 1,130 tag 3 records tallied)
+## Items: where they lie and what they are (File 2's first scenario; decoded and measured in the game)
 
-Tag 3 (items and locks; subtypes 0, 1, 3) carries almost nothing besides its quad: `fields[0]` is an id (79 different values for subtype 0, 63 for subtype 1: the number the script's EnableItem/DisableItem names, e.g. 55, 112, 114 in
-the first rooms of Wild Things), `fields[1]` is 1 in 124 of 125 subtype 0 records, and `fields[3]` is 4 in most of the others. No item type, count or name is in the area. So the editor can move an item's spot or change which id the script
-switches, but **which item it is lives elsewhere** (the scenario's tables or the .sgl's records: not found), and neither items nor enemies can be placed or changed from the room file alone. Enemy spawns are the same
-(see script-ops.md: SpawnEnemy's five words aren't positions).
+The item *areas* (tag 3) carry only an id; the items themselves are in the scenario's pack (`tools/bh_items.py` reads and patches them; the editor draws them as yellow diamonds):
+
+- `item040.dat` (r040.afs): after a head and other tables, 173 records of 36 bytes from byte 2944: `[room number byte, 0, item number halfword][x, y, z floats][3 words kept as they are][x2, 1.0/2.0, z2]`.
+  The room is the room an item is in (item 1 to 7: room 3, the zoo's first; 8 on: room 1).
+- `item04000.tbl` to `item04019.tbl`: what each item is, one record per item in the dat's order: `[kind halfword][quantity byte][0x64]` (+ two words 0xFFFF in the long records of item04000 to 04015: 2084 bytes);
+  item04016 to item04019 (700 bytes) have the same 173 records in 4 bytes. Head: 4, then the record count (173). Kinds seen: 0x1C, 0x12C (a herb), 0x67, 0x135 (files), 0x36B0 ...
+- Which table the game reads in the zoo's first scenario (single play, first character): **item04016** (a different marker written into every record of every table; only item04016's showed in the game's item table).
+  The editor writes every table, so every variant follows.
+- The game builds its item table (File 2: `0x397B40 + 0x3C * n`) from these: `+4` the item's number, `+6` the kind, `+8` x, `+16` z, `+0x24` the quantity. Measured: item 1's position and kind (x 12819 -> 13319,
+  kind 0x1C -> 0x12C), item 2's (kind 0x12C -> 0x66, quantity 1 -> 7, position moved) and item 6's (0x135 -> 0x12C, quantity 1 -> 2, position moved) read back in that table after patching.
+  (An item's number in the table skips some of the dat's: a slot holds the dat's item `+4`.) A mistaken first try wrote the 700 byte tables with the 12 byte stride; it changed every third item, which is how the stride was found.
+
+So the editor can place items and change what they are (herb, ammo ...) and how many; the item *areas* are the pickup triggers around them (their ids are the script's). Enemies are not the same:
+SpawnEnemy's five words aren't positions (see script-ops.md), and where an enemy stands is still not found.
