@@ -31,9 +31,9 @@ def container_of_pack(arc, pack):
     raise FileNotFoundError(pack)
 
 
-def compose(game, edits, out_path, base_patches=()):
-    """Builds OUT_PATH; returns the report lines"""
-    replacements = {}
+def compose(game, edits, out_path, base_patches=(), members=None):
+    """Builds OUT_PATH; returns the report lines. `members` {(pack, name): bytes} are laid as they are besides the edits (a member of any size)"""
+    replacements = dict(members or {})
     patches, report = roompatch.build(game, edits, replacements)
     disc = vdisc.VDisc(game)
     ropes = {}

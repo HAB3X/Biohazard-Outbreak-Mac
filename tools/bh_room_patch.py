@@ -187,6 +187,16 @@ def model_patches(game, models):
     return patches, report
 
 
+def rdt_pack_members(game, pack):
+    disc = archive.Archive(game)
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            return disc.open(f"{dat}/{pack}").members()
+        except FileNotFoundError:
+            continue
+    raise SystemExit(f"{pack}: not on the disc")
+
+
 def _area_record(game, member, index):
     """The 176 bytes of area `index` of room file `member` (to copy into another room)"""
     for _, name, node in rdt.rooms(game):
@@ -234,6 +244,26 @@ def build(game, edits, replacements=None):
             for enemy in spec.get("new_enemies", []):
                 entry["new"].append({"room": int(m.group(1)), "variant": int(m.group(2)), **enemy})
             entry["rooms"].append(f"{pack}/{member}")
+        if spec.get("collision"):
+            if replacements is None:
+                raise SystemExit("collision edits need the rebuilt disc")
+            import bh_collision
+
+            scenario = pack[1:4]
+            for key, prefix in (("walls", "w"), ("ground", "g")):
+                if key not in spec["collision"]:
+                    continue
+                name = f"{prefix}{member[1:].rsplit('.', 1)[0]}.bin"
+                original = bh_collision.Collision(dict(rdt_pack_members(game, pack))[name].read())
+                original.triangles = [bh_collision.Triangle(tr.get("flags", 0x2F0000 if key == "walls" else 0), tr["p"]) for tr in spec["collision"][key]]
+                bounds = original.bounds()
+                if bounds:   # the grid covers every triangle
+                    ox, oz = original.origin
+                    cw, cd = original.cell
+                    original.origin = (min(ox, int(bounds[0] // cw * cw)), min(oz, int(bounds[1] // cd * cd)))
+                    original.size = (max(original.size[0], int((bounds[2] - original.origin[0]) // cw) + 1), max(original.size[1], int((bounds[3] - original.origin[1]) // cd) + 1))
+                replacements[(pack, name)] = original.tobytes()
+                report.append(f"{pack}/{name}: {len(original.triangles)} collision triangles")
         script_words = room.script_words()
         for index, value in spec.get("script_words", {}).items():
             room.set_script_word(int(index), value)
