@@ -201,7 +201,7 @@ const MODEL = __MODEL__;
 const modelImage = new Image(); if (MODEL) { modelImage.onload = () => draw(); modelImage.src = MODEL.url; }
 const TAGS = {0:["door","#4fc3f7"],1:["exit","#ffb74d"],2:["room door","#81c784"],3:["lock / item","#e57373"],4:["use item","#ba68c8"],
   5:["examine / message","#fff176"],6:["tag 6 (ladder)","#a1887f"],7:["item glint","#f06292"],10:["tag 10","#90a4ae"],
-  11:["message","#aed581"],12:["tag 12","#4db6ac"],13:["tag 13","#7986cb"]};
+  11:["message","#aed581"],12:["script zone (tag 12)","#4db6ac"],13:["marked spot (tag 13)","#7986cb"]};
 const layers = {models:true, boxes:false, cameras:true, links:true, names:true};
 for (const t in TAGS) layers["t"+t] = true;
 const cv = document.getElementById("c"), ctx = cv.getContext("2d"), info = document.getElementById("info");
