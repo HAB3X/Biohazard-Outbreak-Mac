@@ -31,10 +31,22 @@ def chunks(data):
 
 
 class Mesh:
-    def __init__(self, positions, strips, palette):
+    def __init__(self, positions, strips, palette, uvs=None, strip_materials=None):
         self.positions = positions
         self.strips = strips
         self.palette = palette  # the skeleton's bones the mesh's vertices name (their weights' bone numbers index it)
+        self.uvs = uvs or []
+        self.strip_materials = strip_materials or [0] * len(strips)  # the model's material of each strip (an index into the .nbd's textures)
+
+    def textured_triangles(self):
+        """[(a, b, c, material)]: the strips as triangles, the winding alternated as a strip's is, each with its strip's material"""
+        out = []
+        for strip, material in zip(self.strips, self.strip_materials):
+            for i in range(len(strip) - 2):
+                a, b, c = strip[i], strip[i + 1], strip[i + 2]
+                if a != b and b != c and a != c:
+                    out.append(((a, b, c) if i % 2 == 0 else (b, a, c)) + (material,))
+        return out
 
     def triangles(self):
         """The strips as triangles of vertex indices, the winding alternated as a strip's is"""
@@ -108,13 +120,26 @@ def meshes(data, offset, size):
                     pos += 4
                     if length > 100000 or pos + 4 * length > stop:
                         break
-                    strips.append(list(struct.unpack_from(f"<{length}I", data, pos)))
+                    if length >= 3:  # (the launcher's reader skips the shorter ones too: the per-strip materials line up)
+                        strips.append(list(struct.unpack_from(f"<{length}I", data, pos)))
                     pos += 4 * length
         palette = []
         if 16 in arrays:
             start16, count16, _ = arrays[16][0]
             palette = list(struct.unpack_from(f"<{count16}I", data, start16))
-        found.append(Mesh(positions, strips, palette))
+        uvs = []
+        if 10 in arrays:
+            start10, count10, _ = arrays[10][0]
+            uvs = [struct.unpack_from("<2f", data, start10 + 8 * i) for i in range(min(count10, len(positions)))]
+        mesh_materials, per_strip = [0], []
+        if 5 in arrays:
+            s5, c5, _ = arrays[5][0]
+            mesh_materials = list(struct.unpack_from(f"<{c5}I", data, s5))
+        if 6 in arrays:
+            s6, c6, _ = arrays[6][0]
+            per_strip = list(struct.unpack_from(f"<{c6}I", data, s6))
+        strip_materials = [mesh_materials[per_strip[i]] if i < len(per_strip) and per_strip[i] < len(mesh_materials) else 0 for i in range(len(strips))]
+        found.append(Mesh(positions, strips, palette, uvs, strip_materials))
 
     _walk(data, offset + 0, offset + size, visit)
     return found
