@@ -176,6 +176,10 @@ function refreshPanel() {
         const env = it.fog[4] >>> 0, tint = [9, 10, 11].map(k => i2f(it.fog[k]));
         panel.appendChild(colourRow("scene colour", "#" + hex((env >> 16) & 255) + hex((env >> 8) & 255) + hex(env & 255), v => {
           const r = parseInt(v.slice(1, 3), 16), g2 = parseInt(v.slice(3, 5), 16), b = parseInt(v.slice(5, 7), 16); it.fog[4] = ((env & 0xff000000) | (r << 16) | (g2 << 8) | b) | 0; }));
+        const amb = it.fog[3] >>> 0;
+        panel.appendChild(colourRow("ambient colour", "#" + hex((amb >> 16) & 255) + hex((amb >> 8) & 255) + hex(amb & 255), v => {
+          const r = parseInt(v.slice(1, 3), 16), g2 = parseInt(v.slice(3, 5), 16), b = parseInt(v.slice(5, 7), 16); it.fog[3] = ((amb & 0xff000000) | (r << 16) | (g2 << 8) | b) | 0; }));
+        const dist = document.createElement("div"); dist.className = "row"; dist.append("fog distance ", num("", Math.round(i2f(it.fog[2])), v => it.fog[2] = f2i(v))); panel.appendChild(dist);
         panel.appendChild(colourRow("character tint", "#" + hex(tint[0] * 255) + hex(tint[1] * 255) + hex(tint[2] * 255), v => {
           [1, 3, 5].forEach((p, n) => it.fog[9 + n] = f2i(parseInt(v.slice(p, p + 2), 16) / 255)); }));
       }

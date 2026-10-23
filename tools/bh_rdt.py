@@ -42,9 +42,14 @@ import bh_archive as archive
 SECTIONS = 32
 # A camera's fog record (section 13: a tag, the camera count, offsets, then 96 bytes for each camera), numbers of 4 bytes: what is known,
 # each seen in the running game (File 2, the zoo's first room): 4 the scene's colour (bytes blue, green, red, alpha: changing it to
-# blue turned the whole picture blue), 9 to 11 the characters' tint as floats red, green, blue (1, 0, 0 turned the characters red).
-# Not tried: 1 (a float, -200 in the room looked at), 2 (a float, 7000: a distance?), 3 (0x222222), 5 to 8 (0xFF808080, then three numbers).
-FOG_FIELDS = {4: "scene colour", 9: "character tint red", 10: "character tint green", 11: "character tint blue"}
+# blue turned the whole picture blue), 9 to 11 the characters' tint as floats red, green, blue (1, 0, 0 turned the characters red),
+# 3 an ambient colour added to the whole picture (bytes blue, green, red: 0x222222 is grey 34; set to 0 the picture got 5 darker in
+# each channel, to 0xFF in one byte 32 lighter in that channel only), 2 a float distance (7000: set to 0 the picture got much
+# brighter and bluer, to 28000 a little darker: the fog's distance) and 1 a float (-200: x4 made the picture 1 lighter: weak, probably the
+# fog's near end). Tried and no change seen (mean difference within the game's frame to frame noise, 0.5 to 1 of 255) in the one room
+# and view: 0, 5 to 8 and 12 to 23, zeroed and changed.
+FOG_FIELDS = {1: "fog near (float)", 2: "fog distance (float)", 3: "ambient colour", 4: "scene colour", 9: "character tint red",
+              10: "character tint green", 11: "character tint blue"}
 CAMERA_SIZE = 320
 AREA_SIZE = 176
 

@@ -101,3 +101,10 @@ visible in the game's picture there (mean difference 0.004 of 255), so this read
 they light that view. The standalone R0400300.LIG (128 bytes) holds almost nothing (4, 1, 12, 1). The game's runtime "character
 light" block (File 2 0x3134A8) has a direction (-0.075, 0.788, -0.611) and the same constant 11141135 as fog number 6; where its
 numbers come from in the files isn't established.
+
+**Fog, the rest** (swept in the zoo's first room, camera 2, each number zeroed and changed, the picture compared with the unedited one; the game's own
+frame to frame noise is 0.5 to 1 of 255): number 3 is a colour added to the whole picture (bytes blue, green, red: 0x000000FF gave +32
+in blue only, 0x0000FF00 in green only, 0x00FF0000 in red only; 0 gave -5 in each; the room has 0x222222); number 2 is a float distance
+(7000: zero made the picture brighter by 9, 12 and 18 in red, green and blue, four times it made it a little darker: the fog's reach);
+number 1 is a float that lightens a little when raised (-200 to -800). Numbers 0, 5 to 8 and 12 to 23 showed no change in that view (they
+may matter in other rooms, cameras or the shadows). The editor's camera panel has the ambient colour and the fog distance.
