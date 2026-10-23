@@ -18,6 +18,7 @@ import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
+import bh_rdt as rdt
 import bh_rdt_map as maps
 import bh_room_patch as roompatch
 from bh_patchfile import write_patch
@@ -279,6 +280,7 @@ fetch("/edits").then(r => r.json()).then(e => EDIT3D.apply(e.models));
 EDITOR = r"""
 <script>
 const EDIT = true;
+const OPS = __OPS__;
 const ORIG = JSON.parse(JSON.stringify(DATA));
 const room = (file) => DATA.find(r => r.file === file);
 let selected = null, undo = [], dragging = null, snapStep = 10, savedMessage = "", scriptRoomFile = null, scriptOpen = false;
@@ -562,7 +564,8 @@ function refreshPanel() {
     while (i < end) {
       const top = (w[i] >>> 24); if (top < 1 || top > 3) { i++; continue; }
       const width = 2 ** top, row = document.createElement("div"); row.style.marginBottom = "2px";
-      row.append("w" + i + " c" + top + " op " + ((w[i] & 0xFFFFFF).toString(16)) + " ");
+      const opn = w[i] & 0xFFFFFF, known = OPS[String(opn)];
+      const lab = document.createElement("span"); lab.textContent = "w" + i + " " + (known ? known[0] : "op 0x" + opn.toString(16)) + " "; lab.title = known ? known[1] : "not read in the game's code yet"; lab.style.color = known ? "#9cf" : "#bbb"; row.appendChild(lab);
       for (let k = 1; k < width && i + k < w.length; k++) { const idx = i + k; const inp = document.createElement("input"); inp.type = "number"; inp.value = w[idx]; inp.style.cssText = "width:70px;background:#222;color:#ddd;border:1px solid #444;padding:0 2px"; inp.onchange = () => { sroom.script[idx] = +inp.value; refreshPanel(); }; row.appendChild(inp); }
       list.appendChild(row); i += width;
     }
@@ -626,7 +629,8 @@ def model_json(game, scenario, file):
 
 def serve(game, scenario, names, port, out):
     data = maps.build(game, scenario, names, False)
-    page = maps.render(game, scenario, data, EDITOR + EDITOR3D)
+    ops = json.dumps({str(k): list(v) for k, v in rdt.OPS.items()})
+    page = maps.render(game, scenario, data, (EDITOR + EDITOR3D).replace("__OPS__", ops))
     out.mkdir(parents=True, exist_ok=True)
     edits_path, patch_path = out / f"room-edits-{game}.json", out / f"rooms-{game}.patch"
     mine = {r["file"].lower() for r in data}

@@ -157,6 +157,37 @@ class Light:
         self.colour2 = tuple(floats[9:12])
 
 
+# What the script ops do, from reading the game's handlers (the table of handlers at 0x74CCE0 in File 2's memory, handler addresses in the game
+# overlay; docs/research/script-ops.md has the evidence). Each is (name, what the words after the op word are). Only the ops read in the game's code
+# are here; an op not in the table is listed as "op 0x.." and its handler is the one in the dump.
+OPS = {
+    0x0C: ("SetFlag", "type, flag number, value (0 clears, else sets; type 0 is bank B at 0x490030)"),
+    0x0B: ("FlagOp", "mode (0, 1, 2), number, byte: sets or clears flags in other banks by mode"),
+    0xE6: ("IfFlagB", "flag number, value: runs the following block when bank B's flag equals value, else skips to its end"),
+    0xEC: ("IfFlagAB", "flag number, value: the block runs when (bank A's flag and not bank B's) equals value"),
+    0xE3: ("IfGlobal", "number, value: the block runs when the flag read by function 0x6d74a0 equals value"),
+    0xED: ("IfGlobal2", "number, value: as IfGlobal with the second function 0x6d7510 as well"),
+    0xEF: ("IfGlobalB", "number, value: the block runs when function 0x6d7510's flag equals value"),
+    0xEE: ("IfByte", "byte, byte: compares against a table at 0x49135a"),
+    0x08: ("IfPlayer", "number, byte: a conditional block (reads the thread)"),
+    0x113: ("IfCounter", "three numbers: a conditional block"),
+    0xB0: ("ShowObject", "object number (through the script's 32 byte table): clears bit 7 of the object's flag at 0x475080 + n"),
+    0xB1: ("HideObject", "object number: sets bit 7 of the object's flag"),
+    0xB5: ("SetActorState", "actor id, byte: stores the byte at +113 of every actor with that id"),
+    0x55: ("SetExamine", "area id, message number, parameter: activates the examine areas (tag 5) with that id and gives them the message and the parameter"),
+    0x56: ("ResetExamine", "area id: calls the game's function 0x59a7c0 for the examine areas with that id"),
+    0x58: ("EnableItem", "area id, value: activates the item and lock areas (tag 3 subtypes 1 and 3, tag 4) with that id; tag 3's value goes into its field 18"),
+    0x59: ("DisableItem", "area id: deactivates the same areas"),
+    0x5C: ("DisableExit", "area id: deactivates the exit areas (tag 1) with that id"),
+    0x5F: ("SetDoorLock", "door id, value: stores the value in field 22 of the door (tag 0) and room door (tag 2) areas with that id"),
+    0x54: ("SetDoor", "door id, number, byte: stores them in the door areas' runtime fields"),
+    0x104: ("Activate", "area tag, area id, value: turns on the areas of that tag with that id (and value)"),
+    0x105: ("Deactivate", "area tag, area id, value: turns them off"),
+    0xD0: ("SpawnEnemy", "kind, id, then five words copied into the new enemy's record (a position and angles)"),
+    0x45: ("SetOption", "flag, value, index (below 8), number: two small tables at 0x491258 and 0x491268"),
+}
+
+
 class Instruction:
     """A script record: `cls` (1, 2 or 3: the top byte of its first word), `op` (the low 24 bits), its words (2 ** cls of them, the
     first being the op's own), and where it starts in the script, in words"""
@@ -167,6 +198,10 @@ class Instruction:
         self.op = words[0] & 0xFFFFFF
         self.words = list(words)
         self.args = list(words[1:])
+
+    @property
+    def name(self):
+        return OPS[self.op][0] if self.op in OPS else f"op {self.op:#x}"
 
 
 class Room:
