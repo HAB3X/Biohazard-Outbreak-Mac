@@ -47,17 +47,26 @@ def compose(game, edits, out_path, base_patches=()):
     for base in base_patches:
         stream += patchfile.read_patch(base)
     stream += list(patches)
-    in_place = []
+    in_place, plain = [], {path: [] for path in ropes}
     for offset, data, variant in stream:
         for path, (start, size) in ranges.items():
             if start <= offset < start + size:
                 if variant == 0:
-                    ropes[path].patch_original(offset, data)
+                    plain[path].append((offset, data))
                 else:
                     disc.extra.append(("variant", path, offset, data, variant))
                 break
         else:
             in_place.append((offset, data, variant))
+    for path, items in plain.items():
+        # later patches lie over earlier ones: apply in the order given, a range at a time, but in one pass when none overlap
+        items.sort(key=lambda x: x[0])
+        clean = all(a[0] + len(a[1]) <= b[0] for a, b in zip(items, items[1:]))
+        if clean:
+            ropes[path].patch_many(items)
+        else:
+            for offset, data in [x for x in stream if x[2] == 0 and ranges[path][0] <= x[0] < ranges[path][0] + ranges[path][1]]:
+                ropes[path].patch_original(offset, data)
     for (pack, member), data in replacements.items():
         path = container_of_pack(disc.arc, pack)
         rope = ropes[path]

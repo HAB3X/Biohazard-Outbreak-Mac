@@ -98,6 +98,39 @@ class Rope:
         for position, original, length in self.original_positions(start, len(data)):
             self.write(position, data[original - start:original - start + length])
 
+    def patch_many(self, patches):
+        """patch_original for many [(original offset, bytes)] at once (one pass: the English patch has thousands of ranges)"""
+        import bisect
+
+        patches = sorted(patches, key=lambda x: x[0])
+        starts = [s for s, _ in patches]
+        out = []
+        for piece in self.pieces:
+            if piece.data is not None or not patches:
+                out.append(piece)
+                continue
+            lo, hi = piece.at, piece.at + piece.length
+            cursor = lo
+            first = max(0, bisect.bisect_right(starts, lo) - 1)
+            for k in range(first, len(patches)):
+                s, data = patches[k]
+                e = s + len(data)
+                if s >= hi:
+                    break
+                if e <= lo:
+                    continue
+                a, b = max(s, lo, cursor), min(e, hi)
+                if a >= b:
+                    continue
+                if a > cursor:
+                    out.append(Piece(cursor, a - cursor))
+                out.append(Piece(0, b - a, bytes(data[a - s:b - s])))
+                cursor = b
+            if cursor < hi:
+                out.append(Piece(cursor, hi - cursor))
+        self.pieces = out
+        self._merge()
+
     # ---- changing
     def splice(self, start, old_length, new):
         """Replaces [start, start + old_length) by `new` (bytes or a Rope): the file grows or shrinks and what followed moves on"""

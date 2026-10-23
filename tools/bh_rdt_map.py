@@ -105,6 +105,7 @@ def build(game, scenario, names, variants):
                     item["facing"] = area.facing
             entry["areas"].append(item)
         entry["script"] = room.script_words()
+        entry["ins"] = [{"at": i.at, "op": i.op, "args": i.args} for i in room.script_instructions()]
         entry["nodes"] = [{"i": i, "kind": n.kind, "id": n.id, "pos": [round(v, 1) for v in n.position], "words": list(n.words)}
                           for i, n in enumerate(sgl.nodes(number | (variant << 16)) if sgl else [])]
         entry["items"] = [{"i": n.number, "kind": next(iter(n.kinds.values()), (0, 0))[0], "qty": next(iter(n.kinds.values()), (0, 0))[1],

@@ -185,6 +185,16 @@ def model_patches(game, models):
     return patches, report
 
 
+def _area_record(game, member, index):
+    """The 176 bytes of area `index` of room file `member` (to copy into another room)"""
+    for _, name, node in rdt.rooms(game):
+        if name.lower() == member.lower():
+            room = rdt.Room(node.read())
+            base = room._area_base(index)
+            return bytes(room.data[base:base + rdt.AREA_SIZE])
+    raise SystemExit(f"{member}: no such room")
+
+
 def build(game, edits, replacements=None):
     """([(disc offset, bytes, 0)], a line per room changed) for the edits of a loaded EDITS.json. With `replacements` (a dict) rooms may grow past their
     sectors: a room whose size changed is put there as {(pack, member): its new bytes} for tools/bh_vdisc.py to lay, instead of being patched in place"""
@@ -197,8 +207,12 @@ def build(game, edits, replacements=None):
         room = rdt.Room(node.read())
         room.unlimited = replacements is not None
         for new in spec.get("new_areas", []):
-            room.add_area(new["like"], quad=new.get("quad"), height=new.get("height"),
-                          fields={int(k): v for k, v in new.get("fields", {}).items()} or None)
+            like, record = new["like"], None
+            if isinstance(like, dict):  # a copy of another room's area: its record
+                record = _area_record(game, like["room"], int(like["i"]))
+                like = 0
+            room.add_area(like, quad=new.get("quad"), height=new.get("height"),
+                          fields={int(k): v for k, v in new.get("fields", {}).items()} or None, record=record)
         if spec.get("nodes"):
             more = sgl_node_patches(game, pack, member, spec["nodes"])
             patches += more

@@ -1,0 +1,312 @@
+// The scene: the scenario's rooms and what is in them, the edits made to it, undo and redo. Everything the editor changes goes through `commit`.
+// The edits are the JSON tools/bh_room_patch.py reads; the scene after any number of undos is the pristine scene with the edits applied, so history is a list of edits.
+
+export const clone = (o) => JSON.parse(JSON.stringify(o));
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// ---- the kinds of thing in a room: what the editor calls them, what they look like and where they live in the scene
+export const AREA_TAGS = {
+  0: { key: "door", label: "Door", color: "door", icon: "door" },
+  1: { key: "exit", label: "Exit", color: "exit", icon: "exit" },
+  2: { key: "roomdoor", label: "Inner door", color: "roomdoor", icon: "door" },
+  3: { key: "pickup", label: "Pickup trigger", color: "item", icon: "item" },
+  4: { key: "lock", label: "Lock", color: "item", icon: "lock" },
+  5: { key: "examine", label: "Examine spot", color: "message", icon: "message" },
+  6: { key: "ladder", label: "Ladder", color: "ladder", icon: "ladder" },
+  7: { key: "glint", label: "Item glint", color: "item", icon: "item" },
+  10: { key: "tag10", label: "Trigger (10)", color: "marker", icon: "zone" },
+  11: { key: "message", label: "Message", color: "message", icon: "message" },
+  12: { key: "scriptzone", label: "Script zone", color: "zone", icon: "zone" },
+  13: { key: "spot", label: "Marked spot", color: "marker", icon: "marker" },
+};
+export const COLLECTIONS = {
+  areas: { label: "Areas", icon: "zone" },
+  cameras: { key: "camera", label: "Camera", color: "camera", icon: "camera" },
+  lights: { key: "light", label: "Light", color: "light", icon: "light" },
+  zones: { key: "zone", label: "Sound zone", color: "zone", icon: "zone" },
+  points: { key: "sound", label: "Sound source", color: "zone", icon: "zone" },
+  nodes: { key: "node", label: "AI node", color: "node", icon: "node" },
+  items: { key: "item", label: "Item", color: "item", icon: "item" },
+  enemies: { key: "enemy", label: "Enemy", color: "enemy", icon: "enemy" },
+};
+
+export function describe(coll, obj) {
+  if (coll === "areas") return AREA_TAGS[obj.tag] || { key: "area", label: `Area (tag ${obj.tag})`, color: "marker", icon: "zone" };
+  return COLLECTIONS[coll];
+}
+
+// ---- positions: every kind of thing has a place, and can be moved as a whole
+export function centre(coll, o) {
+  switch (coll) {
+    case "areas": {
+      const q = o.quad;
+      return [(q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, (o.h[0] + o.h[1]) / 2, (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4];
+    }
+    case "cameras": return o.eye;
+    case "zones": {
+      const b = o.box;
+      return [(b[0][0] + b[1][0] + b[2][0] + b[3][0]) / 4, (b[0][1] + b[4][1]) / 2, (b[0][2] + b[1][2] + b[2][2] + b[3][2]) / 4];
+    }
+    default: return o.pos;
+  }
+}
+
+export function translate(coll, o, dx, dy, dz) {
+  const add = (p) => [p[0] + dx, p[1] + dy, p[2] + dz];
+  switch (coll) {
+    case "areas":
+      o.quad = o.quad.map((p) => [p[0] + dx, p[1] + dz]);
+      o.h = [o.h[0] + dy, o.h[1] + dy];
+      break;
+    case "cameras":
+      o.eye = add(o.eye);
+      o.target = add(o.target);
+      o.box = o.box.map(add);
+      break;
+    case "zones":
+      o.box = o.box.map(add);
+      break;
+    default:
+      o.pos = add(o.pos);
+  }
+}
+
+// ---- diffs: the scene against the pristine one, as the edits the patch builder reads
+const moved = (a, b) => !same(a, b);
+
+export function diffs(scene, orig) {
+  const edits = {};
+  scene.rooms.forEach((r, ri) => {
+    const o = orig.rooms[ri];
+    const out = {};
+    const newAreas = r.areas.filter((a) => a.isNew).map((a) => {
+      const f = {};
+      a.fields.forEach((v, k) => { f[12 + k] = v; });
+      return { like: a.like, quad: a.quad, height: a.h, fields: f };
+    });
+    const newCameras = r.cameras.filter((c) => c.isNew).map((c) => ({ like: c.like, eye: c.eye, target: c.target, fov: c.fov, box: c.box }));
+    if (newAreas.length) out.new_areas = newAreas;
+    if (newCameras.length) out.new_cameras = newCameras;
+    const put = (key, i, d) => { if (Object.keys(d).length) (out[key] = out[key] || {})[i] = d; };
+    for (const c of r.cameras) {
+      if (c.isNew) continue;
+      const oc = o.cameras.find((x) => x.i === c.i), d = {};
+      if (moved(c.eye, oc.eye)) d.eye = c.eye;
+      if (moved(c.target, oc.target)) d.target = c.target;
+      if (moved(c.fov, oc.fov)) d.fov = c.fov;
+      if (moved(c.box, oc.box)) d.box = c.box;
+      put("cameras", c.i, d);
+      if (c.fog && oc.fog) {
+        const f = {};
+        c.fog.forEach((v, k) => { if (v !== oc.fog[k]) f[k] = v; });
+        if (Object.keys(f).length) put("fog", c.i, { ints: f });
+      }
+    }
+    for (const a of r.areas) {
+      if (a.isNew) continue;
+      const oa = o.areas.find((x) => x.i === a.i), d = {};
+      if (moved(a.quad, oa.quad)) d.quad = a.quad;
+      if (moved(a.h, oa.h)) d.height = a.h;
+      const f = {};
+      a.fields.forEach((v, k) => { if (v !== oa.fields[k]) f[12 + k] = v; });
+      if (Object.keys(f).length) d.fields = f;
+      put("areas", a.i, d);
+    }
+    for (const z of r.zones) {
+      const oz = o.zones.find((x) => x.i === z.i), d = {};
+      if (moved(z.box, oz.box)) d.box = z.box;
+      if (z.sound !== oz.sound) d.sound = z.sound;
+      put("sound_zones", z.i, d);
+    }
+    { const sw = {}; r.script.forEach((v, k) => { if (v !== o.script[k]) sw[k] = v; }); if (Object.keys(sw).length) out.script_words = sw; }
+    for (const n of r.nodes) {
+      const on = o.nodes.find((x) => x.i === n.i), d = {};
+      if (moved(n.pos, on.pos)) d.position = n.pos;
+      if (n.kind !== on.kind) d.kind = n.kind;
+      if (n.id !== on.id) d.id = n.id;
+      const wv = {}; n.words.forEach((v, k) => { if (v !== on.words[k]) wv[k] = v; });
+      if (Object.keys(wv).length) d.words = wv;
+      put("nodes", n.i, d);
+    }
+    for (const n of r.items) {
+      const on = o.items.find((x) => x.i === n.i), d = {};
+      if (moved(n.pos, on.pos)) d.position = n.pos;
+      if (n.kind !== on.kind) d.kind = n.kind;
+      if (n.qty !== on.qty) d.quantity = n.qty;
+      put("items", n.i, d);
+    }
+    for (const n of r.enemies) {
+      const on = o.enemies.find((x) => x.i === n.i), d = {};
+      if (moved(n.pos, on.pos)) d.position = n.pos;
+      if (n.facing !== on.facing) d.facing = n.facing;
+      if (n.id !== on.id) d.id = n.id;
+      if (n.cls !== on.cls) d.class = n.cls;
+      if (n.modes !== on.modes) d.modes = n.modes;
+      if (n.hp !== on.hp) d.hp_tier = n.hp;
+      put("enemies", n.i, d);
+    }
+    for (const l of r.lights) {
+      const ol = o.lights.find((x) => x.i === l.i), d = {};
+      if (moved(l.pos, ol.pos)) d.position = l.pos;
+      if (l.att !== ol.att) d.attenuation = l.att;
+      if (l.range !== ol.range) d.range = l.range;
+      if (moved(l.col, ol.col)) d.colour = l.col;
+      if (moved(l.col2, ol.col2)) d.colour2 = l.col2;
+      put("lights", l.i, d);
+    }
+    for (const p of r.points) {
+      const op = o.points.find((x) => x.i === p.i), d = {};
+      if (moved(p.pos, op.pos)) d.position = p.pos;
+      if (p.kind !== op.kind) d.kind = p.kind;
+      put("sound_points", p.i, d);
+    }
+    if (Object.keys(out).length) edits[r.file] = out;
+  });
+  return { rooms: edits };
+}
+
+// ---- applying edits to a scene (the pristine one, or what the page loaded)
+export function addArea(room, like, spec = {}, scene = store.scene) {
+  // a copy of a record of the game's own: one of this room's, or (a template) one of another room's, since a room may have no area of the kind wanted
+  const tpl = spec.template || (like && typeof like === "object" ? like : null);
+  const srcRoom = tpl ? scene.rooms.find((r) => r.file === tpl.room) || room : room;
+  const index = tpl ? tpl.i : like;
+  const base = srcRoom.areas.find((a) => a.i === index) || room.areas[0];
+  const a = clone(base);
+  a.i = Math.max(-1, ...room.areas.map((x) => x.i)) + 1;
+  a.isNew = true;
+  a.like = tpl ? { room: srcRoom.file, i: index } : index;
+  if (spec.quad) a.quad = clone(spec.quad);
+  if (spec.height) a.h = clone(spec.height);
+  Object.entries(spec.fields || {}).forEach(([k, v]) => { a.fields[+k - 12] = v; });
+  delete a.arrival; delete a.to; delete a.door; delete a.other; delete a.facing;
+  if (a.tag === 0 || a.tag === 1) a.to = a.fields[1];
+  if (a.tag === 0) a.door = a.fields[0];
+  room.areas.push(a);
+  return a;
+}
+
+export function addCamera(room, like, spec = {}) {
+  const base = room.cameras.find((c) => c.i === like) || room.cameras[0];
+  const c = clone(base);
+  c.i = Math.max(-1, ...room.cameras.map((x) => x.i)) + 1;
+  c.isNew = true;
+  c.like = like;
+  for (const k of ["eye", "target", "fov", "box"]) if (spec[k]) c[k] = clone(spec[k]);
+  room.cameras.push(c);
+  return c;
+}
+
+export function applyEdits(scene, edits) {
+  for (const [file, spec] of Object.entries(edits.rooms || {})) {
+    const r = scene.rooms.find((x) => x.file === file);
+    if (!r) continue;
+    for (const [i, d] of Object.entries(spec.sound_zones || {})) { const z = r.zones.find((x) => x.i === +i); if (z) { if (d.box) z.box = d.box; if (d.sound !== undefined) z.sound = d.sound; } }
+    for (const [i, d] of Object.entries(spec.enemies || {})) {
+      const n = r.enemies.find((x) => x.i === +i);
+      if (!n) continue;
+      if (d.position) n.pos = d.position;
+      if (d.facing !== undefined) n.facing = d.facing;
+      if (d.id !== undefined) n.id = d.id;
+      if (d.class !== undefined) n.cls = d.class;
+      if (d.modes !== undefined) n.modes = d.modes;
+      if (d.hp_tier !== undefined) n.hp = d.hp_tier;
+    }
+    for (const [i, d] of Object.entries(spec.items || {})) { const n = r.items.find((x) => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.quantity !== undefined) n.qty = d.quantity; } }
+    for (const [i, d] of Object.entries(spec.nodes || {})) { const n = r.nodes.find((x) => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.id !== undefined) n.id = d.id; for (const [k, v] of Object.entries(d.words || {})) n.words[+k] = v; } }
+    for (const [i, v] of Object.entries(spec.script_words || {})) r.script[+i] = v;
+    for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find((x) => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }
+    for (const [i, d] of Object.entries(spec.sound_points || {})) { const p = r.points.find((x) => x.i === +i); if (p) { if (d.position) p.pos = d.position; if (d.kind !== undefined) p.kind = d.kind; } }
+    for (const n of spec.new_areas || []) addArea(r, n.like, n, scene);
+    for (const n of spec.new_cameras || []) addCamera(r, n.like, n);
+    for (const [i, d] of Object.entries(spec.cameras || {})) { const c = r.cameras.find((x) => x.i === +i); if (c) Object.assign(c, d); }
+    for (const [i, d] of Object.entries(spec.fog || {})) { const c = r.cameras.find((x) => x.i === +i); if (c && c.fog) for (const [k, v] of Object.entries(d.ints || {})) c.fog[+k] = v; }
+    for (const [i, d] of Object.entries(spec.areas || {})) {
+      const a = r.areas.find((x) => x.i === +i);
+      if (!a) continue;
+      if (d.quad) a.quad = d.quad;
+      if (d.height) a.h = d.height;
+      for (const [k, v] of Object.entries(d.fields || {})) a.fields[+k - 12] = v;
+      if (a.tag === 0 || a.tag === 1) a.to = a.fields[1];
+      if (a.tag === 0) a.door = a.fields[0];
+    }
+  }
+}
+
+// ---- the store: one object the whole page shares
+const listeners = {};
+export const on = (event, fn) => { (listeners[event] = listeners[event] || []).push(fn); return fn; };
+export const emit = (event, ...args) => (listeners[event] || []).forEach((fn) => fn(...args));
+
+export const store = {
+  game: "", scenario: 0, scenarios: [], ops: {},
+  scene: null, orig: null,
+  models: {},                 // room file -> the model's JSON, once loaded
+  tool: "select",
+  room: null,                 // the room being worked in (its file)
+  selection: [],              // [{c: collection, file, i}]
+  mode: "plan",               // plan or 3d
+  snap: 10,
+  show: { models: true, textures: true, areas: true, cameras: true, lights: true, zones: false, nodes: false, items: true, enemies: true, labels: true, grid: true },
+  history: [],                // the edits after each step, the first being "nothing"
+  at: 0,
+  dirty: false,
+  busy: "",
+  problems: [],
+};
+
+export const roomOf = (file) => store.scene.rooms.find((r) => r.file === file);
+export const objectOf = (ref) => { const r = roomOf(ref.file); return r ? r[ref.c].find((o) => o.i === ref.i) : null; };
+export const refEq = (a, b) => a && b && a.c === b.c && a.file === b.file && a.i === b.i;
+
+export function loadScene(data, saved) {
+  store.game = data.game; store.scenario = data.scenario; store.scenarios = data.scenarios; store.ops = data.ops;
+  store.orig = clone({ rooms: data.rooms });
+  store.scene = clone({ rooms: data.rooms });
+  store.history = [{ rooms: {} }];
+  store.at = 0;
+  store.selection = [];
+  store.room = store.scene.rooms[0] ? store.scene.rooms[0].file : null;
+  if (saved && saved.edits && Object.keys(saved.edits.rooms || {}).length) {
+    applyEdits(store.scene, saved.edits);
+    store.history = [{ rooms: {} }, clone(saved.edits)];
+    store.at = 1;
+  }
+  store.dirty = false;
+}
+
+export const currentEdits = () => diffs(store.scene, store.orig);
+
+// Called after a change is complete (the end of a drag, a field edited): records a step when the scene differs from the last one.
+export function commit(label) {
+  const edits = currentEdits();
+  if (same(edits, store.history[store.at])) return false;
+  store.history = store.history.slice(0, store.at + 1);
+  store.history.push({ ...clone(edits), label });
+  store.at = store.history.length - 1;
+  store.dirty = true;
+  emit("changed", { label });
+  return true;
+}
+
+function restore(edits) {
+  store.scene = clone(store.orig);
+  applyEdits(store.scene, edits);
+  store.selection = store.selection.filter((s) => objectOf(s));
+  store.dirty = true;
+  emit("changed", { restored: true });
+}
+
+export function undo() { if (store.at > 0) { store.at--; restore(store.history[store.at]); } }
+export function redo() { if (store.at < store.history.length - 1) { store.at++; restore(store.history[store.at]); } }
+export const canUndo = () => store.at > 0;
+export const canRedo = () => store.at < store.history.length - 1;
+
+export function select(refs, additive = false) {
+  store.selection = additive ? [...store.selection, ...refs.filter((r) => !store.selection.some((s) => refEq(s, r)))] : refs;
+  if (refs[0] && refs[0].file !== store.room) store.room = refs[0].file;
+  emit("selection");
+}
+export function setRoom(file) { store.room = file; emit("room"); }
+export function setTool(tool) { store.tool = tool; emit("tool"); }
+export function setMode(mode) { store.mode = mode; emit("mode"); }

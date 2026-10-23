@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""Outbreak Studio: the level editor for File 1 and File 2. A local web page (tools/studio/web) over these tools' readers and patch builders.
+
+    bh_studio.py [GAME [SCENARIO]] [--port N] [--no-open]
+
+GAME is file1 or file2 (File 2 by default), SCENARIO the scenario's number (40 is File 2's first). Your work is kept in work/studio/ and the page saves it as you go;
+Build writes work/studio/GAME-play.patch (the English patch, if the game has one, and your edits, through tools/bh_studio_build.py) and Play starts the game with it.
+docs/studio/PLAN.md says what the editor is for and what it can do so far.
+"""
+import json
+import os
+import subprocess
+import sys
+import threading
+import time
+import traceback
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+
+import bh_archive as archive
+import bh_rdt as rdt
+import bh_rdt_edit as legacy
+import bh_rdt_map as maps
+import bh_studio_build as studio_build
+
+ROOT = Path(__file__).resolve().parent.parent
+WEB = Path(__file__).resolve().parent / "studio" / "web"
+WIKI = Path.home() / "Documents" / "outbreak-research" / "Documentation" / "docs" / "game data" / "rooms.md"
+TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml",
+         ".png": "image/png", ".json": "application/json", ".woff2": "font/woff2"}
+
+
+def scenarios(game):
+    return sorted({int(pack[1:4]) for pack, _, _ in rdt.rooms(game)})
+
+
+class Studio:
+    def __init__(self, game, scenario):
+        self.lock = threading.Lock()
+        self.game, self.scenario = game, scenario
+        self.names = maps.room_names(str(WIKI)) if WIKI.exists() else {}
+        self.cache = {}
+        self.process = None
+
+    # ---- what the page asks for
+    def scene(self):
+        with self.lock:
+            key = ("scene", self.game, self.scenario)
+            if key not in self.cache:
+                rooms = maps.build(self.game, self.scenario, self.names, False)
+                self.cache[key] = {"game": self.game, "scenario": self.scenario, "rooms": rooms, "scenarios": scenarios(self.game),
+                                   "ops": {str(k): list(v) for k, v in rdt.OPS.items()}}
+            return self.cache[key]
+
+    def model(self, file):
+        with self.lock:
+            key = ("model", self.game, self.scenario, file)
+            if key not in self.cache:
+                self.cache[key] = legacy.model_json(self.game, self.scenario, file)
+            return self.cache[key]
+
+    def texture(self, index):
+        with self.lock:
+            key = ("tex", self.game, self.scenario, index)
+            if key not in self.cache:
+                self.cache[key] = legacy.texture_png(self.game, self.scenario, index)
+            return self.cache[key]
+
+    def messages(self):
+        with self.lock:
+            key = ("msg", self.game, self.scenario)
+            if key not in self.cache:
+                self.cache[key] = legacy.messages_json(self.game, self.scenario)
+            return self.cache[key]
+
+    # ---- the project: the edits, as tools/bh_room_patch.py reads them
+    def project_path(self):
+        return ROOT / "work" / "studio" / f"{self.game}-r{self.scenario:03d}.json"
+
+    def project(self):
+        path = self.project_path()
+        return json.loads(path.read_text()) if path.exists() else {"edits": {"rooms": {}, "models": {}}, "meta": {}}
+
+    def save_project(self, body):
+        path = self.project_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(body, indent=1))
+        tmp.replace(path)
+
+    def switch(self, game, scenario):
+        with self.lock:
+            self.game, self.scenario = game, scenario
+
+    # ---- build and play
+    def english_patch(self):
+        path = ROOT / "build" / f"english-{self.game}.patch"
+        if not path.exists():
+            subprocess.run([sys.executable, str(ROOT / "tools" / "bh_build_patch.py"), self.game, str(path)], check=False)
+        return path if path.exists() else None
+
+    def build(self, edits, english=True):
+        out = ROOT / "work" / "studio" / f"{self.game}-play.patch"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        base = [str(self.english_patch())] if english and self.english_patch() else []
+        started = time.time()
+        report = studio_build.compose(self.game, edits, str(out), base)
+        return {"patch": str(out), "report": report, "seconds": round(time.time() - started, 2), "bytes": out.stat().st_size}
+
+    def play(self, patch):
+        self.stop()
+        disc = archive.disc_path(self.game)
+        command = [str(ROOT / "build" / f"biohazard-{self.game}"), "--disc", disc]
+        if patch:
+            command += ["--patch", patch]
+        self.process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        return {"pid": self.process.pid}
+
+    def stop(self):
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+        self.process = None
+
+
+def make_handler(studio):
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def send(self, code, body, kind="application/json"):
+            payload = body if isinstance(body, bytes) else body.encode()
+            self.send_response(code)
+            self.send_header("Content-Type", kind)
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(payload)
+
+        def body(self):
+            return json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+
+        def do_GET(self):
+            url = urlparse(self.path)
+            query = parse_qs(url.query)
+            try:
+                if url.path == "/api/scene":
+                    self.send(200, json.dumps(studio.scene()))
+                elif url.path == "/api/project":
+                    self.send(200, json.dumps(studio.project()))
+                elif url.path == "/api/model":
+                    self.send(200, json.dumps(studio.model(query["file"][0])))
+                elif url.path == "/api/tex":
+                    png = studio.texture(int(query["index"][0]))
+                    self.send(200 if png else 404, png or b"", "image/png")
+                elif url.path == "/api/messages":
+                    self.send(200, json.dumps(studio.messages()))
+                elif url.path.startswith("/api/"):
+                    self.send(404, "{}")
+                else:
+                    name = "index.html" if url.path in ("", "/") else url.path.lstrip("/")
+                    target = (WEB / name).resolve()
+                    if WEB.resolve() not in target.parents and target != WEB.resolve() or not target.is_file():
+                        self.send(404, "not found", "text/plain")
+                    else:
+                        self.send(200, target.read_bytes(), TYPES.get(target.suffix, "application/octet-stream"))
+            except Exception as error:  # told to the page, not a crash
+                traceback.print_exc()
+                self.send(500, json.dumps({"error": str(error)}))
+
+        def do_PUT(self):
+            try:
+                if urlparse(self.path).path == "/api/project":
+                    studio.save_project(self.body())
+                    self.send(200, "{}")
+                else:
+                    self.send(404, "{}")
+            except Exception as error:
+                self.send(500, json.dumps({"error": str(error)}))
+
+        def do_POST(self):
+            path = urlparse(self.path).path
+            try:
+                body = self.body()
+                if path == "/api/build":
+                    self.send(200, json.dumps(studio.build(body.get("edits", {}), body.get("english", True))))
+                elif path == "/api/play":
+                    self.send(200, json.dumps(studio.play(body.get("patch"))))
+                elif path == "/api/stop":
+                    studio.stop()
+                    self.send(200, "{}")
+                elif path == "/api/switch":
+                    studio.switch(body["game"], int(body["scenario"]))
+                    self.send(200, "{}")
+                else:
+                    self.send(404, "{}")
+            except (SystemExit, Exception) as error:
+                traceback.print_exc()
+                self.send(400, json.dumps({"error": str(error)}))
+
+    return Handler
+
+
+def main(argv):
+    args = [a for a in argv[1:] if not a.startswith("--")]
+    port = 8770
+    if "--port" in argv:
+        port = int(argv[argv.index("--port") + 1])
+        args = [a for a in args if a != str(port)]
+    game = args[0] if args else "file2"
+    scenario = int(args[1]) if len(args) > 1 else scenarios(game)[0]
+    studio = Studio(game, scenario)
+    server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(studio))
+    url = f"http://127.0.0.1:{port}/"
+    print(f"Outbreak Studio: {url}   ({game} r{scenario:03d}; Ctrl+C stops)")
+    if "--no-open" not in argv and sys.platform == "darwin":
+        subprocess.Popen(["open", url])
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        studio.stop()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

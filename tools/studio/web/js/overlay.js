@@ -1,0 +1,277 @@
+// The markers drawn over the models (areas, doors, cameras, items, enemies ...) on a 2D canvas through the same camera, and finding what is under the pointer.
+import { store, describe, centre, refEq, roomOf } from "./scene.js";
+
+const css = getComputedStyle(document.documentElement);
+const colour = (name) => css.getPropertyValue("--" + name).trim() || "#9aa";
+const rgba = (hex, a) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+};
+
+let hits = [];            // what was drawn last frame, in drawing order: {ref, test(sx, sy) -> distance or -1, order}
+let handleList = [];      // the selected thing's handles, on the screen
+
+export const lastHandles = () => handleList;
+
+// ---- what a selected thing can be pulled by
+export function handlesOf(ref) {
+  const r = roomOf(ref.file);
+  if (!r) return [];
+  const o = r[ref.c].find((x) => x.i === ref.i);
+  if (!o) return [];
+  const out = [];
+  if (ref.c === "areas") o.quad.forEach((p, n) => out.push({ id: "corner" + n, p: [p[0], (o.h[0] + o.h[1]) / 2, p[1]], kind: "square" }));
+  if (ref.c === "cameras") {
+    out.push({ id: "target", p: o.target, kind: "ring" });
+    o.box.slice(0, 4).forEach((p, n) => out.push({ id: "box" + n, p, kind: "square", dim: true }));
+  }
+  if (ref.c === "zones") o.box.slice(0, 4).forEach((p, n) => out.push({ id: "zone" + n, p, kind: "square" }));
+  if (ref.c === "enemies") {
+    const a = o.facing / 65536 * Math.PI * 2;
+    out.push({ id: "facing", p: [o.pos[0] + Math.sin(a) * 160, o.pos[1], o.pos[2] + Math.cos(a) * 160], kind: "ring" });
+  }
+  return out;
+}
+
+export function draw(ctx, camera, dpr, rooms, hover) {
+  const w = camera.w, h = camera.h;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const vp = camera.viewProj();
+  const P = (p) => camera.project(p, vp);
+  const px = camera.mode === "plan" ? 1 / camera.scale : Math.min(1, 2200 / camera.dist);   // how big world units look
+  hits = [];
+  const show = store.show;
+  const selected = (ref) => store.selection.some((s) => refEq(s, ref));
+  const hovered = (ref) => hover && refEq(hover, ref);
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.font = "11px -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif";
+
+  const pill = (text, x, y, color, strong) => {
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = "rgba(10,12,16,.82)";
+    ctx.beginPath(); ctx.roundRect(x - tw / 2 - 5, y - 8, tw + 10, 16, 5); ctx.fill();
+    ctx.fillStyle = strong ? "#fff" : color; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y + 0.5);
+  };
+
+  for (const file of rooms) {
+    const r = roomOf(file);
+    if (!r) continue;
+    const current = file === store.room;
+    const base = current ? 1 : 0.38;
+    const layers = [];
+
+    if (show.zones) {
+      for (const z of r.zones) {
+        const ref = { c: "zones", file, i: z.i }, pts = z.box.slice(0, 4).map((p) => P([p[0], p[1], p[2]]));
+        if (pts.some((p) => p[2] < -0.9)) continue;
+        const col = colour("zone"), sel = selected(ref);
+        layers.push({ order: 1, run() {
+          ctx.setLineDash([5, 4]); ctx.strokeStyle = rgba(col, sel ? 1 : 0.7 * base); ctx.fillStyle = rgba(col, 0.08 * base);
+          path(pts); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+        } });
+        hits.push({ ref, order: 1, test: polyTest(pts, 300) });
+      }
+    }
+
+    if (show.areas) {
+      for (const a of r.areas) {
+        if (!current && a.tag !== 0 && a.tag !== 1) continue;
+        const ref = { c: "areas", file, i: a.i }, d = describe("areas", a), col = colour(d.color);
+        const y = (a.h[0] + a.h[1]) / 2;
+        const lo = a.quad.map((p) => P([p[0], a.h[0], p[1]])), pts = a.quad.map((p) => P([p[0], y, p[1]]));
+        if (pts.some((p) => p[2] < -0.9)) continue;
+        const sel = selected(ref), hov = hovered(ref);
+        const big = Math.abs(a.quad[0][0] - a.quad[2][0]) + Math.abs(a.quad[0][1] - a.quad[2][1]);
+        layers.push({ order: 2, run() {
+          ctx.fillStyle = rgba(col, (sel ? 0.34 : hov ? 0.3 : 0.2) * base);
+          ctx.strokeStyle = rgba(col, sel ? 1 : 0.8 * base);
+          ctx.lineWidth = sel ? 2.2 : 1.3;
+          if (camera.mode !== "plan") {
+            const hi = a.quad.map((p) => P([p[0], a.h[1], p[1]]));
+            path(hi); ctx.fill(); ctx.stroke();
+            path(lo); ctx.stroke();
+            ctx.beginPath(); lo.forEach((p, n) => { ctx.moveTo(p[0], p[1]); ctx.lineTo(hi[n][0], hi[n][1]); }); ctx.stroke();
+          } else { path(pts); ctx.fill(); ctx.stroke(); }
+          ctx.lineWidth = 1;
+          const c = mid(pts);
+          if (a.tag === 0 || a.tag === 1) arrival(a, c, col, base);
+          if (sel || (hov && current) || (show.labels && current && (a.tag === 0 || a.tag === 1) && big * px > 20)) pill(label(a, d), c[0], c[1], col, sel);
+        } });
+        hits.push({ ref, order: 2, test: polyTest(pts, 7) });
+      }
+    }
+
+    if (show.cameras && current) {
+      for (const c of r.cameras) {
+        if (c.eye[0] < -1e8) continue;
+        const ref = { c: "cameras", file, i: c.i }, col = colour("camera"), sel = selected(ref);
+        const e = P(c.eye), t = P(c.target);
+        if (e[2] < -0.9) continue;
+        layers.push({ order: 4, run() {
+          ctx.strokeStyle = rgba(col, (sel ? 0.95 : 0.4) * base); ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(e[0], e[1]); ctx.lineTo(t[0], t[1]); ctx.stroke(); ctx.setLineDash([]);
+          // the view: a cone from the eye to the target
+          if (sel || current) {
+            const dx = t[0] - e[0], dy = t[1] - e[1], len = Math.hypot(dx, dy);
+            if (len > 8) {
+              const hw = len * Math.tan((c.fov[0] * Math.PI / 180) / 2) * 0.6;
+              const nx = -dy / len * hw, ny = dx / len * hw;
+              ctx.fillStyle = rgba(col, (sel ? 0.12 : 0.05) * base);
+              ctx.beginPath(); ctx.moveTo(e[0], e[1]); ctx.lineTo(t[0] + nx, t[1] + ny); ctx.lineTo(t[0] - nx, t[1] - ny); ctx.closePath(); ctx.fill();
+            }
+          }
+          if (sel) { ctx.fillStyle = rgba(col, 1); ctx.beginPath(); ctx.arc(t[0], t[1], 4, 0, 7); ctx.fill(); }
+          glyph("camera", e[0], e[1], col, sel, base);
+          if (sel) pill("camera " + c.i, e[0], e[1] - 18, col, true);
+          if (sel && camera.mode === "plan") {
+            const b = c.box.slice(0, 4).map((p) => P(p));
+            ctx.setLineDash([3, 3]); ctx.strokeStyle = rgba(col, 0.6); path(b); ctx.stroke(); ctx.setLineDash([]);
+          }
+        } });
+        hits.push({ ref, order: 4, test: pointTest(e, 12) });
+      }
+    }
+
+    if (show.lights && current) {
+      for (const l of r.lights) {
+        const ref = { c: "lights", file, i: l.i }, col = colour("light"), p = P(l.pos), sel = selected(ref);
+        if (p[2] < -0.9) continue;
+        layers.push({ order: 5, run() {
+          if (sel || (current && camera.mode === "plan")) { ctx.strokeStyle = rgba(col, sel ? 0.8 : 0.18); ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.arc(p[0], p[1], Math.max(4, l.range * px), 0, 7); ctx.stroke(); ctx.setLineDash([]); }
+          glyph("light", p[0], p[1], col, sel, base);
+        } });
+        hits.push({ ref, order: 5, test: pointTest(p, 10) });
+      }
+    }
+
+    if (show.nodes) {
+      for (const n of r.nodes) {
+        const ref = { c: "nodes", file, i: n.i }, col = colour("node"), p = P(n.pos), sel = selected(ref);
+        if (p[2] < -0.9) continue;
+        layers.push({ order: 3, run() { ctx.fillStyle = rgba(col, sel ? 1 : 0.7 * base); ctx.beginPath(); ctx.arc(p[0], p[1], sel ? 4.5 : 2.6, 0, 7); ctx.fill(); } });
+        hits.push({ ref, order: 3, test: pointTest(p, 8) });
+      }
+    }
+
+    if (show.items && (current || camera.mode === "plan" && px > 0.08)) {
+      for (const n of r.items) {
+        const ref = { c: "items", file, i: n.i }, col = colour("item"), p = P(n.pos), sel = selected(ref), hov = hovered(ref);
+        if (p[2] < -0.9) continue;
+        layers.push({ order: 6, run() {
+          const s = sel ? 8 : hov ? 7.5 : 6.5;
+          ctx.fillStyle = rgba(col, (sel ? 1 : 0.9) * base); ctx.strokeStyle = sel ? "#fff" : "rgba(0,0,0,.55)"; ctx.lineWidth = sel ? 1.8 : 1;
+          ctx.beginPath(); ctx.moveTo(p[0], p[1] - s); ctx.lineTo(p[0] + s, p[1]); ctx.lineTo(p[0], p[1] + s); ctx.lineTo(p[0] - s, p[1]); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.lineWidth = 1;
+          if (sel || (hov && current)) pill(`${itemName(n.kind)} ×${n.qty}`, p[0], p[1] - 17, col, sel);
+        } });
+        hits.push({ ref, order: 6, test: pointTest(p, 11) });
+      }
+    }
+
+    if (show.enemies && (current || camera.mode === "plan" && px > 0.08)) {
+      for (const n of r.enemies) {
+        const ref = { c: "enemies", file, i: n.i }, col = colour("enemy"), p = P(n.pos), sel = selected(ref), hov = hovered(ref);
+        if (p[2] < -0.9) continue;
+        const a = n.facing / 65536 * Math.PI * 2;
+        const f = P([n.pos[0] + Math.sin(a) * 120, n.pos[1], n.pos[2] + Math.cos(a) * 120]);
+        layers.push({ order: 7, run() {
+          ctx.strokeStyle = rgba(col, sel ? 1 : 0.85 * base); ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(f[0], f[1]); ctx.stroke();
+          ctx.fillStyle = rgba(col, (sel ? 1 : 0.92) * base); ctx.strokeStyle = sel ? "#fff" : "rgba(0,0,0,.55)"; ctx.lineWidth = sel ? 1.8 : 1;
+          ctx.beginPath(); ctx.arc(p[0], p[1], sel ? 8 : hov ? 7.5 : 6.5, 0, 7); ctx.fill(); ctx.stroke(); ctx.lineWidth = 1;
+          if (sel || (hov && current)) pill(`enemy ${n.id} · ${hpOf(n)}`, p[0], p[1] - 18, col, sel);
+        } });
+        hits.push({ ref, order: 7, test: pointTest(p, 12) });
+      }
+    }
+
+    layers.sort((a, b) => a.order - b.order).forEach((l) => l.run());
+  }
+
+  // handles of what is selected
+  handleList = [];
+  if (store.selection.length === 1) {
+    for (const hd of handlesOf(store.selection[0])) {
+      const s = P(hd.p);
+      if (s[2] < -0.9) continue;
+      handleList.push({ ...hd, s });
+      ctx.fillStyle = hd.dim ? "rgba(255,255,255,.5)" : "#fff"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      if (hd.kind === "square") ctx.rect(s[0] - 4.5, s[1] - 4.5, 9, 9); else ctx.arc(s[0], s[1], 5.5, 0, 7);
+      ctx.fill(); ctx.stroke();
+    }
+  }
+  hits.sort((a, b) => a.order - b.order);
+
+  function path(pts) { ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); }
+  function mid(pts) { return [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length]; }
+  function arrival(a, c, col, base) {
+    if (!a.arrival) return;
+    const t = P([a.arrival[0], (a.h[0] + a.h[1]) / 2, a.arrival[1]]);
+    ctx.strokeStyle = rgba(col, 0.55 * base); ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(c[0], c[1]); ctx.lineTo(t[0], t[1]); ctx.stroke(); ctx.setLineDash([]);
+  }
+  function glyph(name, x, y, col, sel, base) {
+    ctx.fillStyle = rgba(col, (sel ? 1 : 0.9) * base); ctx.strokeStyle = sel ? "#fff" : "rgba(0,0,0,.6)"; ctx.lineWidth = sel ? 1.8 : 1;
+    ctx.beginPath();
+    if (name === "camera") { ctx.roundRect(x - 7, y - 5, 14, 10, 2); } else { ctx.arc(x, y, 6, 0, 7); }
+    ctx.fill(); ctx.stroke(); ctx.lineWidth = 1;
+    if (name === "camera") { ctx.fillStyle = "#0d0f14"; ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 7); ctx.fill(); }
+  }
+}
+
+const label = (a, d) => {
+  if (a.tag === 0) return `Door ${a.door} → room ${a.to}`;
+  if (a.tag === 1) return `Exit → room ${a.to}`;
+  return d.label;
+};
+const hpOf = (n) => (HP_NOTE[n.hp] || `tier ${n.hp}`);
+const HP_NOTE = {};
+export const itemName = (kind) => ITEMS[kind] || "item " + kind.toString(16);
+export const ITEMS = {};
+
+// ---- hit tests: each returns a distance (smaller is nearer) or -1
+function pointTest(p, radius) {
+  return (sx, sy) => { const d = Math.hypot(sx - p[0], sy - p[1]); return d <= radius ? d : -1; };
+}
+function polyTest(pts, slop) {
+  return (sx, sy) => {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [xi, yi] = pts[i], [xj, yj] = pts[j];
+      if ((yi > sy) !== (yj > sy) && sx < (xj - xi) * (sy - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    if (inside) { const a = Math.abs(area(pts)); return 20 + Math.min(1000, a / 40); }   // smaller shapes win
+    // near the edge counts too, so thin areas can be grabbed
+    let best = 1e9;
+    for (let i = 0; i < pts.length; i++) best = Math.min(best, segDist(sx, sy, pts[i], pts[(i + 1) % pts.length]));
+    return best <= (slop || 5) ? 10 + best : -1;
+  };
+}
+function area(pts) { let a = 0; for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length]; a += p[0] * q[1] - q[0] * p[1]; } return a / 2; }
+function segDist(x, y, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy;
+  const t = l ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / l)) : 0;
+  return Math.hypot(x - (a[0] + t * dx), y - (a[1] + t * dy));
+}
+
+// what is under the pointer: the nearest thing (handles of the selection first)
+export function pick(sx, sy) {
+  let best = null, bd = 1e9;
+  for (const h of hits) {
+    const d = h.test(sx, sy);
+    if (d >= 0 && d < bd + (h.order >= 6 ? -6 : 0)) { bd = d; best = h; }   // items and enemies sit on top of areas
+  }
+  return best ? best.ref : null;
+}
+
+export function pickHandle(sx, sy) {
+  for (const h of handleList) if (Math.abs(h.s[0] - sx) <= 8 && Math.abs(h.s[1] - sy) <= 8) return h;
+  return null;
+}
+
+export function inRect(x0, y0, x1, y1) {
+  // the refs whose centre lies in a screen rectangle (a box selection)
+  return hits.filter((h) => h.centre && h.centre[0] >= x0 && h.centre[0] <= x1 && h.centre[1] >= y0 && h.centre[1] <= y1).map((h) => h.ref);
+}

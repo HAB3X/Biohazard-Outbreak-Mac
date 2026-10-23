@@ -1,0 +1,272 @@
+// The inspector: forms for what is selected, in words and sliders rather than field numbers.
+import { store, on, emit, objectOf, roomOf, commit, describe, centre, translate, select, clone, AREA_TAGS } from "./scene.js";
+import { icon } from "./icons.js";
+import { el, number, vec3, select as selectBox, chips, dial, colour, field, section, range, hex, unhex, toast } from "./ui.js";
+
+const host = () => document.getElementById("inspector");
+let quiet = false;       // set while this panel is the one that changed the scene (it is not redrawn under the pointer)
+
+const roomName = (r) => `${r.id}${r.variant ? "·" + r.variant : ""}  ${r.name || ""}`.trim();
+const roomOptions = () => store.scene.rooms.map((r) => ({ value: r.id, label: roomName(r) }));
+const bitsToF = (i) => { const b = new DataView(new ArrayBuffer(4)); b.setInt32(0, i | 0); return b.getFloat32(0); };
+const fToBits = (f) => { const b = new DataView(new ArrayBuffer(4)); b.setFloat32(0, f); return b.getInt32(0); };
+
+// items: named by what the game's own tables say about their number
+export function itemKind(kind) {
+  if (kind === 0) return "Nothing / random";
+  if (kind >= 0xC8 && kind <= 0xD2) return "Ammunition box";
+  if (kind >= 0xFA && kind <= 0x106) return "Ammunition";
+  if (kind >= 0x12C && kind <= 0x13D) return "Healing item";
+  if (kind >= 0x190 && kind <= 0x1FF) return "Weapon";
+  if (kind >= 0x64 && kind <= 0x6F) return "Weapon / tool";
+  if (kind >= 0x135 && kind < 0x150) return "File / document";
+  return "Item";
+}
+
+// hit points: the tiers the game reads (measured: docs/research/rdt-format.md)
+const HP = { 1: [600, 650, 700, 750, 780, 800, 820, 850], 32: [5800, 5800, 5800, 5800, 7200, 7200, 7200, 7200] };
+export const hpText = (id, tier) => (tier >= 8 ? "invulnerable" : HP[id] ? `${HP[id][tier]} HP` : `tier ${tier}`);
+
+const MODES = [{ value: 0, label: "Mode 1", tip: "the first of the four play modes (the first of File 2's single play)" }, { value: 1, label: "Mode 2", tip: "File 1's normal difficulty" }, { value: 2, label: "Mode 3" }, { value: 3, label: "Mode 4" }];
+
+function header(ref, o) {
+  const d = describe(ref.c, o), r = roomOf(ref.file);
+  const color = getComputedStyle(document.documentElement).getPropertyValue("--" + d.color).trim();
+  const title = ref.c === "areas" ? d.label : d.label;
+  const actions = el("div", { class: "insp-actions" });
+  const mk = (ic, tip, fn, disabled) => { const b = el("button", { class: "btn icon ghost", title: tip, disabled: disabled || false }, ""); b.innerHTML = icon(ic, 16); b.addEventListener("click", fn); return b; };
+  actions.append(mk("target", "Centre the view on it", () => emit("focus", ref)));
+  actions.append(mk("trash", o.isNew ? "Delete" : "Only things you added can be deleted", () => remove(ref), !o.isNew));
+  return el("div", { class: "insp-head" },
+    el("div", { class: "badge", style: `color:${color};background:${color}22`, html: icon(d.icon, 19) }),
+    el("div", {}, el("h2", {}, `${title} ${o.i}`), el("small", {}, `Room ${roomName(r)}`)),
+    actions);
+}
+
+function remove(ref) {
+  const r = roomOf(ref.file), list = r[ref.c];
+  const k = list.findIndex((x) => x.i === ref.i);
+  if (k < 0 || !list[k].isNew) return;
+  list.splice(k, 1);
+  select([]);
+  commit("Delete");
+}
+
+export function render() {
+  const h = host();
+  h.innerHTML = "";
+  const sel = store.selection;
+  if (sel.length === 0) return h.append(roomPanel());
+  if (sel.length > 1) {
+    h.append(el("div", { class: "insp-head" }, el("div", { class: "badge", html: icon("select", 19) }), el("div", {}, el("h2", {}, `${sel.length} things selected`), el("small", {}, "Drag to move them together"))));
+    h.append(section("", el("div", { class: "note" }, "Shift-click adds or removes a thing. Select one to edit it.")));
+    return;
+  }
+  const ref = sel[0], o = objectOf(ref);
+  if (!o) return h.append(roomPanel());
+  h.append(header(ref, o));
+  const f = FORMS[ref.c];
+  if (f) f(ref, o).forEach((s) => h.append(s));
+}
+
+function roomPanel() {
+  const r = roomOf(store.room);
+  const box = el("div", {});
+  if (!r) return box;
+  box.append(el("div", { class: "insp-head" }, el("div", { class: "badge", html: icon("plan", 19) }), el("div", {}, el("h2", {}, `Room ${roomName(r)}`), el("small", {}, r.file))));
+  const count = (k) => r[k].length;
+  box.append(section("In this room",
+    el("div", { class: "kv" },
+      el("span", {}, "Areas (doors, exits, triggers)"), el("b", {}, count("areas")),
+      el("span", {}, "Cameras"), el("b", {}, count("cameras")),
+      el("span", {}, "Items"), el("b", {}, count("items")),
+      el("span", {}, "Enemies"), el("b", {}, count("enemies")),
+      el("span", {}, "Lights"), el("b", {}, count("lights")),
+      el("span", {}, "Sound zones"), el("b", {}, count("zones")))));
+  box.append(section("Tips", el("div", { class: "note" },
+    "Click a thing to select it, drag to move it, drag its white handles to reshape it. ",
+    el("kbd", {}, "D"), " door · ", el("kbd", {}, "E"), " exit · ", el("kbd", {}, "C"), " camera. ",
+    "Scroll zooms, drag on empty ground pans (plan) or orbits (3D). ", el("kbd", {}, "⌘Z"), " undoes.")));
+  return box;
+}
+
+// a field that changes the object and settles into a history step
+function set(ref, label, apply) {
+  return {
+    live: (v) => { const o = objectOf(ref); if (o) { apply(o, v); emit("live"); } },
+    done: () => { quiet = true; commit(label); quiet = false; },
+  };
+}
+
+function positionSection(ref, o, label = "Position") {
+  const c = centre(ref.c, o);
+  const { live, done } = set(ref, "Move", (obj, v) => { const cur = centre(ref.c, obj); translate(ref.c, obj, v[0] - cur[0], v[1] - cur[1], v[2] - cur[2]); });
+  return section(label, field("Centre", vec3(c, live, done, { step: store.snap > 1 ? store.snap : 1 })));
+}
+
+const FORMS = {
+  areas(ref, o) {
+    const out = [];
+    const d = describe("areas", o);
+    const fld = (k, label, ctrl, hint) => field(label, ctrl, hint);
+    const setField = (k, label) => set(ref, label, (obj, v) => { obj.fields[k] = v; if (k === 1 && (obj.tag === 0 || obj.tag === 1)) obj.to = v; if (k === 0 && obj.tag === 0) obj.door = v; });
+    if (o.tag === 0 || o.tag === 1) {
+      const to = setField(1, "Change destination");
+      const rooms = roomOptions().filter((r) => r.value !== undefined);
+      const dest = store.scene.rooms.some((r) => r.id === o.fields[1]);
+      const kids = [];
+      if (!dest) kids.push(el("div", { class: "bad-box" }, `This leads to room ${o.fields[1]}, which isn't in this scenario.`));
+      kids.push(field("Leads to", selectBox(o.fields[1], rooms, (v) => { to.live(v); to.done(); render(); })));
+      if (o.tag === 0) {
+        const num = setField(0, "Change door number");
+        kids.push(field("Door number", number(o.fields[0], num.live, num.done, { step: 1, min: 0 }), "A new door must reuse a number the room already has (it shares that door's model)."));
+        const other = setField(2, "Change connection");
+        kids.push(field("Opens onto", number(o.fields[2], other.live, other.done, { step: 1, min: 0 }), "Which door of the other room you arrive at."));
+        const face = setField(6, "Turn arrival");
+        kids.push(field("Arrive facing", dial(o.fields[6] || 0, face.live, face.done)));
+        const lock = setField(10, "Change lock text");
+        kids.push(field("Lock message", number(o.fields[10], lock.live, lock.done, { step: 1, min: 0 }), "0 = unlocked. Otherwise the stage message shown when it's locked."));
+      }
+      out.push(section(o.tag === 0 ? "Door" : "Exit", ...kids));
+    }
+    if (o.tag === 5 || o.tag === 11 || o.tag === 3 || o.tag === 4) {
+      const idc = setField(0, "Change id");
+      out.push(section(d.label, field("Id", number(o.fields[0], idc.live, idc.done, { step: 1, min: 0 }), "The room's script switches this area on and off and gives it its text by this id."),
+        o.tag === 5 ? messageForId(ref, o.fields[0]) : null));
+    }
+    out.push(positionSection(ref, o, "Place"));
+    const { live, done } = set(ref, "Change height", (obj, v) => { obj.h = v; });
+    out.push(section("Height", el("div", { class: "vec" }, number(o.h[0], (v) => live([v, o.h[1]]), (v) => { o.h = [v, o.h[1]]; done(); }, { axis: "y", step: 5, scrub: false }), number(o.h[1], (v) => live([o.h[0], v]), (v) => { o.h = [o.h[0], v]; done(); }, { axis: "y", step: 5, scrub: false })),
+      el("div", { class: "note", style: "margin-top:8px" }, "The area works between these two heights (from, to).")));
+    out.push(advancedFields(ref, o));
+    return out;
+  },
+
+  cameras(ref, o) {
+    const out = [];
+    const eye = set(ref, "Move camera", (obj, v) => { obj.eye = v; });
+    const tgt = set(ref, "Aim camera", (obj, v) => { obj.target = v; });
+    out.push(section("View", field("Position", vec3(o.eye, eye.live, eye.done, { step: 10 })), field("Looks at", vec3(o.target, tgt.live, tgt.done, { step: 10 }))));
+    const fv = set(ref, "Change lens", (obj, v) => { obj.fov = v; });
+    out.push(section("Lens", field("Field of view", number(o.fov[0], (v) => fv.live([v, o.fov[1]]), (v) => { o.fov = [v, o.fov[1]]; fv.done(); }, { step: 1, min: 5, max: 140, unit: "°" })),
+      field("Vertical", number(o.fov[1], (v) => fv.live([o.fov[0], v]), (v) => { o.fov = [o.fov[0], v]; fv.done(); }, { step: 1, min: 5, max: 140, unit: "°" }))));
+    if (o.fog) out.push(fogSection(ref, o));
+    out.push(section("Switch box", el("div", { class: "note" }, "The camera takes over when the player is inside its box (the dotted shape on the plan). Select the camera and drag the box's grey corners.")));
+    return out;
+  },
+
+  lights(ref, o) {
+    const pos = set(ref, "Move light", (obj, v) => { obj.pos = v; });
+    const col = set(ref, "Light colour", (obj, v) => { obj.col = v; });
+    const col2 = set(ref, "Light colour", (obj, v) => { obj.col2 = v; });
+    const range_ = set(ref, "Light range", (obj, v) => { obj.range = v; });
+    const att = set(ref, "Light falloff", (obj, v) => { obj.att = v; });
+    const toHex = (c) => hex(c[0] * 255, c[1] * 255, c[2] * 255);
+    return [
+      section("Light", field("Position", vec3(o.pos, pos.live, pos.done, { step: 10 })),
+        field("Colour", colour(toHex(o.col), (h) => col.live(unhex(h).map((v) => v / 255)), col.done)),
+        field("Second colour", colour(toHex(o.col2), (h) => col2.live(unhex(h).map((v) => v / 255)), col2.done)),
+        field("Reach", number(o.range, range_.live, range_.done, { step: 10, min: 0 })),
+        field("Falloff", number(o.att, att.live, att.done, { step: 0.001, min: 0 }))),
+      section("", el("div", { class: "note" }, "Character lights only light the characters, not the room's surroundings.")),
+    ];
+  },
+
+  zones(ref, o) {
+    const snd = set(ref, "Change floor sound", (obj, v) => { obj.sound = v; });
+    return [section("Sound zone", field("Floor sound", number(o.sound, snd.live, snd.done, { step: 1, min: 0 }), "What footsteps sound like inside the box.")), positionSection(ref, o)];
+  },
+
+  points(ref, o) {
+    const k = set(ref, "Change sound", (obj, v) => { obj.kind = v; });
+    const p = set(ref, "Move sound", (obj, v) => { obj.pos = v; });
+    return [section("Sound source", field("Kind", number(o.kind, k.live, k.done, { step: 1, min: 0 })), field("Position", vec3(o.pos, p.live, p.done, { step: 10 })))];
+  },
+
+  nodes(ref, o) {
+    const p = set(ref, "Move node", (obj, v) => { obj.pos = v; });
+    return [section("AI node", field("Position", vec3(o.pos, p.live, p.done, { step: 10 })), el("div", { class: "note" }, "The partners' navigation: nodes link by the numbers in their words (not edited here).")) ];
+  },
+
+  items(ref, o) {
+    const k = set(ref, "Change item", (obj, v) => { obj.kind = v; });
+    const q = set(ref, "Change quantity", (obj, v) => { obj.qty = v; });
+    const p = set(ref, "Move item", (obj, v) => { obj.pos = v; });
+    return [
+      section("Item", field("Kind", number(o.kind, k.live, k.done, { step: 1, min: 0 }), `${itemKind(o.kind)} · 0x${o.kind.toString(16).toUpperCase()}`),
+        field("Quantity", number(o.qty, q.live, q.done, { step: 1, min: 0, max: 255 }), "Rounds for ammunition, uses for others."),
+        field("Position", vec3(o.pos, p.live, p.done, { step: 10 }))),
+      section("", el("div", { class: "note" }, "Item numbers: herbs 300–317, ammunition 250–262, weapons 400+, files 309+. The kind and quantity are written to every difficulty's table.")),
+    ];
+  },
+
+  enemies(ref, o) {
+    const p = set(ref, "Move enemy", (obj, v) => { obj.pos = v; });
+    const f = set(ref, "Turn enemy", (obj, v) => { obj.facing = v; });
+    const hp = set(ref, "Change health", (obj, v) => { obj.hp = v; });
+    const id = set(ref, "Change enemy kind", (obj, v) => { obj.id = v; });
+    const cl = set(ref, "Change enemy class", (obj, v) => { obj.cls = v; });
+    const md = set(ref, "Change modes", (obj, v) => { obj.modes = v; });
+    const hpLabel = el("span", { class: "note" }, hpText(o.id, o.hp));
+    const slider = range(Math.min(o.hp, 8), 0, 8, 1, (v) => { hp.live(v); hpLabel.textContent = hpText(o.id, v); }, hp.done);
+    return [
+      section("Enemy", field("Kind (id)", number(o.id, id.live, id.done, { step: 1, min: 0, max: 255 }), "1 is the common zombie in both games; 32 the first scenario's big one."),
+        field("Class", number(o.cls, cl.live, cl.done, { step: 1, min: 0, max: 255 }), "Picks its model and animations."),
+        field("Facing", dial(o.facing, f.live, f.done)),
+        field("Position", vec3(o.pos, p.live, p.done, { step: 10 }))),
+      section("Health", field("Tier", slider), el("div", { style: "margin:-2px 0 4px 106px" }, hpLabel),
+        el("div", { class: "note" }, "Health is a step in the kind's table; 8 makes it unkillable.")),
+      section("Appears in", chips(MODES, (m) => (o.modes >> m) & 1, (m) => { md.live(o.modes ^ (1 << m)); md.done(); }),
+        el("div", { class: "note", style: "margin-top:8px" }, "Each play mode has its own set; untick a mode to leave the enemy out of it.")),
+    ];
+  },
+};
+
+function advancedFields(ref, o) {
+  const box = el("div", { style: "display:none" });
+  const grid = el("div", {});
+  o.fields.forEach((v, k) => {
+    const s = set(ref, "Change field", (obj, val) => { obj.fields[k] = val; });
+    grid.append(field(`Word ${12 + k}`, number(v, s.live, s.done, { step: 1 })));
+  });
+  box.append(grid);
+  const toggle = el("button", { class: "btn ghost", style: "margin:-4px 0 6px -8px" }, "Show the raw fields");
+  toggle.addEventListener("click", () => { box.style.display = box.style.display === "none" ? "block" : "none"; toggle.textContent = box.style.display === "none" ? "Show the raw fields" : "Hide the raw fields"; });
+  return section("Advanced", toggle, box);
+}
+
+// the text an examine spot shows: the room's script gives it, by this id
+function messageForId(ref, id) {
+  const r = roomOf(ref.file);
+  const ins = (r.ins || []).filter((i) => i.op === 0x55 && i.args[0] === id);
+  if (!ins.length) return el("div", { class: "note" }, "No script line sets a message for this id.");
+  const box = el("div", {});
+  for (const i of ins) {
+    const text = (store.messages || [])[i.args[1] - 1] || "";
+    const w = i.at + 2;
+    const s = set(ref, "Change message", (obj, v) => { r.script[w] = v; });
+    box.append(field("Message #", number(r.script[w], (v) => { s.live(v); t.textContent = (store.messages || [])[v - 1] || "(no such message)"; }, s.done, { step: 1, min: 1 })));
+    var t = el("div", { class: "note", style: "margin:-4px 0 8px 106px;color:var(--text)" }, text || "(no text)");
+    box.append(t);
+  }
+  return box;
+}
+
+function fogSection(ref, o) {
+  const fog = o.fog;
+  const argbHex = (v) => hex((v >> 16) & 255, (v >> 8) & 255, v & 255);
+  const toArgb = (h) => { const [r, g, b] = unhex(h); return (0xFF000000 | (r << 16) | (g << 8) | b) | 0; };
+  const sc = set(ref, "Change room colour", (obj, v) => { obj.fog[4] = v; });
+  const am = set(ref, "Change ambient colour", (obj, v) => { obj.fog[3] = v; });
+  const near = set(ref, "Change fog start", (obj, v) => { obj.fog[1] = fToBits(v); });
+  const far = set(ref, "Change fog end", (obj, v) => { obj.fog[2] = fToBits(v); });
+  return section("Atmosphere",
+    field("Room colour", colour(argbHex(fog[4]), (h) => sc.live(toArgb(h)), sc.done)),
+    field("Ambient", colour(argbHex(fog[3]), (h) => am.live(toArgb(h)), am.done)),
+    field("Fog from", number(bitsToF(fog[1]), near.live, near.done, { step: 100 })),
+    field("Fog to", number(bitsToF(fog[2]), far.live, far.done, { step: 100 })));
+}
+
+on("selection", render);
+on("room", () => { if (!store.selection.length) render(); });
+on("changed", () => { if (!quiet) render(); });
