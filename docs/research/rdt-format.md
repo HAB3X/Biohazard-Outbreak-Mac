@@ -188,9 +188,10 @@ above that the section-1 records "weren't read" is true of that copy. `bh_room_p
 `.sgl` starts with two offsets (the script's, and another), a count (29 in the zoo's first room) and then that many records of 64 bytes from byte 12: byte 0 active
 (1 in every one of the 5634 in File 2 and 3279 in File 1), byte 1 a kind (1 to 4; a few 0), a halfword id at +2, a position as three floats at +4, +8, +12 and
 twelve more words (neighbour numbers and costs by their shape: not decoded; for some kinds the y word isn't a float). All 5634 positions in File 2 and all 3279 in File 1
-lie within 3000 of their room's trigger areas. What they are, from the game's code only (not seen in behaviour): the single-player overlay's function
-`single_007d70e0` walks a room's records, takes the ones with a given id (or any), finds the nearest to a position within 50 and returns it, and the partner
-AI code (`single_007e3560`) calls it: so they are the AI's navigation nodes. Moving all 29 of the zoo's first room's 3000 units sideways changed nothing visible in the first
-seconds, because the partners stand still until the player moves and then did not move at all there either (the same in an unedited run), so no behavioural
-effect was shown. What was checked: the saved edit reached the game's memory (a node's position 13175 -> 13250 and a word 0 -> -254 read back from the running
+lie within 3000 of their room's trigger areas. What they are: the game's single-player overlay function `single_007d70e0` walks a room's records, takes the ones with a given id (or any), finds the nearest to a position within 50 and returns it, and the partner AI code
+(`single_007e3560`) calls it. Measured in the zoo's first room (File 2, the game's own "Original" partner AI, the player running and calling the partners as in `tools/ai_scenario.py`'s zoo-commands, 72
+samples of the two partners' positions a run): unedited, the partners wandered over the room (x 11758 to 14513, z 11228 to 15115; one sample in 72 within 200 of the point (12500, 12500)); with all 29 nodes moved to (12500, 84, 12500) every one of 72 samples was within 200 of that point
+(x 12442 to 12557, z 12438 to 12565); with all moved 3000 off to the side the partners stopped roaming and stood still. So the nodes are where the AI sends the partners: its navigation / roaming nodes. Moving them 200 units
+sideways gave no difference the samples could show (their count near a node is too dense to tell). Not decoded: the kinds (1 to 4: 846, 1770, 1555 and 1461 of File 2's) and what the twelve words are for.
+What was checked: the saved edit reached the game's memory (a node's position 13175 -> 13250 and a word 0 -> -254 read back from the running
 game's copy at 0x80F28C).
