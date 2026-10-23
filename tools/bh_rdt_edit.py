@@ -37,6 +37,7 @@ const EDIT3D = (() => {
   const MODELS = {};           // nbd file -> {bones, orig, meshes: [{mesh, bone, count, vb, ib, pickColour}], world}
   let pending = {};            // saved model edits, applied when a model loads
   let current = null, file = null, selected = null, show = {areas: true, cameras: true, zones: true, lights: true, nodes: true, textures: true}, on = false;
+  let vertexMode = false, vsel = null;   // vertex editing: the selected object's vertex number being edited
   const cam = {yaw: 0.6, pitch: 0.7, dist: 4000, target: [0, 0, 0]};
   const clone = o => JSON.parse(JSON.stringify(o));
   // ---- matrices (column-major)
@@ -75,6 +76,7 @@ const EDIT3D = (() => {
   const textured = program(TVS, "#version 300 es\nprecision highp float; uniform sampler2D uTex; uniform vec3 uTint; in vec3 vW; in vec2 vUV; out vec4 o; void main(){ vec4 t = texture(uTex, vUV); if (t.a < 0.35) discard; vec3 n = normalize(cross(dFdx(vW), dFdy(vW))); float l = 0.55 + 0.45 * abs(dot(n, normalize(vec3(0.4, 0.8, 0.3)))); o = vec4(t.rgb * uTint * l, 1.0); }");
   const flat = program(VS, "#version 300 es\nprecision highp float; uniform vec3 uColour; out vec4 o; void main(){ o = vec4(uColour, 1.0); }");
   const lineP = program("#version 300 es\nuniform mat4 uVP; in vec3 aPos; void main(){ gl_Position = uVP * vec4(aPos, 1.0); }", "#version 300 es\nprecision highp float; uniform vec3 uColour; out vec4 o; void main(){ o = vec4(uColour, 1.0); }");
+  const pointP = program("#version 300 es\nuniform mat4 uVP, uModel; uniform float uSize; in vec3 aPos; void main(){ gl_Position = uVP * uModel * vec4(aPos, 1.0); gl_PointSize = uSize; }", "#version 300 es\nprecision highp float; uniform vec3 uColour; out vec4 o; void main(){ o = vec4(uColour, 1.0); }");
   const lineBuf = gl.createBuffer();
   let pickFbo = null, pickTex = null, pickDepth = null;
   const b64 = (s, T) => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); };
@@ -101,13 +103,48 @@ const EDIT3D = (() => {
       const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
       const ub = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ub); gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
       const groups = m.groups.map(g => { const idx = b64(g.i, Uint32Array); const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW); return {material: g.m, ib, count: idx.length}; });
-      const id = n + 1; model.meshes.push({mesh: m.mesh, bone: m.bone, vb, ub, groups, id, pickColour: [(id & 255) / 255, ((id >> 8) & 255) / 255, ((id >> 16) & 255) / 255], vertices: pos.length / 3});
+      const id = n + 1; model.meshes.push({mesh: m.mesh, bone: m.bone, vb, ub, groups, id, pos, orig: pos.slice(), pickColour: [(id & 255) / 255, ((id >> 8) & 255) / 255, ((id >> 16) & 255) / 255], vertices: pos.length / 3});
     });
     const saved = pending[nbd];
     if (saved) for (const [k, d] of Object.entries(saved.bones || {})) { const b = model.bones[+k]; if (!b) continue; if (d.scale) b[1] = d.scale; if (d.rotation) b[2] = d.rotation; if (d.offset) b[3] = d.offset; }
+    if (saved) for (const [k, moved] of Object.entries(saved.vertices || {})) { const m = model.meshes.find(x => x.mesh === +k); if (m) for (const [v, p] of Object.entries(moved)) setVertex(m, +v, p); }
     MODELS[nbd] = model; return model;
   }
 
+  function setVertex(m, i, p) {
+    m.pos.set(p, 3 * i); gl.bindBuffer(gl.ARRAY_BUFFER, m.vb); gl.bufferSubData(gl.ARRAY_BUFFER, 12 * i, m.pos.subarray(3 * i, 3 * i + 3));
+  }
+  // d (a difference of positions) through the inverse of the 3 x 3 part of the column-major matrix m
+  function inverse3(m, d) {
+    const a = [[m[0], m[4], m[8]], [m[1], m[5], m[9]], [m[2], m[6], m[10]]];
+    const det = a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) - a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) + a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+    if (Math.abs(det) < 1e-12) return null;
+    const inv = [[(a[1][1] * a[2][2] - a[1][2] * a[2][1]) / det, (a[0][2] * a[2][1] - a[0][1] * a[2][2]) / det, (a[0][1] * a[1][2] - a[0][2] * a[1][1]) / det],
+                 [(a[1][2] * a[2][0] - a[1][0] * a[2][2]) / det, (a[0][0] * a[2][2] - a[0][2] * a[2][0]) / det, (a[0][2] * a[1][0] - a[0][0] * a[1][2]) / det],
+                 [(a[1][0] * a[2][1] - a[1][1] * a[2][0]) / det, (a[0][1] * a[2][0] - a[0][0] * a[2][1]) / det, (a[0][0] * a[1][1] - a[0][1] * a[1][0]) / det]];
+    return [0, 1, 2].map(k => inv[k][0] * d[0] + inv[k][1] * d[1] + inv[k][2] * d[2]);
+  }
+  // a vertex of the selected object on the screen (device pixels from the top left) and its depth, or null behind the camera
+  function project(m, i, vp) {
+    const w = current.world[m.bone], x = m.pos[3 * i], y = m.pos[3 * i + 1], z = m.pos[3 * i + 2];
+    const mv = mul(vp, w), cx = mv[0] * x + mv[4] * y + mv[8] * z + mv[12], cy = mv[1] * x + mv[5] * y + mv[9] * z + mv[13], cw = mv[3] * x + mv[7] * y + mv[11] * z + mv[15];
+    if (cw <= 0) return null;
+    return {x: (cx / cw * 0.5 + 0.5) * c3.width, y: (1 - (cy / cw * 0.5 + 0.5)) * c3.height, w: cw};
+  }
+  function nearestVertex(px, py) {
+    const vp = viewProj(); let best = null, bd = 14 * devicePixelRatio;
+    for (let i = 0; i < selected.vertices; i++) { const s = project(selected, i, vp); if (!s) continue; const d = Math.hypot(s.x - px, s.y - py); if (d < bd) { bd = d; best = i; } }
+    return best;
+  }
+  // moves the selected vertex by a screen drag of (dx, dy) device pixels, in the plane facing the camera
+  function dragVertex(dx, dy) {
+    const m = selected, i = vsel, vp = viewProj(), s = project(m, i, vp); if (!s) return;
+    const cp = Math.cos(cam.pitch), eye = [cam.target[0] + cam.dist * cp * Math.sin(cam.yaw), cam.target[1] + cam.dist * Math.sin(cam.pitch), cam.target[2] + cam.dist * cp * Math.cos(cam.yaw)];
+    const z = norm(sub(eye, cam.target)), x = norm(cross([0, 1, 0], z)), y = cross(z, x);
+    const unit = 2 * s.w * Math.tan(0.45) / c3.height;
+    const dw = [0, 1, 2].map(k => (x[k] * dx - y[k] * dy) * unit), local = inverse3(current.world[m.bone], dw); if (!local) return;
+    setVertex(m, i, [m.pos[3 * i] + local[0], m.pos[3 * i + 1] + local[1], m.pos[3 * i + 2] + local[2]]);
+  }
   function frame(model) {
     model.world = worlds(model.bones);
     let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
@@ -171,6 +208,12 @@ const EDIT3D = (() => {
       gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0); gl.drawArrays(gl.LINES, 0, g.pts.length / 3);
     }
   }
+  function drawVertices(vp) {
+    gl.useProgram(pointP); gl.uniformMatrix4fv(gl.getUniformLocation(pointP, "uVP"), false, vp); gl.uniformMatrix4fv(gl.getUniformLocation(pointP, "uModel"), false, current.world[selected.bone]);
+    const loc = gl.getAttribLocation(pointP, "aPos"); gl.bindBuffer(gl.ARRAY_BUFFER, selected.vb); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
+    gl.uniform1f(gl.getUniformLocation(pointP, "uSize"), 6); gl.uniform3fv(gl.getUniformLocation(pointP, "uColour"), [0.1, 1, 0.2]); gl.drawArrays(gl.POINTS, 0, selected.vertices);
+    if (vsel !== null) { gl.uniform1f(gl.getUniformLocation(pointP, "uSize"), 11); gl.uniform3fv(gl.getUniformLocation(pointP, "uColour"), [1, 0.2, 0.2]); gl.drawArrays(gl.POINTS, vsel, 1); }
+  }
   function render() {
     if (!on || !current) return;
     const dpr = devicePixelRatio, w = Math.floor(view.clientWidth * dpr), h = Math.floor(view.clientHeight * dpr);
@@ -180,7 +223,7 @@ const EDIT3D = (() => {
     current.world = worlds(current.bones);
     const vp = viewProj();
     drawMeshes(shaded, current, vp, false);
-    gl.disable(gl.DEPTH_TEST); overlay(vp);
+    gl.disable(gl.DEPTH_TEST); overlay(vp); if (vertexMode && selected) drawVertices(vp);
   }
   function pickAt(px, py) {
     const w = c3.width, h = c3.height;
@@ -199,15 +242,25 @@ const EDIT3D = (() => {
   }
   // ---- interaction
   let drag = null;
-  c3.addEventListener("mousedown", e => { drag = {x: e.clientX, y: e.clientY, moved: false, button: e.button, shift: e.shiftKey}; });
+  const canvasXY = e => { const r = c3.getBoundingClientRect(); return [(e.clientX - r.left) * devicePixelRatio, (e.clientY - r.top) * devicePixelRatio]; };
+  c3.addEventListener("mousedown", e => {
+    drag = {x: e.clientX, y: e.clientY, moved: false, button: e.button, shift: e.shiftKey, vertex: false};
+    if (vertexMode && selected && vsel !== null && e.button === 0 && !e.shiftKey && nearestVertex(...canvasXY(e)) === vsel) drag.vertex = true;
+  });
   addEventListener("mouseup", e => {
-    if (drag && !drag.moved && on && current && e.target === c3) { const r = c3.getBoundingClientRect(); selected = pickAt((e.clientX - r.left) * devicePixelRatio, (e.clientY - r.top) * devicePixelRatio); refresh(); render(); }
+    if (drag && drag.vertex && drag.moved) { refresh(); }
+    else if (drag && !drag.moved && on && current && e.target === c3) {
+      const [px, py] = canvasXY(e), v = vertexMode && selected ? nearestVertex(px, py) : null;
+      if (v !== null) vsel = v; else { selected = pickAt(px, py); vsel = null; }
+      refresh(); render();
+    }
     drag = null;
   });
   addEventListener("mousemove", e => {
     if (!drag || !on) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true; if (!drag.moved) return;
     drag.x = e.clientX; drag.y = e.clientY;
+    if (drag.vertex) { dragVertex(dx * devicePixelRatio, dy * devicePixelRatio); render(); return; }
     if (drag.button === 2 || drag.shift) {
       const k = cam.dist * 0.0015, cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
       cam.target[0] += (-dx * cy) * k; cam.target[2] += (dx * sy) * k; cam.target[1] += dy * k;
@@ -224,22 +277,19 @@ const EDIT3D = (() => {
     return row;
   }
   function moveWorld(bone, d) {
-    const b = current.bones[bone], p = b[0] >= 0 ? current.world[b[0]] : ident();
-    // the world delta as the parent's own: the inverse of its 3 x 3 part times d
-    const a = [[p[0], p[4], p[8]], [p[1], p[5], p[9]], [p[2], p[6], p[10]]];
-    const det = a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) - a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) + a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
-    if (Math.abs(det) < 1e-12) return;
-    const inv = [[(a[1][1] * a[2][2] - a[1][2] * a[2][1]) / det, (a[0][2] * a[2][1] - a[0][1] * a[2][2]) / det, (a[0][1] * a[1][2] - a[0][2] * a[1][1]) / det],
-                 [(a[1][2] * a[2][0] - a[1][0] * a[2][2]) / det, (a[0][0] * a[2][2] - a[0][2] * a[2][0]) / det, (a[0][2] * a[1][0] - a[0][0] * a[1][2]) / det],
-                 [(a[1][0] * a[2][1] - a[1][1] * a[2][0]) / det, (a[0][1] * a[2][0] - a[0][0] * a[2][1]) / det, (a[0][0] * a[1][1] - a[0][1] * a[1][0]) / det]];
-    for (let k = 0; k < 3; k++) b[3][k] += inv[k][0] * d[0] + inv[k][1] * d[1] + inv[k][2] * d[2];
+    const b = current.bones[bone], local = inverse3(b[0] >= 0 ? current.world[b[0]] : ident(), d);   // the world delta as the parent's own
+    if (local) for (let k = 0; k < 3; k++) b[3][k] += local[k];
   }
   function diffsModels() {
     const out = {};
     for (const [nbd, m] of Object.entries(MODELS)) {
-      const bones = {};
+      const bones = {}, vertices = {};
       m.bones.forEach((b, k) => { const o = m.orig[k], d = {}; if (JSON.stringify(b[1]) !== JSON.stringify(o[1])) d.scale = b[1]; if (JSON.stringify(b[2]) !== JSON.stringify(o[2])) d.rotation = b[2]; if (JSON.stringify(b[3]) !== JSON.stringify(o[3])) d.offset = b[3]; if (Object.keys(d).length) bones[k] = d; });
-      if (Object.keys(bones).length) out[nbd] = {bones};
+      for (const mesh of m.meshes) for (let i = 0; i < mesh.vertices; i++) {
+        if (mesh.pos[3 * i] !== mesh.orig[3 * i] || mesh.pos[3 * i + 1] !== mesh.orig[3 * i + 1] || mesh.pos[3 * i + 2] !== mesh.orig[3 * i + 2]) (vertices[mesh.mesh] = vertices[mesh.mesh] || {})[i] = Array.from(mesh.pos.subarray(3 * i, 3 * i + 3));
+      }
+      const entry = {}; if (Object.keys(bones).length) entry.bones = bones; if (Object.keys(vertices).length) entry.vertices = vertices;
+      if (Object.keys(entry).length) out[nbd] = entry;
     }
     return out;
   }
@@ -271,9 +321,21 @@ const EDIT3D = (() => {
       hide.onclick = () => { b[1] = hidden(b) ? clone(o[1]).map(v => Math.abs(v) < 0.001 ? 1 : v) : [0.0001, 0.0001, 0.0001]; render(); refresh(); };
       const rev = document.createElement("button"); rev.textContent = "Revert object"; rev.onclick = () => { current.bones[selected.bone] = clone(o); render(); refresh(); };
       panel.append(hide, rev);
+      const vm = document.createElement("label"); vm.style.display = "block"; const vc = document.createElement("input"); vc.type = "checkbox"; vc.checked = vertexMode;
+      vc.onchange = () => { vertexMode = vc.checked; vsel = null; refresh(); render(); }; vm.append(vc, " edit vertices (click a green point, drag it)"); panel.appendChild(vm);
+      if (vertexMode) {
+        const go = document.createElement("div"); go.className = "row"; go.append("vertex # ");
+        const gi = document.createElement("input"); gi.type = "number"; gi.style.width = "60px"; gi.min = 0; gi.max = selected.vertices - 1; go.appendChild(gi);
+        const gb = document.createElement("button"); gb.textContent = "select"; gb.onclick = () => { const n = +gi.value; if (n >= 0 && n < selected.vertices) { vsel = n; refresh(); render(); } }; go.appendChild(gb); panel.appendChild(go);
+      }
+      if (vertexMode && vsel !== null) {
+        const i = vsel, at = [0, 1, 2].map(k => selected.pos[3 * i + k]);
+        panel.appendChild(numbers("vertex " + i + " (local)", at, (k, v) => setVertex(selected, i, [0, 1, 2].map(n => n === k ? v : selected.pos[3 * i + n])), 1));
+        const rv = document.createElement("button"); rv.textContent = "Revert vertex"; rv.onclick = () => { setVertex(selected, i, selected.orig.subarray(3 * i, 3 * i + 3)); render(); refresh(); }; panel.appendChild(rv);
+      }
     } else { const t = document.createElement("div"); t.className = "row"; t.textContent = "click an object to edit it"; panel.appendChild(t); }
-    const changedNow = Object.values(diffsModels()).reduce((n, m) => n + Object.keys(m.bones).length, 0);
-    const save = document.createElement("button"); save.textContent = "Save patch (" + changedNow + " object changes + plan edits)";
+    const changedNow = Object.values(diffsModels()).reduce((n, m) => n + Object.keys(m.bones || {}).length + Object.values(m.vertices || {}).reduce((v, mesh) => v + Object.keys(mesh).length, 0), 0);
+    const save = document.createElement("button"); save.textContent = "Save patch (" + changedNow + " object and vertex changes + plan edits)";
     save.onclick = async () => { const res = await fetch("/save", {method: "POST", body: JSON.stringify(diffs())}); const body = await res.json(); msg.textContent = res.ok ? "saved: " + body.patch + "\n" + body.report.join("\n") : "not saved: " + body.error; };
     panel.append(document.createElement("br"), save);
     const msg = document.createElement("div"); msg.className = "msg"; panel.appendChild(msg);
@@ -293,7 +355,7 @@ const EDIT3D = (() => {
   // a button in the plan's panel
   const open = document.createElement("button"); open.textContent = "Open the 3D view"; open.style.cssText = "margin:6px 0;padding:3px 8px;background:#2d3a4a;color:#ddd;border:1px solid #567;border-radius:4px;cursor:pointer";
   open.onclick = () => toggle(true); side.insertBefore(open, side.children[1]);
-  return {diffs: diffsModels, apply(models) { pending = models || {}; }, toggle, selectMesh, state: () => ({file, selected: selected && selected.mesh, bones: current && current.bones.length})};
+  return {vertexScreen: i => { const s = selected && project(selected, i, viewProj()); return s && [s.x / devicePixelRatio, s.y / devicePixelRatio]; }, diffs: diffsModels, apply(models) { pending = models || {}; }, toggle, selectMesh, state: () => ({file, selected: selected && selected.mesh, bones: current && current.bones.length})};
 })();
 const baseDiffs3 = diffs;
 diffs = function () { const d = baseDiffs3(); const m = EDIT3D.diffs(); if (Object.keys(m).length) d.models = m; return d; };

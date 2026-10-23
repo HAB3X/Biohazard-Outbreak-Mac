@@ -14,9 +14,10 @@ EDITS.json (the room editor writes it):
         "sound_zones": {"2": {"box": [[x, y, z] x8], "sound": 8}}, "sound_points": {"0": {"position": [x, y, z]}},
         "new_cameras": [{"like": 0, "eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}],
         "new_areas": [{"like": 0, "quad": [[x, z] x4], "height": [low, high], "fields": {"13": 3}}]}}}
-    "models": {"r0400300.nbd": {"bones": {"50": {"scale": [x, y, z], "rotation": [x, y, z], "offset": [x, y, z]}}}}}
+    "models": {"r0400300.nbd": {"bones": {"50": {"scale": [x, y, z], "rotation": [x, y, z], "offset": [x, y, z]}}, "vertices": {"12": {"0": [x, y, z]}}}}}
         (a room model's skeleton: a bone is a number of the room's objects, the object (mesh) i standing on bone i + 2; its scale, its
-        rotation in radians and its offset from its parent bone; scale of 0.0001 hides an object)
+        rotation in radians and its offset from its parent bone; scale of 0.0001 hides an object; vertices: the mesh's number, the
+        vertex's number, its new position in the mesh's own coordinates)
         (a camera's fog record: numbers 0 to 23; new_areas add areas at the end, each a copy of area `like` with those changes,
         numbered from the room's area count on, in order: the room file grows by 180 bytes each, inside the sector it ends in)
 A room is named by its file; cameras and areas by their numbers in the room (tools/bh_rdt.py lists them); every key is optional.
@@ -154,6 +155,18 @@ def model_patches(game, models):
                     if not 0 <= int(number) < len(records):
                         raise SystemExit(f"{member}: bone {number} (the model has {len(records)})")
                     nbd.set_bone(data, records[int(number)], **change)
+                if spec.get("vertices"):
+                    amo = next((c for c in table if c[0] == "AMO"), None)
+                    if amo is None:
+                        raise SystemExit(f"{member}: no meshes")
+                    found = nbd.meshes(bytes(data), amo[1], amo[2])
+                    for mesh_number, moved in spec["vertices"].items():
+                        if not 0 <= int(mesh_number) < len(found):
+                            raise SystemExit(f"{member}: mesh {mesh_number} (the model has {len(found)})")
+                        for vertex, position in moved.items():
+                            if len(position) != 3:
+                                raise SystemExit(f"{member} mesh {mesh_number} vertex {vertex}: a position has three numbers")
+                            nbd.set_vertex(data, found[int(mesh_number)], int(vertex), position)
                 runs, start = [], None
                 for i, (a, b) in enumerate(zip(original, data)):
                     if a != b and start is None:
