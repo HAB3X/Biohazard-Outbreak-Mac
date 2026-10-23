@@ -22,6 +22,7 @@ import bh_archive as archive
 import bh_rdt as rdt
 import bh_rdt_edit as legacy
 import bh_rdt_map as maps
+import bh_autoplay
 import bh_studio_build as studio_build
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -108,14 +109,21 @@ class Studio:
         report = studio_build.compose(self.game, edits, str(out), base)
         return {"patch": str(out), "report": report, "seconds": round(time.time() - started, 2), "bytes": out.stat().st_size}
 
-    def play(self, patch):
+    def play(self, patch, hops=None, at=None):
         self.stop()
+        self.status = ""
         disc = archive.disc_path(self.game)
+        if hops is not None and bh_autoplay.supported(self.game, self.scenario):
+            self.process = bh_autoplay.start(self.game, self.scenario, patch, [tuple(h) for h in hops], tuple(at) if at else None, self.set_status).process
+            return {"pid": self.process.pid, "automated": True}
         command = [str(ROOT / "build" / f"biohazard-{self.game}"), "--disc", disc]
         if patch:
             command += ["--patch", patch]
         self.process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-        return {"pid": self.process.pid}
+        return {"pid": self.process.pid, "automated": False}
+
+    def set_status(self, text):
+        self.status = text
 
     def stop(self):
         if self.process and self.process.poll() is None:
@@ -153,6 +161,9 @@ def make_handler(studio):
                 elif url.path == "/api/tex":
                     png = studio.texture(int(query["index"][0]))
                     self.send(200 if png else 404, png or b"", "image/png")
+                elif url.path == "/api/status":
+                    running = bool(studio.process and studio.process.poll() is None)
+                    self.send(200, json.dumps({"running": running, "status": getattr(studio, "status", ""), "automatable": bh_autoplay.supported(studio.game, studio.scenario), "start_room": bh_autoplay.KNOWN.get((studio.game, studio.scenario), {}).get("start_room")}))
                 elif url.path == "/api/messages":
                     self.send(200, json.dumps(studio.messages()))
                 elif url.path.startswith("/api/"):
@@ -185,7 +196,7 @@ def make_handler(studio):
                 if path == "/api/build":
                     self.send(200, json.dumps(studio.build(body.get("edits", {}), body.get("english", True))))
                 elif path == "/api/play":
-                    self.send(200, json.dumps(studio.play(body.get("patch"))))
+                    self.send(200, json.dumps(studio.play(body.get("patch"), body.get("hops"), body.get("at"))))
                 elif path == "/api/stop":
                     studio.stop()
                     self.send(200, "{}")

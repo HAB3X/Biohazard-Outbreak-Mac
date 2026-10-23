@@ -49,10 +49,12 @@ function buildTopbar() {
   panelL.addEventListener("click", () => togglePanel("no-outline")); panelR.addEventListener("click", () => togglePanel("no-inspector"));
   bar.append(panelL, panelR, el("div", { class: "sep" }));
   const build = el("button", { class: "btn", id: "build", html: icon("build", 16) + " Build" });
+  const here = el("button", { class: "btn", id: "playhere", title: "Start the game in the room you are editing", html: icon("play", 14) + " Play here" });
   const play = el("button", { class: "btn primary", id: "play", html: icon("play", 14) + " Play" });
+  here.addEventListener("click", () => doPlay(true));
   build.addEventListener("click", () => doBuild());
   play.addEventListener("click", () => doPlay());
-  bar.append(build, play);
+  bar.append(build, here, play);
 }
 
 function togglePanel(cls) { document.getElementById("app").classList.toggle(cls); setTimeout(() => viewport && viewport.resize(), 30); }
@@ -198,10 +200,43 @@ async function doBuild() {
 }
 let lastBuilt = "";
 
-async function doPlay() {
+// the doors and exits that take the player from the scenario's first room to a room: [x, z] to stand at for each step (a breadth-first search over the scene's own doors)
+function hopsTo(startId, targetId) {
+  const rooms = store.scene.rooms.filter((r) => !r.variant);
+  const byId = new Map(rooms.map((r) => [r.id, r]));
+  const prev = new Map([[startId, null]]);
+  const queue = [startId];
+  while (queue.length) {
+    const id = queue.shift();
+    if (id === targetId) break;
+    const r = byId.get(id);
+    if (!r) continue;
+    for (const a of r.areas) {
+      if ((a.tag === 0 || a.tag === 1) && byId.has(a.fields[1]) && !prev.has(a.fields[1])) { prev.set(a.fields[1], { from: id, area: a }); queue.push(a.fields[1]); }
+    }
+  }
+  if (!prev.has(targetId)) return null;
+  const hops = [];
+  for (let at = targetId; prev.get(at); at = prev.get(at).from) { const c = scene.centre("areas", prev.get(at).area); hops.unshift([c[0], c[2]]); }
+  return hops;
+}
+
+async function doPlay(here = false) {
   if (!lastPatch || lastBuilt !== JSON.stringify(currentEdits())) { if (!(await doBuild())) return; }
-  try { await api.play(lastPatch); toast("Starting the game…", "ok", "The game opens in its own window with your changes."); }
-  catch (e) { toast("Couldn't start the game", "err", e.message); }
+  try {
+    let hops = null, at = null;
+    if (here) {
+      const info = await api.status();
+      const room = roomOf(store.room);
+      if (!info.automatable || !room) { toast("Play here isn't set up for this scenario yet", "err", "Only File 1's first scenario and File 2's first scenario start by themselves so far."); return; }
+      hops = hopsTo(info.start_room, room.id);
+      if (!hops) { toast("No way to reach this room", "err", "No chain of doors and exits leads there from the scenario's first room."); return; }
+      const sp = room.spawns && room.spawns[0];
+      at = sp && hops.length === 0 ? [sp.pos[0], sp.pos[2], sp.facing] : null;
+    }
+    const out = await api.play(lastPatch, hops, at);
+    toast("Starting the game…", "ok", out.automated ? "It takes itself to the room; give it a minute." : "The game opens in its own window with your changes.");
+  } catch (e) { toast("Couldn't start the game", "err", e.message); }
 }
 
 // ---- the command palette

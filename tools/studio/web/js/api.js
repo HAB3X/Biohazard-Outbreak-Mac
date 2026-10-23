@@ -15,7 +15,8 @@ export const api = {
   model: (file) => call("/api/model?file=" + encodeURIComponent(file)),
   messages: () => call("/api/messages"),
   build: (edits, english = true) => send("POST", "/api/build", { edits, english }),
-  play: (patch) => send("POST", "/api/play", { patch }),
+  play: (patch, hops, at) => send("POST", "/api/play", { patch, hops, at }),
+  status: () => call("/api/status"),
   stop: () => send("POST", "/api/stop"),
   switchTo: (game, scenario) => send("POST", "/api/switch", { game, scenario }),
 };
