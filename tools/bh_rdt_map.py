@@ -4,6 +4,7 @@ with its cameras (the eye and where it looks, and the box that switches to it), 
 the links between rooms.
 
     bh_rdt_map.py GAME SCENARIO [OUT.html] [--names ROOMS.md] [--variants]
+    bh_rdt_map.py GAME all [--names ROOMS.md]     every scenario of the disc, and work/rdt-maps-GAME.html linking them
 
 SCENARIO is the archive's number (40 for r040.afs: Wild Things). OUT defaults to work/rdt-map-GAME-rSCENARIO.html (work/ is not
 in the repository: the page holds the game's room numbers). Only each room's variant 00 is drawn unless --variants.
@@ -225,11 +226,26 @@ def main(argv):
     if len(args) < 2:
         print(__doc__)
         return 1
-    game, scenario = args[0], int(args[1])
+    game = args[0]
     names = {}
     if "--names" in options:
         names = room_names(options[options.index("--names") + 1])
         args = [a for a in args if a != options[options.index("--names") + 1]]
+    if args[1] == "all":
+        scenarios = sorted({int(pack[1:4]) for pack, _, _ in rdt.rooms(game)})
+        links = []
+        for number in scenarios:
+            data = build(game, number, names, False)
+            page = ROOT / "work" / f"rdt-map-{game}-r{number:03d}.html"
+            page.parent.mkdir(parents=True, exist_ok=True)
+            page.write_text(PAGE.replace("__TITLE__", f"{game} r{number:03d}: {len(data)} rooms").replace("__DATA__", json.dumps(data)))
+            links.append(f'<li><a href="{page.name}">r{number:03d}</a> {len(data)} rooms, {sum(len(r["areas"]) for r in data)} areas</li>')
+            print(page)
+        index = ROOT / "work" / f"rdt-maps-{game}.html"
+        index.write_text(f"<!doctype html><meta charset=utf-8><title>{game} room maps</title><body style='font:14px sans-serif;background:#111;color:#ddd'><h1>{game} room maps</h1><ul>{''.join(links)}</ul>")
+        print(index)
+        return 0
+    scenario = int(args[1])
     out = Path(args[2]) if len(args) > 2 else ROOT / "work" / f"rdt-map-{game}-r{scenario:03d}.html"
     data = build(game, scenario, names, "--variants" in options)
     out.parent.mkdir(parents=True, exist_ok=True)

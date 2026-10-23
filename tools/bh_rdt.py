@@ -7,8 +7,9 @@ cameras.
     bh_rdt.py GAME areas ROOM     a room's trigger areas (doors, messages, desks ...)
     bh_rdt.py GAME doors          each scenario's doors as room -> rooms
 
-The file: 32 sections as (offset, size) pairs of int32, then the sections' contents one after another (checked: the offsets
-tile the file with no gaps on every room of both discs). Section 0 holds the cameras: an int32 tag (1), the camera count and
+The file: 32 sections as (offset, size) pairs of int32, then the sections' contents one after another (checked: the first 31's
+offsets tile the file with no gaps on every room of both discs; the 32nd pair isn't an offset and size: in File 1's r0023100 it is
+(1, 6), the camera count there). Section 0 holds the cameras: an int32 tag (1), the camera count and
 that many offsets (from the section's start) to 320 byte camera records. The layout was learned from a community 010 Editor
 template (Dchaps' rdt_temp.bt: reference only, no licence) and then checked against the running game: File 2's classic
 camera's eye and target in the zoo's first room are camera 2's of r0300100.rdt. Section 10 holds the trigger areas (same source: Dchaps' NETBIO_AOT.ms): an int32 tag, a count and that many offsets, to records
@@ -135,7 +136,7 @@ class Room:
         """The problems found (an empty list when the sections tile the file and the cameras fit)"""
         problems = []
         at = self.sections[0][0]
-        for index, (offset, size) in enumerate(self.sections):
+        for index, (offset, size) in enumerate(self.sections[:SECTIONS - 1]):
             if size and offset != at:
                 problems.append(f"section {index} starts at {offset}, not where the one before ends ({at})")
             if size:
