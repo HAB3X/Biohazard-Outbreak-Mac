@@ -237,7 +237,19 @@ The item *areas* (tag 3) carry only an id; the items themselves are in the scena
   kind 0x1C -> 0x12C), item 2's (kind 0x12C -> 0x66, quantity 1 -> 7, position moved) and item 6's (0x135 -> 0x12C, quantity 1 -> 2, position moved) read back in that table after patching.
   (An item's number in the table skips some of the dat's: a slot holds the dat's item `+4`.) A mistaken first try wrote the 700 byte tables with the 12 byte stride; it changed every third item, which is how the stride was found.
 
-So the editor can place items and change what they are (herb, ammo ...) and how many; the item *areas* are the pickup triggers around them (their ids are the script's). Enemies are not the same:
-SpawnEnemy's five words aren't positions (see script-ops.md), and where an enemy stands is still not found.
+So the editor can place items and change what they are (herb, ammo ...) and how many; the item *areas* are the pickup triggers around them (their ids are the script's).
+
+## Enemies: where they stand (File 2's first scenario; decoded and measured in the game)
+
+`sgl_e040.emd` (r040.afs; `tools/bh_enemies.py` reads and patches it, the editor draws the enemies as red dots with a facing line): a head of (offset, size) pairs, one group for each room-and-variant that has enemies (19 entries, the last a 4 byte
+end mark), then 96 byte records of 24 words: `w0` bytes `[1, the enemy's number in its group, its id, a class byte]`, `w3` the facing (65536 to a turn), `w4..w6` the position (x, y, z as integers), `w7` low byte
+the room, the next byte its variant, then 0x0F and a counter; `w8` on kept as they are (an enemy's own parameters: not decoded). 50 enemies in the scenario.
+
+- Measured: the exit in room 3 leads to room 4, where the one enemy (id 32, 7200 HP) stood at (10671, 0, 9710) facing 28236, as record 10 (group 3) says. An edit of its x in `sgl_e040.emd` (10671 -> 10171) moved it; through the
+  tool (position to (10171, 0, 9610), facing 28236 -> 0) the game's record read back exactly that (position and `+0x92` facing).
+- `e040.emd` (17 groups) is the plain copy with the same records at other offsets: editing it alone changed nothing in single play (the same as the room scripts' two copies), so the tool edits both (the record with the same first words).
+- The record isn't SpawnEnemy's: that script op's class (16 for room 1's one) matches the record's class byte, but the room-4 zombies (op class 13) don't appear in this table; where the script-spawned
+  zombies (a conditional spawn) get their places is still not found.
+
 The reader takes the table's start from the head (third word + 8) and the stride from each table's size, and it reads all 5 of File 1's scenarios and 12 of File 2's (101 to 275 items each, room numbers
 in range); only File 2's zoo was tried in the game, so File 1's items are decoded by shape and not yet measured.
