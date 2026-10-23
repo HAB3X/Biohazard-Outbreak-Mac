@@ -285,11 +285,12 @@ side.addEventListener("change", e => { layers[e.target.dataset.k] = e.target.che
 side.addEventListener("click", e => { const d = e.target.closest(".room"); if (!d) return; const c = roomCentre(DATA[+d.dataset.i]); view.x = c[0]; view.y = c[1]; view.s = Math.max(view.s, 0.12); draw(); });
 resize(); fit(); draw();
 </script>
+__EDITOR__
 """
 
 
-def render(game, scenario, data):
-    """The page's HTML for rooms from build()"""
+def render(game, scenario, data, editor=""):
+    """The page's HTML for rooms from build(); `editor` is extra markup (the editor's script) put after the map's"""
     spots = [p for r in data for a in r["areas"] for p in a["quad"] if any(p) and max(map(abs, p)) < 1e6]
     spots += [(c["eye"][0], c["eye"][2]) for r in data for c in r["cameras"] if max(map(abs, c["eye"])) < 1e6]
     margin = 1200
@@ -299,7 +300,7 @@ def render(game, scenario, data):
     model = "null" if picture is None else json.dumps({"url": picture[0], "x": picture[1], "z": picture[2], "w": picture[3], "h": picture[4],
                                                        "scale": MODEL_SCALE})
     title = f"{game} r{scenario:03d}: {len(data)} rooms"
-    return PAGE.replace("__TITLE__", title).replace("__DATA__", json.dumps(data)).replace("__MODEL__", model)
+    return PAGE.replace("__TITLE__", title).replace("__DATA__", json.dumps(data)).replace("__MODEL__", model).replace("__EDITOR__", editor)
 
 
 def main(argv):

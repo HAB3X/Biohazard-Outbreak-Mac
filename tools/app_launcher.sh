@@ -104,4 +104,6 @@ if grep -q '^[^#]' "$CHARACTERS" 2>/dev/null; then
 The game starts without them."
     fi
 fi
+# The rooms edited with tools/bh_rdt_edit.py, saved as rooms.patch in the settings folder: laid over the disc when it exists
+[ -f "$SETTINGS/rooms.patch" ] && set -- --patch "$SETTINGS/rooms.patch" "$@"
 exec "$GAME" --disc "$DISC" --patch "$PATCH" "$@"

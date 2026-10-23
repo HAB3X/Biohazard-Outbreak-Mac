@@ -110,7 +110,8 @@ class Area:
 
 class Room:
     def __init__(self, data):
-        self.data = data
+        self.original = bytes(data)
+        self.data = bytearray(data)
         self.sections = [struct.unpack_from("<ii", data, 8 * i) for i in range(SECTIONS)]
         offset, size = self.sections[0]
         tag, count = struct.unpack_from("<ii", data, offset)
@@ -130,7 +131,75 @@ class Room:
         for at in offsets:
             if at < 0 or at + AREA_SIZE > size:
                 raise ValueError(f"a trigger area at {at} leaves its section")
-        return [Area(self.data[offset + at:offset + at + AREA_SIZE]) for at in offsets]
+        self.area_offsets = offsets
+        return [Area(bytes(self.data[offset + at:offset + at + AREA_SIZE])) for at in offsets]
+
+    # Editing: the file's size never changes (the archive's members can't grow), so an edit overwrites numbers where they are
+    def _put(self, at, fmt, *values):
+        struct.pack_into(fmt, self.data, at, *values)
+
+    def _camera_base(self, index):
+        if not 0 <= index < len(self.cameras):
+            raise IndexError(f"camera {index}: the room has {len(self.cameras)}")
+        return self.sections[0][0] + self.camera_offsets[index]
+
+    def _area_base(self, index):
+        if not 0 <= index < len(self.areas):
+            raise IndexError(f"area {index}: the room has {len(self.areas)}")
+        return self.sections[10][0] + self.area_offsets[index]
+
+    def set_camera(self, index, eye=None, target=None, fov=None, box=None):
+        """eye and target (x, y, z), fov (horizontal, vertical degrees), box the eight points (x, y, z) of the switch box"""
+        base = self._camera_base(index)
+        if eye is not None:
+            self._put(base + 39 * 4, "<3i", *map(int, eye))
+        if target is not None:
+            self._put(base + 45 * 4, "<3i", *map(int, target))
+        if fov is not None:
+            self._put(base + 7 * 4, "<2f", *map(float, fov))
+        if box is not None:
+            if len(box) != 8:
+                raise ValueError("a camera's box has eight points")
+            for i, point in enumerate(box):
+                self._put(base + (9 + 3 * i) * 4, "<3i", *map(int, point))
+        self._reparse()
+
+    def set_area(self, index, quad=None, height=None, fields=None):
+        """quad four (x, z) corners, height (low, high), fields {field number from int 12: value} for the integers after them"""
+        base = self._area_base(index)
+        if quad is not None:
+            if len(quad) != 4:
+                raise ValueError("an area's quad has four corners")
+            for i, (x, z) in enumerate(quad):
+                self._put(base + (2 + 2 * i) * 4, "<2i", int(x), int(z))
+        if height is not None:
+            self._put(base + 10 * 4, "<2i", *map(int, height))
+        for number, value in (fields or {}).items():
+            if not 12 <= number < 12 + 30:
+                raise ValueError(f"field {number} is outside the record's data (12 to 41)")
+            self._put(base + number * 4, "<i", int(value))
+        self._reparse()
+
+    def _reparse(self):
+        offset = self.sections[0][0]
+        tag, count = struct.unpack_from("<ii", self.data, offset)
+        offsets = struct.unpack_from(f"<{count}i", self.data, offset + 8)
+        self.cameras = [Camera(bytes(self.data[offset + o:offset + o + CAMERA_SIZE])) for o in offsets]
+        self.areas = self._areas()
+
+    def changes(self):
+        """[(offset in the file, the new bytes)] of the runs of bytes that differ from the file as read"""
+        runs = []
+        start = None
+        for i, (a, b) in enumerate(zip(self.original, self.data)):
+            if a != b and start is None:
+                start = i
+            elif a == b and start is not None:
+                runs.append((start, bytes(self.data[start:i])))
+                start = None
+        if start is not None:
+            runs.append((start, bytes(self.data[start:])))
+        return runs
 
     def check(self):
         """The problems found (an empty list when the sections tile the file and the cameras fit)"""

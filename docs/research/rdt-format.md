@@ -73,3 +73,15 @@ to) and the other areas coloured by tag; the wheel zooms, a drag pans, hovering 
 in the repository: the page holds the game's room data). Checked on File 2's Wild Things (20 rooms, 496 areas, 211 cameras): the
 rooms form the zoo's layout, and a message area read in the page matches the record read from the file. Two things in the data
 the page has to skip: areas whose four corners are all zero, and a camera whose eye is -2147483648 (room 23).
+
+**Editing** (`tools/bh_rdt_edit.py GAME SCENARIO`, `tools/bh_room_patch.py`, `Room.set_camera` / `set_area` in `tools/bh_rdt.py`): the map page with tools. A page on
+127.0.0.1 where a click selects an area or a camera, dragging moves an area (corners or the whole), a camera's eye and aim and a
+switch box's corners (the other numbers are typed), and Save writes `work/room-edits-GAME.json` and `work/rooms-GAME.patch`, which
+`run.sh` (and the app's `rooms.patch` in its settings folder) put over the disc. Edits overwrite numbers in place: the file's size
+never changes (the archive can't grow). Checked in the running game (File 2, the zoo's first room, r0400300):
+- camera 2's eye changed in the file from (12119, 116, 11709) to (12319, 216, 11709): the game's camera read (12319, 216, 11709) and
+  the picture moved (the gate seen from higher and to the right); the aim was unchanged;
+- door 0 (to room 1) moved in the file from (13190, 14700) to (11970, 11550): standing at the old spot no longer left room 3 and the
+  new spot did (to room 1); and again from a drag in the editor page and its Save (the door at (12530, 13700)).
+Not done: editing the lights, fog and scripts (not decoded), the other fields' meaning, new areas or cameras (a room has what it has),
+and undoing a saved patch other than by deleting it. An edited door's arrival spots (and the door it joins) are not rechecked.
