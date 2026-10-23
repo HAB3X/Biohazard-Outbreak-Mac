@@ -11,6 +11,8 @@ one a 4 byte end mark): each group is a room's (and variant's) enemies, a record
   w7  low byte the room number, the next byte its variant (1: a room's second variant), then a mask of the four modes it is placed in (0x0F: all; a bit cleared took the enemy out of the mode the
       zoo was played in: the record's runtime enemy was not created), then a byte read at runtime +0xBBF
   w1  flags that change the runtime record's +0xBB4 (the AI control flag) and +0xC49;  w2  a non-zero value turned the room-4 boss (id 32, 7200 HP) into a plain zombie (id 1, 450 HP)
+  w12 byte 3  the hit points' tier: File 1's zombie (id 1, copy 1 of the bar) read 600, 650, 700, 750, 780, 800, 820, 850 for the tiers 0 to 7 and 32767 for 8, 9 and 12 (measured by writing the byte);
+              File 2's boss (id 32) read 5800 for tiers 0 and 2, 7200 for 4 and 6 (its own table; tier 7 is the record's), 32767 for 8; the other bytes of w12 are among the AI block's (w10..w16)
   w10..w16  one parameter each of the AI block (runtime +0xBB9 .. +0xCAE); w17  runtime +0xB4 .. +0xBE; w8 and w18: changing either stopped the enemy being created at all; w9 and w19 to w23: no effect found
   (measured by changing each word's bytes in the zoo's room-4 record and comparing the game's whole enemy record against an unchanged run: docs/research/rdt-format.md)
 File 1's scenarios repeat a room's group for each difficulty (4 copies in the first), so `mode` counts the copies before a group's: the bar of File 1's first scenario (normal) read the
@@ -39,6 +41,7 @@ class Enemy:
         self.position = (w[4], w[5], w[6])
         self.room = w[7] & 0xFF
         self.variant = (w[7] >> 8) & 0xFF
+        self.hp_tier = (w[12] >> 24) & 0xFF   # an index into the kind's table of hit points (File 1's zombie: 600, 650, 700, 750, 780, 800, 820, 850; File 2's room-4 boss, id 32: 5800 for 0 and 2, 7200 for 4 and 6; 8 and up: 32767)
         self.modes = (w[7] >> 16) & 0xFF   # the modes the enemy is placed in (a bit for each of the four: 0x0F in all of File 2's)
         self.mode = 0  # which copy of the room's enemies this is (File 1 keeps one for each difficulty), set by Enemies
 
@@ -87,7 +90,7 @@ class Enemies:
                 seen[room] = seen.get(room, 0) + 1
 
     def patches(self, edits):
-        """[(disc offset, bytes, 0)] for edits {enemy number: {"position": [x, y, z], "facing": n, "id": n, "class": n, "modes": mask}}: in the sgl_ file, and in the plain file at the record that has the
+        """[(disc offset, bytes, 0)] for edits {enemy number: {"position": [x, y, z], "facing": n, "id": n, "class": n, "modes": mask, "hp_tier": n}}: in the sgl_ file, and in the plain file at the record that has the
         same first words and position (when it has one)"""
         out = []
         other_name = next((n for n in self.files if not n.lower().startswith("sgl_")), None)
@@ -96,7 +99,7 @@ class Enemies:
             data = self.files[other_name].read()
             other = [(offset + RECORD * k, data[offset + RECORD * k:offset + RECORD * (k + 1)]) for offset, size in groups(data) for k in range(size // RECORD)]
         for number, change in edits.items():
-            unknown = set(change) - {"position", "facing", "id", "class", "modes"}
+            unknown = set(change) - {"position", "facing", "id", "class", "modes", "hp_tier"}
             if unknown:
                 raise SystemExit(f"enemy {number}: unknown {sorted(unknown)}")
             number = int(number)
@@ -115,6 +118,8 @@ class Enemies:
                     out.append((base + at + 12, struct.pack("<i", int(change["facing"]) & 0xFFFF), 0))
                 if "id" in change:
                     out.append((base + at + 2, struct.pack("<B", int(change["id"])), 0))
+                if "hp_tier" in change:
+                    out.append((base + at + 51, struct.pack("<B", int(change["hp_tier"])), 0))
                 if "modes" in change:
                     out.append((base + at + 30, struct.pack("<B", int(change["modes"])), 0))
                 if "class" in change:
