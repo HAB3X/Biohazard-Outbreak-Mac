@@ -30,16 +30,27 @@ against the discs and the running game.
   and the facing the character gets, int 24 a distance (150 in the one measured). The character arrives at the second point's
   x and z pushed the distance along its facing: predicted (11293.9, 10443.9) and read (11293.9, 10443.9) from the game for the
   zoo's first room exit to room 4 (facing 40960).
-- **Messages, tag 5 subtype 1**: standing in the one in the zoo's first room showed "The gate is closed with a chain" (its fields
-  are all zero, so the text is chosen elsewhere: probably the scenario's script). The other subtype 0 records of tag 5 (3471 of
-  3504) carry a small number and sometimes three floats; their meaning is not decoded. Standing in tags 3, 4 and 11 of that room
-  showed nothing (tag 11 comes in pairs of one number with 0 and 1 and values 200 to 209; the wiki doesn't mention them).
+- **What the other tags do**, from standing in 17 areas of the zoo's first three rooms (Wild Things rooms 1 to 3) and pressing the
+  action key, with a picture of each looked at (the pictures aren't kept: they are the game's):
+  - tag 5, subtype 1: a message when you stand in it ("The gate is closed with a chain", room 3). Its fields are all zero: the text is
+    chosen elsewhere, probably by the scenario's script.
+  - tag 5, subtype 0: a spot to act on. With the action key it shows a description ("A big table and chairs / An Asian-style
+    design" in room 1, "The high wall goes on" in room 2) or offers an item ("Bug Spray - take it?" and "Handgun - take it?" in room 3,
+    whose records are int 12 = 20 and 21 and three floats). Some stand in the open and show nothing (room 1, area 6).
+  - tag 3, subtype 0: a lock ("A number-lock key... Unlock it? Yes / No", the zoo gate, room 3); subtype 1: an item to take
+    ("First Aid Spray - take it?", int 12 = 83).
+  - tag 4, subtype 2: on the same quad as that gate's lock and showing the same prompt (probably the key or item check that goes with it).
+  - tag 11, subtype 1: a message shown as you stand in it ("A trailer, wrecked it seems, is blocking the road...", room 3; "A vintage
+    cash register counter", room 1), in pairs of one number with 0 and 1 and values 200 to 209 (the message numbers?).
+  - tag 2, subtype 4: "Shall we try it..." beside the restroom door in room 1 (a door that won't open?).
+  - Not looked at: tags 6, 7, 10, 12 and 13 (the three rooms have none); and the rooms past room 3 (the survey stopped there).
+  - None of these causes a room change but tag 0 doors and tag 1 exits.
 
 **Sections** (the header's 32 entries; the sizes are those of the zoo's first room): 0 cameras, 1 a script (668 to 3128 bytes),
 2 and 3 sound banks (144896 bytes for 2 in every room looked at), 7, 10 doors and trigger areas, 11 lights, 13 fog (header, then
 96 byte records per camera), 15, 16 sound zones. 4 to 6, 8, 9, 12, 14 and 17 to 31 are empty in the rooms looked at.
 
-**Not known**: the script's opcodes (section 1), the trigger areas other than doors, exits and messages (10: tags 2 3 4 5 subtype 0 6 7 10 11 12 13), the light records (11), what 7 and 15
+**Not known**: the script's opcodes (section 1), what the trigger areas' fields mean for tags 2 to 5 and 11 (which text or item: the fields after the quad), and tags 6, 7, 10, 12 and 13 altogether, the light records (11), what 7 and 15
 hold, the camera types (1, 2, 7), the camera record's remaining fields, and how the game picks a camera from the boxes.
 
 **For an editor**: moving or adding cameras, doors, lights and fog is a change inside the room file; the file's size can't change
