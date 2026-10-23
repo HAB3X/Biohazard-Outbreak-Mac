@@ -16,8 +16,8 @@ against the discs and the running game.
   number of the room it leads to: 359 of File 2's 370 door links are returned by the room they lead to, and Wild Things' room
   graph reads right against the room names in the community wiki (1 Elephant Restaurant, 2 Back Alley and 3 In front of it
   link to each other; 4 South Concourse links to 5, 6 and 23 Service Road). Tags seen in File 2: 5 (2278 areas), 11 (559),
-  0 (436 doors), 1 (384), 3 (270), 6 (126), 4 (117), 7 (48), 2 (27), 12 (26), 13 (7), 10 (3); the wiki's guess for 5 is messages
-  and 7 desks or other things to examine, not checked here; the data after the door fields (the spawn position and
+  0 (436 doors), 1 (384), 3 (270), 6 (126), 4 (117), 7 (48), 2 (27), 12 (26), 13 (7), 10 (3); the wiki's guess for tag 7 (desks)
+  is not checked here; the data after the door fields (the spawn position and
   facing in the next room?) is decoded as below.
 - **Doors, tag 0** (`Area.door_number`, `leads_to`, `other_door`, `facing`, `arrival`): int 12 the door's number in its room, int 13
   the room it leads to, int 14 the number of the door it joins there (File 2: 380 of 381 doors in variant 00 rooms are returned
@@ -44,7 +44,7 @@ against the discs and the running game.
     cash register counter", room 1), in pairs of one number with 0 and 1 and values 200 to 209 (the message numbers?).
   - tag 2, subtype 4: "Shall we try it..." beside the restroom door in room 1 (a door that won't open?).
   - Not looked at: tags 6, 7, 10, 12 and 13 (the three rooms have none); and the rooms past room 3 (the survey stopped there).
-  - None of these causes a room change but tag 0 doors and tag 1 exits.
+  - None of the 17 tried changed the room; only tag 0 doors and the tag 1 exit did.
 
 **Sections** (the header's 32 entries; the sizes are those of the zoo's first room): 0 cameras, 1 a script (668 to 3128 bytes),
 2 and 3 sound banks (144896 bytes for 2 in every room looked at), 7, 10 doors and trigger areas, 11 lights, 13 fog (header, then
