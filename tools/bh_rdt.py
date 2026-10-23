@@ -14,8 +14,13 @@ template (Dchaps' rdt_temp.bt: reference only, no licence) and then checked agai
 camera's eye and target in the zoo's first room are camera 2's of r0300100.rdt. Section 10 holds the trigger areas (same source: Dchaps' NETBIO_AOT.ms): an int32 tag, a count and that many offsets, to records
 of 176 bytes (every one of the 4281 in File 2): tag, subtype, a quad as four (x, z) corners (ints 2..9), the height range (ints
 10 and 11) and then data that depends on the tag. A tag 0 record is a door: int 12 its number in the room, int 13 the number of
-the room it leads to (the yy of r0yyyy00.rdt: of 370 door links in File 2, 359 are returned by the room they lead to). The
-other tags (1 3 4 5 6 7 10 11 12 13) are kept as they are.
+the room it leads to (the yy of r0yyyy00.rdt: of 370 door links in File 2, 359 are returned by the room they lead to), int 14
+the number of the door it joins there (381 of 382 doors of File 2 and 257 of 262 of File 1 are returned by that door: the
+others are one way), int 18 the facing it gives the character arriving (65536 a full turn, direction (sin, cos) over x and z:
+88% point into the room by a rough centre). A tag 1 record is an exit that names the arrival itself: int 13 the room, ints
+15..18 a point and facing, ints 19..22 the point and facing the character is put at, int 24 how far along that facing from
+the point. Seen live: a tag 5 record of subtype 1 shows a message ("The gate is closed with a chain" in the zoo's first room).
+The other tags (2 3 4 5 6 7 10 11 12 13) are kept as they are.
 The other fields of a camera are listed as
 they are found, with what they were checked against; the rest of the sections
 (1 a script, 2 and 3 sound banks, 7, 10 doors and trigger zones, 11 lights, 13 fog, 15, 16 sound zones) are kept as bytes.
@@ -59,8 +64,47 @@ class Area:
 
     @property
     def leads_to(self):
-        """The room number a door (tag 0) leads to"""
-        return self.fields[1] if self.tag == 0 else None
+        """The room number a door (tag 0) or an exit (tag 1) leads to"""
+        return self.fields[1] if self.tag in (0, 1) else None
+
+    @property
+    def door_number(self):
+        """A door's number in its room, which the door of the room it leads to names (tag 0)"""
+        return self.fields[0] if self.tag == 0 else None
+
+    @property
+    def other_door(self):
+        """The number of the door, in the room this one leads to, that it joins (tag 0)"""
+        return self.fields[2] if self.tag == 0 else None
+
+    @property
+    def facing(self):
+        """The turn (0x10000 a full turn; the direction is (sin, cos) of it over x and z) a door (tag 0) has its player face
+        arriving through it, and an exit's (tag 1) arrival facing"""
+        return self.fields[6] if self.tag == 0 else self.fields[10] if self.tag == 1 else None
+
+    def centre(self):
+        return (sum(p[0] for p in self.quad) / 4, sum(p[1] for p in self.quad) / 4)
+
+    def arrival(self, destination):
+        """(x, z, facing): where the game puts a character coming through this door or exit into `destination` (its Room).
+        An exit (tag 1) names the spot itself: the point in ints 19 and 21 (floats) pushed int 24 along the facing in int 22
+        (measured once in File 2: the room 4 exit of the zoo's first room, predicted (11293.9, 10443.9) at 225 degrees and read
+        (11293.9, 10443.9) from the game's memory). A door (tag 0) puts them in front of the door it joins in `destination`:
+        facing as that door's own, 60 to 65 units along it from the door's centre and within about 20 to the side (measured on
+        the zoo's first street's two doors, both ways)."""
+        import math
+        if self.tag == 1:
+            x, z = struct.unpack("<ff", struct.pack("<ii", self.fields[7], self.fields[9]))
+            turn = self.fields[10] / 65536 * 2 * math.pi
+            return (x + self.fields[12] * math.sin(turn), z + self.fields[12] * math.cos(turn), self.fields[10])
+        if self.tag == 0:
+            for door in destination.areas:
+                if door.tag == 0 and door.door_number == self.other_door:
+                    turn = door.facing / 65536 * 2 * math.pi
+                    cx, cz = door.centre()
+                    return (cx + 62 * math.sin(turn), cz + 62 * math.cos(turn), door.facing)
+        return None
 
 
 class Room:
@@ -159,7 +203,9 @@ def main(argv):
             if argv[2] == "areas":
                 print(f"{pack}/{member}: {len(room.areas)} trigger areas")
                 for index, area in enumerate(room.areas):
-                    extra = f" leads to room {area.leads_to}" if area.tag == 0 else ""
+                    extra = f" leads to room {area.leads_to}" if area.leads_to is not None else ""
+                    if area.tag == 0:
+                        extra += f" (its door {area.other_door}, door number {area.door_number}, facing {area.facing})"
                     print(f"  {index}: tag {area.tag} subtype {area.subtype} quad {area.quad} height {area.height}{extra}")
                 return 0
             print(f"{pack}/{member}: {len(room.cameras)} cameras")
