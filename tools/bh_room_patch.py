@@ -6,7 +6,8 @@
 EDITS.json (the room editor writes it):
     {"rooms": {"r0400300.rdt": {
         "cameras": {"2": {"eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}},
-        "areas":   {"5": {"quad": [[x, z] x4], "height": [low, high], "fields": {"13": 4}}}}}}
+        "areas":   {"5": {"quad": [[x, z] x4], "height": [low, high], "fields": {"13": 4}}},
+        "fog":     {"2": {"ints": {"4": 4278190335}, "floats": {"9": 1.0}}}}}}   (a camera's fog record: numbers 0 to 23)
 A room is named by its file; cameras and areas by their numbers in the room (tools/bh_rdt.py lists them); every key is optional.
 Only the changed bytes go into the patch, at the room's place on the disc. A room file can't change size (the archive's members
 can't grow), and these edits only overwrite numbers in place, so none does. An unknown room, camera or area is an error.
@@ -38,6 +39,12 @@ def build(game, edits):
                 raise SystemExit(f"{member} area {number}: unknown {sorted(unknown)}")
             room.set_area(int(number), quad=change.get("quad"), height=change.get("height"),
                           fields={int(k): v for k, v in change.get("fields", {}).items()} or None)
+        for number, change in spec.get("fog", {}).items():
+            unknown = set(change) - {"ints", "floats"}
+            if unknown:
+                raise SystemExit(f"{member} fog {number}: unknown {sorted(unknown)}")
+            room.set_fog(int(number), ints={int(k): v for k, v in change.get("ints", {}).items()},
+                         floats={int(k): v for k, v in change.get("floats", {}).items()})
         runs = room.changes()
         if len(room.data) != len(room.original):
             raise SystemExit(f"{member}: the edit changed the file's size")

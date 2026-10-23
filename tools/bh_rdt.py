@@ -40,6 +40,11 @@ import sys
 import bh_archive as archive
 
 SECTIONS = 32
+# A camera's fog record (section 13: a tag, the camera count, offsets, then 96 bytes for each camera), numbers of 4 bytes: what is known,
+# each seen in the running game (File 2, the zoo's first room): 4 the scene's colour (bytes blue, green, red, alpha: changing it to
+# blue turned the whole picture blue), 9 to 11 the characters' tint as floats red, green, blue (1, 0, 0 turned the characters red).
+# Not tried: 1 (a float, -200 in the room looked at), 2 (a float, 7000: a distance?), 3 (0x222222), 5 to 8 (0xFF808080, then three numbers).
+FOG_FIELDS = {4: "scene colour", 9: "character tint red", 10: "character tint green", 11: "character tint blue"}
 CAMERA_SIZE = 320
 AREA_SIZE = 176
 
@@ -179,6 +184,29 @@ class Room:
                 raise ValueError(f"field {number} is outside the record's data (12 to 41)")
             self._put(base + number * 4, "<i", int(value))
         self._reparse()
+
+    def _fog_base(self, camera):
+        offset, size = self.sections[13]
+        tag, count = struct.unpack_from("<ii", self.data, offset)
+        if not 0 <= camera < count:
+            raise IndexError(f"fog {camera}: the room has {count} (one for each camera)")
+        return offset + struct.unpack_from("<i", self.data, offset + 8 + 4 * camera)[0]
+
+    def fog(self, camera):
+        """The 24 numbers of camera `camera`'s fog record as raw ints (see FOG_FIELDS)"""
+        return struct.unpack_from("<24i", self.data, self._fog_base(camera))
+
+    def set_fog(self, camera, ints=None, floats=None):
+        """ints {number: int} and floats {number: float} overwrite numbers of a camera's fog record (FOG_FIELDS says which)"""
+        base = self._fog_base(camera)
+        for number, value in (ints or {}).items():
+            if not 0 <= number < 24:
+                raise ValueError(f"fog number {number} is outside the record (0 to 23)")
+            self._put(base + 4 * number, "<i", int(value))
+        for number, value in (floats or {}).items():
+            if not 0 <= number < 24:
+                raise ValueError(f"fog number {number} is outside the record (0 to 23)")
+            self._put(base + 4 * number, "<f", float(value))
 
     def _reparse(self):
         offset = self.sections[0][0]

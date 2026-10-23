@@ -85,3 +85,9 @@ never changes (the archive can't grow). Checked in the running game (File 2, the
   new spot did (to room 1); and again from a drag in the editor page and its Save (the door at (12530, 13700)).
 Not done: editing the lights, fog and scripts (not decoded), the other fields' meaning, new areas or cameras (a room has what it has),
 and undoing a saved patch other than by deleting it. An edited door's arrival spots (and the door it joins) are not rechecked.
+
+**Fog** (section 13, `Room.fog` / `set_fog`, the editor's colour pickers): a record of 24 numbers for each camera. Measured in the zoo's first room by
+editing camera 2's record: number 4 is the scene's colour (bytes blue, green, red, alpha; set to blue the whole picture turned blue,
+lights and walls included) and numbers 9 to 11 are the characters' tint as floats (1, 0, 0 turned every character red; the scene
+stayed as it was). Numbers 1, 2, 3 and 5 to 8 weren't tried (a float -200, a float 7000, 0x222222 and 0xFF808080 are in them).
+The editor's camera panel has a colour box for each of the two; the same edit made there, saved and run, gave the same picture.

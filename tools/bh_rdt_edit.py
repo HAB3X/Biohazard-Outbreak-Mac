@@ -50,6 +50,7 @@ function diffs() {
       if (changed(c.fov, oc.fov)) d.fov = c.fov;
       if (changed(c.box, oc.box)) d.box = c.box;
       if (Object.keys(d).length) (rooms.cameras = rooms.cameras || {})[c.i] = d;
+      if (c.fog && oc.fog) { const f = {}; c.fog.forEach((v, k) => { if (v !== oc.fog[k]) f[k] = v; }); if (Object.keys(f).length) (rooms.fog = rooms.fog || {})[c.i] = {ints: f}; }
     }
     for (const a of r.areas) {
       const oa = o.areas.find(x => x.i === a.i), d = {};
@@ -60,7 +61,7 @@ function diffs() {
       if (Object.keys(f).length) d.fields = f;
       if (Object.keys(d).length) (rooms.areas = rooms.areas || {})[a.i] = d;
     }
-    if (rooms.cameras || rooms.areas) edits[r.file] = rooms;
+    if (rooms.cameras || rooms.areas || rooms.fog) edits[r.file] = rooms;
   });
   return {rooms: edits};
 }
@@ -68,12 +69,22 @@ function apply(edits) {
   for (const [file, spec] of Object.entries(edits.rooms || {})) {
     const r = room(file); if (!r) continue;
     for (const [i, d] of Object.entries(spec.cameras || {})) { const c = r.cameras.find(x => x.i === +i); if (c) Object.assign(c, d); }
+    for (const [i, d] of Object.entries(spec.fog || {})) { const c = r.cameras.find(x => x.i === +i); if (c && c.fog) for (const [k, v] of Object.entries(d.ints || {})) c.fog[+k] = v; }
     for (const [i, d] of Object.entries(spec.areas || {})) {
       const a = r.areas.find(x => x.i === +i); if (!a) continue;
       if (d.quad) a.quad = d.quad; if (d.height) a.h = d.height;
       for (const [k, v] of Object.entries(d.fields || {})) a.fields[+k - 12] = v;
     }
   }
+}
+const f2i = x => { const b = new DataView(new ArrayBuffer(4)); b.setFloat32(0, x, true); return b.getInt32(0, true); };
+const i2f = x => { const b = new DataView(new ArrayBuffer(4)); b.setInt32(0, x, true); return b.getFloat32(0, true); };
+const hex = v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+function colourRow(label, value, set) {
+  const row = document.createElement("div"); row.className = "row"; row.append(label + " ");
+  const input = document.createElement("input"); input.type = "color"; input.value = value;
+  input.addEventListener("change", () => { remember(); set(input.value); draw(); refreshPanel(); });
+  row.appendChild(input); return row;
 }
 function remember() { if (selected) undo.push({sel: selected, value: clone(itemOf(selected))}); if (undo.length > 200) undo.shift(); }
 function pointerWorld(e) { const [mx, my] = toCanvas(e); return [(mx - cv.width / 2) / view.s + view.x, -(my - cv.height / 2) / view.s + view.y]; }
@@ -161,6 +172,13 @@ function refreshPanel() {
       const e = document.createElement("div"); e.className = "row"; e.append("eye ", num("x", it.eye[0], v => it.eye = [v, it.eye[1], it.eye[2]]), num("y", it.eye[1], v => it.eye = [it.eye[0], v, it.eye[2]]), num("z", it.eye[2], v => it.eye = [it.eye[0], it.eye[1], v])); panel.appendChild(e);
       const t = document.createElement("div"); t.className = "row"; t.append("aim ", num("x", it.target[0], v => it.target = [v, it.target[1], it.target[2]]), num("y", it.target[1], v => it.target = [it.target[0], v, it.target[2]]), num("z", it.target[2], v => it.target = [it.target[0], it.target[1], v])); panel.appendChild(t);
       const g = document.createElement("div"); g.className = "row"; g.append("fov ", num("h", it.fov[0], v => it.fov = [v, it.fov[1]]), num("v", it.fov[1], v => it.fov = [it.fov[0], v])); panel.appendChild(g);
+      if (it.fog) {
+        const env = it.fog[4] >>> 0, tint = [9, 10, 11].map(k => i2f(it.fog[k]));
+        panel.appendChild(colourRow("scene colour", "#" + hex((env >> 16) & 255) + hex((env >> 8) & 255) + hex(env & 255), v => {
+          const r = parseInt(v.slice(1, 3), 16), g2 = parseInt(v.slice(3, 5), 16), b = parseInt(v.slice(5, 7), 16); it.fog[4] = ((env & 0xff000000) | (r << 16) | (g2 << 8) | b) | 0; }));
+        panel.appendChild(colourRow("character tint", "#" + hex(tint[0] * 255) + hex(tint[1] * 255) + hex(tint[2] * 255), v => {
+          [1, 3, 5].forEach((p, n) => it.fog[9 + n] = f2i(parseInt(v.slice(p, p + 2), 16) / 255)); }));
+      }
     }
     const revert = document.createElement("button"); revert.textContent = "Revert this";
     revert.onclick = () => { remember(); const o = clone(origOf(selected)); const target = itemOf(selected); Object.keys(o).forEach(k => target[k] = o[k]); refreshPanel(); draw(); };

@@ -17,6 +17,7 @@ where the game puts them (the map doesn't need the room models).
 import json
 import math
 import re
+import struct
 import sys
 from pathlib import Path
 
@@ -58,8 +59,12 @@ def build(game, scenario, names, variants):
     for (number, variant), (member, room) in sorted(rooms.items()):
         entry = {"id": number, "variant": variant, "file": member, "name": names.get(member.lower(), ""), "cameras": [], "areas": []}
         for index, cam in enumerate(room.cameras):
+            try:
+                fog = list(room.fog(index))
+            except (IndexError, struct.error):
+                fog = None
             entry["cameras"].append({"i": index, "kind": cam.kind, "fov": list(cam.fov), "eye": list(cam.eye), "target": list(cam.target),
-                                     "box": [list(p) for p in cam.box]})
+                                     "box": [list(p) for p in cam.box], "fog": fog})
         for index, area in enumerate(room.areas):
             item = {"i": index, "tag": area.tag, "sub": area.subtype, "quad": [list(p) for p in area.quad], "h": list(area.height),
                     "fields": list(area.fields)}
