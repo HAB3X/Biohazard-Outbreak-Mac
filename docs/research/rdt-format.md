@@ -222,3 +222,10 @@ game's copy at 0x80F28C).
 A disc patch halving the field of view of every camera in every File 1 room (`bh_rdt.Room.set_camera`, patch from `bh_patchfile.write_patch`) was played from the title into the first scenario's bar: the picture is zoomed in against the unedited
 one, so File 1 reads the same room files and the edit path works there too (the same code as File 2; rooms with a different fog count than cameras raise in `set_fog` and are skipped). Fog: the first try set the *character tint* (floats 9 to 11), which only tints characters, and showed nothing in the bar. Setting the scene colour (int 4 = 0xFF0000FF) in every fog record of every File 1 room
 turns the whole bar blue in the running game, so File 1's fog records have the same layout as File 2's and the editor's fog controls work there (619 records).
+
+## What item areas carry (File 2, all 1,130 tag 3 records tallied)
+
+Tag 3 (items and locks; subtypes 0, 1, 3) carries almost nothing besides its quad: `fields[0]` is an id (79 different values for subtype 0, 63 for subtype 1: the number the script's EnableItem/DisableItem names, e.g. 55, 112, 114 in
+the first rooms of Wild Things), `fields[1]` is 1 in 124 of 125 subtype 0 records, and `fields[3]` is 4 in most of the others. No item type, count or name is in the area. So the editor can move an item's spot or change which id the script
+switches, but **which item it is lives elsewhere** (the scenario's tables or the .sgl's records: not found), and neither items nor enemies can be placed or changed from the room file alone. Enemy spawns are the same
+(see script-ops.md: SpawnEnemy's five words aren't positions).
