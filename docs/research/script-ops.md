@@ -62,11 +62,11 @@ inferred and marked so in `bh_rdt.OPS`. The commonest: 0x70 (645 uses), 0x20, 0x
 | op | what the code does |
 |---|---|
 | 0x110 | `0x491268[a0] = a1` (a0 below 8) |
-| 0x20 | stores a byte at 0x3134CE |
+| 0x20 | SelectCharacter: stores the slot number at 0x3134CE when it is below 4 and that slot's record is in use. **Measured**: the zoo's first room's 0 is taken (reads 0), an edit to 7 leaves 255 |
 | 0x10 / 0x11 | the byte at the start of a 536 byte record at 0x3B3200 + 536 n (0x11 writes 0) |
 | 0x7E / 0x7F | the 104 byte table at 0x395890 (32 entries): 0x7E sets bit 0 of an entry's flag byte when the entry is in use |
 | 0xA0 / 0xA1 | bank C, the word at 0x4900FC: 0xA1 clears the bit |
-| 0x1A5 | writes 0 or 1 to +4176 of each of the eight character records in use |
+| 0x1A5 | writes 0 or 1 to +4176 of each of the eight character records in use. **Measured**: editing the zoo's first room's value 1 to 0 changed slot 1's +4176 from 1 to 0 |
 | 0x155 | conditional: a byte of the current character's record against the argument; skips the block with `game_0066be60` |
 | 0x180 | conditional on `cheat_single_play()` |
 | 0x73 | position source: absolute (mode 2), a character's (mode 1) or none, then `f_001b8170` |
