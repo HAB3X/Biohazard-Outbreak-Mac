@@ -140,16 +140,19 @@ export class Renderer {
       for (let i = 0; i < pos.length; i += 3) for (let k = 0; k < 3; k++) { if (pos[i + k] < lop[k]) lop[k] = pos[i + k]; if (pos[i + k] > hip[k]) hip[k] = pos[i + k]; }
       meshes.push({ vb, ub, groups, bone: m.bone, hide, mesh: m.mesh, lo: lop, hi: hip });
     });
-    this.models[file] = { bones, world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
+    this.models[file] = { bones, base: bones.length, extra: [], world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
   }
 
   // the skeleton with some bones replaced ({bone: [parent, scale, rotation, offset]}): the objects move on screen as they will in the game
-  setBones(file, changes) {
+  // `clones`: [{like (an object's number), bone}] the copies made of objects, each on a bone after the model's own (they share the original's buffers)
+  setBones(file, changes, clones = []) {
     const m = this.models[file];
     if (!m) return;
     const bones = m.bones.map((b, i) => changes[i] || b);
+    clones.forEach((c, j) => { bones[m.base + j] = c.bone; });
     m.world = worlds(bones);
     for (const mesh of m.meshes) mesh.hide = !m.world[mesh.bone] || hidden(bones[mesh.bone]);
+    m.extra = clones.map((c, j) => ({ ...m.meshes.find((x) => x.mesh === c.like), bone: m.base + j, hide: hidden(c.bone) })).filter((x) => x.vb);
   }
 
   texture(index) {
@@ -200,7 +203,7 @@ export class Renderer {
       if (!m) continue;
       gl.uniform1f(U("uDim"), (opts.dim && opts.dim[file]) ?? 1);
       if (!textured) gl.uniform2f(U("uHeight"), m.bounds[1] - 50, m.bounds[1] + Math.min(1800, Math.max(300, m.bounds[4] - m.bounds[1])));
-      for (const mesh of m.meshes) {
+      for (const mesh of [...m.meshes, ...m.extra]) {
         if (mesh.hide) continue;
         gl.uniformMatrix4fv(U("uModel"), false, m.world[mesh.bone]);
         gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vb); gl.enableVertexAttribArray(posLoc); gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);

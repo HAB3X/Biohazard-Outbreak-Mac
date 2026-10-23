@@ -2,7 +2,7 @@
 import { store, on, emit, objectOf, roomOf, commit, describe, centre, translate, select, clone, AREA_TAGS } from "./scene.js";
 import { icon } from "./icons.js";
 import { section_ as rulesSection } from "./rules.js";
-import { isDoor } from "./scenery.js";
+import { isDoor, duplicate, removeCopy } from "./scenery.js";
 import { el, number, vec3, select as selectBox, chips, dial, colour, field, section, range, hex, unhex, toast } from "./ui.js";
 
 const host = () => document.getElementById("inspector");
@@ -37,12 +37,14 @@ function header(ref, o) {
   const acts = el("div", { class: "acts" });
   const mk = (ic, tip, fn, disabled) => { const b = el("button", { class: "btn icon", title: tip, disabled: disabled || false, html: icon(ic, 16) }); b.addEventListener("click", fn); return b; };
   acts.append(mk("target", "Show it in the view", () => emit("focus", ref)));
+  if (ref.c === "scenery") acts.append(mk("copy", "Make a copy beside it", () => { const c = duplicate(r, o); commit("Copy object"); select([{ c: "scenery", file: ref.file, i: c.i }]); }));
   if (o.isNew || ref.c === "walls" || ref.c === "floors" || ref.c === "enemies") acts.append(mk("trash", ref.c === "enemies" && !o.isNew ? "Remove from the game" : "Delete", () => remove(ref)));
   return el("div", { class: "head" }, el("span", { class: "dot", style: `background:${color}` }), el("div", {}, el("h2", {}, d.label), el("small", {}, `${roomName(r)}${o.isNew ? " · new" : ""}`)), acts);
 }
 function remove(ref) {
   const r = roomOf(ref.file), list = r[ref.c];
   const k = list.findIndex((x) => x.i === ref.i);
+  if (k >= 0 && ref.c === "scenery" && list[k].isNew) { removeCopy(r, list[k]); select([]); commit("Delete object"); return; }
   if (k >= 0 && ref.c === "enemies" && !list[k].isNew) { list[k].modes = 0; select([]); commit("Remove enemy"); return; }   // never appears in any play mode
   if (k < 0 || (!list[k].isNew && ref.c !== "walls" && ref.c !== "floors")) return;
   list.splice(k, 1);
@@ -102,7 +104,7 @@ function positionSection(ref, o, label = "Position") {
 
 const FORMS = {
   scenery(ref, o) {
-    const orig = store.orig.rooms.find((r) => r.file === ref.file).scenery.find((x) => x.i === o.i);
+    const orig = store.orig.rooms.find((r) => r.file === ref.file).scenery.find((x) => x.i === (o.isNew ? o.like : o.i));
     const factor = o.scale[0] / (orig.scale[0] || 1);
     const hid = o.scale[0] < 0.001;
     const deg = (r) => Math.round(r * 180 / Math.PI * 10) / 10;

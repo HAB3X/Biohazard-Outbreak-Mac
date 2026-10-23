@@ -345,6 +345,7 @@ def clone_object(data, number, offset=None):
     struct.pack_into("<i", bone, 12, new_index)
     struct.pack_into("<i", bone, 12 + 8, -1)
     struct.pack_into("<i", bone, 12 + 12, -1)
+    struct.pack_into("<i", bone, 12 + 64, hcount)       # the number of the object the bone carries (its own copy's: with the original's number the original lost its picture)
     if offset is not None:
         old = struct.unpack_from("<3f", bone, 12 + 48)
         struct.pack_into("<3f", bone, 12 + 48, *(a + b for a, b in zip(old, offset)))

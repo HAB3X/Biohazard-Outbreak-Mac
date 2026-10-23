@@ -106,7 +106,7 @@ class Studio:
         out.parent.mkdir(parents=True, exist_ok=True)
         base = [str(self.english_patch())] if english and self.english_patch() else []
         started = time.time()
-        report = studio_build.compose(self.game, scenery_as_models(edits), str(out), base)
+        report = studio_build.compose(self.game, scenery_as_models(edits), str(out), base, members=grown_models(self.game, self.scenario, edits))
         return {"patch": str(out), "report": report, "seconds": round(time.time() - started, 2), "bytes": out.stat().st_size}
 
     def play(self, patch, hops=None, at=None):
@@ -132,13 +132,47 @@ class Studio:
 
 
 def scenery_as_models(edits):
-    """The page keeps a room's moved objects under the room (`scenery`: object number -> scale, rotation, offset); the patch builder reads them as the room model's bones (object i stands on bone i + 2)"""
+    """The page keeps a room's moved objects under the room (`scenery`: object number -> scale, rotation, offset); the patch builder reads them as the room model's bones
+    (object i stands on bone i + 2). Rooms that also made copies of objects (`new_objects`) are left out: their models are rebuilt whole (grown_models)"""
     models = {name: dict(spec) for name, spec in edits.get("models", {}).items()}
     for file, spec in edits.get("rooms", {}).items():
+        if spec.get("new_objects"):
+            continue
         for number, change in spec.get("scenery", {}).items():
             bones = models.setdefault(file.replace(".rdt", ".nbd"), {}).setdefault("bones", {})
             bones[str(int(number) + 2)] = change
     return {**edits, "models": models}
+
+
+def grown_models(game, scenario, edits):
+    """{(pack, member): bytes} of the room models that got copies of objects: each copy appended (bh_nbd.clone_object), then every object's changes written in"""
+    import bh_nbd
+
+    out = {}
+    disc = archive.Archive(game)
+    for file, spec in edits.get("rooms", {}).items():
+        if not spec.get("new_objects"):
+            continue
+        name = file.replace(".rdt", ".nbd")
+        node = None
+        for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+            try:
+                node = disc.open(f"{dat}/r{scenario:03d}.afs/{name}")
+                break
+            except FileNotFoundError:
+                continue
+        if node is None:
+            raise ValueError(f"{name}: not on the disc")
+        data = node.read()
+        for made in spec["new_objects"]:
+            data, _ = bh_nbd.clone_object(data, made["like"])
+        data = bytearray(data)
+        ahi = next(c for c in bh_nbd.chunks(bytes(data)) if c[0] == "AHI")
+        records = bh_nbd.bone_records(bytes(data), ahi[1], ahi[2])
+        for number, change in spec.get("scenery", {}).items():
+            bh_nbd.set_bone(data, records[int(number) + 2], **change)
+        out[(f"r{scenario:03d}.afs", name)] = bytes(data)
+    return out
 
 
 def make_handler(studio):

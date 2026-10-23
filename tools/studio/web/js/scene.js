@@ -140,7 +140,7 @@ export function diffs(scene, orig) {
       if (z.sound !== oz.sound) d.sound = z.sound;
       put("sound_zones", z.i, d);
     }
-    { const sc = sceneryOf.diff(r, o); if (Object.keys(sc).length) out.scenery = sc; }
+    { const sc = sceneryOf.diff(r, o); if (Object.keys(sc).length) out.scenery = sc; const made = sceneryOf.newObjects(r); if (made.length) out.new_objects = made; }
     { const sw = {}; r.script.forEach((v, k) => { if (v !== o.script[k]) sw[k] = v; }); if (Object.keys(sw).length) out.script_words = sw; }
     for (const n of r.nodes) {
       const on = o.nodes.find((x) => x.i === n.i), d = {};
@@ -272,7 +272,7 @@ export function applyEdits(scene, edits) {
     for (const [i, d] of Object.entries(spec.items || {})) { const n = r.items.find((x) => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.quantity !== undefined) n.qty = d.quantity; } }
     for (const [i, d] of Object.entries(spec.nodes || {})) { const n = r.nodes.find((x) => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.id !== undefined) n.id = d.id; for (const [k, v] of Object.entries(d.words || {})) n.words[+k] = v; } }
     for (const [i, v] of Object.entries(spec.script_words || {})) r.script[+i] = v;
-    if (spec.scenery) sceneryOf.applyEdits(r, spec.scenery);
+    sceneryOf.applyEdits(r, spec);
     if (spec.rules) r.rules = clone(spec.rules);
     for (const [i, d] of Object.entries(spec.start_spots || {})) { const sp = r.spawns.find((x) => x.i === +i); if (sp) { if (d.x !== undefined) sp.pos = [d.x, sp.pos[1], sp.pos[2]]; if (d.z !== undefined) sp.pos = [sp.pos[0], sp.pos[1], d.z]; if (d.facing !== undefined) sp.facing = d.facing; } }
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find((x) => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }

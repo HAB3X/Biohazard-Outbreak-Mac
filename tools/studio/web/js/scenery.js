@@ -30,15 +30,21 @@ export function attach(renderer, file) {
   }
   for (const scene of [store.scene, store.orig]) {
     const r = scene.rooms.find((x) => x.file === file);
-    if (r) r.scenery = clone(list);
+    if (r) { r.scenery = clone(list); r.objectBase = m.bones.length; }     // a copy's number is the first beyond the model's own objects (one per bone after the first two)
   }
-  const saved = (store.history[store.at].rooms[file] || {}).scenery;
+  const saved = store.history[store.at].rooms[file];
   const r = store.scene.rooms.find((x) => x.file === file);
   if (saved && r) applyEdits(r, saved);
 }
 
-export function applyEdits(room, scenery) {
-  for (const [i, d] of Object.entries(scenery || {})) {
+// the copies made of objects come first (they are new entries), then the changes to each object
+export function applyEdits(room, spec) {
+  if (!room.scenery) return;
+  (spec.new_objects || []).forEach((n) => {
+    const like = (room.scenery || []).find((x) => x.i === n.like && !x.isNew);
+    if (like) duplicate(room, like, { i: nextNumber(room), silent: true });
+  });
+  for (const [i, d] of Object.entries(spec.scenery || {})) {
     const s = (room.scenery || []).find((x) => x.i === +i);
     if (!s) continue;
     if (d.scale) s.scale = clone(d.scale);
@@ -47,9 +53,32 @@ export function applyEdits(room, scenery) {
   }
 }
 
+const copies = (room) => (room.scenery || []).filter((x) => x.isNew);
+const nextNumber = (room) => (room.objectBase || 0) - 2 + copies(room).length;     // objects are numbered from 0, each on the bone two after it
+
+// a copy of an object: it stands beside it, on a bone of its own, and is written into the room's model (the file grows)
+export function duplicate(room, s, o = {}) {
+  const c = clone(s);
+  c.i = o.i ?? nextNumber(room);
+  c.bone = c.i + 2;
+  c.isNew = true;
+  c.like = s.isNew ? s.like : s.i;
+  if (!o.silent) c.off = [c.off[0] + 150, c.off[1], c.off[2] + 150];
+  room.scenery.push(c);
+  return c;
+}
+
+export function removeCopy(room, s) {
+  room.scenery = room.scenery.filter((x) => x !== s);
+  copies(room).forEach((c, k) => { c.i = (room.objectBase || 0) - 2 + k; c.bone = c.i + 2; });   // the numbers stay in a row
+}
+
+export const newObjects = (room) => copies(room).map((c) => ({ like: c.like }));
+
 export function diff(room, orig) {
   const out = {};
   for (const s of room.scenery || []) {
+    if (s.isNew) { out[s.i] = { scale: s.scale, rotation: s.rot, offset: s.off }; continue; }
     const o = (orig.scenery || []).find((x) => x.i === s.i);
     if (!o) continue;
     const d = {};
@@ -75,12 +104,15 @@ export function sync(renderer, scene) {
     if (!r.scenery || !r.scenery.length) continue;
     const m = renderer.models[r.file];
     if (!m) continue;
-    const key = JSON.stringify(r.scenery.map((s) => [s.scale, s.rot, s.off]));
+    const key = JSON.stringify(r.scenery.map((s) => [s.scale, s.rot, s.off, s.like]));
     if (stamps[r.file] !== key) {
       stamps[r.file] = key;
-      const changes = {};
-      for (const s of r.scenery) changes[s.bone] = [s.parent, s.scale, s.rot, s.off];
-      renderer.setBones(r.file, changes);
+      const changes = {}, clones = [];
+      for (const s of r.scenery) {
+        const bone = [s.parent, s.scale, s.rot, s.off];
+        if (s.isNew) clones.push({ like: s.like, bone }); else changes[s.bone] = bone;
+      }
+      renderer.setBones(r.file, changes, clones);
     }
     for (const s of r.scenery) {
       const w = m.world[s.bone], pw = m.world[s.parent];

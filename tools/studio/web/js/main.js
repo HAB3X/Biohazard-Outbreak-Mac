@@ -5,6 +5,7 @@ import { el, toast } from "./ui.js";
 import * as scene from "./scene.js";
 import { store, on, emit, loadScene, commit, undo, redo, canUndo, canRedo, setTool, setMode, setRoom, select, currentEdits, roomOf, objectOf } from "./scene.js";
 import { Viewport } from "./viewport.js";
+import { removeCopy } from "./scenery.js";
 import { PLACE, FIXED, THINGS, WALL, FLOOR } from "./tools.js";
 import { render as renderInspector } from "./inspector.js";
 import { render as renderOutline } from "./outliner.js";
@@ -308,7 +309,7 @@ function keys(openPalette) {
     else if (meta) return;
     else if (e.key === " ") { viewport.space = true; viewport.ov.style.cursor = "grab"; e.preventDefault(); }
     else if (e.key === "Escape") { select([]); setTool("select"); }
-    else if (e.key === "Delete" || e.key === "Backspace") { const s = store.selection[0]; if (s && store.selection.length === 1) { const o = objectOf(s); if (o && s.c === "enemies" && !o.isNew) { o.modes = 0; select([]); commit("Remove enemy"); } else if (o && (o.isNew || s.c === "walls" || s.c === "floors")) { const r = roomOf(s.file); r[s.c].splice(r[s.c].findIndex((x) => x.i === s.i), 1); select([]); commit("Delete"); } else toast("Only things you added, walls and enemies can be deleted", "err"); } }
+    else if (e.key === "Delete" || e.key === "Backspace") { const s = store.selection[0]; if (s && store.selection.length === 1) { const o = objectOf(s); if (o && s.c === "enemies" && !o.isNew) { o.modes = 0; select([]); commit("Remove enemy"); } else if (o && s.c === "scenery" && o.isNew) { removeCopy(roomOf(s.file), o); select([]); commit("Delete object"); } else if (o && (o.isNew || s.c === "walls" || s.c === "floors")) { const r = roomOf(s.file); r[s.c].splice(r[s.c].findIndex((x) => x.i === s.i), 1); select([]); commit("Delete"); } else toast("Only things you added, walls and enemies can be deleted", "err"); } }
     else if (e.key === "1") setMode("plan");
     else if (e.key === "2") setMode("3d");
     else if (e.key === "Tab") { e.preventDefault(); setMode(store.mode === "plan" ? "3d" : "plan"); }
