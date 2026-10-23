@@ -308,3 +308,74 @@ def main(argv):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
+
+
+def clone_object(data, number, offset=None):
+    """The model's bytes with object (mesh) `number` copied as a new last object on a new last bone: a copy of its bone, moved by `offset` (a distance in the parent's space,
+    added to the bone's own), linked in as the last of the root's children (the game walks the skeleton by those links). Returns (bytes, the new object's number). The file
+    grows: the AMO tree's sizes, the AHI's bone count and size, and the chunk table's later offsets (each chunk on a 64 byte boundary)."""
+    data = bytearray(data)
+    table = chunks(bytes(data))
+    first_amo = next(i for i, c in enumerate(table) if c[0] == "AMO")
+    first_ahi = next(i for i, c in enumerate(table) if c[0] == "AHI")
+    amo, ahi = table[first_amo], table[first_ahi]
+    root = amo[1]
+    pos, holder = root + 12, None
+    while pos + 12 <= root + amo[2]:
+        flags, count, size = struct.unpack_from("<III", data, pos)
+        if flags & 0xFFFF == 2 and (flags >> 16) & 0xFF == 0:
+            holder = pos
+            break
+        pos += size
+    if holder is None:
+        raise ValueError("no mesh list in the model")
+    hflags, hcount, hsize = struct.unpack_from("<III", data, holder)
+    nodes, pos = [], holder + 12
+    for _ in range(hcount):
+        nodes.append((pos, struct.unpack_from("<I", data, pos + 8)[0]))
+        pos += nodes[-1][1]
+    if not 0 <= number < len(nodes):
+        raise IndexError(f"object {number}: the model has {len(nodes)}")
+    copy = bytes(data[nodes[number][0]:nodes[number][0] + nodes[number][1]])
+    end_of_list = holder + hsize
+    records = bone_records(bytes(data), ahi[1], ahi[2])
+    bone_at = records[number + 2] - 12
+    bone = bytearray(data[bone_at:bone_at + 12 + 256])
+    new_index = len(records)
+    struct.pack_into("<i", bone, 12, new_index)
+    struct.pack_into("<i", bone, 12 + 8, -1)
+    struct.pack_into("<i", bone, 12 + 12, -1)
+    if offset is not None:
+        old = struct.unpack_from("<3f", bone, 12 + 48)
+        struct.pack_into("<3f", bone, 12 + 48, *(a + b for a, b in zip(old, offset)))
+    # the root's last child points on to the new bone
+    parent = struct.unpack_from("<i", bone, 12 + 4)[0]
+    last = struct.unpack_from("<i", data, records[parent] + 8)[0]
+    while struct.unpack_from("<i", data, records[last] + 12)[0] != -1:
+        last = struct.unpack_from("<i", data, records[last] + 12)[0]
+    struct.pack_into("<i", data, records[last] + 12, new_index)
+    align = lambda n: (n + 63) & ~63
+    out = bytearray(data[:end_of_list]) + copy + data[end_of_list:amo[1] + amo[2]]
+    sizes, shifts, cursor = {first_amo: amo[2] + len(copy)}, {}, amo[1] + amo[2]
+    for i, c in enumerate(table):
+        if i <= first_amo:
+            continue
+        out += bytes(align(len(out)) - len(out))
+        body = bytearray(data[c[1]:c[1] + c[2]])
+        if i == first_ahi:
+            body += bone
+            struct.pack_into("<I", body, 4, struct.unpack_from("<I", body, 4)[0] + 1)
+            struct.pack_into("<I", body, 8, struct.unpack_from("<I", body, 8)[0] + len(bone))
+        shifts[i], sizes[i] = len(out), len(body)
+        out += body
+        cursor = c[1] + c[2]
+    out += data[cursor:]
+    struct.pack_into("<I", out, holder + 4, hcount + 1)
+    struct.pack_into("<I", out, holder + 8, hsize + len(copy))
+    struct.pack_into("<I", out, root + 8, struct.unpack_from("<I", out, root + 8)[0] + len(copy))
+    for i in range(first_amo, len(table)):
+        if i in shifts:
+            struct.pack_into("<I", out, 16 * i + 4, shifts[i])
+        if i in sizes:
+            struct.pack_into("<I", out, 16 * i + 8, sizes[i])
+    return bytes(out), hcount
