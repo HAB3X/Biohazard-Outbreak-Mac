@@ -290,3 +290,8 @@ The script ops 0xD0 and 0xD1 were named SpawnEnemy at first; reading the code sh
 fixed positions (a table of x, 0, z floats at /BIN/2.DAT offset 2140160, 12 bytes each: (9615, 10337), (8400, 9840), (7353, 10324), (6826, 8927) in room 4; (10446, 7168), (10591, 8082), (11044, 7373) in room 5; (8150, 7240), (8899, 7201), (6232, 6868) in room 6).
 So there is no separate list of script-spawned zombies to find: the enemies that stand in a room are exactly the records of `sgl_e040.emd` (50 in the scenario), which the tools edit. (Patching the script's flag tests out of room 4 so that the event
 ran didn't show anything in the game's enemy table either, as expected.) `r40.rtp` holds enemy routes (waypoints as float triples; room 4's run from beside the boss to the room's west door), not edited yet.
+
+## Hit points (measured)
+
+An enemy's hit points are a **tier** (the top byte of word 12, record +51) into its kind's table: File 1's zombie (id 1, the bar): 600, 650, 700, 750, 780, 800, 820, 850 for tiers 0 to 7; File 2's room-4 boss (id 32): 5800 for tiers 0 and 2 and 7200 for tiers 4 and 6
+(the record's own tier is 7: 7200); **8 and above: 32767** (a value nothing kills). Written into the enemy's own record in the game (+0x540 in File 2, +0x544 in File 1) and read back; the editor has the tier as a field.

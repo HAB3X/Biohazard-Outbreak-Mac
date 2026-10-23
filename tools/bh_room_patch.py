@@ -8,7 +8,7 @@ EDITS.json (the room editor writes it):
         "cameras": {"2": {"eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}},
         "areas":   {"5": {"quad": [[x, z] x4], "height": [low, high], "fields": {"13": 4}}},
         "fog":     {"2": {"ints": {"4": 4278190335}, "floats": {"9": 1.0}}},
-        "enemies": {"3": {"position": [x, y, z], "facing": 32768, "id": 32, "class": 16, "modes": 15}},   (the scenario's enemies by number from 0, as bh_enemies.py lists them)
+        "enemies": {"3": {"position": [x, y, z], "facing": 32768, "id": 32, "class": 16, "modes": 15, "hp_tier": 7}},   (the scenario's enemies by number from 0, as bh_enemies.py lists them)
         "items": {"6": {"position": [x, y, z], "kind": 300, "quantity": 2}},   (the scenario's items by number from 1: place in the item .dat, kind and quantity in each .tbl)
         "nodes": {"3": {"position": [x, y, z], "kind": 2, "id": 5, "words": {"8": 10}}},   (the room's entity records in the .sgl: AI navigation nodes)
         "script_words": {"67": 123},   (the script's words by number, in place)
