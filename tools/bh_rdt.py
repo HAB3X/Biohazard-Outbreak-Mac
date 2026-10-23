@@ -451,8 +451,14 @@ class Room:
 
     def add_area(self, like, quad=None, height=None, fields=None):
         """A new trigger area at the end: a copy of area `like`'s record with the given changes; returns its number. The
-        section grows by the record and its offset (180 bytes)"""
+        section grows by the record and its offset (180 bytes). A new door (a copy of a door, tag 0) has to keep a door number the room
+        already has: the game ties a door to the room model's door object by that number, and a number with no object crashes the
+        game on loading the room (measured); a second area with the same number shares the object and works"""
         offset, size = self.sections[10]
+        if self.areas[like].tag == 0 and fields and 12 in fields:
+            numbers = {a.fields[0] for a in self.areas if a.tag == 0}
+            if fields[12] not in numbers:
+                raise ValueError(f"a new door can only take a door number the room has ({sorted(numbers)}), not {fields[12]}: no door object")
         base = self._area_base(like)
         record = bytes(self.data[base:base + AREA_SIZE])
         tag, count = struct.unpack_from("<ii", self.data, offset)

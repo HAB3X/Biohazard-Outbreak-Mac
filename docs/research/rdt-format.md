@@ -121,6 +121,8 @@ archive keeps it (`bh_room_patch.size_entries`). Measured in the game (File 2):
   from memory changed; it follows the player, as the copy's type 2 does), where without it the camera stayed;
 - a new DOOR (tag 0) with door number 2, in a room with doors 0 and 1, crashed the game on loading the room (a wild address): the
   doors are tied to door objects in the room's model, so a door needs its object. Exits (tag 1) and the other areas need none.
+  Fixed: a new door (a copy of door 1 of room 2, leads to room 1 instead of 3, at a new spot, keeping door number 1) worked in the game: standing in it led to room 1, no crash. So a new door shares an existing
+  door's number (and its object); `Room.add_area` refuses a door number the room doesn't have.
 A camera's fog record isn't copied: a camera's int 61 is the number of the fog record it uses (the fog section has a record for each
 distinct fog: 2 in room 2 for its 5 cameras, 11 in room 3 for its 11), and the copy keeps its original's.
 
