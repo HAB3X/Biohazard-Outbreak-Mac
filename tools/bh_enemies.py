@@ -10,7 +10,8 @@ one a 4 byte end mark): each group is a room's (and variant's) enemies, a record
   w3  the facing (16 bit, 65536 to a turn)     w4, w5, w6  the position x, y, z (integers)
   w7  low byte the room number, the next byte its variant (1: a room's second variant), then 0x0F and a counter; w8 and the others kept as they are
   (the enemy's own parameters: not decoded)
-Measured in the game (File 2's zoo, room 4, reached by the exit in room 3): the enemy there (kind 32, 7200 HP) stood at (10671, 0, 9710) with the facing 28236, as the record says;
+File 1's scenarios repeat a room's group for each difficulty (4 copies in the first), so `mode` counts the copies before a group's: the bar of File 1's first scenario (normal) read the
+second (mode 1): an edit of enemy 18 (the second copy's) moved the enemy standing at (8368, 0, 13722) to x 8568, and the same record's other copies (8, 28, 38) did not. Measured in the game (File 2's zoo, room 4, reached by the exit in room 3): the enemy there (kind 32, 7200 HP) stood at (10671, 0, 9710) with the facing 28236, as the record says;
 an edit of the record's x in sgl_e040.emd (10671 -> 10171) moved it to 10171 (an edit of e040.emd alone changed nothing in single play).
 """
 import struct
@@ -35,6 +36,7 @@ class Enemy:
         self.position = (w[4], w[5], w[6])
         self.room = w[7] & 0xFF
         self.variant = (w[7] >> 8) & 0xFF
+        self.mode = 0  # which copy of the room's enemies this is (File 1 keeps one for each difficulty), set by Enemies
 
 
 def groups(data):
@@ -65,10 +67,20 @@ class Enemies:
         self.name = main
         data = main.read()
         self.enemies = []
+        seen = {}
         for g, (offset, size) in enumerate(groups(data)):
+            rooms_here = set()
             for k in range(size // RECORD):
                 at = offset + RECORD * k
-                self.enemies.append(Enemy(len(self.enemies), g, k, data[at:at + RECORD], at))
+                enemy = Enemy(len(self.enemies), g, k, data[at:at + RECORD], at)
+                rooms_here.add(enemy.room)
+                self.enemies.append(enemy)
+            # File 1 repeats a room's group once for each difficulty (4 in its first scenario): a group's mode is how many groups of that room came before it
+            for room in rooms_here:
+                for enemy in self.enemies:
+                    if enemy.group == g and enemy.room == room:
+                        enemy.mode = seen.get(room, 0)
+                seen[room] = seen.get(room, 0) + 1
 
     def patches(self, edits):
         """[(disc offset, bytes, 0)] for edits {enemy number: {"position": [x, y, z], "facing": n, "id": n, "class": n}}: in the sgl_ file, and in the plain file at the record that has the
@@ -110,7 +122,7 @@ def main(argv):
         return 1
     enemies = Enemies(argv[1], int(argv[2]))
     for e in enemies.enemies:
-        print(f"enemy {e.number:2d} room {e.room:2d} variant {e.variant} at {e.position} facing {e.facing} id {e.id:#x} class {e.kind:#x}")
+        print(f"enemy {e.number:2d} room {e.room:2d} variant {e.variant} mode {e.mode} at {e.position} facing {e.facing} id {e.id:#x} class {e.kind:#x}")
     return 0
 
 

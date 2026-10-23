@@ -524,6 +524,7 @@ draw = function () {
       addShape("node", [[n.pos[0], n.pos[2]]], "room " + r.id + " AI node " + n.i + " (kind " + n.kind + ", id " + n.id + ")", {room: r, node: n});
     }
     for (const n of r.enemies) {
+      if (!enemyShown(r, n)) continue;
       const x = sx(n.pos[0]), y = sy(n.pos[2]);
       ctx.fillStyle = "#ff5252"; ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill(); ctx.strokeStyle = "#fff"; ctx.beginPath(); ctx.moveTo(x, y); const a = n.facing / 65536 * 2 * Math.PI; ctx.lineTo(x + 11 * Math.sin(a), y + 11 * Math.cos(a)); ctx.stroke();
       addShape("enemy", [[n.pos[0], n.pos[2]]], "room " + r.id + " enemy " + n.i + " (id " + n.id + ", class " + n.cls + ", facing " + n.facing + ")", {room: r, enemy: n});
@@ -603,9 +604,17 @@ function num(label, value, set) {
   input.addEventListener("change", () => { remember(); set(+input.value); draw(); refreshPanel(); });
   row.append(" "); return row;
 }
+// a room's enemies come in copies for each difficulty in File 1 (mode 0 to 3): only the chosen copy is drawn (a room with one copy always)
+let enemyMode = 1;
+const enemyShown = (r, n) => { const modes = new Set(r.enemies.map(x => x.mode)); return modes.size < 2 || n.mode === enemyMode; };
 function refreshPanel() {
   panel.innerHTML = "<hr><b>Editor</b><div class='row'><label><input type='checkbox' id='snapbox' " + (snapStep > 1 ? "checked" : "") + "> snap to 10</label></div>";
   panel.querySelector("#snapbox").onchange = e => { snapStep = e.target.checked ? 10 : 1; };
+  if (DATA.some(r => new Set(r.enemies.map(x => x.mode)).size > 1)) {
+    const row = document.createElement("div"); row.className = "row"; row.append("enemy copy (difficulty) ");
+    const sel = document.createElement("select"); for (const m of [0, 1, 2, 3]) { const o = document.createElement("option"); o.value = m; o.textContent = m + (m === 1 ? " (normal)" : ""); if (m === enemyMode) o.selected = true; sel.appendChild(o); }
+    sel.onchange = () => { enemyMode = +sel.value; draw(); }; row.appendChild(sel); panel.appendChild(row);
+  }
   const total = diffs(), n = Object.values(total.rooms).reduce((a, r) => a + Object.keys(r.cameras || {}).length + Object.keys(r.areas || {}).length + (r.new_areas || []).length + (r.new_cameras || []).length + Object.keys(r.sound_zones || {}).length + Object.keys(r.sound_points || {}).length + Object.keys(r.lights || {}).length + Object.keys(r.script_words || {}).length + Object.keys(r.nodes || {}).length + Object.keys(r.items || {}).length + Object.keys(r.enemies || {}).length, 0);
   const info = document.createElement("div"); info.className = "row";
   if (selected) {
