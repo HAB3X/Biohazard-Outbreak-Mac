@@ -214,3 +214,9 @@ game's copy at 0x80F28C).
   looks for a character (a record of the character list, the team byte at +3009 or the player slot's +2992) and tests it against the area with game_005ae910. So a tag 12 is a zone a script waits on for a character to stand in it.
 - **Tag 10 (7 in all)** has no fields at all in any record; no handler for it was found among the ops that walk the list.
 - **Tag 6** (ladders by the rooms' pictures: subtypes 0, 1, 3, with `fields[3]` 1 to 6) still unproven.
+
+## File 1 live check (2026-10-23)
+
+A disc patch halving the field of view of every camera in every File 1 room (`bh_rdt.Room.set_camera`, patch from `bh_patchfile.write_patch`) was played from the title into the first scenario's bar: the picture is zoomed in against the unedited
+one, so File 1 reads the same room files and the edit path works there too (the same code as File 2; rooms with a different fog count than cameras raise in `set_fog` and are skipped). Fog was tried the same way with the scene colour
+floats 9 to 11 set to red in every camera's record and showed no change in the bar: in File 1 those fields are not the visible colour (not looked into further).
