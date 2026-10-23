@@ -385,6 +385,7 @@ function itemOf(sel) {
   if (sel.kind === "spoint") return sel.room.points.find(p => p.i === sel.index);
   if (sel.kind === "light") return sel.room.lights.find(l => l.i === sel.index);
   if (sel.kind === "node") return sel.room.nodes.find(n => n.i === sel.index);
+  if (sel.kind === "item") return sel.room.items.find(n => n.i === sel.index);
   return sel.room.cameras.find(c => c.i === sel.index);
 }
 function origOf(sel) { const r = ORIG.find(r => r.file === sel.room.file); if (itemOf(sel).isNew) return null;
@@ -392,6 +393,7 @@ function origOf(sel) { const r = ORIG.find(r => r.file === sel.room.file); if (i
   if (sel.kind === "spoint") return r.points.find(p => p.i === sel.index);
   if (sel.kind === "light") return r.lights.find(l => l.i === sel.index);
   if (sel.kind === "node") return r.nodes.find(n => n.i === sel.index);
+  if (sel.kind === "item") return r.items.find(n => n.i === sel.index);
   return sel.kind === "area" ? r.areas.find(a => a.i === sel.index) : r.cameras.find(c => c.i === sel.index); }
 function changed(a, b) { return JSON.stringify(a) !== JSON.stringify(b); }
 const COST = {area: 180, camera: 324};
@@ -427,9 +429,10 @@ function diffs() {
     for (const z of r.zones) { const oz = o.zones.find(x => x.i === z.i), d = {}; if (changed(z.box, oz.box)) d.box = z.box; if (z.sound !== oz.sound) d.sound = z.sound; if (Object.keys(d).length) (rooms.sound_zones = rooms.sound_zones || {})[z.i] = d; }
     { const sw = {}; r.script.forEach((v, k) => { if (v !== o.script[k]) sw[k] = v; }); if (Object.keys(sw).length) rooms.script_words = sw; }
     for (const n of r.nodes) { const on = o.nodes.find(x => x.i === n.i), d = {}; if (changed(n.pos, on.pos)) d.position = n.pos; if (n.kind !== on.kind) d.kind = n.kind; if (n.id !== on.id) d.id = n.id; const wv = {}; n.words.forEach((v, k) => { if (v !== on.words[k]) wv[k] = v; }); if (Object.keys(wv).length) d.words = wv; if (Object.keys(d).length) (rooms.nodes = rooms.nodes || {})[n.i] = d; }
+    for (const n of r.items) { const on = o.items.find(x => x.i === n.i), d = {}; if (changed(n.pos, on.pos)) d.position = n.pos; if (n.kind !== on.kind) d.kind = n.kind; if (n.qty !== on.qty) d.quantity = n.qty; if (Object.keys(d).length) (rooms.items = rooms.items || {})[n.i] = d; }
     for (const l of r.lights) { const ol = o.lights.find(x => x.i === l.i), d = {}; if (changed(l.pos, ol.pos)) d.position = l.pos; if (l.att !== ol.att) d.attenuation = l.att; if (l.range !== ol.range) d.range = l.range; if (changed(l.col, ol.col)) d.colour = l.col; if (changed(l.col2, ol.col2)) d.colour2 = l.col2; if (Object.keys(d).length) (rooms.lights = rooms.lights || {})[l.i] = d; }
     for (const p of r.points) { const op = o.points.find(x => x.i === p.i), d = {}; if (changed(p.pos, op.pos)) d.position = p.pos; if (p.kind !== op.kind) d.kind = p.kind; if (Object.keys(d).length) (rooms.sound_points = rooms.sound_points || {})[p.i] = d; }
-    if (rooms.cameras || rooms.areas || rooms.fog || rooms.new_areas || rooms.new_cameras || rooms.sound_zones || rooms.sound_points || rooms.lights || rooms.script_words || rooms.nodes) edits[r.file] = rooms;
+    if (rooms.cameras || rooms.areas || rooms.fog || rooms.new_areas || rooms.new_cameras || rooms.sound_zones || rooms.sound_points || rooms.lights || rooms.script_words || rooms.nodes || rooms.items) edits[r.file] = rooms;
   });
   return {rooms: edits};
 }
@@ -437,6 +440,7 @@ function apply(edits) {
   for (const [file, spec] of Object.entries(edits.rooms || {})) {
     const r = room(file); if (!r) continue;
     for (const [i, d] of Object.entries(spec.sound_zones || {})) { const z = r.zones.find(x => x.i === +i); if (z) { if (d.box) z.box = d.box; if (d.sound !== undefined) z.sound = d.sound; } }
+    for (const [i, d] of Object.entries(spec.items || {})) { const n = r.items.find(x => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.quantity !== undefined) n.qty = d.quantity; } }
     for (const [i, d] of Object.entries(spec.nodes || {})) { const n = r.nodes.find(x => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.id !== undefined) n.id = d.id; for (const [k, v] of Object.entries(d.words || {})) n.words[+k] = v; } }
     for (const [i, v] of Object.entries(spec.script_words || {})) { r.script[+i] = v; }
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find(x => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }
@@ -490,7 +494,7 @@ function handles() {
   else if (selected.kind === "zone") it.box.slice(0, 4).forEach((p, k) => out.push({k: "zonecorner", n: k, x: p[0], z: p[2]}));
   else if (selected.kind === "spoint") out.push({k: "spoint", x: it.pos[0], z: it.pos[2]});
   else if (selected.kind === "light") out.push({k: "light", x: it.pos[0], z: it.pos[2]});
-  else if (selected.kind === "node") out.push({k: "node", x: it.pos[0], z: it.pos[2]});
+  else if (selected.kind === "node" || selected.kind === "item") out.push({k: selected.kind, x: it.pos[0], z: it.pos[2]});
   else {
     out.push({k: "eye", x: it.eye[0], z: it.eye[2]}, {k: "aim", x: it.target[0], z: it.target[2]});
     it.box.slice(0, 4).forEach((p, k) => out.push({k: "boxcorner", n: k, x: p[0], z: p[2]}));
@@ -512,6 +516,11 @@ draw = function () {
       const x = sx(n.pos[0]), y = sy(n.pos[2]), col = ["#bbb", "#ff8a65", "#4dd0e1", "#ba68c8", "#aed581"][n.kind] || "#bbb";
       ctx.fillStyle = col; ctx.fillRect(x - 3, y - 3, 6, 6);
       addShape("node", [[n.pos[0], n.pos[2]]], "room " + r.id + " AI node " + n.i + " (kind " + n.kind + ", id " + n.id + ")", {room: r, node: n});
+    }
+    for (const n of r.items) {
+      const x = sx(n.pos[0]), y = sy(n.pos[2]);
+      ctx.fillStyle = "#ffd740"; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 5, y); ctx.lineTo(x, y + 5); ctx.lineTo(x - 5, y); ctx.closePath(); ctx.fill();
+      addShape("item", [[n.pos[0], n.pos[2]]], "room " + r.id + " item " + n.i + " (kind " + n.kind.toString(16) + ", quantity " + n.qty + ")", {room: r, item: n});
     }
     for (const l of r.lights) {
       const x = sx(l.pos[0]), y = sy(l.pos[2]), rad = l.range * view.s;
@@ -543,12 +552,12 @@ cv.addEventListener("mousedown", e => {
   const h = hitHandle(e);
   if (h) { remember(); dragging = {h, last: pointerWorld(e)}; e.stopImmediatePropagation(); e.preventDefault(); return; }
   const [mx, my] = toCanvas(e), s = pick(mx, my);
-  if (s && (s.kind === "area" || s.kind === "cam" || s.kind === "box" || s.kind === "zone" || s.kind === "spoint" || s.kind === "light" || s.kind === "node")) {
-    const sel = s.kind === "node" ? {kind: "node", room: s.extra.room, index: s.extra.node.i} : s.kind === "light" ? {kind: "light", room: s.extra.room, index: s.extra.light.i} : s.kind === "zone" ? {kind: "zone", room: s.extra.room, index: s.extra.zone.i} : s.kind === "spoint" ? {kind: "spoint", room: s.extra.room, index: s.extra.point.i}
+  if (s && (s.kind === "area" || s.kind === "cam" || s.kind === "box" || s.kind === "zone" || s.kind === "spoint" || s.kind === "light" || s.kind === "node" || s.kind === "item")) {
+    const sel = s.kind === "item" ? {kind: "item", room: s.extra.room, index: s.extra.item.i} : s.kind === "node" ? {kind: "node", room: s.extra.room, index: s.extra.node.i} : s.kind === "light" ? {kind: "light", room: s.extra.room, index: s.extra.light.i} : s.kind === "zone" ? {kind: "zone", room: s.extra.room, index: s.extra.zone.i} : s.kind === "spoint" ? {kind: "spoint", room: s.extra.room, index: s.extra.point.i}
       : {kind: s.kind === "area" ? "area" : "cam", room: s.extra.room, index: s.kind === "area" ? s.extra.area.i : s.extra.cam.i};
     const same = selected && selected.kind === sel.kind && selected.room === sel.room && selected.index === sel.index;
     selected = sel; refreshPanel(); draw();
-    if (sel.kind === "area" || sel.kind === "zone" || sel.kind === "spoint" || sel.kind === "light" || sel.kind === "node") { remember(); dragging = {body: true, last: pointerWorld(e)}; e.stopImmediatePropagation(); e.preventDefault(); }
+    if (sel.kind === "area" || sel.kind === "zone" || sel.kind === "spoint" || sel.kind === "light" || sel.kind === "node" || sel.kind === "item") { remember(); dragging = {body: true, last: pointerWorld(e)}; e.stopImmediatePropagation(); e.preventDefault(); }
     return;
   }
   selected = null; refreshPanel(); draw();
@@ -570,7 +579,7 @@ addEventListener("mousemove", e => {
     else if (h.k === "eye") { it.eye = [x, it.eye[1], z]; }
     else if (h.k === "aim") { it.target = [x, it.target[1], z]; }
     else if (h.k === "zonecorner") { it.box[h.n] = [x, it.box[h.n][1], z]; it.box[h.n + 4] = [x, it.box[h.n + 4][1], z]; }
-    else if (h.k === "spoint" || h.k === "light" || h.k === "node") { it.pos = [x, it.pos[1], z]; }
+    else if (h.k === "spoint" || h.k === "light" || h.k === "node" || h.k === "item") { it.pos = [x, it.pos[1], z]; }
     else if (h.k === "boxcorner") { it.box[h.n] = [x, it.box[h.n][1], z]; it.box[h.n + 4] = [x, it.box[h.n + 4][1], z]; }
     h.x = x; h.z = z;
   }
@@ -586,11 +595,17 @@ function num(label, value, set) {
 function refreshPanel() {
   panel.innerHTML = "<hr><b>Editor</b><div class='row'><label><input type='checkbox' id='snapbox' " + (snapStep > 1 ? "checked" : "") + "> snap to 10</label></div>";
   panel.querySelector("#snapbox").onchange = e => { snapStep = e.target.checked ? 10 : 1; };
-  const total = diffs(), n = Object.values(total.rooms).reduce((a, r) => a + Object.keys(r.cameras || {}).length + Object.keys(r.areas || {}).length + (r.new_areas || []).length + (r.new_cameras || []).length + Object.keys(r.sound_zones || {}).length + Object.keys(r.sound_points || {}).length + Object.keys(r.lights || {}).length + Object.keys(r.script_words || {}).length + Object.keys(r.nodes || {}).length, 0);
+  const total = diffs(), n = Object.values(total.rooms).reduce((a, r) => a + Object.keys(r.cameras || {}).length + Object.keys(r.areas || {}).length + (r.new_areas || []).length + (r.new_cameras || []).length + Object.keys(r.sound_zones || {}).length + Object.keys(r.sound_points || {}).length + Object.keys(r.lights || {}).length + Object.keys(r.script_words || {}).length + Object.keys(r.nodes || {}).length + Object.keys(r.items || {}).length, 0);
   const info = document.createElement("div"); info.className = "row";
   if (selected) {
     const it = itemOf(selected), r = selected.room;
-    if (selected.kind === "node") {
+    if (selected.kind === "item") {
+      info.innerHTML = "room " + r.id + " item " + it.i; panel.appendChild(info);
+      const p = document.createElement("div"); p.className = "row"; p.append("position ", num("x", it.pos[0], v => it.pos[0] = v), num("y", it.pos[1], v => it.pos[1] = v), num("z", it.pos[2], v => it.pos[2] = v)); panel.appendChild(p);
+      const q = document.createElement("div"); q.className = "row"; q.append("kind ", num("", it.kind, v => it.kind = v), " quantity ", num("", it.qty, v => it.qty = v)); panel.appendChild(q);
+      const note = document.createElement("small"); note.textContent = "kind: 0x12C (300) herb, 0x190 (400) handgun ...; the place is saved in the scenario's item file, the kind and quantity in each of its variant tables"; panel.appendChild(note);
+      const revert = document.createElement("button"); revert.textContent = "Revert this"; revert.onclick = () => { remember(); const o = clone(origOf(selected)); const target = itemOf(selected); Object.keys(o).forEach(k => target[k] = o[k]); refreshPanel(); draw(); }; panel.appendChild(revert);
+    } else if (selected.kind === "node") {
       info.innerHTML = "room " + r.id + " AI node " + it.i; panel.appendChild(info);
       const p = document.createElement("div"); p.className = "row"; p.append("position ", num("x", it.pos[0], v => it.pos[0] = v), num("y", it.pos[1], v => it.pos[1] = v), num("z", it.pos[2], v => it.pos[2] = v)); panel.appendChild(p);
       const q = document.createElement("div"); q.className = "row"; q.append("kind ", num("", it.kind, v => it.kind = v), " id ", num("", it.id, v => it.id = v)); panel.appendChild(q);
