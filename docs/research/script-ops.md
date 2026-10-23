@@ -43,7 +43,7 @@ argument pointer, the fixed addresses it touches, the functions it calls). Addre
 | 0x5F | SetDoorLock | id, value | the doors' (tag 0) and room doors' (tag 2) field 22 = value (the zoo's first room: door 1 gets 201, the stage's message 201 "locked with a simple lock") |
 | 0x54 | SetDoor | id, number, byte | the doors' runtime fields |
 | 0x104 / 0x105 | Activate / Deactivate | tag, id, value | turns the areas of that tag (0 to 13 by the types it tests) with that id on or off |
-| 0xD0 | SpawnEnemy | kind, id, five words | allocates an enemy slot and copies five words (position and angles) into it |
+| 0xD0 / 0xD1 | SpawnEnemy / SetupEnemy | class, slot, five words | the five words are stored at +96..+112 of the 272 byte enemy record 0x388E70 + 2720 * mode + 272 * slot; they are **not** positions (3, 33, 6, 0, 2 in the zoo's first room). Where an enemy stands comes from elsewhere (not found). A try to see the record fill in the zoo's first room showed it still empty: that spawn is conditional |
 | 0x45 | SetOption | flag, value, index, number | writes two small arrays at 0x491258 and 0x491268 |
 
 Not read yet: the rest of the 258 (e.g. 0x20, 0x70, 0xF8, 0x135 and 0x131 are among the commonest). A mechanical summary of any one: `bh_script_ops.py file2 OPTABLE.json 0x20`.
