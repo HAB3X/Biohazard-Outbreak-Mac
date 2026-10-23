@@ -1,5 +1,6 @@
 // The scene: the scenario's rooms and what is in them, the edits made to it, undo and redo. Everything the editor changes goes through `commit`.
 // The edits are the JSON tools/bh_room_patch.py reads; the scene after any number of undos is the pristine scene with the edits applied, so history is a list of edits.
+import { compile } from "./rules.js";
 
 export const clone = (o) => JSON.parse(JSON.stringify(o));
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -179,7 +180,7 @@ export function diffs(scene, orig) {
       if (p.kind !== op.kind) d.kind = p.kind;
       put("sound_points", p.i, d);
     }
-    if (r.rules && r.rules.length) out.script_prepend = r.rules.map((x) => [(2 << 24) | 0x110, x.index, x.value, 0]);
+    if (r.rules && r.rules.length) { out.rules = r.rules; out.script_prepend = compile(r.rules); }
     const strip = (w) => JSON.stringify(w.map(({ a, b, y, flags, n }) => ({ a, b, y, flags, n })));
     if (strip(r.walls) !== strip(o.walls)) out.collision = { wall_segments: JSON.parse(strip(r.walls)) };
     if (Object.keys(out).length) edits[r.file] = out;
@@ -258,7 +259,7 @@ export function applyEdits(scene, edits) {
     for (const [i, d] of Object.entries(spec.items || {})) { const n = r.items.find((x) => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.quantity !== undefined) n.qty = d.quantity; } }
     for (const [i, d] of Object.entries(spec.nodes || {})) { const n = r.nodes.find((x) => x.i === +i); if (n) { if (d.position) n.pos = d.position; if (d.kind !== undefined) n.kind = d.kind; if (d.id !== undefined) n.id = d.id; for (const [k, v] of Object.entries(d.words || {})) n.words[+k] = v; } }
     for (const [i, v] of Object.entries(spec.script_words || {})) r.script[+i] = v;
-    if (spec.script_prepend) r.rules = spec.script_prepend.map((w) => ({ index: w[1], value: w[2] }));
+    if (spec.rules) r.rules = clone(spec.rules);
     for (const [i, d] of Object.entries(spec.start_spots || {})) { const sp = r.spawns.find((x) => x.i === +i); if (sp) { if (d.x !== undefined) sp.pos = [d.x, sp.pos[1], sp.pos[2]]; if (d.z !== undefined) sp.pos = [sp.pos[0], sp.pos[1], d.z]; if (d.facing !== undefined) sp.facing = d.facing; } }
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find((x) => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }
     for (const [i, d] of Object.entries(spec.sound_points || {})) { const p = r.points.find((x) => x.i === +i); if (p) { if (d.position) p.pos = d.position; if (d.kind !== undefined) p.kind = d.kind; } }

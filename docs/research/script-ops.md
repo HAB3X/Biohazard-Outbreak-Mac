@@ -108,3 +108,5 @@ SetExamine and SetDoorLock.
 
 ## Growing a room's script (measured)
 A script can grow: `bh_room_patch` key `script_prepend` (lines of words) inserts them at thread 0's first instruction (the thread's block starts with a data word, so an instruction put before it doesn't run), moves header words 0, 1, 8, 9 on, and rewrites both the room file and the scenario's .sgl block (its later blocks' index offsets move). **Measured**: a prepended `SetVar 7, 5` in file 2 room 3 reads back as 5 at `0x491268 + 4*7` in the game (the table is words).
+
+**Conditions (measured, file 2 room 3):** `IfFlagB flag, 1` + body + `0xE4` + `0xE5` (two one-word end markers; a body ended by `0xE4` alone crashes the game). A true flag runs the body, a false one skips it and the script carries on after `0xE5`. `SetFlag 0, n, 1` set bank B's bit n (0x490030 + 4 * (n >> 5)); flags 200 to 231 are free (the rooms use 1 to 129), 400 crashed. Studio's "When the room starts" rules compile to these.
