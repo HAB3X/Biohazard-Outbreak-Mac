@@ -220,12 +220,5 @@ game's copy at 0x80F28C).
 ## File 1 live check (2026-10-23)
 
 A disc patch halving the field of view of every camera in every File 1 room (`bh_rdt.Room.set_camera`, patch from `bh_patchfile.write_patch`) was played from the title into the first scenario's bar: the picture is zoomed in against the unedited
-one, so File 1 reads the same room files and the edit path works there too (the same code as File 2; rooms with a different fog count than cameras raise in `set_fog` and are skipped). Fog was tried the same way with the scene colour
-floats 9 to 11 set to red in every camera's record and showed no change in the bar: in File 1 those fields are not the visible colour (not looked into further).
-
-## Editing a model's vertices (verified in the game, File 2 zoo)
-
-A mesh's positions are plain floats (x, y, z) in the mesh's own coordinates (`bh_nbd.Mesh.positions_at` is where they start in the file), so a vertex edit is written over them in place and the file's size doesn't change
-(`bh_nbd.set_vertex`; the edits JSON key `models/<file>/vertices/<mesh>/<vertex>: [x, y, z]`). In the 3D view tick "edit vertices" for the selected object, click one of its green points (or type its number) and drag it in the
-plane facing the camera, or type its coordinates. Measured: the zoo's gate lamp (r0400300.nbd, object 48) with every second vertex raised by 900 shows a tall spike over the gate in the running game; the unedited run doesn't.
-Only positions move: triangles can't be added or removed (a bigger mesh would need a bigger file, which the archive can't give, see tools/bh_character_patch.py).
+one, so File 1 reads the same room files and the edit path works there too (the same code as File 2; rooms with a different fog count than cameras raise in `set_fog` and are skipped). Fog: the first try set the *character tint* (floats 9 to 11), which only tints characters, and showed nothing in the bar. Setting the scene colour (int 4 = 0xFF0000FF) in every fog record of every File 1 room
+turns the whole bar blue in the running game, so File 1's fog records have the same layout as File 2's and the editor's fog controls work there (619 records).
