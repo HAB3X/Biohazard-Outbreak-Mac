@@ -174,6 +174,18 @@ def make_handler(studio):
                 elif url.path == "/api/status":
                     running = bool(studio.process and studio.process.poll() is None)
                     self.send(200, json.dumps({"running": running, "status": getattr(studio, "status", ""), "automatable": bh_autoplay.supported(studio.game, studio.scenario), "start_room": bh_autoplay.KNOWN.get((studio.game, studio.scenario), {}).get("start_room")}))
+                elif url.path == "/api/download":
+                    patch = ROOT / "work" / "studio" / f"{studio.game}-play.patch"
+                    if not patch.exists():
+                        self.send(404, "{}")
+                    else:   # the last build, to keep: the runtime takes it with --patch
+                        data = patch.read_bytes()
+                        self.send_response(200)
+                        self.send_header("Content-Type", "application/octet-stream")
+                        self.send_header("Content-Length", str(len(data)))
+                        self.send_header("Content-Disposition", f'attachment; filename="my-{studio.game}-level.patch"')
+                        self.end_headers()
+                        self.wfile.write(data)
                 elif url.path == "/api/messages":
                     self.send(200, json.dumps(studio.messages()))
                 elif url.path.startswith("/api/"):

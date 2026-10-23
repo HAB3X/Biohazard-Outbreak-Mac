@@ -76,7 +76,8 @@ function buildTopbar() {
     menuItem("Play from the start", "The scenario's first room", () => doPlay(false)),
     menuItem("Play from this room", "Takes the game to the room you are looking at", () => doPlay(true)),
     el("hr"),
-    menuItem("Build only", "Make the patch without starting the game", () => doBuild()));
+    menuItem("Build only", "Make the patch without starting the game", () => doBuild()),
+    menuItem("Save the patch file", "Your changes as one file to keep or share", async () => { if (await doBuild()) { const a = el("a", { href: "/api/download", download: "" }); document.body.append(a); a.click(); a.remove(); } }));
   main.addEventListener("click", () => doPlay(false));
   caret.addEventListener("click", (e) => { e.stopPropagation(); pm.classList.toggle("on"); });
   play.append(split, pm); closeOnOutside(play, pm);
