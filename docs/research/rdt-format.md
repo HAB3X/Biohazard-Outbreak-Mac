@@ -91,3 +91,13 @@ editing camera 2's record: number 4 is the scene's colour (bytes blue, green, re
 lights and walls included) and numbers 9 to 11 are the characters' tint as floats (1, 0, 0 turned every character red; the scene
 stayed as it was). Numbers 1, 2, 3 and 5 to 8 weren't tried (a float -200, a float 7000, 0x222222 and 0xFF808080 are in them).
 The editor's camera panel has a colour box for each of the two; the same edit made there, saved and run, gave the same picture.
+
+**Lights** (section 11: not editable yet). The section is 664 bytes in the zoo's first room and holds a small header (4, 2, then 16 and 548),
+a block of the same kind of numbers as a fog record (-200.0, 7200.0, 0x222222, 0xFF808080, 11141135 ...) and then eight 52 byte
+records that look like point lights: x, y, z (floats in the room's coordinates: 11527, 276, 11089 and seven more, near the gate's
+lamps), 0.001, a range (580, 394, 440, 323, 390, 510, 623, 814), a colour (red, green, blue floats from 0.4, 0.44, 0.37) and
+another colour (0.12) with a pad float after each. Overwriting the first colour of all eight with red (1, 0, 0) changed nothing
+visible in the game's picture there (mean difference 0.004 of 255), so this reading says what the numbers look like, not that
+they light that view. The standalone R0400300.LIG (128 bytes) holds almost nothing (4, 1, 12, 1). The game's runtime "character
+light" block (File 2 0x3134A8) has a direction (-0.075, 0.788, -0.611) and the same constant 11141135 as fog number 6; where its
+numbers come from in the files isn't established.
