@@ -36,7 +36,7 @@ const EDIT3D = (() => {
   const panel = document.createElement("div"); panel.style.display = "none"; side.appendChild(panel);
   const MODELS = {};           // nbd file -> {bones, orig, meshes: [{mesh, bone, count, vb, ib, pickColour}], world}
   let pending = {};            // saved model edits, applied when a model loads
-  let current = null, file = null, selected = null, show = {areas: true, cameras: true, zones: true, lights: true, nodes: true, textures: true}, on = false;
+  let current = null, file = null, selected = null, show = {areas: true, cameras: true, zones: true, lights: true, nodes: true, items: true, enemies: true, textures: true}, on = false;
   let vertexMode = false, vsel = null;   // vertex editing: the selected object's vertex number being edited
   const cam = {yaw: 0.6, pitch: 0.7, dist: 4000, target: [0, 0, 0]};
   const clone = o => JSON.parse(JSON.stringify(o));
@@ -196,6 +196,8 @@ const EDIT3D = (() => {
     }
     if (show.lights) for (const l of room.lights) { const p = l.pos, k = 30; groups.push({pts: [p[0] - k, p[1], p[2], p[0] + k, p[1], p[2], p[0], p[1] - k, p[2], p[0], p[1] + k, p[2], p[0], p[1], p[2] - k, p[0], p[1], p[2] + k], colour: [1, 0.84, 0.3]}); }
     if (show.nodes) for (const n of room.nodes) { const p = n.pos, k = 20; groups.push({pts: [p[0] - k, p[1], p[2], p[0] + k, p[1], p[2], p[0], p[1], p[2] - k, p[0], p[1], p[2] + k], colour: [1, 0.54, 0.4]}); }
+    if (show.items) for (const n of room.items) { const p = n.pos, k = 25; groups.push({pts: [p[0] - k, p[1], p[2], p[0] + k, p[1], p[2], p[0], p[1], p[2] - k, p[0], p[1], p[2] + k, p[0], p[1], p[2], p[0], p[1] + 2 * k, p[2]], colour: [1, 0.84, 0.25]}); }
+    if (show.enemies) for (const n of room.enemies) { const p = n.pos, k = 40, a = n.facing / 65536 * 2 * Math.PI; groups.push({pts: [p[0] - k, p[1], p[2], p[0] + k, p[1], p[2], p[0], p[1], p[2] - k, p[0], p[1], p[2] + k, p[0], p[1], p[2], p[0], p[1] + 300, p[2], p[0], p[1] + 150, p[2], p[0] + 150 * Math.sin(a), p[1] + 150, p[2] + 150 * Math.cos(a)], colour: [1, 0.32, 0.32]}); }
     if (show.cameras) for (const c of room.cameras) {
       if (!okCam(c)) continue; const e = c.eye, t = c.target, s = 40;
       groups.push({pts: [e[0] - s, e[1], e[2], e[0] + s, e[1], e[2], e[0], e[1] - s, e[2], e[0], e[1] + s, e[2], e[0], e[1], e[2] - s, e[0], e[1], e[2] + s, e[0], e[1], e[2], t[0], t[1], t[2]], colour: [1, 1, 0.3]});
@@ -300,7 +302,7 @@ const EDIT3D = (() => {
     sel.style.cssText = "display:block;margin:6px 0;max-width:220px;background:#222;color:#ddd";
     DATA.forEach(r => { const o = document.createElement("option"); o.value = r.file.replace(".rdt", ".nbd"); o.textContent = r.id + " " + r.name; if (o.value === file) o.selected = true; sel.appendChild(o); });
     sel.onchange = () => openRoom(sel.value); panel.appendChild(sel);
-    for (const k of ["textures", "areas", "cameras", "zones", "lights", "nodes"]) { const l = document.createElement("label"); const c = document.createElement("input"); c.type = "checkbox"; c.checked = show[k]; c.onchange = () => { show[k] = c.checked; render(); }; l.append(c, " show " + k); panel.appendChild(l); }
+    for (const k of ["textures", "areas", "cameras", "zones", "lights", "nodes", "items", "enemies"]) { const l = document.createElement("label"); const c = document.createElement("input"); c.type = "checkbox"; c.checked = show[k]; c.onchange = () => { show[k] = c.checked; render(); }; l.append(c, " show " + k); panel.appendChild(l); }
     const goto = document.createElement("div"); goto.className = "row"; goto.append("object # ");
     const gin = document.createElement("input"); gin.type = "number"; gin.style.width = "60px"; goto.appendChild(gin);
     const gbt = document.createElement("button"); gbt.textContent = "select"; gbt.onclick = () => selectMesh(+gin.value); goto.appendChild(gbt); panel.appendChild(goto);
