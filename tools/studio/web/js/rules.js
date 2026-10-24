@@ -10,6 +10,8 @@ export const ACTIONS = [
     words: (a) => [[op(2, 0x0B), 0, FLAG_BASE + a.flag - 1, a.value]] },
   { id: "lock", label: "Lock a door", args: [["id", "Door number", 0, 255, 0], ["message", "Message", 1, 999, 201]],
     words: (a) => [[op(2, 0x5F), a.id, a.message, 0]] },
+  { id: "unlock", label: "Unlock a door", args: [["id", "Door number", 0, 255, 0]],
+    words: (a) => [[op(2, 0x5F), a.id, 65535, 0]] },       // 65535 is the "no lock" value a door has (measured: the zoo's first room's door 0 reads 65535 until it is locked)
   { id: "examine", label: "Set an examine message", args: [["id", "Spot number", 0, 255, 0], ["message", "Message", 1, 999, 1]],
     words: (a) => [[op(2, 0x55), a.id, a.message, 0]] },
   { id: "show", label: "Show an object", args: [["n", "Object", 0, 255, 0]], words: (a) => [[op(1, 0xB0), a.n]] },

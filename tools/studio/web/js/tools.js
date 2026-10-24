@@ -58,7 +58,7 @@ export function ground(camera, sx, sy, renderer) {
 }
 
 // a new area of the kind `tag` (a copy of one of the game's own) standing at x, y, z; null when the scenario has none of that kind to copy
-export function placeArea(room, tag, x, y, z, half = 50) {
+export function placeArea(room, tag, x, y, z, half = 50, fields = undefined) {
   const t = templateFor(tag);
   if (!t) return null;
   // a script zone is found by its number with the first field 0 (measured in both games); each new one in the room gets a number of its own
@@ -68,7 +68,7 @@ export function placeArea(room, tag, x, y, z, half = 50) {
     quad: [[x + half, z - half], [x - half, z - half], [x - half, z + half], [x + half, z + half]],
     height: [y + src.h[0], y + src.h[1]],
     template: t.same ? undefined : { room: t.room, i: t.i },
-    fields: zoneFields,
+    fields: fields || zoneFields,
   });
 }
 

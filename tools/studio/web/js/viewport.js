@@ -524,7 +524,7 @@ export class Viewport {
     const p = this.camera.onPlane(x, y, d.handle.p[1]);
     if (!p) return;
     const a = Math.atan2(p[0] - c[0], p[1] - c[2]), r = Math.hypot(p[0] - c[0], p[1] - c[2]);
-    if (d.a0 === undefined) { d.a0 = a; d.r0 = Math.max(30, r); }
+    if (d.a0 === undefined) { const h = d.handle.p; d.a0 = Math.atan2(h[0] - c[0], h[2] - c[2]); d.r0 = Math.max(30, Math.hypot(h[0] - c[0], h[2] - c[2])); }     // measured from where the handle stands, so a first move far away isn't taken as the start
     Object.assign(o, clone(d.orig));
     if (d.handle.id === "turn") {
       let yaw = d.orig.rot[1] + (a - d.a0);

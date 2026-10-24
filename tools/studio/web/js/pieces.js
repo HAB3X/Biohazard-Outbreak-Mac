@@ -1,5 +1,5 @@
 // Ready-made pieces: a level started from nothing, a door that opens on a spot, a group of enemies. Each is made of the same parts the Add menu and the room's rules make by hand.
-import { store, commit, select, setTool, addEnemy, addFloor, objectOf } from "./scene.js";
+import { store, commit, select, setTool, addEnemy, addFloor, addItem, objectOf } from "./scene.js";
 import { emptyRoom } from "./scenery.js";
 import { placeArea } from "./tools.js";
 import { toast } from "./ui.js";
@@ -17,18 +17,25 @@ function freeFlag(room) {
   throw new Error("All 32 flags of this room are in use");
 }
 
+// the middle of the room's doors and exits (some rooms have no player start record), at the height they stand at
+function roomMiddle(room) {
+  const ways = room.areas.filter((a) => a.tag === 0 || a.tag === 1);
+  if (!ways.length) return null;
+  const mid = (a) => [a.quad.reduce((s, p) => s + p[0], 0) / a.quad.length, a.quad.reduce((s, p) => s + p[1], 0) / a.quad.length];
+  return [ways.reduce((s, a) => s + mid(a)[0], 0) / ways.length, Math.min(...ways.map((a) => a.h[0])), ways.reduce((s, a) => s + mid(a)[1], 0) / ways.length];
+}
+
 // takes everything out of the room and lays a floor round where the player starts, so building can begin at once
 export function startLevelHere(room) {
-  const spawn = room.spawns[0];
-  if (!spawn) { toast("This room has no player start", "err", "Without one there's nowhere to build around."); return; }
-  const c = spawn.pos;
+  const c = room.spawns[0] ? room.spawns[0].pos : roomMiddle(room);
+  if (!c) { toast("Nowhere to build around", "err", "This room has no player start and no doors to take the middle of."); return; }
   emptyRoom(room);
   addFloor(room, [c[0] - 1500, c[2] - 1500], [c[0] + 1500, c[2] + 1500], c[1] + 100);
   commit("Start a level here");
   toast("An empty room with a floor", "ok", "Add walls, props from the Library, enemies and items. The doors still lead where they did.");
 }
 
-// a door locked until someone stands on a spot: a script zone there sets a flag, and the door is locked while the flag is off
+// a door locked until someone steps on a spot: a script zone there sets a flag (and it stays set, measured), the door is locked while the flag is off and unlocked once it is on
 export function beginDoorOnSpot() {
   const door = pickedDoor();
   if (!door) { toast("Pick a door first", "err", "Click the door you want locked, then choose this again."); return; }
@@ -40,7 +47,7 @@ export function beginDoorOnSpot() {
       const flag = freeFlag(room);
       room.rules = room.rules || [];
       room.rules.push({ when: { zone: zone.fields[1] }, act: "flag", flag, value: 1 });
-      room.rules.push({ when: { flag, on: false }, act: "lock", id: door.fields[0], message: 201 });
+      room.rules.push({ when: { flag, on: false }, act: "lock", id: door.fields[0], message: 201 }, { when: { flag, on: true }, act: "unlock", id: door.fields[0] });
       commit("Door that opens on a spot");
       select([{ c: "areas", file: room.file, i: zone.i }]);
       toast("Door and spot linked", "ok", `Door ${door.fields[0]} stays locked until someone stands on the spot. Both rules are under This room.`);
@@ -62,6 +69,30 @@ export function beginEnemyGroup() {
       }
       commit("Group of enemies");
       return true;
+    },
+  };
+  setTool("recipe");
+}
+
+// a door locked until an item is taken: the item and its pickup trigger stand where you click; taking the item sets the game's flag of the trigger's number (measured), and the door is
+// locked every frame and unlocked as soon as that flag is on (the unlock runs after the lock in the same frame)
+export function beginKeyDoor() {
+  const door = pickedDoor();
+  if (!door) { toast("Pick a door first", "err", "Click the door you want locked, then choose this again."); return; }
+  store.recipe = {
+    label: "Click where the item lies",
+    run(room, at) {
+      const numbers = store.scene.rooms.flatMap((r) => r.areas.filter((a) => a.tag === 3).map((a) => a.fields[0]));
+      const n = Math.max(0, ...numbers) + 1;
+      const trigger = placeArea(room, 3, at[0], at[1], at[2], 80, { 12: n });
+      if (!trigger) { toast("This scenario has no pickup trigger to copy", "err"); return null; }
+      const item = addItem(room, { position: [at[0], at[1] + 25, at[2]] });
+      room.rules = room.rules || [];
+      room.rules.push({ when: null, act: "lock", id: door.fields[0], message: 201 }, { when: { item: n }, act: "unlock", id: door.fields[0] });
+      commit("Door that opens when an item is taken");
+      select([{ c: "items", file: room.file, i: item.i }]);
+      toast("Item and door linked", "ok", `Door ${door.fields[0]} stays locked until the item is taken. Change what the item is in its panel.`);
+      return item;
     },
   };
   setTool("recipe");

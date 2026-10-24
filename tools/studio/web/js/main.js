@@ -10,7 +10,7 @@ import { parseObj } from "./objimport.js";
 import { PLACE, FIXED, THINGS, WALL, FLOOR } from "./tools.js";
 import { toggle as toggleLibrary, close as closeLibrary } from "./library.js";
 import { startTour } from "./tour.js";
-import { startLevelHere, beginDoorOnSpot, beginEnemyGroup } from "./pieces.js";
+import { startLevelHere, beginDoorOnSpot, beginKeyDoor, beginEnemyGroup } from "./pieces.js";
 import { render as renderInspector } from "./inspector.js";
 import { render as renderOutline } from "./outliner.js";
 
@@ -141,15 +141,18 @@ function buildToolbar() {
   const pieces = [
     menuItem("Start a level here", "Empties this room and lays a floor", () => { const r = roomOf(store.room); if (r) startLevelHere(r); }, "grid"),
     menuItem("Door that opens on a spot", "Pick a door first, then click the spot", () => beginDoorOnSpot(), "door"),
+    menuItem("Door that opens with an item", "Pick a door first. Not checked in the game yet", () => beginKeyDoor(), "item"),
     menuItem("Group of enemies", "Four in a ring, then click where", () => beginEnemyGroup(), "enemy"),
   ];
   const own = menuItem("Your own model", "Bring in a .obj file as scenery", () => importModel(), "cube");
   const am = pop("up center", grid, el("hr"), el("h5", {}, "Ready-made pieces"), ...pieces, el("hr"), lib, own);
   ab.addEventListener("click", (e) => { e.stopPropagation(); am.classList.toggle("on"); });
   add.append(ab, am); closeOnOutside(add, am);
+  const testBtn = el("button", { class: "btn", title: "Start the game in this room with your changes  (T)", html: icon("play", 14) + " Test" });
+  testBtn.addEventListener("click", () => doPlay(true));
   const libBtn = el("button", { class: "btn", id: "libbtn", title: "Browse the game's objects and place them  (B)", html: icon("cube", 18) + " Library" });
   libBtn.addEventListener("click", () => toggleLibrary(viewport));
-  bar.append(sel, objs, hand, el("span", { class: "vsep" }), libBtn, add);
+  bar.append(sel, objs, hand, el("span", { class: "vsep" }), libBtn, add, el("span", { class: "vsep" }), testBtn);
   syncRail();
 }
 // a .obj from the disk becomes a new object in the room being worked in, standing where the view is centred
@@ -610,6 +613,7 @@ function keys(openPalette) {
     else if (e.key === "Escape") { select([]); setTool("select"); closeLibrary(); }
     else if ((e.key === "b" || e.key === "B") && !e.metaKey && !e.ctrlKey) { e.preventDefault(); toggleLibrary(viewport); }
     else if (e.key === "Delete" || e.key === "Backspace") { const s = store.selection[0]; if (s && store.selection.length === 1) { const o = objectOf(s); if (o && s.c === "enemies" && !o.isNew) { o.modes = 0; select([]); commit("Remove enemy"); } else if (o && s.c === "scenery" && o.isNew) { removeCopy(roomOf(s.file), o); select([]); commit("Delete object"); } else if (o && (o.isNew || s.c === "walls" || s.c === "floors")) { const r = roomOf(s.file); r[s.c].splice(r[s.c].findIndex((x) => x.i === s.i), 1); select([]); commit("Delete"); } else toast("Only things you added, walls and enemies can be deleted", "err"); } }
+    else if (e.key === "t" || e.key === "T") doPlay(true);
     else if (e.key === "1") setMode("3d");
     else if (e.key === "2") setMode("game");
     else if (e.key === "3") setMode("plan");
