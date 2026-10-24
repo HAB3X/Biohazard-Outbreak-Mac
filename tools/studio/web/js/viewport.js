@@ -480,6 +480,20 @@ export class Viewport {
     this.redraw();
   }
 
+  // sliding along one of the room's axes: the point of the axis line nearest the pointer's ray
+  dragAxis(x, y) {
+    const d = this.drag, o = objectOf(d.ref), a = d.handle.axis, p0 = d.handle.from;
+    const { o: ro, d: rd } = this.camera.ray(x, y);
+    const w = [ro[0] - p0[0], ro[1] - p0[1], ro[2] - p0[2]], b = rd[0] * a[0] + rd[1] * a[1] + rd[2] * a[2], dd = rd[0] * w[0] + rd[1] * w[1] + rd[2] * w[2], e = w[0] * a[0] + w[1] * a[1] + w[2] * a[2], den = 1 - b * b;
+    if (Math.abs(den) < 1e-4) return;
+    const u = (e - b * dd) / den;
+    if (d.u0 === undefined) d.u0 = u;
+    const step = store.snap > 1 ? store.snap : 1, along = Math.round((u - d.u0) / step) * step;
+    Object.assign(o, clone(d.orig));
+    translate(d.ref.c, o, along * a[0], 0, along * a[2]);
+    emit("live"); this.redraw();
+  }
+
   // raising and lowering: the point of the thing's vertical line nearest the pointer's ray
   dragLift(x, y) {
     const d = this.drag, o = objectOf(d.ref);
@@ -521,6 +535,7 @@ export class Viewport {
     if (!o) return;
     const id = h.id;
     if (id === "lift") return this.dragLift(x, y);
+    if (h.kind === "axis") return this.dragAxis(x, y);
     if (id === "turn" || id === "size") return this.dragShape(x, y);
     const y0 = h.p[1], p = this.camera.onPlane(x, y, y0);
     if (!p) return;

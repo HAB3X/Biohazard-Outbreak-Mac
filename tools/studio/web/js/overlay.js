@@ -43,6 +43,11 @@ export function handlesOf(ref) {
   }
   // the same for everything that stands in the room: a handle to lift it, and for objects one to turn it and one to resize it
   if (store.mode !== "plan") {
+    // arrows along the room's own axes: drag one to move the thing along it only
+    if (["items", "enemies", "areas", "floors", "scenery", "zones"].includes(ref.c) && (ref.c !== "scenery" || o.cs)) {
+      const c = centre(ref.c, o), len = 260;
+      out.push({ id: "axx", p: [c[0] + len, c[1], c[2]], kind: "axis", from: c, axis: [1, 0, 0] }, { id: "axz", p: [c[0], c[1], c[2] + len], kind: "axis", from: c, axis: [0, 0, 1] });
+    }
     if (ref.c === "items" || ref.c === "enemies") out.push({ id: "lift", p: [o.pos[0], o.pos[1] + (ref.c === "enemies" ? 240 : 150), o.pos[2]], kind: "lift" });
     if (ref.c === "areas") { const q = o.quad, cx = (q[0][0] + q[2][0]) / 2, cz = (q[0][1] + q[2][1]) / 2; out.push({ id: "lift", p: [cx, o.h[1] + 90, cz], kind: "lift" }); }
     if (ref.c === "floors") out.push({ id: "lift", p: [(o.min[0] + o.max[0]) / 2, o.y + 120, (o.min[1] + o.max[1]) / 2], kind: "lift" });
@@ -314,7 +319,12 @@ export function draw(ctx, camera, dpr, rooms, hover) {
       if (s[2] < -0.9) continue;
       handleList.push({ ...hd, s });
       ctx.fillStyle = hd.dim ? "rgba(255,255,255,.5)" : "#fff"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 1.5;
-      if (hd.kind === "lift") {            // an arrow up from the thing: drag to raise or lower it
+      if (hd.kind === "axis") {            // an arrow along x (red) or z (blue)
+        const from = P(hd.from), col = hd.axis[0] ? "#ff6b6b" : "#6b9bff", ang = Math.atan2(s[1] - from[1], s[0] - from[0]);
+        ctx.strokeStyle = col; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(from[0], from[1]); ctx.lineTo(s[0], s[1]); ctx.stroke();
+        ctx.fillStyle = col; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(s[0] + Math.cos(ang) * 10, s[1] + Math.sin(ang) * 10); ctx.lineTo(s[0] + Math.cos(ang + 2.5) * 9, s[1] + Math.sin(ang + 2.5) * 9); ctx.lineTo(s[0] + Math.cos(ang - 2.5) * 9, s[1] + Math.sin(ang - 2.5) * 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+      } else if (hd.kind === "lift") {            // an arrow up from the thing: drag to raise or lower it
         const foot = P([hd.p[0], hd.p[1] - 90, hd.p[2]]);
         ctx.strokeStyle = "rgba(255,255,255,.8)"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(foot[0], foot[1]); ctx.lineTo(s[0], s[1] + 6); ctx.stroke();
         ctx.fillStyle = "#7ee0a0"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 1.5;
