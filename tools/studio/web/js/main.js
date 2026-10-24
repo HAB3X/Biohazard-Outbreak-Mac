@@ -5,7 +5,7 @@ import { el, toast } from "./ui.js";
 import * as scene from "./scene.js";
 import { store, on, emit, loadScene, commit, undo, redo, canUndo, canRedo, setTool, setMode, setRoom, select, currentEdits, roomOf, objectOf } from "./scene.js";
 import { Viewport } from "./viewport.js";
-import { removeCopy, addModel } from "./scenery.js";
+import { removeCopy, addModel, setPose } from "./scenery.js";
 import { parseObj } from "./objimport.js";
 import { PLACE, FIXED, THINGS, WALL, FLOOR } from "./tools.js";
 import { render as renderInspector } from "./inspector.js";
@@ -304,7 +304,7 @@ function turnSelection(degrees) {
   for (const ref of store.selection) {
     const o = objectOf(ref);
     if (!o) continue;
-    if (ref.c === "scenery") o.rot = [o.rot[0], o.rot[1] + degrees * Math.PI / 180, o.rot[2]];
+    if (ref.c === "scenery") setPose(o, { rot: [o.rot[0], o.rot[1] + degrees * Math.PI / 180, o.rot[2]] });
     else o.facing = (o.facing + Math.round(degrees / 360 * 65536) + 65536) % 65536;
   }
   emit("live"); commit("Turn");
@@ -459,7 +459,7 @@ function keys(openPalette) {
     else if (viewport.flyKey(e, true)) { e.preventDefault(); }
     else if (store.selection.length && (e.key.startsWith("Arrow") || e.key === "PageUp" || e.key === "PageDown")) { e.preventDefault(); nudge(e); }
     else if (store.selection.length && (e.key === "r" || e.key === "R") && store.selection.every((s) => s.c === "scenery" || s.c === "enemies" || s.c === "spawns")) { e.preventDefault(); turnSelection(e.shiftKey ? -15 : 15); }
-    else if (store.selection.length === 1 && store.selection[0].c === "scenery" && (e.key === "=" || e.key === "-")) { e.preventDefault(); const o = objectOf(store.selection[0]); if (o) { const k = e.key === "=" ? 1.1 : 1 / 1.1; o.scale = o.scale.map((x) => x * k); emit("live"); commit("Resize object"); } }
+    else if (store.selection.length === 1 && store.selection[0].c === "scenery" && (e.key === "=" || e.key === "-")) { e.preventDefault(); const o = objectOf(store.selection[0]); if (o) { const k = e.key === "=" ? 1.1 : 1 / 1.1; setPose(o, { scale: o.scale.map((x) => x * k) }); emit("live"); commit("Resize object"); } }
     else if (e.key === " ") { viewport.space = true; viewport.ov.style.cursor = "grab"; e.preventDefault(); }
     else if (e.key === "Escape") { select([]); setTool("select"); }
     else if (e.key === "Delete" || e.key === "Backspace") { const s = store.selection[0]; if (s && store.selection.length === 1) { const o = objectOf(s); if (o && s.c === "enemies" && !o.isNew) { o.modes = 0; select([]); commit("Remove enemy"); } else if (o && s.c === "scenery" && o.isNew) { removeCopy(roomOf(s.file), o); select([]); commit("Delete object"); } else if (o && (o.isNew || s.c === "walls" || s.c === "floors")) { const r = roomOf(s.file); r[s.c].splice(r[s.c].findIndex((x) => x.i === s.i), 1); select([]); commit("Delete"); } else toast("Only things you added, walls and enemies can be deleted", "err"); } }

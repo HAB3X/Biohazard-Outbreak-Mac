@@ -151,3 +151,23 @@ export function isDoor(room, s) {
     return Math.min(...sx) < Math.max(...xs) + 200 && Math.max(...sx) > Math.min(...xs) - 200 && Math.min(...sz) < Math.max(...zs) + 200 && Math.max(...sz) > Math.min(...zs) - 200;
   })());
 }
+
+// turning and resizing about the object's own middle, not about its bone's origin (the game turns a bone about the origin, so a turned object would swing): the offset is moved
+// by what keeps the middle where it was. The local matrix is the offset, then turns about z, y and x, then the scale (the order the model's viewer and the game share)
+const turn = (r, v) => {
+  const [a, b, c] = r;
+  const [sx, cx] = [Math.sin(a), Math.cos(a)], [sy, cy] = [Math.sin(b), Math.cos(b)], [sz, cz] = [Math.sin(c), Math.cos(c)];
+  let [x, y, z] = v;
+  [y, z] = [y * cx - z * sx, y * sx + z * cx];          // about x
+  [x, z] = [x * cy + z * sy, -x * sy + z * cy];         // about y
+  [x, y] = [x * cz - y * sz, x * sz + y * cz];          // about z
+  return [x, y, z];
+};
+const place = (s, scale, rot) => turn(rot, s.lc.map((v, k) => v * scale[k]));
+
+export function setPose(s, { rot, scale }) {
+  const before = place(s, s.scale, s.rot), nr = rot || s.rot, ns = scale || s.scale, after = place(s, ns, nr);
+  s.off = s.off.map((v, k) => v + before[k] - after[k]);
+  s.rot = nr;
+  s.scale = ns;
+}

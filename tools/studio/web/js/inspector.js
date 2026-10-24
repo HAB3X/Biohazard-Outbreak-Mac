@@ -2,7 +2,7 @@
 import { store, on, emit, objectOf, roomOf, commit, startRoomId, describe, centre, translate, select, clone, AREA_TAGS } from "./scene.js";
 import { icon } from "./icons.js";
 import { section_ as rulesSection } from "./rules.js";
-import { isDoor, duplicate, removeCopy } from "./scenery.js";
+import { isDoor, duplicate, removeCopy, setPose } from "./scenery.js";
 import { el, number, vec3, select as selectBox, chips, dial, colour, field, section, range, hex, unhex, toast } from "./ui.js";
 
 const host = () => document.getElementById("inspector");
@@ -168,9 +168,9 @@ const FORMS = {
     const factor = o.scale[0] / (orig.scale[0] || 1);
     const hid = o.scale[0] < 0.001;
     const deg = (r) => Math.round(r * 180 / Math.PI * 10) / 10;
-    const turn = set(ref, "Turn object", (obj, v) => { obj.rot = v.map((d) => d * Math.PI / 180); });
-    const size = set(ref, "Resize object", (obj, v) => { obj.scale = orig.scale.map((s) => s * v / 100); });
-    const stretch = set(ref, "Stretch object", (obj, v) => { obj.scale = orig.scale.map((s, k) => s * v[k] / 100); });
+    const turn = set(ref, "Turn object", (obj, v) => { setPose(obj, { rot: v.map((d) => d * Math.PI / 180) }); });
+    const size = set(ref, "Resize object", (obj, v) => { setPose(obj, { scale: orig.scale.map((s) => s * v / 100) }); });
+    const stretch = set(ref, "Stretch object", (obj, v) => { setPose(obj, { scale: orig.scale.map((s, k) => s * v[k] / 100) }); });
     const show = set(ref, "Show or hide object", (obj, v) => { obj.scale = v ? clone(orig.scale) : [0.0001, 0.0001, 0.0001]; });
     const pct = hid ? [100, 100, 100] : o.scale.map((s, k) => Math.round(s / (orig.scale[k] || 1) * 100));
     const room = roomOf(ref.file);

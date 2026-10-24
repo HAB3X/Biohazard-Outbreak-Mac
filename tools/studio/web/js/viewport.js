@@ -5,7 +5,7 @@ import * as overlay from "./overlay.js";
 import { store, on, emit, setMode, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe, addWall, addFloor } from "./scene.js";
 import { PLACE, FIXED, THINGS, place, ground, snapTo } from "./tools.js";
 import { api } from "./api.js";
-import { attach, sync } from "./scenery.js";
+import { attach, sync, setPose } from "./scenery.js";
 
 const GAME_ASPECT = 8 / 7, GAME_LENS = 16 / 9;      // the shape of the game's picture as the runtime saves it, and of the lens (fitted to a snapshot)
 
@@ -459,10 +459,10 @@ export class Viewport {
     if (d.handle.id === "turn") {
       let yaw = d.orig.rot[1] + (a - d.a0);
       if (store.snap > 1) yaw = Math.round(yaw / (Math.PI / 12)) * (Math.PI / 12);
-      o.rot = [d.orig.rot[0], yaw, d.orig.rot[2]];
+      setPose(o, { rot: [d.orig.rot[0], yaw, d.orig.rot[2]] });
     } else {
       const k = Math.max(0.1, Math.min(10, r / d.r0));
-      o.scale = d.orig.scale.map((s) => s * k);
+      setPose(o, { scale: d.orig.scale.map((s) => s * k) });
     }
     emit("live"); this.redraw();
   }
