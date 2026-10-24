@@ -34,7 +34,8 @@ export function compile(rules) {
     }
     const a = byId[r.act];
     if (!a) continue;
-    if (r.when) lines.push([op(2, 0xEC), FLAG_BASE + r.when.flag - 1, r.when.on ? 1 : 0, 0]);
+    if (r.when && r.when.item !== undefined) lines.push([op(2, 0xED), r.when.item, 1, 0]);       // picking an item up sets the game's own flag of its pickup trigger's number (measured), which IfGlobal2 reads
+    else if (r.when) lines.push([op(2, 0xEC), FLAG_BASE + r.when.flag - 1, r.when.on ? 1 : 0, 0]);
     lines.push(...a.words(r));
     if (r.when) lines.push([0xE4], [0xE5]);
   }
@@ -43,6 +44,11 @@ export function compile(rules) {
 
 export function section_(r, host) {
   r.rules = r.rules || [];
+  const pickups = r.areas.filter((a) => a.tag === 3).map((a) => {
+    const q = a.quad, cx = q.reduce((s, p) => s + p[0], 0) / q.length, cz = q.reduce((s, p) => s + p[1], 0) / q.length;
+    const near = r.items.slice().sort((p, s) => Math.hypot(p.pos[0] - cx, p.pos[2] - cz) - Math.hypot(s.pos[0] - cx, s.pos[2] - cz))[0];
+    return { id: a.fields[0], label: `Pickup ${a.fields[0]}${near ? " (the item at " + Math.round(near.pos[0]) + ", " + Math.round(near.pos[2]) + ")" : ""}` };
+  });
   const zones = r.areas.filter((a) => a.tag === 12 && a.fields[0] === 0).map((a) => ({ id: a.fields[1] }));      // the room's script zones, by the number a zone's rule names
   const redraw = () => host();
   const done = (label) => () => { commit(label); };
@@ -50,9 +56,10 @@ export function section_(r, host) {
     const a = byId[x.act] || ACTIONS[0];
     const card = el("div", { class: "rulecard" });
     const cond = el("div", { class: "rule" },
-      selectBox(x.when ? (x.when.zone !== undefined ? "zone" : x.when.on ? "on" : "off") : "always", [{ value: "always", label: "Always" }, { value: "on", label: "If flag is on" }, { value: "off", label: "If flag is off" }, { value: "zone", label: "While someone is in a zone" }],
-        (v) => { x.when = v === "always" ? null : v === "zone" ? { zone: (zones[0] || { id: 0 }).id } : { flag: x.when && x.when.flag ? x.when.flag : 1, on: v === "on" }; if (v === "zone") x.act = "flag"; commit("Edit rule"); }));
-    if (x.when && x.when.zone !== undefined) cond.append(selectBox(x.when.zone, zones.length ? zones.map((z) => ({ value: z.id, label: `Zone ${z.id}` })) : [{ value: 0, label: "no zones: add one" }], (v) => { x.when.zone = v; commit("Edit rule"); }));
+      selectBox(x.when ? (x.when.item !== undefined ? "item" : x.when.zone !== undefined ? "zone" : x.when.on ? "on" : "off") : "always", [{ value: "always", label: "Always" }, { value: "on", label: "If flag is on" }, { value: "off", label: "If flag is off" }, { value: "zone", label: "While someone is in a zone" }, { value: "item", label: "Once an item is taken" }],
+        (v) => { x.when = v === "always" ? null : v === "item" ? { item: (pickups[0] || { id: 0 }).id } : v === "zone" ? { zone: (zones[0] || { id: 0 }).id } : { flag: x.when && x.when.flag ? x.when.flag : 1, on: v === "on" }; if (v === "zone") x.act = "flag"; commit("Edit rule"); }));
+    if (x.when && x.when.item !== undefined) cond.append(selectBox(x.when.item, pickups.length ? pickups.map((p) => ({ value: p.id, label: p.label })) : [{ value: 0, label: "no pickup triggers here" }], (v) => { x.when.item = v; commit("Edit rule"); }));
+    else if (x.when && x.when.zone !== undefined) cond.append(selectBox(x.when.zone, zones.length ? zones.map((z) => ({ value: z.id, label: `Zone ${z.id}` })) : [{ value: 0, label: "no zones: add one" }], (v) => { x.when.zone = v; commit("Edit rule"); }));
     else if (x.when) cond.append(number(x.when.flag, (v) => { x.when.flag = v; }, done("Edit rule"), { min: 1, max: 32, scrub: false }));
     cond.append(el("button", { class: "ghost", title: "Remove", onclick: () => { r.rules.splice(k, 1); commit("Remove rule"); } }, "×"));
     const doing = el("div", { class: "rule" }, selectBox(x.act, ACTIONS.map((o) => ({ value: o.id, label: o.label })), (v) => { Object.assign(x, newRule(), { when: x.when, act: v }); for (const [key, , , , d] of byId[v].args) x[key] = d; commit("Edit rule"); }));
