@@ -270,8 +270,24 @@ def grown_models(game, scenario, edits):
         if node is None:
             raise ValueError(f"{name}: not on the disc")
         data = node.read()
+        sources = {}
         for made in spec["new_objects"]:
-            data, _ = bh_nbd.clone_object(data, made["like"], None, made.get("geometry"))
+            if made.get("library"):          # an object of another room of the scenario, with the pictures it needs
+                import bh_model
+
+                src = made["library"]["room"].replace(".rdt", ".nbd")
+                if src not in sources:
+                    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+                        try:
+                            sources[src] = bh_model.Model(disc.open(f"{dat}/r{scenario:03d}.afs/{src}").read())
+                            break
+                        except FileNotFoundError:
+                            continue
+                model = bh_model.Model(data)
+                model.import_object(sources[src], int(made["library"]["mesh"]))
+                data = model.to_bytes()
+            else:
+                data, _ = bh_nbd.clone_object(data, made["like"], None, made.get("geometry"))
         data = bytearray(data)
         ahi = next(c for c in bh_nbd.chunks(bytes(data)) if c[0] == "AHI")
         records = bh_nbd.bone_records(bytes(data), ahi[1], ahi[2])

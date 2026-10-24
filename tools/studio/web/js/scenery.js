@@ -43,7 +43,8 @@ export function applyEdits(room, spec) {
   if (!room.scenery) return;
   (spec.new_objects || []).forEach((n) => {
     const like = (room.scenery || []).find((x) => x.i === n.like && !x.isNew);
-    if (like) { const c = duplicate(room, like, { i: nextNumber(room), silent: true }); if (n.geometry) giveGeometry(c, n.geometry); }
+    if (n.library) { const c = standIn(room, n.library); if (c) { c.i = nextNumber(room) - 1; c.bone = c.i + 2; } }
+    else if (like) { const c = duplicate(room, like, { i: nextNumber(room), silent: true }); if (n.geometry) giveGeometry(c, n.geometry); }
   });
   for (const [i, d] of Object.entries(spec.scenery || {})) {
     const s = (room.scenery || []).find((x) => x.i === +i);
@@ -91,7 +92,31 @@ export function addModel(room, g, renderer, target) {
   return c;
 }
 
-export const newObjects = (room) => copies(room).map((c) => (c.geometry ? { like: c.like, geometry: c.geometry } : { like: c.like }));
+export const newObjects = (room) => copies(room).map((c) => (c.library ? { like: c.like, library: c.library } : c.geometry ? { like: c.like, geometry: c.geometry } : { like: c.like }));
+
+// an object of another room's model (`lib` is {room, mesh}), standing plain on a bone of its own; the file grows by it
+function standIn(room, lib) {
+  const src = store.renderer && store.renderer.models[lib.room];
+  const mesh = src && src.meshes.find((x) => x.mesh === lib.mesh), here = store.renderer && store.renderer.models[room.file];
+  const like = room.scenery.find((x) => !x.isNew);
+  if (!mesh || !here || !like) return null;
+  const c = duplicate(room, like, { silent: true });
+  const lc = [0, 1, 2].map((k) => (mesh.lo[k] + mesh.hi[k]) / 2);
+  Object.assign(c, { library: lib, lo: mesh.lo, hi: mesh.hi, lc, parent: here.bones[2][0], scale: [1, 1, 1], rot: [0, 0, 0], off: [0, 0, 0] });
+  delete c.geometry;
+  return c;
+}
+
+// a library object put down so that its middle stands over `target` (x, y, z) with its lowest point on the ground there
+export function addLibrary(room, renderer, lib, target) {
+  const c = standIn(room, lib);
+  if (!c) return null;
+  const m = renderer.models[room.file], pw = m.world[c.parent];
+  const inv = pw ? inverse3(pw) : [1, 0, 0, 0, 1, 0, 0, 0, 1], t = pw ? [pw[12], pw[13], pw[14]] : [0, 0, 0];
+  const d = [target[0] - t[0] - c.lc[0], target[1] - t[1] - c.lo[1], target[2] - t[2] - c.lc[2]];
+  c.off = [0, 1, 2].map((r) => inv[r * 3] * d[0] + inv[r * 3 + 1] * d[1] + inv[r * 3 + 2] * d[2]);
+  return c;
+}
 
 export function diff(room, orig) {
   const out = {};
@@ -122,13 +147,13 @@ export function sync(renderer, scene) {
     if (!r.scenery || !r.scenery.length) continue;
     const m = renderer.models[r.file];
     if (!m) continue;
-    const key = JSON.stringify(r.scenery.map((s) => [s.scale, s.rot, s.off, s.like, s.geometry && s.geometry.material]));
+    const key = JSON.stringify(r.scenery.map((s) => [s.scale, s.rot, s.off, s.like, s.geometry && s.geometry.material, s.library && s.library.mesh]));
     if (stamps[r.file] !== key) {
       stamps[r.file] = key;
       const changes = {}, clones = [];
       for (const s of r.scenery) {
         const bone = [s.parent, s.scale, s.rot, s.off];
-        if (s.isNew) clones.push({ like: s.like, bone, geometry: s.geometry }); else changes[s.bone] = bone;
+        if (s.isNew) clones.push({ like: s.like, bone, geometry: s.geometry, library: s.library }); else changes[s.bone] = bone;
       }
       renderer.setBones(r.file, changes, clones);
     }
@@ -146,7 +171,7 @@ export const hidden = (s) => Math.abs(s.scale[0]) < 0.001;
 
 // an object standing where a door, exit or inner door is belongs to it: hiding it crashed the game (measured), so the panel won't
 export function isDoor(room, s) {
-  return room.areas.some((a) => [0, 1, 2].includes(a.tag) && (() => {
+  return !s.isNew && room.areas.some((a) => [0, 1, 2].includes(a.tag) && (() => {
     const xs = a.quad.map((p) => p[0]), zs = a.quad.map((p) => p[1]), sx = s.cs.map((p) => p[0]), sz = s.cs.map((p) => p[2]);
     return Math.min(...sx) < Math.max(...xs) + 200 && Math.max(...sx) > Math.min(...xs) - 200 && Math.min(...sz) < Math.max(...zs) + 200 && Math.max(...sz) > Math.min(...zs) - 200;
   })());

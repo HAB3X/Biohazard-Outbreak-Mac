@@ -86,6 +86,17 @@ class Models(unittest.TestCase):
         self.assertEqual(mesh.positions, [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)])
         self.assertEqual(mesh.strips, [[0, 1, 2]])
 
+    def test_an_object_of_another_room_comes_in_with_its_pictures(self):
+        import bh_model
+        disc = archive.Archive("file2")
+        src = bh_model.Model(disc.open("/NETBIO00.DAT/r040.afs/r0400400.nbd").read())
+        dst = bh_model.Model(self.data)
+        before = len(dst.meshes())
+        number = dst.import_object(src, 94)
+        self.assertEqual(number, before)
+        again = bh_model.Model(dst.to_bytes())
+        self.assertEqual(len(again.meshes()), before + 1)
+
 
 class Pictures(unittest.TestCase):
     def test_restyle_round_trips_through_the_game_codec(self):

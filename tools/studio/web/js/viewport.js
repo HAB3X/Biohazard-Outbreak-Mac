@@ -15,7 +15,7 @@ export class Viewport {
     this.gl = document.getElementById("gl");
     this.ov = document.getElementById("ov");
     this.ctx = this.ov.getContext("2d");
-    this.renderer = new Renderer(this.gl);
+    this.renderer = store.renderer = new Renderer(this.gl);
     this.camera = new Camera();
     this.hover = null;
     this.drag = null;

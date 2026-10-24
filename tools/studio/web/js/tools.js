@@ -1,4 +1,5 @@
 // The tools on the rail: what each puts into the scene when you click, and where a click lands on the ground.
+import { addLibrary } from "./scenery.js";
 import { store, roomOf, addArea, addCamera, addItem, addEnemy, commit, select, AREA_TAGS, clone, emit } from "./scene.js";
 
 // A template for an area of each tag: the first one in the room being worked in, else in any room of the scenario (a new area is a copy of a record of the game's own).
@@ -29,6 +30,7 @@ export const FLOOR = { id: "floor", label: "Floor", hint: "Click one corner, the
 export const THINGS = [
   { id: "item", label: "Item", icon: "item", key: "I", hint: "Click to put an item on the floor. Pick what it is and how many in the panel." },
   { id: "enemy", label: "Enemy", icon: "enemy", key: "N", hint: "Click to put an enemy. It faces the way you set in the panel; pick its health there too." },
+  { id: "library", label: "Library object", icon: "cube", key: "", hint: "Click to put the object you picked from the Library. Click again for another; pick a different one in the Library." },
   { id: "spawn", label: "Player start", icon: "spawn", key: "S", hint: "Click to move the player's start spot in this room (the partners follow the other start spots)." },
 ];
 
@@ -65,6 +67,14 @@ export function place(tool, at) {
     commit("Move player start");
     select([{ c: "spawns", file: room.file, i: sp.i }]);
     return sp;
+  }
+  if (tool.id === "library") {
+    if (!store.libraryPick) return null;
+    const c = addLibrary(room, store.renderer, store.libraryPick, [x, y, z]);
+    if (!c) { emit("note", "That object isn't loaded yet.", "warn"); return null; }
+    commit("Add " + (store.libraryPick.name || "object"));
+    select([{ c: "scenery", file: room.file, i: c.i }]);
+    return c;
   }
   if (tool.id === "item") {
     const o = addItem(room, { position: [x, y, z] });

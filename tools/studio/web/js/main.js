@@ -8,6 +8,7 @@ import { Viewport } from "./viewport.js";
 import { removeCopy, addModel, setPose } from "./scenery.js";
 import { parseObj } from "./objimport.js";
 import { PLACE, FIXED, THINGS, WALL, FLOOR } from "./tools.js";
+import { toggle as toggleLibrary, close as closeLibrary } from "./library.js";
 import { render as renderInspector } from "./inspector.js";
 import { render as renderOutline } from "./outliner.js";
 
@@ -111,11 +112,14 @@ function buildToolbar() {
     it.append(el("span", { class: "key" }, a.key));
     grid.append(it);
   }
+  const lib = menuItem("Library", "Browse the game's tables, shelves, chairs… and place them", () => toggleLibrary(viewport), "cube");
   const own = menuItem("Your own model", "Bring in a .obj file as scenery", () => importModel(), "cube");
-  const am = pop("up center", grid, el("hr"), own);
+  const am = pop("up center", grid, el("hr"), lib, own);
   ab.addEventListener("click", (e) => { e.stopPropagation(); am.classList.toggle("on"); });
   add.append(ab, am); closeOnOutside(add, am);
-  bar.append(sel, objs, hand, el("span", { class: "vsep" }), add);
+  const libBtn = el("button", { class: "btn", id: "libbtn", title: "Browse the game's objects and place them  (B)", html: icon("cube", 18) + " Library" });
+  libBtn.addEventListener("click", () => toggleLibrary(viewport));
+  bar.append(sel, objs, hand, el("span", { class: "vsep" }), libBtn, add);
   syncRail();
 }
 // a .obj from the disk becomes a new object in the room being worked in, standing where the view is centred
@@ -283,6 +287,7 @@ function updateHint() {
   const a = ADD.find((x) => x.id === store.tool);
   const t = [...PLACE, ...THINGS, WALL, FLOOR].find((x) => x.id === store.tool);
   if (a && t) { b.innerHTML = `<b>${a.label}</b> — ${t.hint} <kbd>Esc</kbd> to stop.`; b.classList.add("on"); }
+  else if (store.tool === "library") { const p = store.libraryPick; b.innerHTML = p ? `<b>Placing ${p.name}</b> — click in the room to put it down, again for more. <kbd>Esc</kbd> to stop.` : "Pick an object in the Library, then click in the room."; b.classList.add("on"); }
   else if (store.tool === "scenery") { b.innerHTML = "Click an object to pick it: drag to move it, or turn and resize it in the panel. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }
   else if (store.tool === "pan") { b.innerHTML = "Drag to move the view. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }
   else if (!bannerSeen && !localStorage.getItem("studio-hint")) { b.innerHTML = "Click anything to edit it. Use <b>Add</b> to put new things down. Scroll to zoom. <button class='link' id='gotit' style='margin-left:8px'>Got it</button>"; b.classList.add("on"); const g = b.querySelector("#gotit"); if (g) g.onclick = () => { localStorage.setItem("studio-hint", "1"); bannerSeen = true; b.classList.remove("on"); }; }
@@ -461,7 +466,8 @@ function keys(openPalette) {
     else if (store.selection.length && (e.key === "r" || e.key === "R") && store.selection.every((s) => s.c === "scenery" || s.c === "enemies" || s.c === "spawns")) { e.preventDefault(); turnSelection(e.shiftKey ? -15 : 15); }
     else if (store.selection.length === 1 && store.selection[0].c === "scenery" && (e.key === "=" || e.key === "-")) { e.preventDefault(); const o = objectOf(store.selection[0]); if (o) { const k = e.key === "=" ? 1.1 : 1 / 1.1; setPose(o, { scale: o.scale.map((x) => x * k) }); emit("live"); commit("Resize object"); } }
     else if (e.key === " ") { viewport.space = true; viewport.ov.style.cursor = "grab"; e.preventDefault(); }
-    else if (e.key === "Escape") { select([]); setTool("select"); }
+    else if (e.key === "Escape") { select([]); setTool("select"); closeLibrary(); }
+    else if ((e.key === "b" || e.key === "B") && !e.metaKey && !e.ctrlKey) { e.preventDefault(); toggleLibrary(viewport); }
     else if (e.key === "Delete" || e.key === "Backspace") { const s = store.selection[0]; if (s && store.selection.length === 1) { const o = objectOf(s); if (o && s.c === "enemies" && !o.isNew) { o.modes = 0; select([]); commit("Remove enemy"); } else if (o && s.c === "scenery" && o.isNew) { removeCopy(roomOf(s.file), o); select([]); commit("Delete object"); } else if (o && (o.isNew || s.c === "walls" || s.c === "floors")) { const r = roomOf(s.file); r[s.c].splice(r[s.c].findIndex((x) => x.i === s.i), 1); select([]); commit("Delete"); } else toast("Only things you added, walls and enemies can be deleted", "err"); } }
     else if (e.key === "1") setMode("game");
     else if (e.key === "2") setMode("plan");

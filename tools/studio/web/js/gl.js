@@ -106,6 +106,7 @@ export class Renderer {
     this.tex = program(gl, VS, FS_TEX);
     this.models = {};     // room file -> {bones, world, meshes, bounds, floors}
     this.textures = {};
+    this.loaded = {};
     this.onTexture = () => {};
   }
 
@@ -153,7 +154,7 @@ export class Renderer {
     let sum = 0, count = 0;
     json.meshes.forEach((m) => { if (!m.c) return; const c = b64(m.c, Float32Array); for (let i = 0; i < c.length; i += 4) { sum += c[i] + c[i + 1] + c[i + 2]; count += 3; } });
     const gain = count ? Math.max(1, Math.min(3, 0.45 / Math.max(0.05, sum / count))) : 1;     // a dark room is lifted toward what the game's own lights show
-    this.models[file] = { gain, bones, base: bones.length, extra: [], world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
+    this.models[file] = { raw: json, gain, bones, base: bones.length, extra: [], world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
   }
 
   // the skeleton with some bones replaced ({bone: [parent, scale, rotation, offset]}): the objects move on screen as they will in the game
@@ -165,7 +166,75 @@ export class Renderer {
     clones.forEach((c, j) => { bones[m.base + j] = c.bone; });
     m.world = worlds(bones);
     for (const mesh of m.meshes) mesh.hide = !m.world[mesh.bone] || hidden(bones[mesh.bone]);
-    m.extra = clones.map((c, j) => ({ ...(c.geometry ? this.geometryMesh(c.geometry) : m.meshes.find((x) => x.mesh === c.like)), bone: m.base + j, hide: hidden(c.bone) })).filter((x) => x.vb);
+    m.extra = clones.map((c, j) => ({ ...(c.library ? this.libraryMesh(c.library) : c.geometry ? this.geometryMesh(c.geometry) : m.meshes.find((x) => x.mesh === c.like)), bone: m.base + j, hide: hidden(c.bone) })).filter((x) => x.vb);
+  }
+
+  // an object of another room's model (its buffers and that model's pictures)
+  libraryMesh(lib) {
+    const src = this.models[lib.room];
+    const mesh = src && src.meshes.find((x) => x.mesh === lib.mesh);
+    return mesh ? { ...mesh, tids: src.tids, hide: false } : {};
+  }
+
+  // a picture of one object of a room's model on its own, as a data: URL; ready is false while its pictures are still arriving
+  thumbnail(file, k, px = 112) {
+    const gl = this.gl, m = this.models[file], mesh = m && m.meshes.find((x) => x.mesh === k);
+    if (!mesh) return null;
+    if (!this.thumbFbo) {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, px, px, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      const depth = gl.createRenderbuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, depth);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, px, px);
+      this.thumbFbo = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.thumbFbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depth);
+    }
+    const lo = mesh.lo, hi = mesh.hi, c = [0, 1, 2].map((i) => (lo[i] + hi[i]) / 2), r = Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2], 20) * 0.75;
+    const eye = [c[0] + r * 1.7, c[1] + r * 1.25, c[2] + r * 2.1];
+    // look at the middle from a corner above
+    const f = [c[0] - eye[0], c[1] - eye[1], c[2] - eye[2]], fl = Math.hypot(...f), fz = f.map((v) => -v / fl);
+    const rx = [fz[2], 0, -fz[0]], rl = Math.hypot(...rx), xx = rx.map((v) => v / rl);
+    const yy = [fz[1] * xx[2] - fz[2] * xx[1], fz[2] * xx[0] - fz[0] * xx[2], fz[0] * xx[1] - fz[1] * xx[0]];
+    const view = new Float32Array(16);
+    view[0] = xx[0]; view[4] = xx[1]; view[8] = xx[2]; view[1] = yy[0]; view[5] = yy[1]; view[9] = yy[2]; view[2] = fz[0]; view[6] = fz[1]; view[10] = fz[2];
+    view[12] = -(xx[0] * eye[0] + xx[1] * eye[1] + xx[2] * eye[2]); view[13] = -(yy[0] * eye[0] + yy[1] * eye[1] + yy[2] * eye[2]); view[14] = -(fz[0] * eye[0] + fz[1] * eye[1] + fz[2] * eye[2]); view[15] = 1;
+    const t = 1 / Math.tan(0.28), proj = new Float32Array(16), n = 5, fa = r * 40;
+    proj[0] = t; proj[5] = t; proj[10] = (fa + n) / (n - fa); proj[11] = -1; proj[14] = 2 * fa * n / (n - fa);
+    const prog = this.tex, U = (name) => prog.loc[name] ?? (prog.loc[name] = gl.getUniformLocation(prog.p, name));
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.thumbFbo);
+    gl.viewport(0, 0, px, px); gl.disable(gl.SCISSOR_TEST); gl.disable(gl.CULL_FACE); gl.disable(gl.BLEND); gl.depthMask(true);
+    gl.clearColor(0.1, 0.11, 0.15, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
+    gl.useProgram(prog.p);
+    const id = new Float32Array(16); id[0] = id[5] = id[10] = id[15] = 1;
+    gl.uniformMatrix4fv(U("uVP"), false, mul(proj, view)); gl.uniformMatrix4fv(U("uModel"), false, id);
+    gl.uniform1f(U("uDim"), 1); gl.uniform1f(U("uGame"), 1); gl.uniform1f(U("uGain"), 2.4); gl.uniform1f(U("uBlend"), 0);
+    const pos = gl.getAttribLocation(prog.p, "aPos"), uv = gl.getAttribLocation(prog.p, "aUV"), col = gl.getAttribLocation(prog.p, "aCol");
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vb); gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.ub); gl.enableVertexAttribArray(uv); gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.cb); gl.enableVertexAttribArray(col); gl.vertexAttribPointer(col, 4, gl.FLOAT, false, 0, 0);
+    let ready = true;
+    for (const grp of mesh.groups) {
+      const tid = m.tids[grp.material];
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.texture(tid === undefined ? 0 : tid));
+      if (!this.loaded[tid]) ready = false;
+      gl.uniform1i(U("uTex"), 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grp.ib);
+      gl.drawElements(gl.TRIANGLES, grp.count, gl.UNSIGNED_INT, 0);
+    }
+    const pixels = new Uint8Array(px * px * 4);
+    gl.readPixels(0, 0, px, px, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = px;
+    const ctx = canvas.getContext("2d"), image = ctx.createImageData(px, px);
+    for (let y = 0; y < px; y++) image.data.set(pixels.subarray(y * px * 4, (y + 1) * px * 4), (px - 1 - y) * px * 4);     // the picture's rows run the other way
+    ctx.putImageData(image, 0, 0);
+    return { url: canvas.toDataURL("image/png"), ready };
   }
 
   // the buffers of a model made from geometry ({positions, uvs, triangles, material}); kept for as long as the geometry is the same
@@ -192,6 +261,7 @@ export class Renderer {
     this.textures[index] = tex;
     const img = new Image();
     img.onload = () => {
+      this.loaded[index] = true;
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
       gl.generateMipmap(gl.TEXTURE_2D);
@@ -267,7 +337,7 @@ export class Renderer {
         }
         for (const g of mesh.groups) {
           if (textured) {
-            const tid = m.tids[g.material];
+            const tid = (mesh.tids || m.tids)[g.material];
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, this.texture(tid === undefined ? 0 : tid));
             gl.uniform1i(U("uTex"), 0);
