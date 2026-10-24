@@ -1,6 +1,6 @@
 # Outbreak Studio: what you can do
 
-Start it with `./studio.sh` (File 2, scenario 40 opens first; the scenario menu at the top switches). Everything is picked up and dropped in one picture: **Plan** (from above) or **3D**.
+Start it with `./studio.sh` (File 2, scenario 40 opens first; the scenario menu at the top switches). Everything is picked up and dropped in one picture. **Game view** (the default) shows the room exactly as the player sees it: through the room's own fixed cameras, with the game's baked light (step through a room's cameras with the arrows, or `,` and `.`; picking something switches to a camera that shows it). **Plan** (from above) and **3D** (free orbit) are for overview and awkward spots.
 
 | You want to | Do this | Checked in the game |
 |---|---|---|

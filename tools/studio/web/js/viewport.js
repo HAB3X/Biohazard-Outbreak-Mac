@@ -53,7 +53,8 @@ export class Viewport {
       for (let i = 0, j = q.length - 1; i < q.length; j = i++) if ((q[i][1] > p[2]) !== (q[j][1] > p[2]) && p[0] < (q[j][0] - q[i][0]) * (p[2] - q[i][1]) / (q[j][1] - q[i][1]) + q[i][0]) hit = !hit;
       return hit;
     };
-    const k = room.cameras.findIndex(inside);
+    let k = -1;
+    room.cameras.forEach((c, i) => { if (inside(c)) k = i; });       // the last one whose box holds the point (measured: the first room of file 2's zoo starts in camera 3, boxes 2 and 3 both hold the start)
     if (k >= 0) return k;
     let best = 0, bd = 1e18;
     room.cameras.forEach((c, i) => { const d = Math.hypot(c.eye[0] - p[0], c.eye[2] - p[2]); if (d < bd) { bd = d; best = i; } });

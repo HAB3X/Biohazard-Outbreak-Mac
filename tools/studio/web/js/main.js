@@ -146,11 +146,11 @@ function buildCamNav() {
   const label = el("span", { class: "camlabel" });
   prev.addEventListener("click", () => viewport.stepCamera(-1)); next.addEventListener("click", () => viewport.stepCamera(1));
   const marks = el("button", { class: "btn", title: "Show or hide the markers drawn over the picture", html: icon("eye", 16) + " Markers" });
-  let on = true;
+  let shown = true;
   marks.addEventListener("click", () => {
-    on = !on;
-    for (const k of ["areas", "items", "enemies", "labels"]) store.show[k] = on;
-    marks.classList.toggle("on", on);
+    shown = !shown;
+    for (const k of ["areas", "items", "enemies", "labels"]) store.show[k] = shown;
+    marks.classList.toggle("on", shown);
     viewport.redraw();
   });
   marks.classList.add("on");
