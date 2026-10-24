@@ -169,7 +169,13 @@ function buildCamNav() {
   hint.innerHTML = "<b>W A S D</b> move &nbsp; <b>Q E</b> down, up &nbsp; <b>drag</b> to look &nbsp; <b>wheel</b> forward, back &nbsp; <b>Shift</b> faster &nbsp; ";
   const back = el("button", { class: "btn", style: "margin-left:6px" }, "Back to the game's camera");
   back.addEventListener("click", () => setMode("game"));
-  hint.append(back);
+  const pic = el("button", { class: "btn", style: "margin-left:6px", title: "Show the game's own picture from where the free camera is (taken in the game started behind the scenes, a moment after you stop moving)", html: icon("play", 14) + " Game's picture" });
+  pic.addEventListener("click", () => { store.real.free = !store.real.free; pic.classList.toggle("on", store.real.free); freeChanged(true); });
+  store.real.freeBtn = pic;
+  const upd = el("button", { class: "btn", style: "display:none;margin-left:6px", title: "Start the game again with your changes and take the picture again" }, "Update picture");
+  upd.addEventListener("click", () => refreshFree(true));
+  store.real.freeUpdate = upd;
+  hint.append(back, pic, upd);
   hint.style.pointerEvents = "auto";
   const editHint = el("div", { class: "float", id: "edithint" });
   editHint.innerHTML = "Pick a thing, then <b>drag</b> it to move it &nbsp; <b>arrow keys</b> nudge &nbsp; <b>R</b> turns &nbsp; the handles lift, turn and resize objects";
@@ -181,8 +187,8 @@ function buildCamNav() {
     editHint.style.display = store.mode !== "plan" && store.selection.length ? "block" : "none";
     if (r) label.textContent = `Camera ${(viewport.camIndex[r.file] ?? 0) + 1} of ${r.cameras.length}`;
   };
-  on("camera", () => { sync(); if (store.real.on) refreshReal(); });
-  on("mode", () => { sync(); if (store.mode !== "game") viewport.setShot(null); else if (store.real.on) refreshReal(); });
+  on("camera", () => { sync(); if (store.real.on) refreshReal(); if (store.mode === "3d") freeChanged(); });
+  on("mode", () => { sync(); if (store.mode !== "game") viewport.setShot(null); if (store.mode === "game" && store.real.on) refreshReal(); freeChanged(); });
   on("room", sync); on("selection", sync);
   on("changed", () => { if (store.real.on) refreshReal(); });
   sync();
@@ -225,6 +231,55 @@ async function refreshReal(force) {
   }
 }
 
+// ---- the free camera's game picture: a moment after the camera stops, the game is asked for its own picture from exactly there
+let freeTimer = null, freeSeq = 0, freePose = "";
+const poseOf = () => JSON.stringify([viewport.camera.eye().map(Math.round), viewport.camera.target.map(Math.round), store.room, store.mode]);
+// the view is drawn many times a second (the "camera" event comes with each): only a different pose, mode or room asks for another picture
+function freeChanged(force) {
+  const pose = poseOf();
+  if (!force && pose === freePose) return;
+  freePose = pose;
+  clearTimeout(freeTimer);
+  const on = store.mode === "3d" && store.real.free && store.survey.supported;
+  viewport.usePhoto(on);
+  viewport.setShot(on ? viewport.shot : null, true);       // the last picture stays, dimmed, until the game's new one arrives
+  if (on) freeTimer = setTimeout(refreshFree, 450);
+}
+async function refreshFree(force) {
+  const real = store.real, r = roomOf(store.room);
+  if (store.mode !== "3d" || !real.free || !r || !store.survey.supported) return;
+  if (real.busy) { freeTimer = setTimeout(refreshFree, 500); return; }
+  const cam = viewport.camera, eye = cam.eye().map(Math.round), target = cam.target.map(Math.round), seq = ++freeSeq;
+  real.busy = true;
+  const { label } = real.chip;
+  label.classList.add("busy");
+  try {
+    const key = hash(JSON.stringify(currentEdits()));
+    if (!real.key || (force && real.key !== key)) {
+      store.real.freeBtn.textContent = "Starting the game…";
+      const out = await api.previewPrepare(currentEdits());
+      Object.assign(real, { key, room: out.room, urls: {} });
+    }
+    store.real.freeBtn.textContent = "Taking the picture…";
+    const hops = hopsTo(real.room, r.id);
+    if (!hops) throw new Error("no chain of doors leads there from where the game is");
+    const sp = r.spawns[0], at = sp ? [sp.pos[0], sp.pos[2], 0] : [eye[0], eye[2], 0];
+    const out = await api.previewShot(r.id, hops, at, "f" + Date.now() % 1e7, { eye, target, fov: cam.photo ? cam.photo.fov : 60 });
+    real.room = r.id;
+    const same = [...cam.eye()].every((v, i) => Math.abs(v - eye[i]) < 2) && cam.target.every((v, i) => Math.abs(v - target[i]) < 2);
+    if (seq === freeSeq && store.mode === "3d" && same) {
+      viewport.setShot(out.url, real.key !== hash(JSON.stringify(currentEdits())));
+      store.real.freeUpdate.style.display = real.key !== hash(JSON.stringify(currentEdits())) ? "" : "none";
+    }
+  } catch (e) {
+    toast("The game's picture didn't work", "err", e.message, 7000);
+    store.real.free = false; store.real.freeBtn.classList.remove("on"); viewport.usePhoto(false);
+  } finally {
+    real.busy = false; label.classList.remove("busy");
+    store.real.freeBtn.innerHTML = icon("play", 14) + " Game's picture";
+  }
+}
+
 // the game's pictures of every room are taken in the background the first time, and kept (work/studio/survey)
 async function watchSurvey() {
   const chip = document.getElementById("loadchip");
@@ -233,6 +288,8 @@ async function watchSurvey() {
     store.survey.supported = !!s.supported;
     if (!s.supported) return;
     store.real.on = true;
+    store.real.free = true;
+    if (store.real.freeBtn) store.real.freeBtn.classList.add("on");
     const realBtn = [...document.querySelectorAll("#camnav .btn")].find((b) => b.textContent.includes("Real view"));
     if (realBtn) realBtn.classList.add("on");
     for (;;) {

@@ -25,6 +25,7 @@ class Preview:
         self.run = None
         self.patch = None
         self.room = None
+        self.free_camera = False
         self.lock = threading.Lock()
 
     def alive(self):
@@ -42,6 +43,7 @@ class Preview:
             if self.alive() and self.patch == patch:
                 return self.room
             self.stop()
+            self.free_camera = False
             self.run = auto.AutoPlay(self.game, patch, headless=True, folder=self.folder)
             S.through_menus(self.run, auto.keys_for(self.info["menus"]))
             time.sleep(4)
@@ -100,18 +102,43 @@ class Preview:
             new[0].unlink()
             return out
 
-    def shot(self, room, hops, at, name):
-        """The picture (a JPEG path) of the game with the player at `at` in room number `room` after `hops` through the doors"""
+    MAIL = 0x01D60000          # the Modern camera driver's mailbox (src/modern_camera.cpp): eye, look, field of view, then the magic word
+    MAGIC = 0x44555453
+
+    def _camera(self, camera):
+        """The game's camera held at `camera` ({eye, target, fov}), or given back when None"""
+        if camera is None:
+            if self.free_camera:
+                self.run.send(f"poke {self.MAIL:x} 0")
+                self.free_camera = False
+                time.sleep(0.8)
+            return
+        values = list(camera["eye"]) + list(camera["target"]) + [camera["fov"]]
+        for i, v in enumerate(values):
+            self.run.send(f"poke {self.MAIL + 4 + 4 * i:x} {auto.float_hex(v)}")
+        self.run.send(f"poke {self.MAIL:x} {self.MAGIC:08x}")
+        self.free_camera = True
+
+    def shot(self, room, hops, at, name, camera=None):
+        """The picture (a JPEG path) of the game with the player at `at` in room number `room` after `hops` through the doors; from `camera` ({eye, target, fov}) when given, wherever that is"""
         from PIL import Image
 
         with self.lock:
             if not self.alive():
                 raise RuntimeError("the game isn't running")
-            for x, z in hops:
-                self._poke(x, z)
-                time.sleep(6)
-            self._poke(at[0], at[1], at[2] if len(at) > 2 else None)
-            time.sleep(3.5)
+            if camera is not None and self.free_camera and self.room == room and not hops:
+                self._camera(camera)             # the player is in place and the game already shows a view of this kind: only the view moves
+                time.sleep(0.9)
+            else:
+                self._camera(None)
+                for x, z in hops:
+                    self._poke(x, z)
+                    time.sleep(6)
+                self._poke(at[0], at[1], at[2] if len(at) > 2 else None)
+                time.sleep(3.5)
+                if camera is not None:
+                    self._camera(camera)
+                    time.sleep(1.2)
             shots = self.folder / "shots"
             before = set(shots.glob("*"))
             self.run.send(f"snap {name}")

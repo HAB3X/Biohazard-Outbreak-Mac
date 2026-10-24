@@ -145,10 +145,10 @@ class Studio:
             start = start_room(self.game, self.scenario) or bh_autoplay.KNOWN[(self.game, self.scenario)]["start_room"]
         return {"room": self.preview.prepare(built["patch"], start), "seconds": built["seconds"]}
 
-    def preview_shot(self, room, hops, at, name):
+    def preview_shot(self, room, hops, at, name, camera=None):
         if self.preview is None:
             raise ValueError("prepare the real view first")
-        path = self.preview.shot(room, [tuple(h) for h in hops], tuple(at), name)
+        path = self.preview.shot(room, [tuple(h) for h in hops], tuple(at), name, camera)
         return {"url": f"/api/shot?name={path.name}", "room": room}
 
     def survey_start(self):
@@ -419,7 +419,7 @@ def make_handler(studio):
                 elif path == "/api/preview/prepare":
                     self.send(200, json.dumps(studio.preview_prepare(body.get("edits", {}))))
                 elif path == "/api/preview/shot":
-                    self.send(200, json.dumps(studio.preview_shot(body["room"], body.get("hops", []), body["at"], body["name"])))
+                    self.send(200, json.dumps(studio.preview_shot(body["room"], body.get("hops", []), body["at"], body["name"], body.get("camera"))))
                 elif path == "/api/stop":
                     studio.stop()
                     self.send(200, "{}")

@@ -71,6 +71,7 @@ struct State
 
     bool levelLive = false;
     bool frozen = false;
+    bool studio = false; // Outbreak Studio's camera drives (its mailbox)
     bool freeAimOn = false;
     float nearScale = 1.0f;
     bool lightOn = false;
@@ -518,6 +519,53 @@ void FirstPersonFrame(const Config& c, bool newFrame)
     SetStatus(g_firstPerson ? "first person: in her eyes" : "first person: waiting");
 }
 
+// Outbreak Studio asks for a picture from any viewpoint by filling a mailbox in main memory (the control FIFO's poke): the
+// magic word last. The camera is held there each frame, with the room's own cut nearest the eye borrowed so the game draws
+// what suits that view; zero the magic to hand the camera back. Words: magic, eye xyz, look xyz, field of view (floats)
+constexpr uint32_t StudioMail = 0x01D60000;
+constexpr uint32_t StudioMagic = 0x44555453; // "STUD"
+
+float MailFloat(uint32_t at)
+{
+    uint32_t w = rd32(at);
+    float f;
+    std::memcpy(&f, &w, 4);
+    return f;
+}
+
+void StudioFrame()
+{
+    Config c = ReadConfig();
+    c.cutMatch = true;
+    if (!s.frozen)
+    {
+        Freeze();
+    }
+    s.studio = true;
+    const Vec3 eye{MailFloat(StudioMail + 4), MailFloat(StudioMail + 8), MailFloat(StudioMail + 12)};
+    const Vec3 look{MailFloat(StudioMail + 16), MailFloat(StudioMail + 20), MailFloat(StudioMail + 24)};
+    const float fov = MailFloat(StudioMail + 28);
+    g_game->WriteCamera(eye, look);
+    if (fov > 1.0f && fov < 170.0f)
+    {
+        g_game->SetFov(fov);
+    }
+    g_game->KeepArtwork();
+    CutMatch(c, eye);
+}
+
+void StudioOff()
+{
+    s.studio = false;
+    if (s.cutForced >= 0)
+    {
+        g_game->ReleaseCut();
+    }
+    s.cutForced = s.cutCandidate = -1;
+    g_game->RestoreArtwork();
+    Unfreeze(true);
+}
+
 void DriverFrame()
 {
     uint32_t frames = rd32(g_game->layout().frames);
@@ -530,6 +578,16 @@ void DriverFrame()
     float dt = std::clamp(static_cast<float>(frames - s.prevFrames) / VblankHz, 0.0f, MaxDt);
     s.prevFrames = frames;
     s.now += dt;
+
+    if (rd32(StudioMail) == StudioMagic)
+    {
+        StudioFrame();
+        return;
+    }
+    if (s.studio)
+    {
+        StudioOff();
+    }
 
     const Config c = ReadConfig();
     if (c.view != View::Modern)

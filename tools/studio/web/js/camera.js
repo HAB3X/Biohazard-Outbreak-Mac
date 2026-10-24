@@ -26,16 +26,24 @@ export class Camera {
     this.dist = 6000;         // orbit: distance from the target
     this.w = 1; this.h = 1;
     this.game = null;         // game view: {eye, target, fov (vertical degrees), aspect}: one of the room's own cameras
+    this.photo = null;        // the free camera shaped as the game's picture ({fov, aspect, lens}), so the game's own picture taken from it fits
     this.rect = { x: 0, y: 0, w: 1, h: 1 };
   }
 
   resize(w, h) { this.w = Math.max(1, w); this.h = Math.max(1, h); this.fit(); }
 
   // in the game view the picture keeps the game's shape and sits in the middle of the pane
+  // the lens the picture is made with: a game camera's, or the free camera's when it is shaped as the game's picture
+  get pictureLens() {
+    if (this.mode === "game" && this.game) return this.game;
+    return this.mode === "orbit" ? this.photo : null;
+  }
+
   fit() {
-    if (this.mode !== "game" || !this.game) { this.rect = { x: 0, y: 0, w: this.w, h: this.h }; return; }
-    let w = this.w, h = w / this.game.aspect;
-    if (h > this.h) { h = this.h; w = h * this.game.aspect; }
+    const g = this.pictureLens;
+    if (!g) { this.rect = { x: 0, y: 0, w: this.w, h: this.h }; return; }
+    let w = this.w, h = w / g.aspect;
+    if (h > this.h) { h = this.h; w = h * g.aspect; }
     this.rect = { x: (this.w - w) / 2, y: (this.h - h) / 2, w, h };
   }
 
@@ -69,9 +77,9 @@ export class Camera {
   }
 
   proj() {
-    const m = new Float32Array(16), aspect = this.mode === "game" && this.game ? this.game.lens : this.w / this.h;
-    if (this.mode === "game" && this.game) {
-      const t = 1 / Math.tan(this.game.fov * Math.PI / 360), n = 30, f = 300000;
+    const g = this.pictureLens, m = new Float32Array(16), aspect = g ? g.lens : this.w / this.h;
+    if (g) {
+      const t = 1 / Math.tan(g.fov * Math.PI / 360), n = 30, f = 300000;
       m[0] = t / aspect; m[5] = t; m[10] = (f + n) / (n - f); m[11] = -1; m[14] = 2 * f * n / (n - f);
     } else if (this.mode === "plan") {
       const hh = this.scale * this.h / 2, hw = hh * aspect, n = 100, f = 200000;
@@ -99,7 +107,7 @@ export class Camera {
   // the ray through a screen point
   ray(sx, sy) {
     const { eye, x, y, z } = this.basis();
-    const r = this.rect, g = this.mode === "game" && this.game;
+    const r = this.rect, g = this.pictureLens;
     const nx = ((sx - r.x) / r.w) * 2 - 1, ny = 1 - ((sy - r.y) / r.h) * 2, aspect = g ? g.lens : this.w / this.h;
     if (this.mode === "plan") {
       const hh = this.scale * this.h / 2, hw = hh * aspect;

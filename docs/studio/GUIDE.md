@@ -17,7 +17,7 @@ Start it with `./studio.sh` (File 2, scenario 40 opens first; the scenario menu 
 | Choose where the game begins | click a room > **Begin the game here** | yes (File 2's zoo; the other File 2 scenarios use the same records) |
 | Start a level of your own in a room slot | click the room > **Clear this room**: no objects, enemies, items, walls or ground (doors stay); then **Add > Floor**, **Add > Wall**, **Add > Your own model** | yes (a cleared zoo room with a floor laid ran, the player walked on it) |
 | Move, turn, resize with handles | select a thing in Game view or the free camera: the green arrow lifts it, the yellow ring turns an object, the blue diamond resizes it; arrow keys nudge, R turns, `-` `=` resize | lift checked by script only |
-| Look around freely | **Free camera** tab, or press W A S D / right-drag in Game view | yes |
+| Look around freely | **Free camera** tab, or press W A S D / right-drag in Game view. A moment after you stop, the picture becomes **the game's own** from exactly where the camera is (the game, started behind the scenes, is told to hold its camera there: eye, look and field of view are written to a mailbox in main memory at 0x01D60000, read by `src/modern_camera.cpp`, with the room's nearest cut borrowed so it draws what suits that view). While you move, the last picture stays dimmed. **Game's picture** switches it off (then Studio's own, rougher drawing shows) | yes (File 1 bar and File 2 zoo, arbitrary eye and look) |
 | Try it | **Play** (from the start, or from this room); **Save the patch file** keeps the result |  |
 
 Everything is undoable (⌘Z) and saved as you go (`work/studio/`).

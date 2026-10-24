@@ -301,7 +301,7 @@ export class Renderer {
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.clearColor(0.039, 0.047, 0.063, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    if (camera.mode === "game") {        // the game's picture has its own shape: drawn in a frame of that shape
+    if (camera.pictureLens) {        // the game's picture has its own shape: drawn in a frame of that shape
       const r = camera.rect, k = this.canvas.width / camera.w, y = (camera.h - r.y - r.h) * k;
       gl.enable(gl.SCISSOR_TEST); gl.viewport(r.x * k, y, r.w * k, r.h * k); gl.scissor(r.x * k, y, r.w * k, r.h * k);
       gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

@@ -49,10 +49,18 @@ export class Viewport {
 
   placeShot() {
     const img = document.getElementById("shot"), r = this.camera.rect;
-    const on = this.shot && store.mode === "game";
+    const on = this.shot && this.camera.pictureLens;
     img.style.display = on ? "block" : "none";
     document.getElementById("gl").classList.toggle("hidden", !!on);
     if (on) Object.assign(img.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" });
+  }
+
+  // the free camera shaped as the game's picture (so the game's own picture from it can be shown), or as the pane
+  usePhoto(on) {
+    this.camera.photo = on ? { fov: 60, aspect: GAME_ASPECT, lens: GAME_LENS } : null;
+    this.camera.fit();
+    this.placeShot();
+    this.redraw();
   }
 
   // ---- the free camera: W A S D move, Q and E go down and up, the wheel moves forward and back, dragging the empty picture turns the view, shift is fast
@@ -269,7 +277,7 @@ export class Viewport {
         box = [Math.min(...xs) - 400, box ? box[1] : 0, Math.min(...zs) - 400, Math.max(...xs) + 400, box ? box[4] : 300, Math.max(...zs) + 400];
       }
     }
-    if (box) this.camera.frame(box);
+    if (box) this.camera.pictureLens(box);
     this.redraw();
   }
 
@@ -278,7 +286,7 @@ export class Viewport {
     for (const r of store.scene.rooms) r.areas.forEach((a) => a.quad.forEach((p) => { if (Math.abs(p[0]) < 1e7) all.push(p); }));
     if (!all.length) return;
     const xs = all.map((p) => p[0]), zs = all.map((p) => p[1]);
-    this.camera.frame([Math.min(...xs), 0, Math.min(...zs), Math.max(...xs), 300, Math.max(...zs)], 1.1);
+    this.camera.pictureLens([Math.min(...xs), 0, Math.min(...zs), Math.max(...xs), 300, Math.max(...zs)], 1.1);
     this.redraw();
   }
 
