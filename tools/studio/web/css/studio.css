@@ -233,3 +233,5 @@ button.ghost:hover { color: var(--text); background: var(--raised); }
 #tour b { color: var(--text); }
 #tour .tstep { font-size: 11px; color: var(--faint); margin-bottom: 4px; }
 #tour .trow { display: flex; justify-content: space-between; align-items: center; }
+.libnote { color: var(--faint); font-size: 12px; }
+.libnote:empty { display: none; }

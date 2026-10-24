@@ -93,8 +93,8 @@ export function place(tool, at) {
   }
   if (tool.id === "library") {
     if (!store.libraryPick) return null;
-    const c = addLibrary(room, store.renderer, store.libraryPick, [x, y, z]);
-    if (!c) { emit("note", "That object isn't loaded yet.", "warn"); return null; }
+    let c;
+    try { c = addLibrary(room, store.renderer, store.libraryPick, [x, y, z]); } catch (e) { emit("note", e.message, "warn"); return null; }
     if (store.libraryRot) setPose(c, { rot: [0, store.libraryRot, 0] });
     commit("Add " + (store.libraryPick.name || "object"));
     select([{ c: "scenery", file: room.file, i: c.i }]);

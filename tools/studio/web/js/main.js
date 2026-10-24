@@ -220,7 +220,7 @@ function buildCamNav() {
   on("camera", () => { sync(); if (store.real.on) refreshReal(); if (store.mode === "3d") freeChanged(); });
   on("mode", () => { sync(); if (store.mode !== "game") viewport.setShot(null); if (store.mode === "game" && store.real.on) refreshReal(); freeChanged(); });
   on("room", sync); on("selection", sync);
-  on("changed", () => { if (store.real.on) refreshReal(); });
+  on("changed", () => { if (store.real.on) refreshReal(); autoRefresh(); });
   sync();
 }
 // ---- the real view: the game's own picture of the room and camera shown, taken in a game started behind the scenes on the current edits
@@ -277,6 +277,23 @@ function freeChanged(force) {
   viewport.setShot(on ? viewport.shot : null, true);       // the last picture stays, dimmed, until the game's new one arrives
   if (on) freeTimer = setTimeout(refreshFree, 450);
 }
+// a line at the top left for something slow going on
+function showChip(text) {
+  const chip = document.getElementById("loadchip");
+  if (!chip) return;
+  chip.style.display = text ? "inline-flex" : "none";
+  if (text) chip.textContent = text;
+}
+
+// a while after the last change the game's picture is made again with it; until then the changes show as sketches over the old picture
+let autoTimer = null;
+function autoRefresh() {
+  real_fresh(false);
+  clearTimeout(autoTimer);
+  if (store.mode === "3d" && store.real.free && store.survey.supported) autoTimer = setTimeout(() => refreshFree(true), 7000);
+}
+const real_fresh = (v) => { store.real.fresh = v; };
+
 // where the free camera stands exactly where one of the room's cameras does, with nothing changed since: the picture already taken of it, with no need for the game
 function onGameCamera() {
   const r = roomOf(store.room), cam = viewport.camera;
@@ -297,6 +314,7 @@ async function refreshFree(force) {
     const key = hash(JSON.stringify(currentEdits()));
     if (!real.key || (force && real.key !== key)) {
       store.real.freeBtn.textContent = "Starting the game…";
+      showChip("Updating the game's picture with your changes… (about a minute)");
       const out = await api.previewPrepare(currentEdits());
       Object.assign(real, { key, room: out.room, urls: {} });
     }
@@ -308,14 +326,17 @@ async function refreshFree(force) {
     real.room = r.id;
     const same = [...cam.eye()].every((v, i) => Math.abs(v - eye[i]) < 2) && cam.target.every((v, i) => Math.abs(v - target[i]) < 2);
     if (seq === freeSeq && store.mode === "3d" && same) {
-      viewport.setShot(out.url, real.key !== hash(JSON.stringify(currentEdits())));
-      store.real.freeUpdate.style.display = real.key !== hash(JSON.stringify(currentEdits())) ? "" : "none";
+      const stale = real.key !== hash(JSON.stringify(currentEdits()));
+      real.fresh = !stale;
+      viewport.setShot(out.url, stale);
+      store.real.freeUpdate.style.display = stale ? "" : "none";
     }
   } catch (e) {
     toast("The game's picture didn't work", "err", e.message, 7000);
     store.real.free = false; store.real.freeBtn.classList.remove("on"); viewport.usePhoto(false);
   } finally {
     real.busy = false; label.classList.remove("busy");
+    showChip(null);
     store.real.freeBtn.innerHTML = icon("play", 14) + " Game's picture";
   }
 }
@@ -618,7 +639,7 @@ async function boot() {
     api.messages().then((m) => { store.messages = m; renderInspector(); }).catch(() => {});
     buildTopbar(); buildToolbar(); buildViewMenu();
     viewport = new Viewport();
-    window.studio = { store, viewport, scene };      // for the console
+    window.studio = { store, viewport, scene, free: { changed: (f) => freeChanged(f), refresh: (f) => refreshFree(f) } };      // for the console
     renderOutline(); renderInspector(); updateHint();
     on("tool", () => { syncRail(); updateHint(); });
     store.roomPanel = false;
@@ -648,6 +669,7 @@ async function boot() {
     startTour();
     await viewport.loadModels(progress);
     viewport.redraw();
+    freeChanged(true);       // the saved changes are in the scene only now: the game's picture is asked for with them
   } catch (e) {
     msg.textContent = "Couldn't start: " + e.message;
     console.error(e);

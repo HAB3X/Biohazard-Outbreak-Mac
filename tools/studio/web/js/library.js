@@ -7,7 +7,7 @@ const KINDS = [["all", "All"], ["recent", "Recent"], ["furniture", "Furniture"],
 // what a name says the object is, for the filter chips
 const KIND_WORDS = [["furniture", /chair|armchair|bench|table|stool|shelf|cabinet|post|rail|staircase|sink|basin|urinal|tap|beer/i], ["boxes", /box|crate|carton|stack|cube|slab|poster/i], ["bottles", /bottle|decanter|vase|jar|glass/i], ["containers", /barrel|bin|bucket|basket|drum|tank|sack|tube|roller/i], ["decor", /statue|figure|picture|lamp|magazine|coat|cloth|helmet|paper|mop|rod|pipe|hook|handle|baluster|corrugated|panel|plank|sheet/i]];
 const kindOf = (name) => (KIND_WORDS.find(([, re]) => re.test(name)) || ["other"])[0];
-let panel = null, grid = null, count = null, viewport = null, names = null;
+let panel = null, grid = null, count = null, viewport = null, names = null, note = null;
 let state = { kind: "all", where: "here", text: "", unnamed: false };
 let catalogue = [], built = "";
 
@@ -140,11 +140,16 @@ async function open() {
     search.addEventListener("input", () => { state.text = search.value; fill(); });
     const head = el("div", { class: "libhead" }, el("b", {}, "Library"), count = el("span", { class: "libcount" }), (() => { const x = el("button", { class: "libclose", title: "Close  (B)" }, "×"); x.addEventListener("click", close); return x; })());
     grid = el("div", { class: "libgrid" });
-    panel = el("div", { class: "float", id: "library" }, head, search, where, chips, grid);
+    note = el("div", { class: "libnote" });
+    panel = el("div", { class: "float", id: "library" }, head, search, where, chips, note, grid);
     document.getElementById("view").append(panel);
   }
   const key = stamp(viewport.renderer);
   if (key !== built) { catalogue = build(viewport.renderer); built = key; }
+  // a game whose shapes nobody has named yet: they all show, each by its picture
+  const unnamedGame = !catalogue.some((it) => it.name);
+  if (unnamedGame) state.unnamed = true;
+  note.textContent = unnamedGame ? "These shapes aren't named yet: go by the pictures." : "";
   panel.classList.add("on");
   document.getElementById("libbtn")?.classList.add("on");
   fill();

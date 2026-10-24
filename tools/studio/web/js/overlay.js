@@ -258,6 +258,19 @@ export function draw(ctx, camera, dpr, rooms, hover) {
       }
     }
 
+    // what you added that the game's picture doesn't show yet: its own picture standing in its box, until the game's picture is made again
+    if (current && r.scenery && camera.pictureLens && !store.real.fresh) {
+      for (const s of r.scenery) {
+        if (!s.isNew || !s.library || !s.cs) continue;
+        const q = s.cs.map((p) => P(p));
+        if (q.some((p) => p[2] < -0.9)) continue;
+        const img = sketchImage(s.library);
+        if (!img || !img.complete) continue;
+        const x0 = Math.min(...q.map((p) => p[0])), x1 = Math.max(...q.map((p) => p[0])), y0 = Math.min(...q.map((p) => p[1])), y1 = Math.max(...q.map((p) => p[1])), side = Math.max(x1 - x0, y1 - y0);
+        layers.push({ order: 4, run() { ctx.save(); ctx.globalAlpha = 0.9; ctx.drawImage(img, (x0 + x1) / 2 - side / 2, (y0 + y1) / 2 - side / 2, side, side); ctx.restore(); } });
+      }
+    }
+
     if (show.nodes) {
       for (const n of r.nodes) {
         const ref = { c: "nodes", file, i: n.i }, col = colour("node"), p = P(n.pos), sel = selected(ref);
@@ -394,6 +407,20 @@ const hpOf = (n) => (HP_NOTE[n.hp] || `tier ${n.hp}`);
 const HP_NOTE = {};
 export const itemName = (kind) => ITEMS[kind] || "item " + kind.toString(16);
 export const ITEMS = {};
+
+// the picture of a Library object (drawn once, kept)
+const sketches = new Map();
+function sketchImage(lib) {
+  const key = `${lib.room}:${lib.mesh}`;
+  if (!sketches.has(key)) {
+    const r = store.renderer && store.renderer.thumbnail(lib.room, lib.mesh, 128, true);
+    if (!r) return null;
+    const img = new Image();
+    img.src = r.url;
+    sketches.set(key, img);
+  }
+  return sketches.get(key);
+}
 
 // ---- hit tests: each returns a distance (smaller is nearer) or -1
 function pointTest(p, radius) {

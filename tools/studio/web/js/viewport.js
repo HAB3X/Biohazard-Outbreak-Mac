@@ -158,17 +158,24 @@ export class Viewport {
   async loadModels(progress) {
     const rooms = [...store.scene.rooms].sort((a, b) => (a.file === store.room ? -1 : b.file === store.room ? 1 : 0));
     let done = 0;
+    const later = [];       // rooms with Library objects in their saved edits: those objects come from other rooms' models, so they are set up once every model is in
     for (const r of rooms) {
       const file = r.file.replace(".rdt", ".nbd");
       try {
         if (!store.models[r.file]) {
           const json = await api.model(file);
-          if (!json.error) { store.models[r.file] = true; this.renderer.add(r.file, json); attach(this.renderer, r.file); }
+          if (!json.error) {
+            store.models[r.file] = true; this.renderer.add(r.file, json);
+            const saved = store.history[store.at].rooms[r.file];
+            if (saved && (saved.new_objects || []).some((n) => n.library)) later.push(r.file); else attach(this.renderer, r.file);
+          }
         }
       } catch (e) { /* a room without a model is drawn without one */ }
       progress && progress(++done, rooms.length);
       this.redraw();
     }
+    for (const file of later) attach(this.renderer, file);
+    this.redraw();
   }
 
   // the pictures you replaced are painted onto the models as they change (and put back when undone)
@@ -283,7 +290,7 @@ export class Viewport {
     const p = [0, 1, 2, 3, 4, 5, 6, 7].map(corner), ctx = this.ctx;
     if (p.some((q) => q[2] < -1)) return;
     if (!this.ghostImg || this.ghostImg.key !== `${pick.room}:${pick.mesh}`) {
-      const r = this.renderer.thumbnail(pick.room, pick.mesh, 128);
+      const r = this.renderer.thumbnail(pick.room, pick.mesh, 128, true);
       if (r) { const img = new Image(); img.src = r.url; this.ghostImg = { key: `${pick.room}:${pick.mesh}`, img }; }
     }
     ctx.save();

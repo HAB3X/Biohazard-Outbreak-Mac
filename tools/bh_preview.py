@@ -48,6 +48,7 @@ class Preview:
             S.through_menus(self.run, auto.keys_for(self.info["menus"]))
             time.sleep(4)
             self.patch, self.room = patch, start_room
+            threading.Thread(target=self._guard, args=(self.run,), daemon=True).start()
             return self.room
 
     def room_now(self):
@@ -66,6 +67,15 @@ class Preview:
         words = self.run.peek(self.info["camera"], 6)
         f = [struct.unpack("<f", struct.pack("<I", w))[0] for w in words]
         return tuple(f[:3]), tuple(f[3:6])
+
+    def _guard(self, run):
+        """Holds the player's health up while this game runs: the room's enemies would otherwise end it in the results screen within a minute (each write is one small line to the control FIFO, so it can interleave with the picture-taking's)"""
+        while run is self.run and run.alive():
+            try:
+                self.keep_alive()
+            except OSError:
+                return              # the game has gone: its FIFO is closed
+            time.sleep(1.0)
 
     def keep_alive(self):
         """The player's health held at the top (the preview game stays running for hours with the room's enemies about; one that kills the player ends in the results screen)"""

@@ -43,7 +43,7 @@ export function applyEdits(room, spec) {
   if (!room.scenery) return;
   (spec.new_objects || []).forEach((n) => {
     const like = (room.scenery || []).find((x) => x.i === n.like && !x.isNew);
-    if (n.library) { const c = standIn(room, n.library); if (c) { c.i = nextNumber(room) - 1; c.bone = c.i + 2; } }
+    if (n.library) standIn(room, n.library);
     else if (like) { const c = duplicate(room, like, { i: nextNumber(room), silent: true }); if (n.geometry) giveGeometry(c, n.geometry); }
   });
   for (const [i, d] of Object.entries(spec.scenery || {})) {
@@ -99,7 +99,7 @@ function standIn(room, lib) {
   const src = store.renderer && store.renderer.models[lib.room];
   const mesh = src && src.meshes.find((x) => x.mesh === lib.mesh), here = store.renderer && store.renderer.models[room.file];
   const like = room.scenery.find((x) => !x.isNew);
-  if (!mesh || !here || !like) return null;
+  if (!mesh || !here || !like) throw new Error(`The Library object ${lib.mesh} of ${lib.room} can't be set up in ${room.file}: its model isn't loaded`);
   const c = duplicate(room, like, { silent: true });
   const lc = [0, 1, 2].map((k) => (mesh.lo[k] + mesh.hi[k]) / 2);
   Object.assign(c, { library: lib, lo: mesh.lo, hi: mesh.hi, lc, parent: here.bones[2][0], scale: [1, 1, 1], rot: [0, 0, 0], off: [0, 0, 0] });
@@ -110,7 +110,6 @@ function standIn(room, lib) {
 // a library object put down so that its middle stands over `target` (x, y, z) with its lowest point on the ground there
 export function addLibrary(room, renderer, lib, target) {
   const c = standIn(room, lib);
-  if (!c) return null;
   const m = renderer.models[room.file], pw = m.world[c.parent];
   const inv = pw ? inverse3(pw) : [1, 0, 0, 0, 1, 0, 0, 0, 1], t = pw ? [pw[12], pw[13], pw[14]] : [0, 0, 0];
   const d = [target[0] - t[0] - c.lc[0], target[1] - t[1] - c.lo[1], target[2] - t[2] - c.lc[2]];

@@ -177,8 +177,8 @@ export class Renderer {
   }
 
   // a picture of one object of a room's model on its own, as a data: URL; ready is false while its pictures are still arriving
-  thumbnail(file, k, px = 112) {
-    const r = this.thumbnailPixels(file, k, px);
+  thumbnail(file, k, px = 112, transparent = false) {
+    const r = this.thumbnailPixels(file, k, px, transparent);
     if (!r) return null;
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = px;
@@ -189,7 +189,7 @@ export class Renderer {
   }
 
   // the same picture as rows of RGBA bytes, top row first
-  thumbnailPixels(file, k, px) {
+  thumbnailPixels(file, k, px, transparent = false) {
     const gl = this.gl, m = this.models[file], mesh = m && m.meshes.find((x) => x.mesh === k);
     if (!mesh) return null;
     if (this.thumbFbo && this.thumbPx !== px) {
@@ -224,7 +224,8 @@ export class Renderer {
     const prog = this.tex, U = (name) => prog.loc[name] ?? (prog.loc[name] = gl.getUniformLocation(prog.p, name));
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.thumbFbo);
     gl.viewport(0, 0, px, px); gl.disable(gl.SCISSOR_TEST); gl.disable(gl.CULL_FACE); gl.disable(gl.BLEND); gl.depthMask(true);
-    gl.clearColor(0.1, 0.11, 0.15, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
+    if (transparent) gl.clearColor(0, 0, 0, 0); else gl.clearColor(0.1, 0.11, 0.15, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
     gl.useProgram(prog.p);
     const id = new Float32Array(16); id[0] = id[5] = id[10] = id[15] = 1;
     gl.uniformMatrix4fv(U("uVP"), false, mul(proj, view)); gl.uniformMatrix4fv(U("uModel"), false, id);
