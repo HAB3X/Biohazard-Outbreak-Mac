@@ -178,14 +178,31 @@ export class Renderer {
 
   // a picture of one object of a room's model on its own, as a data: URL; ready is false while its pictures are still arriving
   thumbnail(file, k, px = 112) {
+    const r = this.thumbnailPixels(file, k, px);
+    if (!r) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = px;
+    const ctx = canvas.getContext("2d"), image = ctx.createImageData(px, px);
+    image.data.set(r.pixels);
+    ctx.putImageData(image, 0, 0);
+    return { url: canvas.toDataURL("image/png"), ready: r.ready };
+  }
+
+  // the same picture as rows of RGBA bytes, top row first
+  thumbnailPixels(file, k, px) {
     const gl = this.gl, m = this.models[file], mesh = m && m.meshes.find((x) => x.mesh === k);
     if (!mesh) return null;
+    if (this.thumbFbo && this.thumbPx !== px) {
+      gl.deleteFramebuffer(this.thumbFbo); gl.deleteTexture(this.thumbTex); gl.deleteRenderbuffer(this.thumbDepth);
+      this.thumbFbo = null;
+    }
     if (!this.thumbFbo) {
-      const tex = gl.createTexture();
+      this.thumbPx = px;
+      const tex = this.thumbTex = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, px, px, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      const depth = gl.createRenderbuffer();
+      const depth = this.thumbDepth = gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, depth);
       gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, px, px);
       this.thumbFbo = gl.createFramebuffer();
@@ -229,12 +246,9 @@ export class Renderer {
     const pixels = new Uint8Array(px * px * 4);
     gl.readPixels(0, 0, px, px, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = px;
-    const ctx = canvas.getContext("2d"), image = ctx.createImageData(px, px);
-    for (let y = 0; y < px; y++) image.data.set(pixels.subarray(y * px * 4, (y + 1) * px * 4), (px - 1 - y) * px * 4);     // the picture's rows run the other way
-    ctx.putImageData(image, 0, 0);
-    return { url: canvas.toDataURL("image/png"), ready };
+    const flipped = new Uint8ClampedArray(px * px * 4);
+    for (let y = 0; y < px; y++) flipped.set(pixels.subarray(y * px * 4, (y + 1) * px * 4), (px - 1 - y) * px * 4);     // the picture's rows run the other way
+    return { pixels: flipped, ready };
   }
 
   // the buffers of a model made from geometry ({positions, uvs, triangles, material}); kept for as long as the geometry is the same
