@@ -145,7 +145,16 @@ function buildCamNav() {
   const next = el("button", { class: "btn icon", title: "The next camera  (.)", html: icon("chevron", 16) });
   const label = el("span", { class: "camlabel" });
   prev.addEventListener("click", () => viewport.stepCamera(-1)); next.addEventListener("click", () => viewport.stepCamera(1));
-  nav.append(prev, label, next);
+  const marks = el("button", { class: "btn", title: "Show or hide the markers drawn over the picture", html: icon("eye", 16) + " Markers" });
+  let on = true;
+  marks.addEventListener("click", () => {
+    on = !on;
+    for (const k of ["areas", "items", "enemies", "labels"]) store.show[k] = on;
+    marks.classList.toggle("on", on);
+    viewport.redraw();
+  });
+  marks.classList.add("on");
+  nav.append(prev, label, next, el("span", { class: "vsep" }), marks);
   document.getElementById("view").append(nav);
   const sync = () => {
     const r = store.scene && roomOf(store.room);
