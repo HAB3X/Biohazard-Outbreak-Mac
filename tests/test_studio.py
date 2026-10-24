@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""Checks of the editor's building blocks that need no game running (they read the disc images named in local.json):
+
+    python3 tests/test_studio.py
+
+What is measured in the running game is in docs/research; these keep the pieces that were measured from breaking.
+"""
+import io
+import struct
+import sys
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+
+import bh_archive as archive  # noqa: E402
+import bh_collision  # noqa: E402
+import bh_nbd  # noqa: E402
+import bh_rdt  # noqa: E402
+import bh_sld  # noqa: E402
+import tm2  # noqa: E402
+
+
+def room(game, member):
+    for _, name, node in bh_rdt.rooms(game):
+        if name == member:
+            r = bh_rdt.Room(node.read())
+            r.unlimited = True          # as the builder has it when the rebuilt disc lays the grown file
+            return r
+    raise KeyError(member)
+
+
+class Script(unittest.TestCase):
+    def test_prepend_moves_the_headers_offsets(self):
+        r = room("file2", "r0400300.rdt")
+        before = r.script_words()
+        first = r.first_instruction(0)
+        r.insert_script(first, [(2 << 24) | 0x110, 7, 5, 0])
+        after = r.script_words()
+        self.assertEqual(len(after), len(before) + 4)
+        self.assertEqual(after[9], before[9] + 16)       # thread 1 starts later by the four words
+        self.assertEqual(after[8], before[8])            # thread 0 starts where it did
+
+    def test_second_thread_insert_keeps_thread_starts(self):
+        r = room("file2", "r0400300.rdt")
+        before = r.script_words()
+        r.insert_script(r.first_instruction(1), [(2 << 24) | 0x110, 7, 5, 0])
+        after = r.script_words()
+        self.assertEqual((after[8], after[9]), (before[8], before[9]))
+
+    def test_sgl_replace_keeps_the_index_consistent(self):
+        r = room("file2", "r0400300.rdt")
+        words = r.script_words()
+        sgl = bh_rdt.Sgl(archive.Archive("file2").open("/NETBIO00.DAT/r040.afs/r040.sgl").read())
+        r.insert_script(r.first_instruction(0), [(2 << 24) | 0x110, 7, 5, 0])
+        grown = bh_rdt.Sgl(sgl.replace_script(3, words, r.script_words()))
+        self.assertEqual(len(grown.data), len(sgl.data) + 16)
+        self.assertIsNotNone(grown.find_script(3, r.script_words()))
+
+    def test_start_records_found_in_the_zoo(self):
+        import bh_studio
+
+        self.assertEqual(bh_studio.start_room("file2", 40), 3)
+
+
+class Models(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.data = archive.Archive("file2").open("/NETBIO00.DAT/r040.afs/r0400300.nbd").read()
+
+    def test_a_copied_object_parses_and_links(self):
+        new, number = bh_nbd.clone_object(self.data, 84, (100, 0, 0))
+        amo = next(c for c in bh_nbd.chunks(new) if c[0] == "AMO")
+        self.assertEqual(len(bh_nbd.meshes(new, amo[1], amo[2])), 126)
+        ahi = next(c for c in bh_nbd.chunks(new) if c[0] == "AHI")
+        records = bh_nbd.bone_records(new, ahi[1], ahi[2])
+        self.assertEqual(len(records), 128)
+        self.assertEqual(struct.unpack_from("<i", new, records[-1] + 64)[0], number)     # the bone carries its own object number
+
+    def test_an_object_made_from_geometry_reads_back(self):
+        g = {"positions": [(0, 0, 0), (1, 0, 0), (0, 1, 0)], "uvs": [(0, 0), (1, 0), (0, 1)], "triangles": [(0, 1, 2)], "material": 3}
+        new, _ = bh_nbd.clone_object(self.data, 84, None, g)
+        amo = next(c for c in bh_nbd.chunks(new) if c[0] == "AMO")
+        mesh = bh_nbd.meshes(new, amo[1], amo[2])[-1]
+        self.assertEqual(mesh.positions, [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)])
+        self.assertEqual(mesh.strips, [[0, 1, 2]])
+
+
+class Pictures(unittest.TestCase):
+    def test_restyle_round_trips_through_the_game_codec(self):
+        from PIL import Image
+
+        member = archive.Archive("file2").open("/NETBIO00.DAT/r040.afs").members()[10][1]
+        raw = bh_sld.unpack(member.read())
+        picture = tm2.pictures(raw)[0]
+        image = Image.new("RGBA", (picture.width, picture.height), (200, 30, 30, 255))
+        new = tm2.restyle(raw, image)
+        self.assertEqual(len(new), len(raw))
+        self.assertEqual(bh_sld.unpack(bh_sld.pack(new)), new)
+        self.assertEqual(tm2.pictures(new)[0].image().getpixel((3, 3))[0] > 150, True)
+
+
+class Collision(unittest.TestCase):
+    def test_the_ground_file_round_trips_and_a_floor_box_cuts_it(self):
+        node = dict(archive.Archive("file2").open("/NETBIO00.DAT/r040.afs").members())["g0400300.bin"]
+        ground = bh_collision.Collision(node.read())
+        count = len(ground.triangles)
+        self.assertGreater(count, 0)
+        cut = [piece for t in ground.triangles for piece in bh_collision.without_box(t, {"min": [11700, 10900], "max": [12200, 11400]})]
+        self.assertGreaterEqual(len(cut), count)
+        ground.triangles = cut + bh_collision.floor_triangles({"min": [11700, 10900], "max": [12200, 11400], "y": -60})
+        again = bh_collision.Collision(ground.tobytes())
+        self.assertEqual(len(again.triangles), len(ground.triangles))
+
+
+class Rooms(unittest.TestCase):
+    def test_every_room_of_both_games_still_checks_out(self):
+        for game in ("file1", "file2"):
+            bad = []
+            for pack, name, node in bh_rdt.rooms(game):
+                try:
+                    problems = bh_rdt.Room(node.read()).check()
+                except Exception as error:      # a room the reader can't take
+                    problems = [str(error)]
+                if problems:
+                    bad.append((pack, name, problems[:1]))
+            self.assertLess(len(bad), 5, bad[:3])
+
+    def test_scripts_hide_objects_by_the_table(self):
+        self.assertTrue(room("file1", "r0010200.rdt").initially_hidden())
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
