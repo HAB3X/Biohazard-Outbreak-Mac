@@ -205,10 +205,12 @@ function buildCamNav() {
   const pic = el("button", { class: "btn", style: "margin-left:6px", title: "Show the game's own picture from where the free camera is (taken in the game started behind the scenes, a moment after you stop moving)", html: icon("play", 14) + " Game's picture" });
   pic.addEventListener("click", () => { store.real.free = !store.real.free; pic.classList.toggle("on", store.real.free); freeChanged(true); });
   store.real.freeBtn = pic;
+  const bright = el("button", { class: "btn on", style: "margin-left:6px", title: "Lift the game's dark pictures a little" }, "Brighten");
+  bright.addEventListener("click", () => { document.getElementById("live").classList.toggle("plain"); bright.classList.toggle("on"); });
   const upd = el("button", { class: "btn", style: "display:none;margin-left:6px", title: "Start the game again with your changes and take the picture again" }, "Update picture");
   upd.addEventListener("click", () => refreshFree(true));
   store.real.freeUpdate = upd;
-  hint.append(back, pic, upd);
+  hint.append(back, pic, bright, upd);
   hint.style.pointerEvents = "auto";
   const editHint = el("div", { class: "float", id: "edithint" });
   editHint.innerHTML = "<b>Drag</b> to move · arrows slide along one way · ring turns · diamond resizes · <b>Del</b> removes";
@@ -269,6 +271,7 @@ let freeTimer = null, freeSeq = 0, freePose = "";
 const poseOf = () => JSON.stringify([viewport.camera.eye().map(Math.round), viewport.camera.target.map(Math.round), store.room, store.mode]);
 // the view is drawn many times a second (the "camera" event comes with each): only a different pose, mode or room asks for another picture
 function freeChanged(force) {
+  if (viewport.live && store.mode === "3d") { viewport.usePhoto(true); viewport.placeShot(); return; }      // live: the game follows the camera as it moves
   const pose = poseOf();
   if (!force && pose === freePose) return;
   freePose = pose;
@@ -276,10 +279,52 @@ function freeChanged(force) {
   const on = store.mode === "3d" && store.real.free && store.survey.supported;
   viewport.usePhoto(on);
   const known = on && onGameCamera();
-  if (known) { viewport.setShot(known, false); return; }
-  viewport.setShot(on ? viewport.shot : null, true);       // the last picture stays, dimmed, until the game's new one arrives
+  if (known) { viewport.setShot(known, false); prewarm(); return; }
+  // the last picture stays, dimmed, until the game's new one arrives; with none yet, the picture of the room's nearest camera (never Studio's own drawing: it is not what the game shows)
+  viewport.setShot(on ? (viewport.shot || nearestPicture()) : null, true);
   if (on) freeTimer = setTimeout(refreshFree, 450);
 }
+// the picture already taken by the room's camera whose eye is nearest the free camera's, or null
+function nearestPicture() {
+  const r = roomOf(store.room), eye = viewport.camera.eye();
+  if (!r) return null;
+  let best = null, bd = Infinity;
+  r.cameras.forEach((c, k) => {
+    if (!store.survey.have.has(`r${r.id}c${k}`)) return;
+    const d = Math.hypot(c.eye[0] - eye[0], c.eye[1] - eye[1], c.eye[2] - eye[2]);
+    if (d < bd) { bd = d; best = `/api/shot?kind=survey&name=r${r.id}c${k}.jpg`; }
+  });
+  return best;
+}
+
+// the game is started behind the scenes as soon as the page is up, so that by the time the camera moves its pictures take a second or two, not a minute
+let warming = false;
+function prewarm() {
+  if (warming || store.real.key || store.real.busy || !store.real.free || !store.survey.supported) return;
+  warming = true;
+  setTimeout(() => { warming = false; if (!store.real.key && !store.real.busy) refreshFree(true); }, 1500);
+}
+
+// the game's pictures live: the camera of the page is sent to the game as it moves, and the game's pictures come back as a stream
+let pumping = false, lastSent = "";
+function startLive() {
+  const img = document.getElementById("live");
+  img.onerror = () => { if (viewport.live) { viewport.setLive(false); store.real.live = false; store.real.key = ""; freeChanged(true); } };      // the game went away: back to waiting for one
+  img.onload = () => { document.getElementById("shot").style.display = "none"; };
+  lastSent = "";
+  viewport.setLive(true);
+  const tick = () => {
+    if (!viewport.live) { pumping = false; return; }
+    const cam = viewport.camera;
+    if (store.mode === "3d" && cam.photo) {
+      const eye = cam.eye().map(Math.round), target = cam.target.map(Math.round), fov = cam.photo.fov, msg = JSON.stringify([eye, target, fov]);
+      if (msg !== lastSent) { lastSent = msg; api.camera({ eye, target, fov }); }
+    }
+    setTimeout(tick, 35);
+  };
+  if (!pumping) { pumping = true; tick(); }
+}
+
 // a line at the top left for something slow going on
 function showChip(text) {
   const chip = document.getElementById("loadchip");
@@ -293,7 +338,7 @@ let autoTimer = null;
 function autoRefresh() {
   real_fresh(false);
   clearTimeout(autoTimer);
-  if (store.mode === "3d" && store.real.free && store.survey.supported) autoTimer = setTimeout(() => refreshFree(true), 7000);
+  if (store.mode === "3d" && store.real.free && store.survey.supported) autoTimer = setTimeout(() => refreshFree(true), 2500);
 }
 const real_fresh = (v) => { store.real.fresh = v; };
 
@@ -317,10 +362,11 @@ async function refreshFree(force) {
     const key = hash(JSON.stringify(currentEdits()));
     if (!real.key || (force && real.key !== key)) {
       store.real.freeBtn.textContent = "Starting the game…";
-      showChip("Updating the game's picture with your changes… (about a minute)");
+      showChip("Updating the game's picture with your changes…");
       const out = await api.previewPrepare(currentEdits());
       Object.assign(real, { key, room: out.room, urls: {} });
     }
+    if (store.real.live !== false) { startLive(); return; }       // the game is up: its pictures come live from here on
     store.real.freeBtn.textContent = "Taking the picture…";
     const hops = hopsTo(real.room, r.id);
     if (!hops) throw new Error("no chain of doors leads there from where the game is");
@@ -673,7 +719,8 @@ async function boot() {
     startTour();
     await viewport.loadModels(progress);
     viewport.redraw();
-    freeChanged(true);       // the saved changes are in the scene only now: the game's picture is asked for with them
+    freeChanged(true);
+    prewarm();               // the saved changes are in the scene only now: the game's picture is asked for with them
   } catch (e) {
     msg.textContent = "Couldn't start: " + e.message;
     console.error(e);

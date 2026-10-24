@@ -7,6 +7,7 @@ GAME is file1 or file2 (File 2 by default), SCENARIO the scenario's number (40 i
 Build writes work/studio/GAME-play.patch (the English patch, if the game has one, and your edits, through tools/bh_studio_build.py) and Play starts the game with it.
 docs/studio/PLAN.md says what the editor is for and what it can do so far.
 """
+import io
 import json
 import os
 import subprocess
@@ -143,7 +144,15 @@ class Studio:
         start = edits.get("start_room")
         if start is None:
             start = start_room(self.game, self.scenario) or bh_autoplay.KNOWN[(self.game, self.scenario)]["start_room"]
-        return {"room": self.preview.prepare(built["patch"], start), "seconds": built["seconds"]}
+        layout = layout_of(built["report"])
+        running = self.preview.alive() and self.preview.patch and self.preview.patch != built["patch"]
+        if running and layout == getattr(self.preview, "layout", None):
+            # a change that fits where the files already are: the game reads the new patch and loads the room again (about fifteen seconds, not the minute a start takes)
+            self.preview.swap(built["patch"], bh_preview.door_graph(self.scene()["rooms"]))
+            return {"room": self.preview.room, "seconds": built["seconds"], "swapped": True}
+        room = self.preview.prepare(built["patch"], start)
+        self.preview.layout = layout
+        return {"room": room, "seconds": built["seconds"], "swapped": False}
 
     def preview_shot(self, room, hops, at, name, camera=None):
         if self.preview is None:
@@ -235,6 +244,11 @@ def moved_start(game, scenario, edits):
     for w in at:
         struct.pack_into("<I", out, 4 * w, int(edits["start_room"]))
     return {(f"r{scenario:03d}.afs", f"r{scenario:03d}.evb"): bytes(out)}
+
+
+def layout_of(report):
+    """What a build did to the disc's layout (files grown or moved), as a value to compare: two patches with the same one put the same files in the same places"""
+    return tuple(sorted(line for line in report if "grown" in line or "moved to the end" in line))
 
 
 def scenery_as_models(edits):
@@ -331,6 +345,42 @@ def make_handler(studio):
         def log_message(self, *args):
             pass
 
+        def stream_frames(self):
+            """The running game's pictures as a motion JPEG, as they are written (the runtime's `stream`), until the page closes it"""
+            import struct
+            import time
+
+            from PIL import Image
+
+            preview = studio.preview
+            if preview is None or not preview.alive():
+                self.send(404, "{}")
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            seen = None
+            try:
+                while preview.alive():
+                    try:
+                        data = preview.frame_file.read_bytes()
+                        width, height, serial, _ = struct.unpack("<4I", data[:16])
+                    except (OSError, struct.error):
+                        time.sleep(0.03)
+                        continue
+                    if serial == seen:
+                        time.sleep(0.01)
+                        continue
+                    seen = serial
+                    out = io.BytesIO()
+                    Image.frombytes("RGBA", (width, height), data[16:16 + width * height * 4]).convert("RGB").save(out, "JPEG", quality=80)
+                    jpeg = out.getvalue()
+                    self.wfile.write(b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: " + str(len(jpeg)).encode() + b"\r\n\r\n" + jpeg + b"\r\n")
+                    self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError):
+                return          # the page stopped looking
+
         def send(self, code, body, kind="application/json"):
             payload = body if isinstance(body, bytes) else body.encode()
             self.send_response(code)
@@ -373,6 +423,8 @@ def make_handler(studio):
                         self.wfile.write(data)
                 elif url.path == "/api/survey":
                     self.send(200, json.dumps(studio.survey_status()))
+                elif url.path == "/api/stream":
+                    self.stream_frames()
                 elif url.path == "/api/shot":
                     name = Path(query["name"][0]).name
                     kind = "survey" if query.get("kind", [""])[0] == "survey" else "preview"
@@ -418,6 +470,12 @@ def make_handler(studio):
                     self.send(200, json.dumps(studio.survey_start()))
                 elif path == "/api/preview/prepare":
                     self.send(200, json.dumps(studio.preview_prepare(body.get("edits", {}))))
+                elif path == "/api/camera":
+                    if studio.preview is None or not studio.preview.alive():
+                        self.send(409, json.dumps({"error": "the game isn't running"}))
+                    else:
+                        studio.preview.hold_camera(body)
+                        self.send(200, "{}")
                 elif path == "/api/preview/shot":
                     self.send(200, json.dumps(studio.preview_shot(body["room"], body.get("hops", []), body["at"], body["name"], body.get("camera"))))
                 elif path == "/api/stop":

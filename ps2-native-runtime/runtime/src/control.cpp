@@ -12,6 +12,9 @@
 //   peek ADDR [WORDS]        guest words (hex address) to the log
 //   poke ADDR VALUE [BYTES]  a guest store of 1, 2 or 4 BYTES (4) of VALUE (hex) into main memory: to set the state a test
 //                            needs (a save's unlock flags) the way the game's own store would
+//   patch FILE [FILE...]     the disc patches replaced by these (what the game reads from now on: the next room it loads)
+//   stream FILE [EVERY]      the picture written to FILE (raw: width, height, number, 0 as four words, then the pixels, half size) every EVERY vblanks (6), for an editor to show live; no FILE stops it
+//   pokef ADDR F F ...       consecutive floats stored from ADDR (hex), not logged: for a value changed many times a second (an editor's camera)
 //   ram FILE                 the 32 MB of main memory written to FILE (to look for what the game loaded: texts, tables)
 //   record VBLANKS FILE      --gs-record from the next vblank
 //   vu1record SECONDS FILE   VIF1's and VU1's side recorded for --vu1-replay (with VIF1 and VU1 on their own thread)
@@ -166,6 +169,39 @@ void Handle(const std::string& line)
             std::memcpy(Host(at), &v, static_cast<size_t>(size));
             Log("poke %08x = %0*x", at, size * 2, v);
         }
+    }
+    else if (command == "pokef")
+    {
+        std::string address;
+        in >> address;
+        u32 at = static_cast<u32>(strtoul(address.c_str(), nullptr, 16)) & 0x1FFFFFFF;
+        float v;
+        while (in >> v)
+        {
+            if (at % 4 != 0 || at + 4 > RamSize)
+            {
+                break;
+            }
+            std::memcpy(Host(at), &v, 4);
+            at += 4;
+        }
+    }
+    else if (command == "stream")
+    {
+        std::string file;
+        u32 every = 6;
+        in >> file >> every;
+        GsLiveStream(file, std::max<u32>(1, every));
+    }
+    else if (command == "patch")
+    {
+        std::vector<std::string> paths;
+        std::string path;
+        while (in >> path)
+        {
+            paths.push_back(path);
+        }
+        Log("--control: patch %s: %s", paths.empty() ? "(none)" : paths[0].c_str(), DiscReplacePatches(paths) ? "replaced" : "not replaced");
     }
     else if (command == "ram" || command == "dump")
     {

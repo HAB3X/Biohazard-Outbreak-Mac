@@ -106,6 +106,8 @@ void InputLiveMove(float dx, float dy);
 void InputLiveStick(float x, float y, double hold);
 void GsLiveSnapshot(const std::string& name);
 void GsLiveStop();
+// --control stream: the picture written to PATH (raw, half size) every EVERY vblanks; an empty PATH stops it
+void GsLiveStream(const std::string& path, u32 every);
 // Records the GS's side from the next vblank (--gs-record's, asked for while the game runs)
 void GsLiveRecord(const std::string& file, u64 vblanks);
 void ControlStart(const std::string& path);
@@ -451,6 +453,7 @@ std::string InputPrompt();
 bool DiscOpen(const std::string& path);
 // A patch file's byte ranges laid over the disc's sectors from now on (see disc.cpp; --patch)
 bool DiscLoadPatch(const std::string& path);
+bool DiscReplacePatches(const std::vector<std::string>& paths);
 // Whether the disc is a DVD (UDF's volume recognition on it, as a PlayStation 2 DVD has), not a CD
 bool DiscIsDvd();
 // A file on the disc by its ISO 9660 path ("\\SYS\\LIBSD.IRX;1" or "/SYS/LIBSD.IRX"): its first sector and size

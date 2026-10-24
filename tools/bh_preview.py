@@ -27,6 +27,8 @@ class Preview:
         self.room = None
         self.free_camera = False
         self.lock = threading.Lock()
+        self.folder.mkdir(parents=True, exist_ok=True)
+        self.frame_file = self.folder / "frame.raw"
 
     def alive(self):
         return self.run is not None and self.run.alive()
@@ -49,6 +51,7 @@ class Preview:
             time.sleep(4)
             self.patch, self.room = patch, start_room
             threading.Thread(target=self._guard, args=(self.run,), daemon=True).start()
+            self.run.send(f"stream {self.frame_file} 4")        # about fifteen pictures a second, for the editor's live view
             return self.room
 
     def room_now(self):
@@ -129,11 +132,50 @@ class Preview:
                 self.free_camera = False
                 time.sleep(0.8)
             return
+        self.camera_held = camera
         values = list(camera["eye"]) + list(camera["target"]) + [camera["fov"]]
         for i, v in enumerate(values):
             self.run.send(f"poke {self.MAIL + 4 + 4 * i:x} {auto.float_hex(v)}")
         self.run.send(f"poke {self.MAIL:x} {self.MAGIC:08x}")
         self.free_camera = True
+
+    def hold_camera(self, camera):
+        """The game's camera put at `camera` ({eye, target, fov}) now, with no waiting: the editor's live view moves it many times a second (one unlogged line to the control FIFO)"""
+        values = [*camera["eye"], *camera["target"], camera["fov"]]
+        if not self.free_camera:
+            self.run.send(f"poke {self.MAIL:x} {self.MAGIC:08x}")
+            self.free_camera = True
+        self.camera_held = camera
+        self.run.send(f"pokef {self.MAIL + 4:x} " + " ".join(f"{v:.2f}" for v in values))
+
+    def swap(self, patch, graph):
+        """Puts `patch` under the running game and has it load the room again (walks out of the room it is in by a door and back), so the edits made since show: only for a patch laid out
+        like the one running (no file grown or moved differently): the game goes on reading the disc where it read it before. The room it was in, the camera it was held at stay"""
+        with self.lock:
+            here = self.room_now()
+            ways = [(to, route(graph, here, to), route(graph, to, here)) for to, _ in graph.get(here, []) if to in graph]
+            way = next((w for w in ways if w[1] is not None and w[2] is not None), None)
+            if way is None:
+                raise RuntimeError(f"no door out of room {here} and back")
+            camera = getattr(self, "camera_held", None)
+            self._camera(None)
+            self.run.send(f"patch {patch}")
+            time.sleep(0.5)
+            for x, z in way[1] + way[2]:
+                self._poke(x, z)
+                time.sleep(5)
+            self.patch = patch
+            self.room = here
+            self.run.send(f"stream {self.frame_file} 4")
+            if camera is not None:
+                self._camera(camera)
+
+    def photo_from(self, camera, name):
+        """The picture of the game as seen from `camera` ({eye, target, fov}), wherever the player is"""
+        with self.lock:
+            self._camera(camera)
+            time.sleep(1.3)
+        return self.photo(name)
 
     def shot(self, room, hops, at, name, camera=None):
         """The picture (a JPEG path) of the game with the player at `at` in room number `room` after `hops` through the doors; from `camera` ({eye, target, fov}) when given, wherever that is"""

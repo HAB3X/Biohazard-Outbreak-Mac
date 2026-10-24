@@ -47,11 +47,25 @@ export class Viewport {
     this.placeShot();
   }
 
+  // the running game's own pictures, live, in place of everything else (Build with the game started)
+  setLive(on) {
+    const img = document.getElementById("live");
+    this.live = on;
+    if (on) img.src = "/api/stream?t=" + Date.now(); else img.removeAttribute("src");
+    this.placeShot();
+  }
+
   placeShot() {
+    const live = document.getElementById("live"), box = this.camera.rect;
+    const liveOn = this.live && store.mode === "3d" && this.camera.pictureLens;
+    live.style.display = liveOn ? "block" : "none";
+    if (liveOn) Object.assign(live.style, { left: box.x + "px", top: box.y + "px", width: box.w + "px", height: box.h + "px" });
     const img = document.getElementById("shot"), r = this.camera.rect;
-    const on = this.shot && this.camera.pictureLens;
+    const on = this.shot && this.camera.pictureLens && !liveOn;
     img.style.display = on ? "block" : "none";
-    document.getElementById("gl").classList.toggle("hidden", !!on);
+    // in Build with the game's pictures on, Studio's own drawing of the models is never shown: it isn't what the game shows
+    const noOwn = liveOn || (store.mode === "3d" && store.real.free && store.survey && store.survey.supported);
+    document.getElementById("gl").classList.toggle("hidden", !!on || noOwn);
     if (on) Object.assign(img.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" });
   }
 

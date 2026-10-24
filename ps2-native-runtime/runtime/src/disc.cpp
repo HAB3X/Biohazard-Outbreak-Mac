@@ -169,7 +169,8 @@ bool DiscOpen(const std::string& path)
     return true;
 }
 
-bool DiscLoadPatch(const std::string& path)
+// the patch file's ranges added to `into` (and `xbox` set when it has Xbox pad variants)
+static bool ReadPatchFile(const std::string& path, std::vector<Patch>& into, bool& xbox)
 {
     std::ifstream f(path, std::ios::binary);
     u32 head[3];
@@ -218,11 +219,32 @@ bool DiscLoadPatch(const std::string& path)
             }
         }
         bytes += length;
-        g_patches.push_back(std::move(p));
+        into.push_back(std::move(p));
     }
-    g_xboxVariant = g_xboxVariant || variants[3] != 0;
+    xbox = xbox || variants[3] != 0;
     Log("patch %s: %u ranges (%u for the keyboard, %u for a PlayStation pad, %u for an Xbox pad), %llu bytes", path.c_str(),
         head[2], variants[1], variants[2], variants[3], static_cast<unsigned long long>(bytes));
+    return true;
+}
+
+bool DiscLoadPatch(const std::string& path) { return ReadPatchFile(path, g_patches, g_xboxVariant); }
+
+// the patches replaced by these while the game runs (the control FIFO's `patch`): what the game reads from the disc from now on, such as the next room it loads.
+// They are read on the side and swapped in at once; the old ones stay when one of the new can't be read
+bool DiscReplacePatches(const std::vector<std::string>& paths)
+{
+    std::vector<Patch> fresh;
+    bool xbox = false;
+    for (const std::string& path : paths)
+    {
+        if (!ReadPatchFile(path, fresh, xbox))
+        {
+            return false;
+        }
+    }
+    std::lock_guard<std::mutex> lock(g_discLock);
+    g_patches = std::move(fresh);
+    g_xboxVariant = xbox;
     return true;
 }
 

@@ -298,6 +298,55 @@ void GsLiveSnapshot(const std::string& name)
     g_liveSnaps.push_back(name);
 }
 
+// --control's stream: the picture written to a file as the game runs, for an editor to show live (raw, every other pixel kept)
+static std::mutex g_streamLock;
+static std::string g_streamPath;
+static std::atomic<u32> g_streamEvery{0};
+
+void GsLiveStream(const std::string& path, u32 every)
+{
+    std::lock_guard<std::mutex> lock(g_streamLock);
+    g_streamPath = path;
+    g_streamEvery = path.empty() ? 0 : every;
+}
+
+// the file is 16 bytes (width, height, picture number, 0) and then the pixels as the GS has them, row by row; written to a name of its own and renamed, so a reader never sees half a picture
+static void StreamPicture(const Gs::DisplayImage& image, u64 serial)
+{
+    std::string path;
+    {
+        std::lock_guard<std::mutex> lock(g_streamLock);
+        path = g_streamPath;
+    }
+    if (path.empty() || image.width < 2 || image.height < 2 || image.pixels.size() < static_cast<size_t>(image.width) * image.height)
+    {
+        return;
+    }
+    const u32 w = image.width / 2, h = image.height / 2;
+    std::vector<u32> out(static_cast<size_t>(w) * h);
+    for (u32 y = 0; y < h; y++)
+    {
+        const u32* row = image.pixels.data() + static_cast<size_t>(y) * 2 * image.width;
+        for (u32 x = 0; x < w; x++)
+        {
+            out[static_cast<size_t>(y) * w + x] = row[x * 2];
+        }
+    }
+    const std::string tmp = path + ".tmp";
+    FILE* f = fopen(tmp.c_str(), "wb");
+    if (!f)
+    {
+        return;
+    }
+    const u32 head[4] = {w, h, static_cast<u32>(serial), 0};
+    bool ok = fwrite(head, 4, 4, f) == 4 && fwrite(out.data(), 4, out.size(), f) == out.size();
+    ok = (fclose(f) == 0) && ok;
+    if (ok)
+    {
+        rename(tmp.c_str(), path.c_str());
+    }
+}
+
 void GsLiveStop()
 {
     g_endRun = true;
@@ -359,7 +408,7 @@ bool GsVblank(bool newest, bool gameThread)
     }
     // Made on the GS's side once it has drawn what came before (the game's thread goes on, at most two pictures ahead): the
     // GPU's picture copied for the window, the pixels read when there's no copy or a snapshot wants them
-    bool queued = RenderFrame([show, names = names] {
+    bool queued = RenderFrame([show, names = names, vblanks] {
         Gs::DisplayImage image;
         bool copied = false;
         if (show && DisplayOnGpu())
@@ -370,7 +419,10 @@ bool GsVblank(bool newest, bool gameThread)
                 DisplayDropShown();
             }
         }
-        if (!names.empty() || (show && !copied))
+        // (a picture that is being streamed has its pixels read too, even when the GPU's copy is what a window shows)
+        const u32 every = g_streamEvery;
+        const bool streaming = every != 0 && vblanks % every == 0;
+        if (!names.empty() || (show && !copied) || streaming)
         {
             DisplayReadShown(image);
         }
@@ -403,6 +455,10 @@ bool GsVblank(bool newest, bool gameThread)
             {
                 g_snapshots.push_back({name + "-buffer.png", buffer});
             }
+        }
+        if (streaming)
+        {
+            StreamPicture(image, vblanks);
         }
         g_picture = std::move(image);
         g_pictureSerial++;
