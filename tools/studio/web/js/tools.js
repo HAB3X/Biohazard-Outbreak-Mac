@@ -1,5 +1,5 @@
 // The tools on the rail: what each puts into the scene when you click, and where a click lands on the ground.
-import { addLibrary } from "./scenery.js";
+import { addLibrary, setPose } from "./scenery.js";
 import { store, roomOf, addArea, addCamera, addItem, addEnemy, commit, select, AREA_TAGS, clone, emit } from "./scene.js";
 
 // A template for an area of each tag: the first one in the room being worked in, else in any room of the scenario (a new area is a copy of a record of the game's own).
@@ -72,6 +72,7 @@ export function place(tool, at) {
     if (!store.libraryPick) return null;
     const c = addLibrary(room, store.renderer, store.libraryPick, [x, y, z]);
     if (!c) { emit("note", "That object isn't loaded yet.", "warn"); return null; }
+    if (store.libraryRot) setPose(c, { rot: [0, store.libraryRot, 0] });
     commit("Add " + (store.libraryPick.name || "object"));
     select([{ c: "scenery", file: room.file, i: c.i }]);
     return c;

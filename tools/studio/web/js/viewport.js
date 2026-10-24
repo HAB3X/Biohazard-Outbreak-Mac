@@ -249,6 +249,7 @@ export class Viewport {
         ctx.save(); ctx.strokeStyle = "#fff"; ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.restore();
       }
     }
+    if (store.tool === "library" && store.libraryPick && this.cursor && !this.drag) { this.drawLibraryGhost(); return; }
     const tool = [...PLACE, ...THINGS].find((t) => t.id === store.tool);
     if (!tool || !this.cursor || this.drag) return;
     const at = ground(this.camera, this.cursor[0], this.cursor[1], this.renderer);
@@ -259,6 +260,34 @@ export class Viewport {
     ctx.strokeStyle = "#fff"; ctx.fillStyle = "rgba(255,255,255,.16)"; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5;
     if (pts) { ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); ctx.fill(); ctx.stroke(); }
     else { const s = this.camera.project([x, at[1] + 220, z]); ctx.beginPath(); ctx.arc(s[0], s[1], 8, 0, 7); ctx.fill(); ctx.stroke(); }
+    ctx.restore();
+    this.groundAt = [x, at[1], z];
+  }
+
+  // the Library object about to be put down: its box turned as it will be (R turns it), with its picture standing in it, where the click would put it
+  drawLibraryGhost() {
+    const pick = store.libraryPick, src = this.renderer.models[pick.room], mesh = src && src.meshes.find((x) => x.mesh === pick.mesh);
+    const at = ground(this.camera, this.cursor[0], this.cursor[1], this.renderer);
+    if (!mesh || !at) return;
+    const x = snapTo(at[0]), z = snapTo(at[2]), c = Math.cos(store.libraryRot || 0), s = Math.sin(store.libraryRot || 0);
+    const lc = [(mesh.lo[0] + mesh.hi[0]) / 2, (mesh.lo[2] + mesh.hi[2]) / 2];
+    const corner = (i) => {
+      const dx = (i & 1 ? mesh.hi[0] : mesh.lo[0]) - lc[0], dz = (i & 4 ? mesh.hi[2] : mesh.lo[2]) - lc[1], y = (i & 2 ? mesh.hi[1] : mesh.lo[1]) - mesh.lo[1];
+      return this.camera.project([x + dx * c + dz * s, at[1] + y, z - dx * s + dz * c]);
+    };
+    const p = [0, 1, 2, 3, 4, 5, 6, 7].map(corner), ctx = this.ctx;
+    if (p.some((q) => q[2] < -1)) return;
+    if (!this.ghostImg || this.ghostImg.key !== `${pick.room}:${pick.mesh}`) {
+      const r = this.renderer.thumbnail(pick.room, pick.mesh, 128);
+      if (r) { const img = new Image(); img.src = r.url; this.ghostImg = { key: `${pick.room}:${pick.mesh}`, img }; }
+    }
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (const [a, b] of [[0, 1], [1, 3], [3, 2], [2, 0], [4, 5], [5, 7], [7, 6], [6, 4], [0, 4], [1, 5], [2, 6], [3, 7]]) { ctx.moveTo(p[a][0], p[a][1]); ctx.lineTo(p[b][0], p[b][1]); }
+    ctx.stroke();
+    const xs = p.map((q) => q[0]), ys = p.map((q) => q[1]), w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys), side = Math.max(w, h);
+    if (this.ghostImg && this.ghostImg.img.complete && side > 6) { ctx.globalAlpha = 0.8; ctx.drawImage(this.ghostImg.img, (Math.min(...xs) + Math.max(...xs)) / 2 - side / 2, (Math.min(...ys) + Math.max(...ys)) / 2 - side / 2, side, side); }
     ctx.restore();
     this.groundAt = [x, at[1], z];
   }

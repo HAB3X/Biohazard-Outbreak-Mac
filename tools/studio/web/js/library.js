@@ -3,13 +3,18 @@ import { store, setTool, on } from "./scene.js";
 import { el } from "./ui.js";
 
 const SHELL = 3500;      // wider than this is a room's own floor and walls
-const KINDS = [["all", "All"], ["furniture", "Furniture"], ["boxes", "Boxes"], ["bottles", "Bottles"], ["containers", "Containers"], ["decor", "Decor"], ["other", "Other"]];
+const KINDS = [["all", "All"], ["recent", "Recent"], ["furniture", "Furniture"], ["boxes", "Boxes"], ["bottles", "Bottles"], ["containers", "Containers"], ["decor", "Decor"], ["other", "Other"]];
 // what a name says the object is, for the filter chips
 const KIND_WORDS = [["furniture", /chair|armchair|bench|table|stool|shelf|cabinet|post|rail|staircase|sink|basin|urinal|tap|beer/i], ["boxes", /box|crate|carton|stack|cube|slab|poster/i], ["bottles", /bottle|decanter|vase|jar|glass/i], ["containers", /barrel|bin|bucket|basket|drum|tank|sack|tube|roller/i], ["decor", /statue|figure|picture|lamp|magazine|coat|cloth|helmet|paper|mop|rod|pipe|hook|handle|baluster|corrugated|panel|plank|sheet/i]];
 const kindOf = (name) => (KIND_WORDS.find(([, re]) => re.test(name)) || ["other"])[0];
 let panel = null, grid = null, count = null, viewport = null, names = null;
 let state = { kind: "all", where: "here", text: "", unnamed: false };
 let catalogue = [], built = "";
+
+// the last objects picked, newest first (kept in this browser only: a convenience, the page works without it)
+const RECENT = "studio-library-recent";
+function recent() { try { return JSON.parse(localStorage.getItem(RECENT) || "[]"); } catch (e) { return []; } }
+function remember(it) { try { localStorage.setItem(RECENT, JSON.stringify([signature(it), ...recent().filter((k) => k !== signature(it))].slice(0, 12))); } catch (e) { /* no storage: nothing remembered */ } }
 
 // the names given to shapes by looking at them (web/library_names.json, keyed by game and shape); a shape without one shows by its look and size
 async function loadNames() {
@@ -95,7 +100,7 @@ const label = (it) => it.name || `Unnamed ${it.size === "tall" ? "tall" : it.siz
 
 function shown() {
   const t = state.text.trim().toLowerCase();
-  return catalogue.filter((it) => (it.name || (state.unnamed && it.prop)) && (state.kind === "all" || it.kind === state.kind) && (state.where === "all" || it.rooms.has(store.room)) && (!t || (it.name || "").toLowerCase().includes(t)));
+  return catalogue.filter((it) => (it.name || (state.unnamed && it.prop)) && (state.kind !== "recent" || recent().includes(signature(it))) && (state.kind === "all" || state.kind === "recent" || it.kind === state.kind) && (state.where === "all" || it.rooms.has(store.room)) && (!t || (it.name || "").toLowerCase().includes(t)));
 }
 
 function fill() {
@@ -109,9 +114,11 @@ function fill() {
     card.append(el("img", { alt: "" }), el("span", {}, label(it)));
     if (store.libraryPick && store.libraryPick.room === it.room && store.libraryPick.mesh === it.mesh) card.classList.add("on");
     card.addEventListener("click", () => {
+      remember(it);
       store.libraryPick = { room: it.room, mesh: it.mesh, name: label(it) };
       setTool("library");
-      fill();
+      panel.classList.remove("on");       // out of the way so the room can be clicked; the Library button brings it back
+      document.getElementById("libbtn")?.classList.add("on");
     });
     grid.append(card);
     watcher.observe(card);

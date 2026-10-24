@@ -5,7 +5,7 @@ import { el, toast } from "./ui.js";
 import * as scene from "./scene.js";
 import { store, on, emit, loadScene, commit, undo, redo, canUndo, canRedo, setTool, setMode, setRoom, select, currentEdits, roomOf, objectOf } from "./scene.js";
 import { Viewport } from "./viewport.js";
-import { removeCopy, addModel, setPose } from "./scenery.js";
+import { removeCopy, addModel, setPose, duplicate } from "./scenery.js";
 import { parseObj } from "./objimport.js";
 import { PLACE, FIXED, THINGS, WALL, FLOOR } from "./tools.js";
 import { toggle as toggleLibrary, close as closeLibrary } from "./library.js";
@@ -344,7 +344,7 @@ function updateHint() {
   const a = ADD.find((x) => x.id === store.tool);
   const t = [...PLACE, ...THINGS, WALL, FLOOR].find((x) => x.id === store.tool);
   if (a && t) { b.innerHTML = `<b>${a.label}</b> — ${t.hint} <kbd>Esc</kbd> to stop.`; b.classList.add("on"); }
-  else if (store.tool === "library") { const p = store.libraryPick; b.innerHTML = p ? `<b>Placing ${p.name}</b> — click in the room to put it down, again for more. <kbd>Esc</kbd> to stop.` : "Pick an object in the Library, then click in the room."; b.classList.add("on"); }
+  else if (store.tool === "library") { const p = store.libraryPick; b.innerHTML = p ? `<b>Placing ${p.name}</b> — click to put it down, again for more, <kbd>R</kbd> turns it. <kbd>Esc</kbd> to stop.` : "Pick an object in the Library, then click in the room."; b.classList.add("on"); }
   else if (store.tool === "scenery") { b.innerHTML = "Click an object to pick it: drag to move it, or turn and resize it in the panel. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }
   else if (store.tool === "pan") { b.innerHTML = "Drag to move the view. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }
   else if (!bannerSeen && !localStorage.getItem("studio-hint")) { b.innerHTML = "Click anything to edit it. Use <b>Add</b> to put new things down. Scroll to zoom. <button class='link' id='gotit' style='margin-left:8px'>Got it</button>"; b.classList.add("on"); const g = b.querySelector("#gotit"); if (g) g.onclick = () => { localStorage.setItem("studio-hint", "1"); bannerSeen = true; b.classList.remove("on"); }; }
@@ -517,9 +517,15 @@ function keys(openPalette) {
     else if (meta && e.key.toLowerCase() === "b") { e.preventDefault(); doBuild(); }
     else if (meta && e.key === "Enter") { e.preventDefault(); doPlay(); }
     else if (meta && e.key.toLowerCase() === "s") { e.preventDefault(); doBuild(); }
+    else if (meta && (e.key === "d" || e.key === "D") && store.selection.length === 1 && store.selection[0].c === "scenery") {
+      e.preventDefault();
+      const s = store.selection[0], room = roomOf(s.file), o = objectOf(s);
+      if (room && o) { const c = duplicate(room, o); commit("Copy object"); select([{ c: "scenery", file: s.file, i: c.i }]); }
+    }
     else if (meta) return;
     else if (viewport.flyKey(e, true)) { e.preventDefault(); }
     else if (store.selection.length && (e.key.startsWith("Arrow") || e.key === "PageUp" || e.key === "PageDown")) { e.preventDefault(); nudge(e); }
+    else if (store.tool === "library" && (e.key === "r" || e.key === "R")) { e.preventDefault(); store.libraryRot = ((store.libraryRot || 0) + (e.shiftKey ? -1 : 1) * Math.PI / 12) % (2 * Math.PI); viewport.redraw(); }
     else if (store.selection.length && (e.key === "r" || e.key === "R") && store.selection.every((s) => s.c === "scenery" || s.c === "enemies" || s.c === "spawns")) { e.preventDefault(); turnSelection(e.shiftKey ? -15 : 15); }
     else if (store.selection.length === 1 && store.selection[0].c === "scenery" && (e.key === "=" || e.key === "-")) { e.preventDefault(); const o = objectOf(store.selection[0]); if (o) { const k = e.key === "=" ? 1.1 : 1 / 1.1; setPose(o, { scale: o.scale.map((x) => x * k) }); emit("live"); commit("Resize object"); } }
     else if (e.key === " ") { viewport.space = true; viewport.ov.style.cursor = "grab"; e.preventDefault(); }
