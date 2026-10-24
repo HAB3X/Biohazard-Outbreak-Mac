@@ -41,6 +41,18 @@ export function handlesOf(ref) {
     const a = o.facing / 65536 * Math.PI * 2;
     out.push({ id: "facing", p: [o.pos[0] + Math.sin(a) * 160, o.pos[1], o.pos[2] + Math.cos(a) * 160], kind: "ring" });
   }
+  // the same for everything that stands in the room: a handle to lift it, and for objects one to turn it and one to resize it
+  if (store.mode !== "plan") {
+    if (ref.c === "items" || ref.c === "enemies") out.push({ id: "lift", p: [o.pos[0], o.pos[1] + (ref.c === "enemies" ? 240 : 150), o.pos[2]], kind: "lift" });
+    if (ref.c === "areas") { const q = o.quad, cx = (q[0][0] + q[2][0]) / 2, cz = (q[0][1] + q[2][1]) / 2; out.push({ id: "lift", p: [cx, o.h[1] + 90, cz], kind: "lift" }); }
+    if (ref.c === "floors") out.push({ id: "lift", p: [(o.min[0] + o.max[0]) / 2, o.y + 120, (o.min[1] + o.max[1]) / 2], kind: "lift" });
+    if (ref.c === "scenery" && o.cs) {
+      const top = Math.max(...o.cs.map((p) => p[1])), bottom = Math.min(...o.cs.map((p) => p[1])), wide = Math.max(...o.cs.map((p) => Math.hypot(p[0] - o.wc[0], p[2] - o.wc[2])));
+      out.push({ id: "lift", p: [o.wc[0], top + 100, o.wc[2]], kind: "lift" },
+               { id: "turn", p: [o.wc[0] + wide + 120, bottom, o.wc[2]], kind: "turn" },
+               { id: "size", p: [o.wc[0] + wide * 0.7, top, o.wc[2] + wide * 0.7], kind: "size" });
+    }
+  }
   return out;
 }
 
@@ -297,9 +309,24 @@ export function draw(ctx, camera, dpr, rooms, hover) {
       if (s[2] < -0.9) continue;
       handleList.push({ ...hd, s });
       ctx.fillStyle = hd.dim ? "rgba(255,255,255,.5)" : "#fff"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      if (hd.kind === "square") ctx.rect(s[0] - 4.5, s[1] - 4.5, 9, 9); else ctx.arc(s[0], s[1], 5.5, 0, 7);
-      ctx.fill(); ctx.stroke();
+      if (hd.kind === "lift") {            // an arrow up from the thing: drag to raise or lower it
+        const foot = P([hd.p[0], hd.p[1] - 90, hd.p[2]]);
+        ctx.strokeStyle = "rgba(255,255,255,.8)"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(foot[0], foot[1]); ctx.lineTo(s[0], s[1] + 6); ctx.stroke();
+        ctx.fillStyle = "#7ee0a0"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(s[0], s[1] - 9); ctx.lineTo(s[0] + 8, s[1] + 5); ctx.lineTo(s[0] - 8, s[1] + 5); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.font = "10px -apple-system, sans-serif"; ctx.textAlign = "center"; ctx.fillText("up/down", s[0], s[1] - 16);
+      } else if (hd.kind === "turn") {     // a ring: drag around the thing to turn it
+        ctx.fillStyle = "#ffd479"; ctx.beginPath(); ctx.arc(s[0], s[1], 7, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(s[0], s[1], 3.2, 0.5, 5.2); ctx.stroke();
+        ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.font = "10px -apple-system, sans-serif"; ctx.textAlign = "center"; ctx.fillText("turn", s[0], s[1] - 12);
+      } else if (hd.kind === "size") {     // a corner: drag out or in to make it bigger or smaller
+        ctx.fillStyle = "#8fb6ff"; ctx.beginPath(); ctx.moveTo(s[0], s[1] - 8); ctx.lineTo(s[0] + 8, s[1]); ctx.lineTo(s[0], s[1] + 8); ctx.lineTo(s[0] - 8, s[1]); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.font = "10px -apple-system, sans-serif"; ctx.textAlign = "center"; ctx.fillText("size", s[0], s[1] - 12);
+      } else {
+        ctx.beginPath();
+        if (hd.kind === "square") ctx.rect(s[0] - 4.5, s[1] - 4.5, 9, 9); else ctx.arc(s[0], s[1], 5.5, 0, 7);
+        ctx.fill(); ctx.stroke();
+      }
     }
   }
   hits.sort((a, b) => a.order - b.order);
@@ -390,7 +417,7 @@ export function pick(sx, sy) {
 }
 
 export function pickHandle(sx, sy) {
-  for (const h of handleList) if (Math.abs(h.s[0] - sx) <= 8 && Math.abs(h.s[1] - sy) <= 8) return h;
+  for (const h of handleList) if (Math.abs(h.s[0] - sx) <= 11 && Math.abs(h.s[1] - sy) <= 11) return h;
   return null;
 }
 

@@ -55,7 +55,7 @@ function buildTopbar() {
   place.append(pb, pp); closeOnOutside(place, pp);
   bar.append(place, el("div", { class: "spacer" }));
   const seg = el("div", { class: "seg", id: "viewseg" });
-  for (const [m, label] of [["game", "Game view"], ["plan", "Plan"], ["3d", "3D"]]) {
+  for (const [m, label] of [["game", "Game view"], ["plan", "Plan"], ["3d", "Free camera"]]) {
     const b = el("button", { class: store.mode === m ? "on" : "", "data-mode": m }, label);
     b.addEventListener("click", () => setMode(m));
     seg.append(b);
@@ -155,21 +155,28 @@ function buildCamNav() {
   });
   marks.classList.add("on");
   const real = el("button", { class: "btn", title: "Show the game's own picture of this camera (the game is started behind the scenes; the first picture takes a minute or two)", html: icon("play", 14) + " Real view" });
-  real.addEventListener("click", () => { store.real.on = !store.real.on; real.classList.toggle("on", store.real.on); if (store.real.on) refreshReal(); else viewport.setShot(null); });
+  real.addEventListener("click", () => { store.real.on = !store.real.on; store.real.always = store.real.on; real.classList.toggle("on", store.real.on); if (store.real.on) refreshReal(); else viewport.setShot(null); });
   const refresh = el("button", { class: "btn", style: "display:none", title: "Start the game again with your changes and take the picture again" }, "Update picture");
   refresh.addEventListener("click", () => refreshReal(true));
   store.real.chip = { label, refresh };
   nav.append(prev, label, next, el("span", { class: "vsep" }), marks, real, refresh);
   document.getElementById("view").append(nav);
+  const hint = el("div", { class: "float", id: "flyhint" });
+  hint.innerHTML = "<b>W A S D</b> move &nbsp; <b>Q E</b> down, up &nbsp; <b>drag</b> the empty picture to look around &nbsp; <b>wheel</b> forward, back &nbsp; <b>Shift</b> faster";
+  const editHint = el("div", { class: "float", id: "edithint" });
+  editHint.innerHTML = "Pick a thing, then <b>drag</b> it to move it &nbsp; <b>arrow keys</b> nudge &nbsp; <b>R</b> turns &nbsp; the handles lift, turn and resize objects";
+  document.getElementById("view").append(hint, editHint);
   const sync = () => {
     const r = store.scene && roomOf(store.room);
     nav.style.display = store.mode === "game" && r && r.cameras.length ? "flex" : "none";
+    hint.style.display = store.mode === "3d" ? "block" : "none";
+    editHint.style.display = store.mode !== "plan" && store.selection.length ? "block" : "none";
     if (r) label.textContent = `Camera ${(viewport.camIndex[r.file] ?? 0) + 1} of ${r.cameras.length}`;
   };
   on("camera", () => { sync(); if (store.real.on) refreshReal(); });
   on("mode", () => { sync(); if (store.mode !== "game") viewport.setShot(null); else if (store.real.on) refreshReal(); });
-  on("room", sync);
-  on("changed", () => { if (store.real.on && store.real.key && store.real.key !== hash(JSON.stringify(currentEdits()))) { viewport.setShot(store.real.last || null, true); store.real.chip.refresh.style.display = ""; } });
+  on("room", sync); on("selection", sync);
+  on("changed", () => { if (store.real.on) refreshReal(); });
   sync();
 }
 // ---- the real view: the game's own picture of the room and camera shown, taken in a game started behind the scenes on the current edits
@@ -179,11 +186,15 @@ async function refreshReal(force) {
   if (!real.on || store.mode !== "game" || !r || real.busy) return;
   const k = viewport.camIndex[r.file], c = r.cameras[k];
   if (!c) return;
-  const key = hash(JSON.stringify(currentEdits())), slot = `${key}:${r.file}:${k}`;
-  if (!force && real.urls[slot]) { viewport.setShot(real.urls[slot], false); return; }
-  if (real.key && real.key !== key && !force) { viewport.setShot(real.last || null, true); real.chip.refresh.style.display = ""; return; }   // edits changed: the old picture stays, dimmed, until you ask
-  real.busy = true;
+  const edits = JSON.stringify(currentEdits()), clean = edits === '{"rooms":{}}';
+  const key = hash(edits), slot = `${key}:${r.file}:${k}`;
   const { label, refresh } = real.chip;
+  const taken = store.survey.have.has(`r${r.id}c${k}`) ? `/api/shot?kind=survey&name=r${r.id}c${k}.jpg` : null;     // the game's picture taken with nothing changed
+  if (clean && taken) { viewport.setShot(taken, false); refresh.style.display = "none"; return; }
+  if (!force && real.urls[slot]) { viewport.setShot(real.urls[slot], false); return; }
+  if (!force && (taken || real.last)) { viewport.setShot(taken || real.last, true); refresh.style.display = ""; return; }     // changed since: the picture stays, dimmed, until you ask
+  if (!force && !real.always) { viewport.setShot(null); return; }
+  real.busy = true;
   label.classList.add("busy"); refresh.style.display = "none";
   try {
     if (real.key !== key) {
@@ -200,14 +211,35 @@ async function refreshReal(force) {
     if (viewport.camIndex[r.file] === k && store.room === r.file) viewport.setShot(out.url, false);
   } catch (e) {
     toast("The real view didn't work", "err", e.message, 7000);
-    real.on = false; viewport.setShot(null);
-    document.querySelectorAll("#camnav .btn").forEach((b) => b.classList.remove("on"));
+    viewport.setShot(null);
   } finally {
     real.busy = false; label.classList.remove("busy"); emit("camera");
-    const r2 = roomOf(store.room);
-    if (real.on && r2 && (r2.file !== r.file || viewport.camIndex[r2.file] !== k)) refreshReal();
   }
 }
+
+// the game's pictures of every room are taken in the background the first time, and kept (work/studio/survey)
+async function watchSurvey() {
+  const chip = document.getElementById("loadchip");
+  try {
+    let s = await api.surveyStart();
+    store.survey.supported = !!s.supported;
+    if (!s.supported) return;
+    store.real.on = true;
+    const realBtn = [...document.querySelectorAll("#camnav .btn")].find((b) => b.textContent.includes("Real view"));
+    if (realBtn) realBtn.classList.add("on");
+    for (;;) {
+      store.survey.have = new Set(s.have || []);
+      if (chip && s.running) { chip.style.display = "inline-flex"; chip.textContent = `Taking the game's pictures: ${s.done}/${s.total}${s.current ? " (" + s.current + ")" : ""}`; }
+      else if (chip && !s.running) chip.style.display = "none";
+      if (store.mode === "game") refreshReal();
+      if (!s.running) break;
+      await new Promise((r) => setTimeout(r, 6000));
+      s = await api.survey();
+    }
+    if (s.error) toast("The game's pictures stopped", "err", s.error, 8000);
+  } catch (e) { /* not supported: Studio's own drawing stays */ }
+}
+
 const syncRail = () => {
   document.querySelectorAll("#toolbar [data-tool]").forEach((b) => b.classList.toggle("on", b.dataset.tool === store.tool));
   const adding = ADD.some((a) => a.id === store.tool);
@@ -251,6 +283,27 @@ function updateHint() {
   else if (store.tool === "pan") { b.innerHTML = "Drag to move the view. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }
   else if (!bannerSeen && !localStorage.getItem("studio-hint")) { b.innerHTML = "Click anything to edit it. Use <b>Add</b> to put new things down. Scroll to zoom. <button class='link' id='gotit' style='margin-left:8px'>Got it</button>"; b.classList.add("on"); const g = b.querySelector("#gotit"); if (g) g.onclick = () => { localStorage.setItem("studio-hint", "1"); bannerSeen = true; b.classList.remove("on"); }; }
   else b.classList.remove("on");
+}
+
+// arrow keys move what is selected along the room's own axes (x across, z along; Alt or PageUp and PageDown for up and down), a grid step at a time, ten with Shift
+function nudge(e) {
+  const step = (store.snap > 1 ? store.snap : 10) * (e.shiftKey ? 10 : 1);
+  let dx = 0, dy = 0, dz = 0;
+  if (e.key === "ArrowLeft") dx = -step; else if (e.key === "ArrowRight") dx = step;
+  else if (e.key === "ArrowUp") { if (e.altKey) dy = step; else dz = -step; } else if (e.key === "ArrowDown") { if (e.altKey) dy = -step; else dz = step; }
+  else if (e.key === "PageUp") dy = step; else if (e.key === "PageDown") dy = -step;
+  for (const ref of store.selection) { const o = objectOf(ref); if (o) scene.translate(ref.c, o, dx, dy, dz); }
+  emit("live"); commit("Nudge");
+}
+
+function turnSelection(degrees) {
+  for (const ref of store.selection) {
+    const o = objectOf(ref);
+    if (!o) continue;
+    if (ref.c === "scenery") o.rot = [o.rot[0], o.rot[1] + degrees * Math.PI / 180, o.rot[2]];
+    else o.facing = (o.facing + Math.round(degrees / 360 * 65536) + 65536) % 65536;
+  }
+  emit("live"); commit("Turn");
 }
 
 function validate() {
@@ -399,6 +452,10 @@ function keys(openPalette) {
     else if (meta && e.key === "Enter") { e.preventDefault(); doPlay(); }
     else if (meta && e.key.toLowerCase() === "s") { e.preventDefault(); doBuild(); }
     else if (meta) return;
+    else if (viewport.flyKey(e, true)) { e.preventDefault(); }
+    else if (store.selection.length && (e.key.startsWith("Arrow") || e.key === "PageUp" || e.key === "PageDown")) { e.preventDefault(); nudge(e); }
+    else if (store.selection.length && (e.key === "r" || e.key === "R") && store.selection.every((s) => s.c === "scenery" || s.c === "enemies" || s.c === "spawns")) { e.preventDefault(); turnSelection(e.shiftKey ? -15 : 15); }
+    else if (store.selection.length === 1 && store.selection[0].c === "scenery" && (e.key === "=" || e.key === "-")) { e.preventDefault(); const o = objectOf(store.selection[0]); if (o) { const k = e.key === "=" ? 1.1 : 1 / 1.1; o.scale = o.scale.map((x) => x * k); emit("live"); commit("Resize object"); } }
     else if (e.key === " ") { viewport.space = true; viewport.ov.style.cursor = "grab"; e.preventDefault(); }
     else if (e.key === "Escape") { select([]); setTool("select"); }
     else if (e.key === "Delete" || e.key === "Backspace") { const s = store.selection[0]; if (s && store.selection.length === 1) { const o = objectOf(s); if (o && s.c === "enemies" && !o.isNew) { o.modes = 0; select([]); commit("Remove enemy"); } else if (o && s.c === "scenery" && o.isNew) { removeCopy(roomOf(s.file), o); select([]); commit("Delete object"); } else if (o && (o.isNew || s.c === "walls" || s.c === "floors")) { const r = roomOf(s.file); r[s.c].splice(r[s.c].findIndex((x) => x.i === s.i), 1); select([]); commit("Delete"); } else toast("Only things you added, walls and enemies can be deleted", "err"); } }
@@ -417,7 +474,8 @@ function keys(openPalette) {
       if (t) setTool(t.id);
     }
   });
-  window.addEventListener("keyup", (e) => { if (e.key === " ") { viewport.space = false; viewport.updateCursor(); } });
+  window.addEventListener("keyup", (e) => { if (e.key === " ") { viewport.space = false; viewport.updateCursor(); } viewport.flyKey(e, false); });
+  window.addEventListener("blur", () => { if (viewport.keys) viewport.keys.clear(); });
 }
 
 // ---- start
@@ -452,6 +510,7 @@ async function boot() {
     viewport.frameRoom(store.room);
     viewport.applyMode();
     buildCamNav();
+    watchSurvey();
     document.getElementById("loading").classList.add("gone");
     await viewport.loadModels(progress);
     viewport.frameRoom(store.room);

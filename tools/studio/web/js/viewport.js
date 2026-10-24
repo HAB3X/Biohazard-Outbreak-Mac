@@ -55,10 +55,35 @@ export class Viewport {
     if (on) Object.assign(img.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" });
   }
 
+  // ---- the free camera: W A S D move, Q and E go down and up, the wheel moves forward and back, dragging the empty picture turns the view, shift is fast
+  flyKey(e, down) {
+    if (store.mode !== "3d" || e.metaKey || e.ctrlKey) return false;
+    const k = e.key.toLowerCase();
+    if (!"wasdqe".includes(k) || k.length !== 1) return false;
+    this.keys = this.keys || new Set();
+    if (down) this.keys.add(k); else this.keys.delete(k);
+    this.fast = e.shiftKey;
+    if (down && !this.flying) { this.flying = true; this.last = performance.now(); requestAnimationFrame((t) => this.flyTick(t)); }
+    return true;
+  }
+
+  flyTick(now) {
+    const dt = Math.min(0.05, (now - this.last) / 1000);
+    this.last = now;
+    if (!this.keys || !this.keys.size || store.mode !== "3d") { this.flying = false; return; }
+    if (this.camera.fly(this.keys, dt, this.fast ? 3000 : 900)) { this.redraw(); emit("camera"); }
+    requestAnimationFrame((t) => this.flyTick(t));
+  }
+
   // ---- the game view: the room as one of its own cameras shows it
   applyMode() {
     if (store.mode === "game") this.useGameCamera();
-    else this.camera.setMode(store.mode === "3d" ? "orbit" : "plan");
+    else if (store.mode === "3d") {
+      const g = this.camera.game;         // the free camera starts where the game camera was
+      this.camera.setMode("orbit");
+      if (g) this.camera.startFree(g.eye, g.target);
+      else this.frameRoom(store.room);
+    } else this.camera.setMode("plan");
     emit("camera");
     this.placeShot();
     this.redraw();
@@ -165,7 +190,7 @@ export class Viewport {
   }
 
   visibleRooms() {
-    return store.mode === "game" ? [store.room] : store.scene.rooms.map((r) => r.file);
+    return store.mode === "game" || store.mode === "3d" ? [store.room] : store.scene.rooms.map((r) => r.file);
   }
 
   draw() {
@@ -299,7 +324,7 @@ export class Viewport {
     const start = { x, y, button: e.button, shift: e.shiftKey, moved: false };
     const tool = store.tool;
     const pan = e.button === 1 || e.button === 2 || this.space || tool === "pan";
-    if (pan) { this.drag = { ...start, type: e.altKey && this.camera.mode === "orbit" ? "orbit" : "pan" }; this.ov.style.cursor = "grabbing"; return; }
+    if (pan) { this.drag = { ...start, type: this.camera.mode === "orbit" && (e.button === 2 || e.altKey) ? "orbit" : "pan" }; this.ov.style.cursor = "grabbing"; return; }
     if (e.button !== 0) return;
     if (tool === "wall" || tool === "floor") { this.drag = { ...start, type: "wall" }; return; }
     const placing = [...PLACE, ...THINGS].find((p) => p.id === tool);
@@ -404,13 +429,51 @@ export class Viewport {
     this.redraw();
   }
 
+  // raising and lowering: the point of the thing's vertical line nearest the pointer's ray
+  dragLift(x, y) {
+    const d = this.drag, o = objectOf(d.ref);
+    const { o: ro, d: rd } = this.camera.ray(x, y), p0 = d.handle.p;
+    const w = [ro[0] - p0[0], ro[1] - p0[1], ro[2] - p0[2]], b = rd[1], dd = rd[0] * w[0] + rd[1] * w[1] + rd[2] * w[2], e = w[1], den = 1 - b * b;
+    if (Math.abs(den) < 1e-4) return;
+    const u = (e - b * dd) / den;                  // how far up the line the nearest point is, from the handle's own height
+    if (d.u0 === undefined) d.u0 = u;
+    const dy = Math.round((u - d.u0) / 10) * 10;
+    Object.assign(o, clone(d.orig));
+    if (d.ref.c === "items" || d.ref.c === "enemies") o.pos = [d.orig.pos[0], d.orig.pos[1] + dy, d.orig.pos[2]];
+    else if (d.ref.c === "areas") o.h = [d.orig.h[0] + dy, d.orig.h[1] + dy];
+    else if (d.ref.c === "floors") o.y = d.orig.y + dy;
+    else translate(d.ref.c, o, 0, dy, 0);
+    emit("live"); this.redraw();
+  }
+
+  // turning and resizing an object: its distance and bearing from its middle, on the ground under it
+  dragShape(x, y) {
+    const d = this.drag, o = objectOf(d.ref), c = d.orig.wc;
+    const p = this.camera.onPlane(x, y, d.handle.p[1]);
+    if (!p) return;
+    const a = Math.atan2(p[0] - c[0], p[1] - c[2]), r = Math.hypot(p[0] - c[0], p[1] - c[2]);
+    if (d.a0 === undefined) { d.a0 = a; d.r0 = Math.max(30, r); }
+    Object.assign(o, clone(d.orig));
+    if (d.handle.id === "turn") {
+      let yaw = d.orig.rot[1] + (a - d.a0);
+      if (store.snap > 1) yaw = Math.round(yaw / (Math.PI / 12)) * (Math.PI / 12);
+      o.rot = [d.orig.rot[0], yaw, d.orig.rot[2]];
+    } else {
+      const k = Math.max(0.1, Math.min(10, r / d.r0));
+      o.scale = d.orig.scale.map((s) => s * k);
+    }
+    emit("live"); this.redraw();
+  }
+
   dragHandle(x, y) {
     const d = this.drag, o = objectOf(d.ref), h = d.handle;
     if (!o) return;
+    const id = h.id;
+    if (id === "lift") return this.dragLift(x, y);
+    if (id === "turn" || id === "size") return this.dragShape(x, y);
     const y0 = h.p[1], p = this.camera.onPlane(x, y, y0);
     if (!p) return;
     const sx = snapTo(p[0]), sz = snapTo(p[1]);
-    const id = h.id;
     if (id.startsWith("corner")) { const n = +id.slice(6); o.quad = o.quad.map((q, i) => (i === n ? [sx, sz] : q)); }
     else if (id === "target") o.target = [sx, o.target[1], sz];
     else if (id === "wa") o.a = [sx, sz];

@@ -18,10 +18,10 @@ WIDTH = 1100          # the pictures are sent this wide (the game's own are 2048
 
 
 class Preview:
-    def __init__(self, game, scenario):
+    def __init__(self, game, scenario, kind="preview"):
         self.game, self.scenario = game, scenario
         self.info = auto.KNOWN[(game, scenario)]
-        self.folder = ROOT / "work" / "studio" / "preview" / game
+        self.folder = ROOT / "work" / "studio" / kind / game
         self.run = None
         self.patch = None
         self.room = None
@@ -84,3 +84,103 @@ class Preview:
             new[0].unlink()
             self.room = room
             return out
+
+
+def door_graph(rooms):
+    """{room id: [(room id it leads to, (x, z) to stand at to take that door)]} from the scene's rooms (the doors and exits of each room's first variant)"""
+    graph = {}
+    for r in rooms:
+        if r["variant"]:
+            continue
+        edges = graph.setdefault(r["id"], [])
+        for a in r["areas"]:
+            if a["tag"] in (0, 1):
+                q = a["quad"]
+                edges.append((a["fields"][1], (sum(p[0] for p in q) / len(q), sum(p[1] for p in q) / len(q))))
+    return graph
+
+
+def route(graph, start, goal):
+    """The (x, z) points to stand at, door by door, to walk from room `start` to room `goal`, or None"""
+    if start == goal:
+        return []
+    seen, queue = {start: None}, [start]
+    while queue:
+        here = queue.pop(0)
+        for to, point in graph.get(here, []):
+            if to in seen or to not in graph:
+                continue
+            seen[to] = (here, point)
+            if to == goal:
+                out, at = [], to
+                while seen[at]:
+                    out.insert(0, seen[at][1])
+                    at = seen[at][0]
+                return out
+            queue.append(to)
+    return None
+
+
+class Survey(threading.Thread):
+    """Photographs every camera of every room of the scenario as the game draws it (the unedited scenario), into work/studio/survey/GAME/r<room>c<camera>.jpg, one game kept running
+    through the doors; a picture already there is kept, so it can stop and go on"""
+
+    def __init__(self, studio):
+        super().__init__(daemon=True)
+        self.studio = studio
+        self.game, self.scenario = studio.game, studio.scenario
+        self.done, self.total, self.current, self.error, self.finished = 0, 0, "", "", False
+        self.stop_now = False
+
+    def run(self):
+        try:
+            scene = self.studio.scene()
+            rooms = [r for r in scene["rooms"] if not r["variant"]]
+            graph = door_graph(scene["rooms"])
+            start = scene.get("start_room") or auto.KNOWN[(self.game, self.scenario)]["start_room"]
+            jobs = [(r, k) for r in rooms for k in range(len(r["cameras"]))]
+            self.total = len(jobs)
+            patch = self.studio.build({}, name=f"survey-{self.game}.patch")["patch"]
+            preview = Preview(self.game, self.scenario, "survey")
+            out = preview.folder
+            out.mkdir(parents=True, exist_ok=True)
+            todo = [(r, k) for r, k in jobs if not (out / f"r{r['id']}c{k}.jpg").exists()]
+            self.done = self.total - len(todo)
+            if todo:
+                self.current = "starting the game"
+                preview.prepare(patch, start)
+            at_room = start
+            # rooms in the order the doors lead to them, so the walking between is short
+            order = {}
+            queue = [start]
+            order[start] = 0
+            while queue:
+                here = queue.pop(0)
+                for to, _ in graph.get(here, []):
+                    if to not in order and to in graph:
+                        order[to] = len(order)
+                        queue.append(to)
+            todo.sort(key=lambda j: (order.get(j[0]["id"], 999), j[1]))
+            for r, k in todo:
+                if self.stop_now:
+                    break
+                hops = route(graph, at_room, r["id"])
+                if hops is None:
+                    self.done += 1
+                    continue
+                b = r["cameras"][k]["box"][:4]
+                at = (sum(p[0] for p in b) / 4, sum(p[2] for p in b) / 4, 0)
+                self.current = f"room {r['id']}, camera {k + 1}"
+                try:
+                    preview.shot(r["id"], hops, at, f"r{r['id']}c{k}")
+                    at_room = r["id"]
+                except Exception:      # the game stopped: start it again where it begins
+                    preview.stop()
+                    preview.prepare(patch, start)
+                    at_room = start
+                self.done += 1
+            preview.stop()
+        except Exception as error:
+            self.error = str(error)
+        self.finished = True
+        self.current = ""

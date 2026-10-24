@@ -142,9 +142,13 @@ export class Renderer {
       const lop = [1e9, 1e9, 1e9], hip = [-1e9, -1e9, -1e9];
       for (let i = 0; i < pos.length; i += 3) for (let k = 0; k < 3; k++) { if (pos[i + k] < lop[k]) lop[k] = pos[i + k]; if (pos[i + k] > hip[k]) hip[k] = pos[i + k]; }
       const colours = m.c ? b64(m.c, Float32Array) : null;
-      let blend = false;
-      if (colours) for (let k = 3; k < colours.length; k += 4) if (colours[k] < 0.99) { blend = true; break; }
-      meshes.push({ vb, ub, cb, blend, groups, bone: m.bone, hide, mesh: m.mesh, lo: lop, hi: hip });
+      let blend = false, additive = false;
+      if (colours) {
+        let lit = 0, n = 0;
+        for (let k = 3; k < colours.length; k += 4) { if (colours[k] < 0.99) blend = true; lit += colours[k - 1] + colours[k - 2] + colours[k - 3]; n++; }
+        additive = blend && n > 0 && lit / (3 * n) > 1.4;       // see-through and bright: a patch of light, which adds to what is behind it
+      }
+      meshes.push({ vb, ub, cb, blend, additive, groups, bone: m.bone, hide, mesh: m.mesh, lo: lop, hi: hip });
     });
     this.models[file] = { bones, base: bones.length, extra: [], world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
   }
@@ -231,13 +235,13 @@ export class Renderer {
     }
     gl.enable(gl.DEPTH_TEST);
     const vp = camera.viewProj();
-    const textured = (opts.textured && camera.mode !== "plan") || camera.mode === "game";
+    const textured = (opts.textured && camera.mode !== "plan") || camera.lit;
     const prog = textured ? this.tex : this.flat;
     gl.useProgram(prog.p);
     const U = (name) => prog.loc[name] ?? (prog.loc[name] = gl.getUniformLocation(prog.p, name));
     gl.uniformMatrix4fv(U("uVP"), false, vp);
     const posLoc = gl.getAttribLocation(prog.p, "aPos"), uvLoc = textured ? gl.getAttribLocation(prog.p, "aUV") : -1, colLoc = textured ? gl.getAttribLocation(prog.p, "aCol") : -1;
-    if (textured) gl.uniform1f(U("uGame"), camera.mode === "game" ? 1 : 0);
+    if (textured) gl.uniform1f(U("uGame"), camera.lit ? 1 : 0);
     for (const file of rooms) {
       const m = this.models[file];
       if (!m) continue;
@@ -245,9 +249,9 @@ export class Renderer {
       if (!textured) gl.uniform2f(U("uHeight"), m.bounds[1] - 50, m.bounds[1] + Math.min(1800, Math.max(300, m.bounds[4] - m.bounds[1])));
       for (const mesh of [...m.meshes, ...m.extra].sort((a, b) => (a.blend ? 1 : 0) - (b.blend ? 1 : 0))) {
         if (mesh.hide || mesh.skip) continue;
-        if (camera.mode === "game" && opts.hidden && opts.hidden[file] && opts.hidden[file].has(mesh.mesh)) continue;     // what the room's own script hides as it starts
-        const blend = textured && camera.mode === "game" && mesh.blend;
-        if (blend) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); } else { gl.disable(gl.BLEND); gl.depthMask(true); }
+        if (camera.lit && opts.hidden && opts.hidden[file] && opts.hidden[file].has(mesh.mesh)) continue;     // what the room's own script hides as it starts
+        const blend = textured && camera.lit && mesh.blend;
+        if (blend) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, mesh.additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); } else { gl.disable(gl.BLEND); gl.depthMask(true); }
         if (textured) gl.uniform1f(U("uBlend"), blend ? 1 : 0);
         gl.uniformMatrix4fv(U("uModel"), false, m.world[mesh.bone]);
         gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vb); gl.enableVertexAttribArray(posLoc); gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);

@@ -77,7 +77,7 @@ export class Camera {
       const hh = this.scale * this.h / 2, hw = hh * aspect, n = 100, f = 200000;
       m[0] = 1 / hw; m[5] = 1 / hh; m[10] = -2 / (f - n); m[14] = -(f + n) / (f - n); m[15] = 1;
     } else {
-      const fov = 0.9, t = 1 / Math.tan(fov / 2), n = 30, f = 300000;
+      const fov = 1.0, t = 1 / Math.tan(fov / 2), n = 30, f = 300000;
       m[0] = t / aspect; m[5] = t; m[10] = (f + n) / (n - f); m[11] = -1; m[14] = 2 * f * n / (n - f);
     }
     return m;
@@ -106,7 +106,7 @@ export class Camera {
       const o = [eye[0] + x[0] * nx * hw + y[0] * ny * hh, eye[1] + x[1] * nx * hw + y[1] * ny * hh, eye[2] + x[2] * nx * hw + y[2] * ny * hh];
       return { o, d: [-z[0], -z[1], -z[2]] };
     }
-    const t = Math.tan((g ? g.fov * Math.PI / 180 : 0.9) / 2);
+    const t = Math.tan((g ? g.fov * Math.PI / 180 : 1.0) / 2);
     const d = norm([x[0] * nx * t * aspect + y[0] * ny * t - z[0], x[1] * nx * t * aspect + y[1] * ny * t - z[1], x[2] * nx * t * aspect + y[2] * ny * t - z[2]]);
     return { o: eye, d };
   }
@@ -131,10 +131,55 @@ export class Camera {
     }
   }
 
-  orbit(dx, dy) {
+  // true when the picture is lit the way the game lights it (the game view and the free camera)
+  get lit() { return this.mode === "game" || this.mode === "orbit"; }
+
+  // the free camera starts where a game camera stood, looking where it looked
+  startFree(eye, target) {
+    const d = [eye[0] - target[0], eye[1] - target[1], eye[2] - target[2]];
+    this.dist = Math.max(300, Math.hypot(...d));
+    this.yaw = Math.atan2(d[0], d[2]);
+    this.pitch = Math.asin(Math.max(-1, Math.min(1, d[1] / this.dist)));
+    this.target = [...target];
+  }
+
+  // the free camera: the mouse turns the view about the eye (the eye stays where it is)
+  look(dx, dy) {
     if (this.mode === "game") return;
-    this.yaw -= dx * 0.008;
-    this.pitch = Math.max(0.05, Math.min(1.52, this.pitch + dy * 0.008));
+    const e = this.eye();
+    this.yaw -= dx * 0.005;
+    this.pitch = Math.max(-1.5, Math.min(1.5, this.pitch - dy * 0.005));
+    const d = this.offset();
+    this.target = [e[0] - d[0], e[1] - d[1], e[2] - d[2]];
+  }
+
+  orbit(dx, dy) { this.look(dx, dy); }
+
+  // from the target to the eye
+  offset() {
+    const cp = Math.cos(this.pitch);
+    return [this.dist * cp * Math.sin(this.yaw), this.dist * Math.sin(this.pitch), this.dist * cp * Math.cos(this.yaw)];
+  }
+
+  eye() { const d = this.offset(); return [this.target[0] + d[0], this.target[1] + d[1], this.target[2] + d[2]]; }
+
+  // keys held: the eye moves along where it looks (w, s), sideways (a, d) and up and down (e, q), `dt` seconds' worth at `speed` units a second
+  fly(keys, dt, speed) {
+    if (this.mode !== "orbit") return false;
+    const { x, z } = this.basis();
+    const fwd = [-z[0], -z[1], -z[2]];
+    let mx = 0, my = 0, mz = 0;
+    const add = (v, k) => { mx += v[0] * k; my += v[1] * k; mz += v[2] * k; };
+    if (keys.has("w")) add(fwd, 1);
+    if (keys.has("s")) add(fwd, -1);
+    if (keys.has("d")) add(x, 1);
+    if (keys.has("a")) add(x, -1);
+    if (keys.has("e")) add([0, 1, 0], 1);
+    if (keys.has("q")) add([0, 1, 0], -1);
+    if (!mx && !my && !mz) return false;
+    const k = speed * dt;
+    this.target = [this.target[0] + mx * k, this.target[1] + my * k, this.target[2] + mz * k];
+    return true;
   }
 
   // zoom about a screen point, so what is under the cursor stays under it
@@ -146,7 +191,8 @@ export class Camera {
       const after = this.onPlane(sx, sy, 0);
       if (before && after) this.target = [this.target[0] + before[0] - after[0], this.target[1], this.target[2] + before[1] - after[1]];
     } else {
-      this.dist = Math.max(150, Math.min(150000, this.dist * factor));
+      const { z } = this.basis(), k = (factor > 1 ? -1 : 1) * Math.abs(Math.log(factor)) * 2200;     // the wheel moves the eye along where it looks
+      this.target = [this.target[0] - z[0] * k * -1, this.target[1] - z[1] * k * -1, this.target[2] - z[2] * k * -1];
     }
   }
 

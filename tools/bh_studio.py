@@ -44,6 +44,7 @@ class Studio:
         self.cache = {}
         self.process = None
         self.preview, self.preview_lock = None, threading.Lock()
+        self.survey = None
 
     # ---- what the page asks for
     def scene(self):
@@ -150,10 +151,31 @@ class Studio:
         path = self.preview.shot(room, [tuple(h) for h in hops], tuple(at), name)
         return {"url": f"/api/shot?name={path.name}", "room": room}
 
+    def survey_start(self):
+        import bh_preview
+
+        if not bh_autoplay.supported(self.game, self.scenario):
+            return {"supported": False}
+        if self.survey is None or self.survey.finished or (self.survey.game, self.survey.scenario) != (self.game, self.scenario):
+            if self.preview is not None:        # one game at a time
+                self.stop_preview()
+            self.survey = bh_preview.Survey(self)
+            self.survey.start()
+        return self.survey_status()
+
+    def survey_status(self):
+        s = self.survey
+        have = sorted(p.stem for p in (ROOT / "work" / "studio" / "survey" / self.game).glob("r*c*.jpg")) if (ROOT / "work" / "studio" / "survey" / self.game).exists() else []
+        if s is None or (s.game, s.scenario) != (self.game, self.scenario):
+            return {"supported": bh_autoplay.supported(self.game, self.scenario), "running": False, "have": have}
+        return {"supported": True, "running": not s.finished, "done": s.done, "total": s.total, "current": s.current, "error": s.error, "have": have}
+
     def set_status(self, text):
         self.status = text
 
     def stop_preview(self):
+        if self.survey is not None and not self.survey.finished:
+            self.survey.stop_now = True
         if self.preview is not None:
             self.preview.stop()
             self.preview = None
@@ -333,9 +355,12 @@ def make_handler(studio):
                         self.send_header("Content-Disposition", f'attachment; filename="my-{studio.game}-level.patch"')
                         self.end_headers()
                         self.wfile.write(data)
+                elif url.path == "/api/survey":
+                    self.send(200, json.dumps(studio.survey_status()))
                 elif url.path == "/api/shot":
                     name = Path(query["name"][0]).name
-                    path = ROOT / "work" / "studio" / "preview" / studio.game / name
+                    kind = "survey" if query.get("kind", [""])[0] == "survey" else "preview"
+                    path = ROOT / "work" / "studio" / kind / studio.game / name
                     if not path.exists():
                         self.send(404, "{}")
                     else:
@@ -373,6 +398,8 @@ def make_handler(studio):
                     self.send(200, json.dumps(studio.build(body.get("edits", {}), body.get("english", True))))
                 elif path == "/api/play":
                     self.send(200, json.dumps(studio.play(body.get("patch"), body.get("hops"), body.get("at"))))
+                elif path == "/api/survey/start":
+                    self.send(200, json.dumps(studio.survey_start()))
                 elif path == "/api/preview/prepare":
                     self.send(200, json.dumps(studio.preview_prepare(body.get("edits", {}))))
                 elif path == "/api/preview/shot":
