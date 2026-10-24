@@ -14,6 +14,9 @@ Start it with `./studio.sh` (File 2, scenario 40 opens first; the scenario menu 
 | Bring in your own model (.obj) and paint a picture with your own image | **Add > Your own model**, then pick/paint a picture in the panel; the room's pictures are shared by everything that uses them | yes (a textured cube; every picture of a room repainted) |
 | Make a puzzle | click the room's empty space: **Rules**: set a flag, lock a door, set an examine message, show/hide an object, set a counter; each can be always, only if a flag is on/off, or (for a flag) while someone is inside one of the room's **script zones** (Add > Script zone) | yes in both games (zone -> flag -> counter measured) |
 | Choose where the game begins | click a room > **Begin the game here** | yes (File 2's first scenario) |
+| Start a level of your own in a room slot | click the room > **Clear this room**: no objects, enemies, items, walls or ground (doors stay); then **Add > Floor**, **Add > Wall**, **Add > Your own model** | yes (a cleared zoo room with a floor laid ran, the player walked on it) |
+| Move, turn, resize with handles | select a thing in Game view or the free camera: the green arrow lifts it, the yellow ring turns an object, the blue diamond resizes it; arrow keys nudge, R turns, `-` `=` resize | lift checked by script only |
+| Look around freely | **Free camera** tab, or press W A S D / right-drag in Game view | yes |
 | Try it | **Play** (from the start, or from this room); **Save the patch file** keeps the result |  |
 
 Everything is undoable (⌘Z) and saved as you go (`work/studio/`).
