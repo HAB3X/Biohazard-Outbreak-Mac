@@ -85,6 +85,8 @@ function roomPanel() {
     box.append(section("Start", here ? el("div", { class: "note" }, "The game begins in this room.")
       : el("button", { class: "ghost", onclick: () => { store.startRoom = r.id; commit("Choose the start room"); render(); } }, "Begin the game here")));
   }
+  box.append(section("Make it your own", el("div", { class: "note" }, "Takes everything out of this room (its objects, enemies, items, walls and ground) and leaves you an empty place to build in: lay floors, draw walls, bring in your own models. Doors stay so the room still connects."),
+    el("button", { class: "ghost", onclick: () => clearRoom(r) }, r.groundCleared ? "Already cleared" : "Clear this room")));
   box.append(rulesSection(r, render));
   if ((r.pictures || []).length) box.append(section("Pictures in this room", pictures(r, shownPicture, (m) => { shownPicture = m; render(); })));
   box.append(el("div", { class: "empty", style: "padding:28px 22px;text-align:left" },
@@ -109,6 +111,18 @@ function positionSection(ref, o, label = "Position") {
 }
 
 let shownPicture = 0;
+// everything out of a room but its doors: objects hidden, enemies and items taken out, no walls and no ground (what the floors and walls you add then stand on is your own)
+function clearRoom(r) {
+  if (r.groundCleared) return;
+  for (const s of r.scenery || []) if (!s.isNew && !isDoor(r, s)) s.scale = [0.0001, 0.0001, 0.0001];
+  for (const e of r.enemies) e.modes = 0;
+  for (const it of r.items) if (!it.isNew) { it.kind = 65535; it.qty = 0; }
+  r.walls = [];
+  r.groundCleared = true;
+  commit("Clear the room");
+  render();
+}
+
 // the room's pictures as small squares to pick from
 function pictures(room, current, pick) {
   const box = el("div", { class: "pictures" });

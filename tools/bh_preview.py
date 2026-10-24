@@ -59,6 +59,47 @@ class Preview:
         if facing is not None:
             self.run.send(f"poke {base + 0x90:x} {int(facing) << 16:08x}")
 
+    def live_camera(self):
+        """(eye, target) of the camera the game is using now, from its memory"""
+        words = self.run.peek(self.info["camera"], 6)
+        f = [struct.unpack("<f", struct.pack("<I", w))[0] for w in words]
+        return tuple(f[:3]), tuple(f[3:6])
+
+    def walk(self, hops):
+        with self.lock:
+            for x, z in hops:
+                self._poke(x, z)
+                time.sleep(6)
+
+    def stand(self, x, z):
+        """Puts the player at (x, z) and says the room and the camera the game picked: (room number, eye, target)"""
+        with self.lock:
+            self._poke(x, z)
+            time.sleep(3.2)
+            return (self.room_now(), *self.live_camera())
+
+    def photo(self, name):
+        """The picture of what is on the screen now, as a JPEG path"""
+        from PIL import Image
+
+        with self.lock:
+            shots = self.folder / "shots"
+            before = set(shots.glob("*"))
+            self.run.send(f"snap {name}")
+            for _ in range(60):
+                time.sleep(0.25)
+                new = [p for p in shots.glob(f"{name}*") if p not in before]
+                if new:
+                    time.sleep(0.4)
+                    break
+            else:
+                raise RuntimeError("the game made no picture")
+            out = self.folder / f"{name}.jpg"
+            image = Image.open(new[0]).convert("RGB")
+            image.resize((WIDTH, round(image.height * WIDTH / image.width)), Image.LANCZOS).save(out, "JPEG", quality=88)
+            new[0].unlink()
+            return out
+
     def shot(self, room, hops, at, name):
         """The picture (a JPEG path) of the game with the player at `at` in room number `room` after `hops` through the doors"""
         from PIL import Image
@@ -141,18 +182,31 @@ class Survey(threading.Thread):
         self.stop_now = False
 
     @staticmethod
-    def places(room, k, graph):
-        """Places to stand in camera k's box, the one farthest from the room's doors and exits first (standing in one takes the player out of the room)"""
-        b = room["cameras"][k]["box"][:4]
-        cx, cz = sum(p[0] for p in b) / 4, sum(p[2] for p in b) / 4
-        spots = [(cx, cz)] + [(cx + (p[0] - cx) * f, cz + (p[2] - cz) * f) for p in b for f in (0.35,)]
+    def which_camera(room, eye, target):
+        """The number of the room's camera nearest the one the game is using (a following camera moves a little)"""
+        best, bd = 0, 1e18
+        for i, c in enumerate(room["cameras"]):
+            d = sum((a - b) ** 2 for a, b in zip(c["eye"], eye)) + 0.5 * sum((a - b) ** 2 for a, b in zip(c["target"], target))
+            if d < bd:
+                best, bd = i, d
+        return best
+
+    @staticmethod
+    def places(room, graph):
+        """Places to stand in the room: in each camera's box (its middle and four points toward its corners), the farthest from the room's doors and exits first (standing in one takes the player out)"""
         doors = []
         for a in room["areas"]:
             if a["tag"] in (0, 1):
                 q = a["quad"]
                 doors.append((sum(p[0] for p in q) / len(q), sum(p[1] for p in q) / len(q)))
+        spots = []
+        for c in room["cameras"]:
+            b = c["box"][:4]
+            cx, cz = sum(p[0] for p in b) / 4, sum(p[2] for p in b) / 4
+            spots += [(cx, cz)] + [(cx + (p[0] - cx) * 0.5, cz + (p[2] - cz) * 0.5) for p in b]
+        spots = [s for s in spots if min([((s[0] - d[0]) ** 2 + (s[1] - d[1]) ** 2) ** 0.5 for d in doors] or [1e9]) > 160]
         spots.sort(key=lambda s: -min([((s[0] - d[0]) ** 2 + (s[1] - d[1]) ** 2) ** 0.5 for d in doors] or [1e9]))
-        return [(s[0], s[1], 0) for s in spots[:3]]
+        return spots[:40]
 
     def run(self):
         try:
@@ -183,26 +237,44 @@ class Survey(threading.Thread):
                         order[to] = len(order)
                         queue.append(to)
             todo.sort(key=lambda j: (order.get(j[0]["id"], 999), j[1]))
+            by_room = {}
             for r, k in todo:
+                by_room.setdefault(r["id"], (r, set()))[1].add(k)
+            for rid in sorted(by_room, key=lambda i: order.get(i, 999)):
                 if self.stop_now:
                     break
-                self.current = f"room {r['id']}, camera {k + 1}"
-                for point in self.places(r, k, graph):
-                    hops = route(graph, at_room, r["id"])
-                    if hops is None:
-                        break
-                    try:
-                        preview.shot(r["id"], hops, point, f"r{r['id']}c{k}")
-                        at_room = preview.where()
-                    except Exception:      # the game stopped: start it again where it begins
-                        preview.stop()
-                        preview.prepare(patch, start)
-                        at_room = start
-                        continue
-                    if at_room == r["id"]:
-                        break
-                    (out / f"r{r['id']}c{k}.jpg").unlink(missing_ok=True)      # the player stepped through a door and the picture is of another room
-                self.done += 1
+                r, missing = by_room[rid]
+                hops = route(graph, at_room, rid)
+                if hops is None:
+                    self.done += len(missing)
+                    continue
+                self.current = f"room {rid}"
+                try:
+                    preview.walk(hops)
+                    at_room = rid
+                    for point in self.places(r, graph):
+                        if not missing or self.stop_now:
+                            break
+                        room, eye, target = preview.stand(point[0], point[1])
+                        if room != rid:         # a door was stepped through: back to the room
+                            at_room = room
+                            back = route(graph, at_room, rid)
+                            if back is None:
+                                break
+                            preview.walk(back)
+                            at_room = rid
+                            continue
+                        k = self.which_camera(r, eye, target)
+                        if k in missing:
+                            preview.photo(f"r{rid}c{k}")
+                            missing.discard(k)
+                            self.done += 1
+                            self.current = f"room {rid}, camera {k + 1}"
+                except Exception:      # the game stopped: start it again where it begins
+                    preview.stop()
+                    preview.prepare(patch, start)
+                    at_room = start
+                self.done += len(missing) if False else 0
             preview.stop()
         except Exception as error:
             self.error = str(error)

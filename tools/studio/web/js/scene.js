@@ -195,6 +195,7 @@ export function diffs(scene, orig) {
     if (r.rules && r.rules.length) { out.rules = r.rules; out.script_prepend = compile(r.rules); out.script_thread = 1; }
     const strip = (w) => JSON.stringify(w.map(({ a, b, y, flags, n }) => ({ a, b, y, flags, n })));
     if (strip(r.walls) !== strip(o.walls)) out.collision = { wall_segments: JSON.parse(strip(r.walls)) };
+    if (r.groundCleared) out.collision = { ...out.collision, clear_ground: true };
     if (r.floors.length) out.collision = { ...out.collision, ground_boxes: r.floors.map((f) => ({ min: f.min, max: f.max, y: -f.y })) };   // the ground file's heights are the player's, negated (measured)
     if (Object.keys(out).length) edits[r.file] = out;
   });
@@ -280,6 +281,7 @@ export function applyEdits(scene, edits) {
     for (const [i, d] of Object.entries(spec.start_spots || {})) { const sp = r.spawns.find((x) => x.i === +i); if (sp) { if (d.x !== undefined) sp.pos = [d.x, sp.pos[1], sp.pos[2]]; if (d.z !== undefined) sp.pos = [sp.pos[0], sp.pos[1], d.z]; if (d.facing !== undefined) sp.facing = d.facing; } }
     for (const [i, d] of Object.entries(spec.lights || {})) { const l = r.lights.find((x) => x.i === +i); if (l) { if (d.position) l.pos = d.position; if (d.attenuation !== undefined) l.att = d.attenuation; if (d.range !== undefined) l.range = d.range; if (d.colour) l.col = d.colour; if (d.colour2) l.col2 = d.colour2; } }
     for (const [i, d] of Object.entries(spec.sound_points || {})) { const p = r.points.find((x) => x.i === +i); if (p) { if (d.position) p.pos = d.position; if (d.kind !== undefined) p.kind = d.kind; } }
+    if (spec.collision && spec.collision.clear_ground) r.groundCleared = true;
     if (spec.collision && spec.collision.ground_boxes) r.floors = spec.collision.ground_boxes.map((b, i) => ({ i, min: clone(b.min), max: clone(b.max), y: -b.y }));
     if (spec.collision && spec.collision.wall_segments) r.walls = spec.collision.wall_segments.map((w, i) => ({ ...clone(w), i }));
     for (const n of spec.new_items || []) addItem(r, n);
