@@ -22,8 +22,23 @@ KNOWN = {("file1", 1): {"menus": "bar", "room_at": 0x3065AC, "player": 0x476DD0,
          ("file2", 40): {"menus": "zoo", "room_at": 0x3137BC, "player": 0x47BD30, "start_room": 3, "camera": 0x313548}}
 
 
+# File 2's single play menu lists its scenarios in this order (the scenario number and the presses of Right to reach it, measured by where the player started: 20 first, 40 after
+# one press, 26 after three, 15 after four; two presses gave nothing: that scenario isn't open to start with); File 1 starts with only its first open
+FILE2_RIGHT = {20: 0, 40: 1, 26: 3, 15: 4}
+for _scenario in (20, 26, 15):
+    KNOWN[("file2", _scenario)] = {**KNOWN[("file2", 40)], "menus": f"file2:{FILE2_RIGHT[_scenario]}", "start_room": {20: 1, 26: 2, 15: 1}[_scenario]}
+KNOWN[("file2", 40)]["menus"] = "file2:1"
+
+
 def supported(game, scenario):
     return (game, scenario) in KNOWN
+
+
+def keys_for(menus):
+    """The key presses from the title menu into the scenario named by KNOWN's "menus" (the bar's, or File 2's with some presses of Right)"""
+    if menus.startswith("file2:"):
+        return [("E", 4), ("E", 6)] + [("Right", 3)] * int(menus.split(":")[1]) + [("E", 4), ("E", 4), ("E", 4), ("E", 3), ("Up", 1), ("E", 10)]
+    return KEYS[menus]
 
 
 class AutoPlay(S.Run):
@@ -63,7 +78,7 @@ def run(play, scenario, hops, at, status):
     info = KNOWN[(play.game, scenario)]
     try:
         status("Starting the game…")
-        S.through_menus(play, KEYS[info["menus"]])
+        S.through_menus(play, keys_for(info["menus"]))
         time.sleep(4)
         for x, z in hops:
             if not play.alive():

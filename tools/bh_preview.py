@@ -21,7 +21,7 @@ class Preview:
     def __init__(self, game, scenario, kind="preview"):
         self.game, self.scenario = game, scenario
         self.info = auto.KNOWN[(game, scenario)]
-        self.folder = ROOT / "work" / "studio" / kind / game
+        self.folder = ROOT / "work" / "studio" / kind / f"{game}-{scenario}"
         self.run = None
         self.patch = None
         self.room = None
@@ -43,7 +43,7 @@ class Preview:
                 return self.room
             self.stop()
             self.run = auto.AutoPlay(self.game, patch, headless=True, folder=self.folder)
-            S.through_menus(self.run, auto.KEYS[self.info["menus"]])
+            S.through_menus(self.run, auto.keys_for(self.info["menus"]))
             time.sleep(4)
             self.patch, self.room = patch, start_room
             return self.room
@@ -178,6 +178,7 @@ class Survey(threading.Thread):
         super().__init__(daemon=True)
         self.studio = studio
         self.game, self.scenario = studio.game, studio.scenario
+        self.info_start = auto.KNOWN[(self.game, self.scenario)]['start_room']
         self.done, self.total, self.current, self.error, self.finished = 0, 0, "", "", False
         self.stop_now = False
 
@@ -208,12 +209,33 @@ class Survey(threading.Thread):
         spots.sort(key=lambda s: -min([((s[0] - d[0]) ** 2 + (s[1] - d[1]) ** 2) ** 0.5 for d in doors] or [1e9]))
         return spots[:40]
 
+    def shoot(self, preview, r, missing, graph, at_room):
+        """Stands in the room's camera boxes and photographs each camera the game picks that is still wanted; the room the player is in now"""
+        rid = r["id"]
+        for point in self.places(r, graph):
+            if not missing or self.stop_now:
+                break
+            room, eye, target = preview.stand(point[0], point[1])
+            if room != rid:             # a door was stepped through: back to the room
+                back = route(graph, room, rid)
+                if back is None:
+                    return room
+                preview.walk(back)
+                continue
+            k = self.which_camera(r, eye, target)
+            if k in missing:
+                preview.photo(f"r{rid}c{k}")
+                missing.discard(k)
+                self.done += 1
+                self.current = f"room {rid}, camera {k + 1}"
+        return rid
+
     def run(self):
         try:
             scene = self.studio.scene()
             rooms = [r for r in scene["rooms"] if not r["variant"]]
             graph = door_graph(scene["rooms"])
-            start = scene.get("start_room") or auto.KNOWN[(self.game, self.scenario)]["start_room"]
+            start = scene.get("start_room") or self.info_start
             jobs = [(r, k) for r in rooms for k in range(len(r["cameras"]))]
             self.total = len(jobs)
             patch = self.studio.build({}, name=f"survey-{self.game}.patch")["patch"]
@@ -240,43 +262,70 @@ class Survey(threading.Thread):
             by_room = {}
             for r, k in todo:
                 by_room.setdefault(r["id"], (r, set()))[1].add(k)
+            unreachable = []
             for rid in sorted(by_room, key=lambda i: order.get(i, 999)):
                 if self.stop_now:
                     break
                 r, missing = by_room[rid]
                 hops = route(graph, at_room, rid)
                 if hops is None:
-                    self.done += len(missing)
+                    unreachable.append(rid)
                     continue
                 self.current = f"room {rid}"
                 try:
                     preview.walk(hops)
-                    at_room = rid
-                    for point in self.places(r, graph):
-                        if not missing or self.stop_now:
-                            break
-                        room, eye, target = preview.stand(point[0], point[1])
-                        if room != rid:         # a door was stepped through: back to the room
-                            at_room = room
-                            back = route(graph, at_room, rid)
-                            if back is None:
-                                break
-                            preview.walk(back)
-                            at_room = rid
-                            continue
-                        k = self.which_camera(r, eye, target)
-                        if k in missing:
-                            preview.photo(f"r{rid}c{k}")
-                            missing.discard(k)
-                            self.done += 1
-                            self.current = f"room {rid}, camera {k + 1}"
+                    at_room = preview.where()
+                    if at_room != rid:          # a door that wouldn't open (locked, or the story isn't there yet)
+                        unreachable.append(rid)
+                        continue
+                    at_room = self.shoot(preview, r, missing, graph, at_room)
                 except Exception:      # the game stopped: start it again where it begins
                     preview.stop()
                     preview.prepare(patch, start)
                     at_room = start
-                self.done += len(missing) if False else 0
+            # rooms the doors don't lead to: a game started in the room itself (the event file's start records), where the scenario has them
+            import bh_studio
+
+            for rid in unreachable:
+                if self.stop_now:
+                    break
+                r, missing = by_room[rid]
+                if not bh_studio.start_records(self.game, self.scenario)[1]:
+                    self.done += len(missing)
+                    continue
+                self.current = f"room {rid}: starting a game there"
+                try:
+                    preview.stop()
+                    built = self.studio.build({"rooms": {}, "start_room": rid}, name=f"survey-{self.game}-{rid}.patch")["patch"]
+                    preview.prepare(built, rid)
+                    self.shoot(preview, r, missing, graph, rid)
+                except Exception:
+                    preview.stop()
+                self.done += len(missing)
             preview.stop()
         except Exception as error:
             self.error = str(error)
         self.finished = True
         self.current = ""
+
+
+class SurveyAll(threading.Thread):
+    """The surveys of every scenario whose menus are known, one after another (File 1's first, then File 2's)"""
+
+    def __init__(self, make_studio):
+        super().__init__(daemon=True)
+        self.make_studio = make_studio
+        self.current = None
+        self.finished = False
+        self.stop_now = False
+
+    def run(self):
+        for game, scenario in sorted(auto.KNOWN):
+            if self.stop_now:
+                break
+            studio = self.make_studio(game, scenario)
+            self.current = Survey(studio)
+            self.current.run()          # in this thread
+            if self.current.error:
+                break
+        self.finished = True

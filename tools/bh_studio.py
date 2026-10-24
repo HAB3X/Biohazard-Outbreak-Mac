@@ -155,27 +155,27 @@ class Studio:
         import bh_preview
 
         if not bh_autoplay.supported(self.game, self.scenario):
-            return {"supported": False}
-        if self.survey is None or self.survey.finished or (self.survey.game, self.survey.scenario) != (self.game, self.scenario):
-            if self.preview is not None:        # one game at a time
-                self.stop_preview()
-            self.survey = bh_preview.Survey(self)
+            return self.survey_status()
+        if self.survey is None or self.survey.finished:
+            self.survey = bh_preview.SurveyAll(lambda game, scenario: Studio(game, scenario))
             self.survey.start()
         return self.survey_status()
 
     def survey_status(self):
         s = self.survey
-        have = sorted(p.stem for p in (ROOT / "work" / "studio" / "survey" / self.game).glob("r*c*.jpg")) if (ROOT / "work" / "studio" / "survey" / self.game).exists() else []
-        if s is None or (s.game, s.scenario) != (self.game, self.scenario):
-            return {"supported": bh_autoplay.supported(self.game, self.scenario), "running": False, "have": have}
-        return {"supported": True, "running": not s.finished, "done": s.done, "total": s.total, "current": s.current, "error": s.error, "have": have}
+        folder = ROOT / "work" / "studio" / "survey" / f"{self.game}-{self.scenario}"
+        have = sorted(p.stem for p in folder.glob("r*c*.jpg")) if folder.exists() else []
+        out = {"supported": bh_autoplay.supported(self.game, self.scenario), "running": False, "have": have}
+        if s is not None and not s.finished and s.current is not None:
+            c = s.current
+            out.update({"running": True, "done": c.done, "total": c.total, "current": c.current, "error": c.error,
+                        "where": f"{c.game} scenario {c.scenario}", "here": (c.game, c.scenario) == (self.game, self.scenario)})
+        return out
 
     def set_status(self, text):
         self.status = text
 
     def stop_preview(self):
-        if self.survey is not None and not self.survey.finished:
-            self.survey.stop_now = True
         if self.preview is not None:
             self.preview.stop()
             self.preview = None
@@ -203,7 +203,7 @@ def start_records(game, scenario):
     words = struct.unpack(f"<{len(data) // 4}I", data)
     found, i = [], 0
     while i + 3 < min(len(words), 400):
-        if words[i] == 0x2000069 and words[i + 1] == words[i + 3]:
+        if words[i] == 0x2000069 and words[i + 1] == len(found):       # one for each slot in turn: 0, 1, 2, 3
             found.append(i + 2)
             i += 4
         elif found:
@@ -360,7 +360,7 @@ def make_handler(studio):
                 elif url.path == "/api/shot":
                     name = Path(query["name"][0]).name
                     kind = "survey" if query.get("kind", [""])[0] == "survey" else "preview"
-                    path = ROOT / "work" / "studio" / kind / studio.game / name
+                    path = ROOT / "work" / "studio" / kind / f"{studio.game}-{studio.scenario}" / name
                     if not path.exists():
                         self.send(404, "{}")
                     else:

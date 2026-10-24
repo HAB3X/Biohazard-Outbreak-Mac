@@ -233,7 +233,7 @@ async function watchSurvey() {
     if (realBtn) realBtn.classList.add("on");
     for (;;) {
       store.survey.have = new Set(s.have || []);
-      if (chip && s.running) { chip.style.display = "inline-flex"; chip.textContent = `Taking the game's pictures: ${s.done}/${s.total}${s.current ? " (" + s.current + ")" : ""}`; }
+      if (chip && s.running) { chip.style.display = "inline-flex"; chip.textContent = `Taking the game's pictures${s.here ? "" : " of " + s.where}: ${s.done}/${s.total}${s.current ? " (" + s.current + ")" : ""}`; }
       else if (chip && !s.running) chip.style.display = "none";
       if (store.mode === "game") refreshReal();
       if (!s.running) break;
