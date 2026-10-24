@@ -412,3 +412,15 @@ def main(argv):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
+
+
+def room_copy_members(game, pack, source, target):
+    """{(pack, member): bytes}: every file of room file `source` (r0400500.rdt) as the files of `target` (r0400400.rdt): the room, its model, its two collision files, its light and its fog
+    (the game finds them by name: R%03d%02d%02d), named as the target's own are (the case kept)"""
+    s, t = source.rsplit(".", 1)[0][1:], target.rsplit(".", 1)[0][1:]      # 0400500, 0400400
+    out = {}
+    for name, node in rdt_pack_members(game, pack):
+        m = re.fullmatch(r"([rwgRWG])" + s + r"\.(rdt|nbd|bin|lig|fog|RDT|NBD|BIN|LIG|FOG)", name)
+        if m:
+            out[(pack, m.group(1) + t + "." + m.group(2))] = node.read()
+    return out

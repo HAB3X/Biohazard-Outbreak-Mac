@@ -72,7 +72,10 @@ def compose(game, edits, out_path, base_patches=(), members=None):
         path = container_of_pack(disc.arc, pack)
         rope = ropes[path]
         inner = rope.member(pack)
-        inner.set_member(member, data)
+        if member.lower() in [n.lower() for n in inner.afs()[4]]:
+            inner.set_member(member, data)
+        else:
+            inner.add_member(member, data)
         rope.set_member(pack, inner)
         by_pack.setdefault((pack, path), []).append(member)
     for (pack, path), members in by_pack.items():

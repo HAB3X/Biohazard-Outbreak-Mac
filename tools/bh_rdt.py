@@ -730,6 +730,21 @@ class Sgl:
                 struct.pack_into("<3I", data, base + 12 * k, room, offset + delta, third)
         return bytes(data)
 
+    def copy_block(self, source_id, target_id):
+        """The .sgl's bytes with the room `target_id`'s block replaced by a copy of `source_id`'s (the later blocks' places in the index moved on)"""
+        src, dst = self.block(source_id), self.block(target_id)
+        if src is None or dst is None:
+            raise ValueError("both rooms need a block in the .sgl")
+        new = self.data[src[0]:src[1]]
+        delta = len(new) - (dst[1] - dst[0])
+        data = bytearray(self.data[:dst[0]] + new + self.data[dst[1]:])
+        base = self.data_index_at() + 4
+        for k in range(len(self.index)):
+            room, offset, third = struct.unpack_from("<3I", data, base + 12 * k)
+            if offset >= dst[1]:
+                struct.pack_into("<3I", data, base + 12 * k, room, offset + delta, third)
+        return bytes(data)
+
     def data_index_at(self):
         return struct.unpack_from("<4I", self.data, 0)[2]
 

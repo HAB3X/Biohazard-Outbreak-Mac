@@ -214,6 +214,37 @@ class Rope:
             self.write(name_at + 48 * i + 44, struct.pack("<I", new_size))
         return self.size
 
+    def add_member(self, name, data):
+        """A new member `name` of `data` (bytes or a Rope) at the end of the data, before the name table: the count, the table's entry, the name table's place and size, and a name
+        record (a copy of the last one's, renamed) are written. The table has room for a few more entries before the first member (checked)"""
+        count, entries, name_at, name_size, names = self.afs()
+        if any(n.lower() == name.lower() for n in names):
+            raise ValueError(f"{name} is already a member")
+        first = min(e[0] for e in entries)
+        if 8 + 8 * (count + 1) + 8 > first:
+            raise ValueError("the archive's table has no room for another member")
+        data = Rope(self.disc, [Piece(0, len(data), bytes(data))]) if isinstance(data, (bytes, bytearray)) else Rope(self.disc, list(data.pieces))
+        size = data.size
+        data.pad()
+        old_names = self.read(name_at, 48 * count)
+        record = bytearray(old_names[48 * (count - 1):48 * count])
+        record[:32] = name.encode("latin-1").ljust(32, b"\0")
+        struct.pack_into("<I", record, 44, size)
+        new_names = old_names + bytes(record)
+        names_rope = Rope(self.disc, [Piece(0, len(new_names), new_names)])
+        names_rope.pad()
+        before = self.slice(0, name_at)
+        self.pieces = before.pieces + data.pieces + names_rope.pieces
+        self._merge()
+        entries.append([name_at, size])
+        header = bytearray(self.read(0, 8 + 8 * (count + 1) + 8))
+        struct.pack_into("<I", header, 4, count + 1)
+        for j, (o, s) in enumerate(entries):
+            struct.pack_into("<II", header, 8 + 8 * j, o, s)
+        struct.pack_into("<II", header, 8 + 8 * (count + 1), name_at + data.size, 48 * (count + 1))
+        self.write(0, bytes(header))
+        return self.size
+
     # ---- the pieces as a patch's entries
     def entries(self, base):
         """[(disc offset, ("copy", source offset, length) or ("data", bytes))] for the file laid from `base`"""
