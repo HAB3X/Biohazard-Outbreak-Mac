@@ -5,7 +5,7 @@ import * as overlay from "./overlay.js";
 import { store, on, emit, setMode, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe, addWall, addFloor } from "./scene.js";
 import { PLACE, FIXED, THINGS, place, ground, snapTo } from "./tools.js";
 import { api } from "./api.js";
-import { attach, sync, setPose } from "./scenery.js";
+import { attach, sync, setPose, neighbourSnap } from "./scenery.js";
 
 const GAME_ASPECT = 8 / 7, GAME_LENS = 16 / 9;      // the shape of the game's picture as the runtime saves it, and of the lens (fitted to a snapshot)
 
@@ -281,8 +281,10 @@ export class Viewport {
     const pick = store.libraryPick, src = this.renderer.models[pick.room], mesh = src && src.meshes.find((x) => x.mesh === pick.mesh);
     const at = ground(this.camera, this.cursor[0], this.cursor[1], this.renderer);
     if (!mesh || !at) return;
-    const x = snapTo(at[0]), z = snapTo(at[2]), c = Math.cos(store.libraryRot || 0), s = Math.sin(store.libraryRot || 0);
-    const lc = [(mesh.lo[0] + mesh.hi[0]) / 2, (mesh.lo[2] + mesh.hi[2]) / 2];
+    let x = snapTo(at[0]), z = snapTo(at[2]);
+    const c = Math.cos(store.libraryRot || 0), s = Math.sin(store.libraryRot || 0), lc = [(mesh.lo[0] + mesh.hi[0]) / 2, (mesh.lo[2] + mesh.hi[2]) / 2];
+    const room = roomOf(store.room);
+    if (room) [x, z] = neighbourSnap(room, x, z, mesh.hi[0] - mesh.lo[0], mesh.hi[2] - mesh.lo[2], store.libraryRot || 0);     // its sides meet the sides of what stands near
     const corner = (i) => {
       const dx = (i & 1 ? mesh.hi[0] : mesh.lo[0]) - lc[0], dz = (i & 4 ? mesh.hi[2] : mesh.lo[2]) - lc[1], y = (i & 2 ? mesh.hi[1] : mesh.lo[1]) - mesh.lo[1];
       return this.camera.project([x + dx * c + dz * s, at[1] + y, z - dx * s + dz * c]);

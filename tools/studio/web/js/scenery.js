@@ -204,3 +204,18 @@ export function emptyRoom(r) {
   r.walls = [];
   r.groundCleared = true;
 }
+
+// where a box of w x d (turned about its middle by `yaw`) put near (x, z) would touch the sides of the room's other objects: its side moved onto theirs when within `reach`
+export function neighbourSnap(room, x, z, w, d, yaw, reach = 45) {
+  const c = Math.abs(Math.cos(yaw)), sn = Math.abs(Math.sin(yaw)), hw = (w * c + d * sn) / 2, hd = (w * sn + d * c) / 2;      // half sizes of the turned box's outline
+  let best = { x, z, dx: reach, dz: reach };
+  for (const o of room.scenery || []) {
+    if (!o.cs || o.scale[0] < 0.001) continue;
+    const xs = o.cs.map((p) => p[0]), zs = o.cs.map((p) => p[2]), ys = o.cs.map((p) => p[1]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
+    if (x1 - x0 > 700 || z1 - z0 > 700 || Math.max(...ys) - Math.min(...ys) < 12) continue;      // not walls and floors
+    if (z + hd > z0 - reach && z - hd < z1 + reach) for (const to of [x1 + hw, x0 - hw]) if (Math.abs(to - x) < best.dx) { best.x = to; best.dx = Math.abs(to - x); }
+    if (x + hw > x0 - reach && x - hw < x1 + reach) for (const to of [z1 + hd, z0 - hd]) if (Math.abs(to - z) < best.dz) { best.z = to; best.dz = Math.abs(to - z); }
+  }
+  return [best.x, best.z];
+}

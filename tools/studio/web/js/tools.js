@@ -75,7 +75,8 @@ export function placeArea(room, tag, x, y, z, half = 50, fields = undefined) {
 export function place(tool, at) {
   const room = roomOf(store.room);
   if (!room) return null;
-  const x = snapTo(at[0]), z = snapTo(at[2]), y = Math.round(at[1]);
+  const fixed = tool.id === "library";      // the ghost has already snapped it to the grid and to what stands beside it
+  const x = fixed ? Math.round(at[0]) : snapTo(at[0]), z = fixed ? Math.round(at[2]) : snapTo(at[2]), y = Math.round(at[1]);
   if (tool.id === "spawn") {
     const sp = room.spawns[0];
     if (!sp) { emit("note", "This room has no start spots to move.", "warn"); return null; }
