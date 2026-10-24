@@ -25,15 +25,30 @@ export class Camera {
     this.pitch = 0.7;
     this.dist = 6000;         // orbit: distance from the target
     this.w = 1; this.h = 1;
+    this.game = null;         // game view: {eye, target, fov (vertical degrees), aspect}: one of the room's own cameras
+    this.rect = { x: 0, y: 0, w: 1, h: 1 };
   }
 
-  resize(w, h) { this.w = Math.max(1, w); this.h = Math.max(1, h); }
+  resize(w, h) { this.w = Math.max(1, w); this.h = Math.max(1, h); this.fit(); }
+
+  // in the game view the picture keeps the game's shape and sits in the middle of the pane
+  fit() {
+    if (this.mode !== "game" || !this.game) { this.rect = { x: 0, y: 0, w: this.w, h: this.h }; return; }
+    let w = this.w, h = w / this.game.aspect;
+    if (h > this.h) { h = this.h; w = h * this.game.aspect; }
+    this.rect = { x: (this.w - w) / 2, y: (this.h - h) / 2, w, h };
+  }
+
+  // g.aspect is the shape of the picture, g.lens the shape the projection is made for: the game's picture is squeezed (measured: lamps 48 and 49 of the zoo's first room land where the game's snapshot has them with a vertical field of 50 degrees and a 16:9 lens in a 8:7 picture)
+  setGame(g) { this.game = g; this.mode = "game"; this.fit(); }
 
   // the eye and the basis the screen is drawn with
   basis() {
-    const t = this.target;
+    let t = this.target;
     let eye;
-    if (this.mode === "plan") {
+    if (this.mode === "game" && this.game) {
+      eye = this.game.eye; t = this.game.target;
+    } else if (this.mode === "plan") {
       eye = [t[0], t[1] + 40000, t[2] + 1];
     } else {
       const cp = Math.cos(this.pitch);
@@ -54,8 +69,11 @@ export class Camera {
   }
 
   proj() {
-    const m = new Float32Array(16), aspect = this.w / this.h;
-    if (this.mode === "plan") {
+    const m = new Float32Array(16), aspect = this.mode === "game" && this.game ? this.game.lens : this.w / this.h;
+    if (this.mode === "game" && this.game) {
+      const t = 1 / Math.tan(this.game.fov * Math.PI / 360), n = 30, f = 300000;
+      m[0] = t / aspect; m[5] = t; m[10] = (f + n) / (n - f); m[11] = -1; m[14] = 2 * f * n / (n - f);
+    } else if (this.mode === "plan") {
       const hh = this.scale * this.h / 2, hw = hh * aspect, n = 100, f = 200000;
       m[0] = 1 / hw; m[5] = 1 / hh; m[10] = -2 / (f - n); m[14] = -(f + n) / (f - n); m[15] = 1;
     } else {
@@ -74,19 +92,21 @@ export class Camera {
     const w = vp[3] * p[0] + vp[7] * p[1] + vp[11] * p[2] + vp[15];
     const zc = vp[2] * p[0] + vp[6] * p[1] + vp[10] * p[2] + vp[14];
     if (w <= 0) return [0, 0, -1];
-    return [(x / w * 0.5 + 0.5) * this.w, (1 - (y / w * 0.5 + 0.5)) * this.h, zc / w];
+    const r = this.rect;
+    return [r.x + (x / w * 0.5 + 0.5) * r.w, r.y + (1 - (y / w * 0.5 + 0.5)) * r.h, zc / w];
   }
 
   // the ray through a screen point
   ray(sx, sy) {
     const { eye, x, y, z } = this.basis();
-    const nx = (sx / this.w) * 2 - 1, ny = 1 - (sy / this.h) * 2, aspect = this.w / this.h;
+    const r = this.rect, g = this.mode === "game" && this.game;
+    const nx = ((sx - r.x) / r.w) * 2 - 1, ny = 1 - ((sy - r.y) / r.h) * 2, aspect = g ? g.lens : this.w / this.h;
     if (this.mode === "plan") {
       const hh = this.scale * this.h / 2, hw = hh * aspect;
       const o = [eye[0] + x[0] * nx * hw + y[0] * ny * hh, eye[1] + x[1] * nx * hw + y[1] * ny * hh, eye[2] + x[2] * nx * hw + y[2] * ny * hh];
       return { o, d: [-z[0], -z[1], -z[2]] };
     }
-    const t = Math.tan(0.9 / 2);
+    const t = Math.tan((g ? g.fov * Math.PI / 180 : 0.9) / 2);
     const d = norm([x[0] * nx * t * aspect + y[0] * ny * t - z[0], x[1] * nx * t * aspect + y[1] * ny * t - z[1], x[2] * nx * t * aspect + y[2] * ny * t - z[2]]);
     return { o: eye, d };
   }
@@ -101,6 +121,7 @@ export class Camera {
   }
 
   pan(dx, dy) {
+    if (this.mode === "game") return;
     const { x, y } = this.basis();
     const k = this.mode === "plan" ? this.scale : this.dist * 0.0011;
     if (this.mode === "plan") {
@@ -111,12 +132,14 @@ export class Camera {
   }
 
   orbit(dx, dy) {
+    if (this.mode === "game") return;
     this.yaw -= dx * 0.008;
     this.pitch = Math.max(0.05, Math.min(1.52, this.pitch + dy * 0.008));
   }
 
   // zoom about a screen point, so what is under the cursor stays under it
   zoom(factor, sx, sy) {
+    if (this.mode === "game") return;
     if (this.mode === "plan") {
       const before = this.onPlane(sx, sy, 0);
       this.scale = Math.max(0.4, Math.min(400, this.scale * factor));
@@ -141,5 +164,6 @@ export class Camera {
     if (mode === "orbit" && this.mode === "plan") this.dist = Math.max(800, this.scale * this.h * 0.9);
     if (mode === "plan" && this.mode === "orbit") this.scale = Math.max(2, this.dist / this.h * 1.1);
     this.mode = mode;
+    this.fit();
   }
 }

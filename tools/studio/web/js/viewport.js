@@ -7,6 +7,8 @@ import { PLACE, FIXED, THINGS, place, ground, snapTo } from "./tools.js";
 import { api } from "./api.js";
 import { attach, sync } from "./scenery.js";
 
+const GAME_ASPECT = 8 / 7, GAME_LENS = 16 / 9;      // the shape of the game's picture as the runtime saves it, and of the lens (fitted to a snapshot)
+
 export class Viewport {
   constructor() {
     this.view = document.getElementById("view");
@@ -28,8 +30,63 @@ export class Viewport {
     on("selection", () => this.redraw());
     on("changed", () => this.redraw());
     on("room", () => this.redraw());
-    on("mode", () => { this.camera.setMode(store.mode === "3d" ? "orbit" : "plan"); this.redraw(); });
+    this.camIndex = {};       // room file -> the number of the camera being looked through in the game view
+    on("mode", () => this.applyMode());
+    on("room", () => { if (store.mode === "game") this.useGameCamera(); });
+    on("selection", () => { if (store.mode === "game") this.followSelection(); });
     on("tool", () => { this.wallStart = null; if (store.tool === "wall" || store.tool === "floor") store.show.walls = true; this.updateCursor(); this.redraw(); });
+  }
+
+  // ---- the game view: the room as one of its own cameras shows it
+  applyMode() {
+    if (store.mode === "game") this.useGameCamera();
+    else this.camera.setMode(store.mode === "3d" ? "orbit" : "plan");
+    emit("camera");
+    this.redraw();
+  }
+
+  cameraFor(room, p) {
+    // the camera whose box holds the point, else the one nearest it
+    const inside = (c) => {
+      const q = c.box.slice(0, 4).map((b) => [b[0], b[2]]);
+      let hit = false;
+      for (let i = 0, j = q.length - 1; i < q.length; j = i++) if ((q[i][1] > p[2]) !== (q[j][1] > p[2]) && p[0] < (q[j][0] - q[i][0]) * (p[2] - q[i][1]) / (q[j][1] - q[i][1]) + q[i][0]) hit = !hit;
+      return hit;
+    };
+    const k = room.cameras.findIndex(inside);
+    if (k >= 0) return k;
+    let best = 0, bd = 1e18;
+    room.cameras.forEach((c, i) => { const d = Math.hypot(c.eye[0] - p[0], c.eye[2] - p[2]); if (d < bd) { bd = d; best = i; } });
+    return best;
+  }
+
+  useGameCamera(index) {
+    const r = roomOf(store.room);
+    if (!r || !r.cameras.length) { this.camera.setMode("plan"); return; }
+    let k = index !== undefined ? index : this.camIndex[r.file];
+    if (k === undefined || !r.cameras[k]) k = r.spawns[0] ? this.cameraFor(r, r.spawns[0].pos) : 0;
+    this.camIndex[r.file] = k;
+    const c = r.cameras[k];
+    this.camera.setGame({ eye: c.eye, target: c.target, fov: c.fov[0], aspect: GAME_ASPECT, lens: GAME_LENS });
+    emit("camera");
+    this.redraw();
+  }
+
+  stepCamera(by) {
+    const r = roomOf(store.room);
+    if (!r) return;
+    this.useGameCamera((this.camIndex[r.file] + by + r.cameras.length) % r.cameras.length);
+  }
+
+  // in the game view, what you pick should be in the picture: the camera that covers it is taken when the current one doesn't show it
+  followSelection() {
+    const ref = store.selection[0], r = roomOf(store.room);
+    if (!ref || store.selection.length !== 1 || !r) return;
+    const o = objectOf(ref);
+    if (!o) return;
+    const c = centre(ref.c, o), s = this.camera.project(c), rc = this.camera.rect;
+    const seen = s[2] > -0.9 && s[0] > rc.x && s[0] < rc.x + rc.w && s[1] > rc.y && s[1] < rc.y + rc.h;
+    if (!seen) this.useGameCamera(this.cameraFor(r, c));
   }
 
   // ---- loading the models in the background, the room being worked in first
@@ -82,7 +139,7 @@ export class Viewport {
   }
 
   visibleRooms() {
-    return store.scene.rooms.map((r) => r.file);
+    return store.mode === "game" ? [store.room] : store.scene.rooms.map((r) => r.file);
   }
 
   draw() {
@@ -146,6 +203,7 @@ export class Viewport {
   }
 
   frameRoom(file, animate) {
+    if (store.mode === "game") { if (file === store.room) this.useGameCamera(); return; }
     const m = this.renderer.models[file], r = roomOf(file);
     let box = m && m.bounds[0] < 1e8 ? m.bounds.slice() : null;
     // the model can hold far backdrops: frame the room's own areas and cameras instead when they are known

@@ -31,7 +31,8 @@ def chunks(data):
 
 
 class Mesh:
-    def __init__(self, positions, strips, palette, uvs=None, strip_materials=None, positions_at=0):
+    def __init__(self, positions, strips, palette, uvs=None, strip_materials=None, positions_at=0, colours=None):
+        self.colours = colours or []     # (r, g, b, a) of each vertex as floats up to 255 (the room's baked light: 128 leaves the picture as it is)
         self.positions = positions
         self.positions_at = positions_at  # where the positions' floats start in the file
         self.strips = strips
@@ -140,7 +141,11 @@ def meshes(data, offset, size):
             s6, c6, _ = arrays[6][0]
             per_strip = list(struct.unpack_from(f"<{c6}I", data, s6))
         strip_materials = [mesh_materials[per_strip[i]] if i < len(per_strip) and per_strip[i] < len(mesh_materials) else 0 for i in range(len(strips))]
-        found.append(Mesh(positions, strips, palette, uvs, strip_materials, start))
+        colours = []
+        if 11 in arrays:
+            s11, c11, _ = arrays[11][0]
+            colours = [struct.unpack_from("<4f", data, s11 + 16 * i) for i in range(min(c11, len(positions)))]
+        found.append(Mesh(positions, strips, palette, uvs, strip_materials, start, colours))
 
     _walk(data, offset + 0, offset + size, visit)
     return found

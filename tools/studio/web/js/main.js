@@ -55,7 +55,7 @@ function buildTopbar() {
   place.append(pb, pp); closeOnOutside(place, pp);
   bar.append(place, el("div", { class: "spacer" }));
   const seg = el("div", { class: "seg", id: "viewseg" });
-  for (const [m, label] of [["plan", "Plan"], ["3d", "3D"]]) {
+  for (const [m, label] of [["game", "Game view"], ["plan", "Plan"], ["3d", "3D"]]) {
     const b = el("button", { class: store.mode === m ? "on" : "", "data-mode": m }, label);
     b.addEventListener("click", () => setMode(m));
     seg.append(b);
@@ -137,6 +137,23 @@ function importModel() {
     } catch (e) { toast("Couldn't use that file", "err", e.message, 6000); }
   });
   pick.click();
+}
+// in the game view: which of the room's cameras the picture is seen through
+function buildCamNav() {
+  const nav = el("div", { class: "float", id: "camnav" });
+  const prev = el("button", { class: "btn icon", title: "The previous camera  (,)", html: icon("chevron", 16, 'style="transform:rotate(180deg)"') });
+  const next = el("button", { class: "btn icon", title: "The next camera  (.)", html: icon("chevron", 16) });
+  const label = el("span", { class: "camlabel" });
+  prev.addEventListener("click", () => viewport.stepCamera(-1)); next.addEventListener("click", () => viewport.stepCamera(1));
+  nav.append(prev, label, next);
+  document.getElementById("view").append(nav);
+  const sync = () => {
+    const r = store.scene && roomOf(store.room);
+    nav.style.display = store.mode === "game" && r && r.cameras.length ? "flex" : "none";
+    if (r) label.textContent = `Camera ${(viewport.camIndex[r.file] ?? 0) + 1} of ${r.cameras.length}`;
+  };
+  on("camera", sync); on("mode", sync); on("room", sync);
+  sync();
 }
 const syncRail = () => {
   document.querySelectorAll("#toolbar [data-tool]").forEach((b) => b.classList.toggle("on", b.dataset.tool === store.tool));
@@ -288,7 +305,7 @@ function palette() {
   const commands = () => [
     { label: "Build the patch", hint: "⌘B", run: doBuild }, { label: "Build and play", hint: "⌘↵", run: doPlay },
     { label: "Undo", hint: "⌘Z", run: undo }, { label: "Redo", hint: "⇧⌘Z", run: redo },
-    { label: "Plan view", hint: "1", run: () => setMode("plan") }, { label: "3D view", hint: "2", run: () => setMode("3d") },
+    { label: "Game view", hint: "1", run: () => setMode("game") }, { label: "Plan view", hint: "2", run: () => setMode("plan") }, { label: "3D view", hint: "3", run: () => setMode("3d") },
     { label: "Frame this room", hint: "F", run: () => viewport.frameRoom(store.room) }, { label: "Frame the scenario", run: () => viewport.frameAll() },
     ...store.scene.rooms.map((r) => ({ label: `Go to room ${r.id}${r.variant ? "·" + r.variant : ""} ${r.name || ""}`, run: () => { setRoom(r.file); viewport.frameRoom(r.file); } })),
   ];
@@ -332,9 +349,11 @@ function keys(openPalette) {
     else if (e.key === " ") { viewport.space = true; viewport.ov.style.cursor = "grab"; e.preventDefault(); }
     else if (e.key === "Escape") { select([]); setTool("select"); }
     else if (e.key === "Delete" || e.key === "Backspace") { const s = store.selection[0]; if (s && store.selection.length === 1) { const o = objectOf(s); if (o && s.c === "enemies" && !o.isNew) { o.modes = 0; select([]); commit("Remove enemy"); } else if (o && s.c === "scenery" && o.isNew) { removeCopy(roomOf(s.file), o); select([]); commit("Delete object"); } else if (o && (o.isNew || s.c === "walls" || s.c === "floors")) { const r = roomOf(s.file); r[s.c].splice(r[s.c].findIndex((x) => x.i === s.i), 1); select([]); commit("Delete"); } else toast("Only things you added, walls and enemies can be deleted", "err"); } }
-    else if (e.key === "1") setMode("plan");
-    else if (e.key === "2") setMode("3d");
-    else if (e.key === "Tab") { e.preventDefault(); setMode(store.mode === "plan" ? "3d" : "plan"); }
+    else if (e.key === "1") setMode("game");
+    else if (e.key === "2") setMode("plan");
+    else if (e.key === "3") setMode("3d");
+    else if (e.key === "Tab") { e.preventDefault(); setMode({ game: "plan", plan: "3d", "3d": "game" }[store.mode]); }
+    else if (store.mode === "game" && (e.key === "," || e.key === ".")) viewport.stepCamera(e.key === "." ? 1 : -1);
     else if (e.key.toLowerCase() === "f") { const s = store.selection[0]; s ? viewport.focus(s) : viewport.frameRoom(store.room); }
     else if (e.key.toLowerCase() === "g") { store.show.grid = !store.show.grid; viewport.redraw(); }
     else if (e.key === "[") togglePanel("no-side");
@@ -378,9 +397,12 @@ async function boot() {
       chip.textContent = `Loading rooms ${done}/${total}`;
     };
     viewport.frameRoom(store.room);
+    viewport.applyMode();
+    buildCamNav();
     document.getElementById("loading").classList.add("gone");
     await viewport.loadModels(progress);
     viewport.frameRoom(store.room);
+    viewport.applyMode();
   } catch (e) {
     msg.textContent = "Couldn't start: " + e.message;
     console.error(e);
