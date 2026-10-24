@@ -54,7 +54,11 @@ function buildTopbar() {
   pp.append(sw);
   pb.addEventListener("click", (e) => { e.stopPropagation(); pp.classList.toggle("on"); });
   place.append(pb, pp); closeOnOutside(place, pp);
-  bar.append(place, el("div", { class: "spacer" }));
+  const rooms = el("button", { class: "pickbtn", title: "The list of rooms  ( [ )", html: icon("grid", 14) + " Rooms" });
+  rooms.addEventListener("click", () => togglePanel("no-side"));
+  const roomBtn = el("button", { class: "pickbtn", id: "roombtn", title: "This room: rules, clearing it, its pictures  ( ] )", html: icon("cube", 14) + " This room" });
+  roomBtn.addEventListener("click", () => { store.roomPanel = !store.roomPanel; if (store.roomPanel) select([]); roomBtn.classList.toggle("on", store.roomPanel); syncPanels(); });
+  bar.append(place, rooms, roomBtn, el("div", { class: "spacer" }));
   const seg = el("div", { class: "seg", id: "viewseg" });
   for (const [m, label] of [["3d", "Build"], ["game", "Camera views"], ["plan", "Plan"]]) {
     const b = el("button", { class: store.mode === m ? "on" : "", "data-mode": m }, label);
@@ -94,6 +98,13 @@ function menuItem(label, about, fn, ic) {
 }
 
 function togglePanel(cls) { document.getElementById("app").classList.toggle(cls); setTimeout(() => viewport && viewport.resize(), 30); }
+
+// the side lists are out of the way until asked for: the rooms on the left (the Rooms button), and on the right what the selection or the room has to say
+function syncPanels() {
+  const app = document.getElementById("app");
+  app.classList.toggle("no-inspector", !(store.selection.length || store.roomPanel));
+  setTimeout(() => viewport && viewport.resize(), 30);
+}
 
 // ---- the floating toolbar: select, hand, and one Add menu
 function buildToolbar() {
@@ -166,7 +177,7 @@ function buildCamNav() {
   nav.append(prev, label, next, el("span", { class: "vsep" }), marks, real, refresh);
   document.getElementById("view").append(nav);
   const hint = el("div", { class: "float", id: "flyhint" });
-  hint.innerHTML = "<b>W A S D</b> move &nbsp; <b>Q E</b> down, up &nbsp; <b>drag</b> to look &nbsp; <b>wheel</b> forward, back &nbsp; <b>Shift</b> faster &nbsp; ";
+  hint.innerHTML = "<b>WASD</b> move · <b>Q E</b> down, up · <b>right-drag</b> look · <b>Shift</b> fast ";
   const back = el("button", { class: "btn", style: "margin-left:6px" }, "Back to the game's camera");
   back.addEventListener("click", () => setMode("game"));
   const pic = el("button", { class: "btn", style: "margin-left:6px", title: "Show the game's own picture from where the free camera is (taken in the game started behind the scenes, a moment after you stop moving)", html: icon("play", 14) + " Game's picture" });
@@ -178,7 +189,7 @@ function buildCamNav() {
   hint.append(back, pic, upd);
   hint.style.pointerEvents = "auto";
   const editHint = el("div", { class: "float", id: "edithint" });
-  editHint.innerHTML = "Pick a thing, then <b>drag</b> it to move it &nbsp; <b>arrow keys</b> nudge &nbsp; <b>R</b> turns &nbsp; the handles lift, turn and resize objects";
+  editHint.innerHTML = "<b>Drag</b> to move · arrows slide along one way · ring turns · diamond resizes · <b>Del</b> removes";
   document.getElementById("view").append(hint, editHint);
   const sync = () => {
     const r = store.scene && roomOf(store.room);
@@ -552,7 +563,7 @@ function keys(openPalette) {
     else if (e.key.toLowerCase() === "f") { const s = store.selection[0]; s ? viewport.focus(s) : viewport.overview(store.room); }
     else if (e.key.toLowerCase() === "g") { store.show.grid = !store.show.grid; viewport.redraw(); }
     else if (e.key === "[") togglePanel("no-side");
-    else if (e.key === "]") togglePanel("no-inspector");
+    else if (e.key === "]") document.getElementById("roombtn").click();
     else {
       const all = [{ id: "select", key: "V" }, { id: "scenery", key: "O" }, { id: "pan", key: "H" }, ...ADD];
       const t = all.find((x) => x.key === e.key.toUpperCase());
@@ -576,6 +587,10 @@ async function boot() {
     window.studio = { store, viewport, scene };      // for the console
     renderOutline(); renderInspector(); updateHint();
     on("tool", () => { syncRail(); updateHint(); });
+    store.roomPanel = false;
+    document.getElementById("app").classList.add("no-side");
+    on("selection", syncPanels);
+    syncPanels();
     on("mode", () => { document.querySelectorAll("#viewseg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === store.mode)); });
     on("room", updateStatus);
     on("selection", updateStatus);
