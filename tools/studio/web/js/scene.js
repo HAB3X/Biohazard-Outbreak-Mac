@@ -377,6 +377,9 @@ function restore(edits) {
   emit("changed", { restored: true });
 }
 
+// back (or forward) to any step of the history at once
+export function jumpTo(i) { if (i >= 0 && i < store.history.length && i !== store.at) { store.at = i; restore(store.history[i]); } }
+
 export function undo() { if (store.at > 0) { store.at--; restore(store.history[store.at]); } }
 export function redo() { if (store.at < store.history.length - 1) { store.at++; restore(store.history[store.at]); } }
 export const canUndo = () => store.at > 0;

@@ -3,12 +3,13 @@ import { api } from "./api.js";
 import { icon } from "./icons.js";
 import { el, toast } from "./ui.js";
 import * as scene from "./scene.js";
-import { store, on, emit, loadScene, commit, undo, redo, canUndo, canRedo, setTool, setMode, setRoom, select, currentEdits, roomOf, objectOf } from "./scene.js";
+import { store, on, emit, jumpTo, loadScene, commit, undo, redo, canUndo, canRedo, setTool, setMode, setRoom, select, currentEdits, roomOf, objectOf } from "./scene.js";
 import { Viewport } from "./viewport.js";
 import { removeCopy, addModel, setPose, duplicate } from "./scenery.js";
 import { parseObj } from "./objimport.js";
 import { PLACE, FIXED, THINGS, WALL, FLOOR } from "./tools.js";
 import { toggle as toggleLibrary, close as closeLibrary } from "./library.js";
+import { startTour } from "./tour.js";
 import { render as renderInspector } from "./inspector.js";
 import { render as renderOutline } from "./outliner.js";
 
@@ -72,7 +73,19 @@ function buildTopbar() {
   const undoBtn = el("button", { class: "btn icon", title: "Undo  ⌘Z", html: icon("undo", 17), id: "undo" });
   const redoBtn = el("button", { class: "btn icon", title: "Redo  ⇧⌘Z", html: icon("redo", 17), id: "redo" });
   undoBtn.addEventListener("click", undo); redoBtn.addEventListener("click", redo);
-  bar.append(undoBtn, redoBtn);
+  const histBtn = el("button", { class: "btn icon", title: "Every step so far: click one to go back to it", html: icon("down", 14) });
+  const history = pop("down right"), histHost = el("div", { class: "menu" });
+  histBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    history.innerHTML = "";
+    store.history.forEach((h, i) => { const b = el("button", { class: "item" + (i === store.at ? " on" : "") }, el("span", {}, i === 0 ? "Start" : h.label || "Change")); b.addEventListener("click", () => { jumpTo(i); history.classList.remove("on"); }); history.prepend(b); });
+    history.classList.toggle("on");
+  });
+  histHost.append(histBtn, history); closeOnOutside(histHost, history);
+  bar.append(undoBtn, redoBtn, histHost);
+  const help = el("button", { class: "btn icon", title: "A quick tour", html: "?" });
+  help.addEventListener("click", () => startTour(true));
+  bar.append(help);
   // Play, with the other ways to start
   const play = el("div", { class: "menu" });
   const split = el("div", { class: "split" });
@@ -395,17 +408,26 @@ function turnSelection(degrees) {
   emit("live"); commit("Turn");
 }
 
-function validate() {
+// what is wrong in a scene, in plain words; the problems the game's own rooms already have (doors to rooms outside the scenario) are not yours and not shown
+function problemsOf(scene) {
   const out = [];
-  const ids = new Set(store.scene.rooms.map((r) => r.id));
-  for (const r of store.scene.rooms) {
+  const ids = new Set(scene.rooms.map((r) => r.id));
+  for (const r of scene.rooms) {
+    const name = r.name || `room ${r.id}`;
     for (const a of r.areas) {
-      if ((a.tag === 0 || a.tag === 1) && !ids.has(a.fields[1])) out.push({ level: "bad", text: `Room ${r.id}: ${a.tag === 0 ? "door" : "exit"} ${a.i} leads to room ${a.fields[1]}, which is not in this scenario`, ref: { c: "areas", file: r.file, i: a.i } });
+      if ((a.tag === 0 || a.tag === 1) && !ids.has(a.fields[1])) out.push({ key: `lead:${r.file}:${a.i}`, level: "bad", text: `${name}: this ${a.tag === 0 ? "door" : "exit"} leads to room ${a.fields[1]}, which isn't part of this scenario`, ref: { c: "areas", file: r.file, i: a.i } });
     }
     const doors = {};
     for (const a of r.areas) if (a.tag === 0) doors[a.fields[0]] = (doors[a.fields[0]] || 0) + 1;
-    for (const [n, k] of Object.entries(doors)) if (k > 1) out.push({ level: "warn", text: `Room ${r.id}: ${k} doors share number ${n} (the game crashed with more than one copy in testing)` });
+    for (const [n, k] of Object.entries(doors)) if (k > 1) out.push({ key: `dup:${r.file}:${n}`, level: "warn", text: `${name}: ${k} doors share the number ${n}; the game crashed with that in testing` });
+    if (!r.spawns.length) out.push({ key: `spawn:${r.file}`, level: "warn", text: `${name} has no player start, so the player can't be put in it` });
   }
+  return out;
+}
+let baseline = null;
+function validate() {
+  baseline = baseline || new Set(problemsOf(store.orig).map((p) => p.key));
+  const out = problemsOf(store.scene).filter((p) => !baseline.has(p.key));
   store.problems = out;
   return out;
 }
@@ -417,7 +439,11 @@ function updateStatus() {
     p.style.display = probs.length ? "" : "none";
     p.textContent = `${probs.length} problem${probs.length > 1 ? "s" : ""}`;
     p.style.color = probs.some((x) => x.level === "bad") ? "var(--bad)" : "var(--warn)";
-    p.onclick = () => toast(`${probs.length} problem${probs.length > 1 ? "s" : ""}`, "err", probs.slice(0, 6).map((x) => x.text).join("\n"), 9000);
+    p.onclick = () => {
+      const first = probs[0];
+      if (first.ref) { setRoom(first.ref.file); select([first.ref]); }
+      toast(`${probs.length} problem${probs.length > 1 ? "s" : ""} from your changes`, "err", probs.slice(0, 6).map((x) => x.text).join("\n"), 9000);
+    };
   }
   const u = document.getElementById("undo"), rd = document.getElementById("redo");
   if (u) { u.disabled = !canUndo(); rd.disabled = !canRedo(); }
@@ -611,6 +637,7 @@ async function boot() {
     buildCamNav();
     watchSurvey();
     document.getElementById("loading").classList.add("gone");
+    startTour();
     await viewport.loadModels(progress);
     viewport.redraw();
   } catch (e) {
