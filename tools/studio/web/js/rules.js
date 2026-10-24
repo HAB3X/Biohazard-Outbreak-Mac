@@ -42,9 +42,8 @@ export function compile(rules) {
 }
 
 export function section_(r, host) {
-  if (store.game !== "file2") return section("When the room starts", el("div", { class: "note" }, "Rules are measured on File 2 only so far; File 1's scripts use other numbers."));
   r.rules = r.rules || [];
-  const zones = r.areas.filter((a) => a.tag === 12).map((a) => ({ id: a.fields[1] }));      // the room's script zones, by the number a zone's rule names
+  const zones = r.areas.filter((a) => a.tag === 12 && a.fields[0] === 0).map((a) => ({ id: a.fields[1] }));      // the room's script zones, by the number a zone's rule names
   const redraw = () => host();
   const done = (label) => () => { commit(label); };
   const rows = r.rules.map((x, k) => {
@@ -64,5 +63,5 @@ export function section_(r, host) {
     return card;
   });
   const add = el("button", { class: "ghost", onclick: () => { r.rules.push(newRule()); commit("Add rule"); } }, "Add a rule");
-  return section("When the room starts", ...rows, r.rules.length ? null : el("div", { class: "note" }, "Nothing yet. Rules run as the player comes in: set a flag in one room, lock a door in another until it is set."), add);
+  return section("Rules", ...rows, r.rules.length ? null : el("div", { class: "note" }, "Nothing yet. A rule is tested all the time while the room is loaded: set a flag when someone steps into a zone, then lock or unlock things by that flag."), add);
 }

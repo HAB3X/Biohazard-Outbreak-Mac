@@ -202,6 +202,11 @@ const FORMS = {
       out.push(section(d.label, field("Id", number(o.fields[0], idc.live, idc.done, { step: 1, min: 0 }), "The room's script switches this area on and off and gives it its text by this id."),
         o.tag === 5 ? messageForId(ref, o.fields[0]) : null));
     }
+    if (o.tag === 12) {
+      const idc = setField(1, "Change zone number");
+      out.push(section("Script zone", field("Zone number", number(o.fields[1], idc.live, idc.done, { step: 1, min: 0 }), "A rule names the zone by this number (\"While someone is in a zone\" in the room's rules)."),
+        el("div", { class: "note" }, "Nothing happens by itself: add a rule for the room that watches this zone.")));
+    }
     out.push(positionSection(ref, o, "Place"));
     const { live, done } = set(ref, "Change height", (obj, v) => { obj.h = v; });
     out.push(section("Height", el("div", { class: "vec" }, number(o.h[0], (v) => live([v, o.h[1]]), (v) => { o.h = [v, o.h[1]]; done(); }, { axis: "y", step: 5, scrub: false }), number(o.h[1], (v) => live([o.h[0], v]), (v) => { o.h = [o.h[0], v]; done(); }, { axis: "y", step: 5, scrub: false })),

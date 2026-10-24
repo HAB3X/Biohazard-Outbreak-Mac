@@ -90,12 +90,15 @@ export function place(tool, at) {
   }
   const t = templateFor(tool.tag);
   if (!t) return null;
+  // a script zone is found by its number with the first field 0 (measured in both games); each new one in the room gets a number of its own
+  const zoneFields = tool.tag === 12 ? { 12: 0, 13: 1 + Math.max(0, ...room.areas.filter((a) => a.tag === 12 && a.fields[0] === 0).map((a) => a.fields[1])) } : undefined;
   const src = roomOf(t.room).areas.find((a) => a.i === t.i);
   const half = 50;
   const a = addArea(room, t.i, {
     quad: [[x + half, z - half], [x - half, z - half], [x - half, z + half], [x + half, z + half]],
     height: [y + (src.h[0] - 0), y + (src.h[1] - 0) + 0],
     template: t.same ? undefined : { room: t.room, i: t.i },
+    fields: zoneFields,
   });
   commit("Add " + (AREA_TAGS[tool.tag]?.label || "area").toLowerCase());
   select([{ c: "areas", file: room.file, i: a.i }]);
