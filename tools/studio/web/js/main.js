@@ -162,7 +162,11 @@ function buildCamNav() {
   nav.append(prev, label, next, el("span", { class: "vsep" }), marks, real, refresh);
   document.getElementById("view").append(nav);
   const hint = el("div", { class: "float", id: "flyhint" });
-  hint.innerHTML = "<b>W A S D</b> move &nbsp; <b>Q E</b> down, up &nbsp; <b>drag</b> the empty picture to look around &nbsp; <b>wheel</b> forward, back &nbsp; <b>Shift</b> faster";
+  hint.innerHTML = "<b>W A S D</b> move &nbsp; <b>Q E</b> down, up &nbsp; <b>drag</b> to look &nbsp; <b>wheel</b> forward, back &nbsp; <b>Shift</b> faster &nbsp; ";
+  const back = el("button", { class: "btn", style: "margin-left:6px" }, "Back to the game's camera");
+  back.addEventListener("click", () => setMode("game"));
+  hint.append(back);
+  hint.style.pointerEvents = "auto";
   const editHint = el("div", { class: "float", id: "edithint" });
   editHint.innerHTML = "Pick a thing, then <b>drag</b> it to move it &nbsp; <b>arrow keys</b> nudge &nbsp; <b>R</b> turns &nbsp; the handles lift, turn and resize objects";
   document.getElementById("view").append(hint, editHint);

@@ -38,11 +38,11 @@ void main(){
   o = vec4(c * uDim, 1.0);
 }`;
 const FS_TEX = `#version 300 es
-precision highp float; uniform sampler2D uTex; uniform float uDim; uniform float uGame; uniform float uBlend; in vec3 vW; in vec2 vUV; in vec4 vCol; out vec4 o;
+precision highp float; uniform sampler2D uTex; uniform float uDim; uniform float uGame; uniform float uBlend; uniform float uGain; in vec3 vW; in vec2 vUV; in vec4 vCol; out vec4 o;
 void main(){
   vec4 t = texture(uTex, vUV);
   if (uBlend > 0.5) { if (t.a * vCol.a < 0.04) discard; } else if (t.a < 0.35) discard;
-  if (uGame > 0.5) { o = vec4(min(t.rgb * vCol.rgb * 1.15, vec3(1.0)) * uDim, uBlend > 0.5 ? t.a * vCol.a : 1.0); return; }     // the game's own light: the picture times the colour baked into each vertex
+  if (uGame > 0.5) { o = vec4(min(t.rgb * vCol.rgb * 1.15 * uGain, vec3(1.0)) * uDim, uBlend > 0.5 ? t.a * vCol.a : 1.0); return; }     // the game's own light: the picture times the colour baked into each vertex
   vec3 n = normalize(cross(dFdx(vW), dFdy(vW)));
   float l = 0.55 + 0.45 * abs(dot(n, normalize(vec3(0.35, 0.85, 0.4))));
   o = vec4(t.rgb * l * uDim, 1.0);
@@ -150,7 +150,10 @@ export class Renderer {
       }
       meshes.push({ vb, ub, cb, blend, additive, groups, bone: m.bone, hide, mesh: m.mesh, lo: lop, hi: hip });
     });
-    this.models[file] = { bones, base: bones.length, extra: [], world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
+    let sum = 0, count = 0;
+    json.meshes.forEach((m) => { if (!m.c) return; const c = b64(m.c, Float32Array); for (let i = 0; i < c.length; i += 4) { sum += c[i] + c[i + 1] + c[i + 2]; count += 3; } });
+    const gain = count ? Math.max(1, Math.min(3, 0.45 / Math.max(0.05, sum / count))) : 1;     // a dark room is lifted toward what the game's own lights show
+    this.models[file] = { gain, bones, base: bones.length, extra: [], world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
   }
 
   // the skeleton with some bones replaced ({bone: [parent, scale, rotation, offset]}): the objects move on screen as they will in the game
@@ -234,6 +237,8 @@ export class Renderer {
       gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
     gl.enable(gl.DEPTH_TEST);
+    // the game's rooms are drawn one-sided: from outside a wall you see through it (the cameras stand outside)
+    if (camera.lit && opts.winding) { gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.frontFace(opts.winding === "cw" ? gl.CW : gl.CCW); } else gl.disable(gl.CULL_FACE);
     const vp = camera.viewProj();
     const textured = (opts.textured && camera.mode !== "plan") || camera.lit;
     const prog = textured ? this.tex : this.flat;
@@ -246,6 +251,7 @@ export class Renderer {
       const m = this.models[file];
       if (!m) continue;
       gl.uniform1f(U("uDim"), (opts.dim && opts.dim[file]) ?? 1);
+      if (textured) gl.uniform1f(U("uGain"), m.gain || 1);
       if (!textured) gl.uniform2f(U("uHeight"), m.bounds[1] - 50, m.bounds[1] + Math.min(1800, Math.max(300, m.bounds[4] - m.bounds[1])));
       for (const mesh of [...m.meshes, ...m.extra].sort((a, b) => (a.blend ? 1 : 0) - (b.blend ? 1 : 0))) {
         if (mesh.hide || mesh.skip) continue;

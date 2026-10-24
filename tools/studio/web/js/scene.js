@@ -309,6 +309,7 @@ export const store = {
   game: "", scenario: 0, scenarios: [], ops: {},
   scene: null, orig: null,
   startDefault: null, startRoom: null,   // the room the characters begin in: the scenario's own, and the one you chose (null: not changed)
+  winding: null,       // "ccw" or "cw": draw one-sided (not settled: with none, both sides are drawn)
   survey: { have: new Set(), supported: false },
   real: { on: false, key: "", room: null, urls: {}, last: null, busy: false },
   textures: {},               // the room's pictures you replaced: the picture's number -> a data: URL of your image

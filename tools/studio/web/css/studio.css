@@ -203,7 +203,7 @@ button.ghost:hover { color: var(--text); background: var(--raised); }
 #shot.stale { filter: brightness(.7) saturate(.7); }
 #gl.hidden { visibility: hidden; }
 #camnav .camlabel.busy { color: var(--accent); }
-#flyhint, #edithint { left: 50%; transform: translateX(-50%); background: rgba(14,16,22,.82); border: 1px solid var(--line-2); border-radius: 10px; padding: 7px 14px; font-size: 12px; color: var(--dim); display: none; white-space: nowrap; }
+#flyhint, #edithint { left: 50%; transform: translateX(-50%); max-width: 92%; text-align: center; background: rgba(14,16,22,.82); border: 1px solid var(--line-2); border-radius: 10px; padding: 7px 14px; font-size: 12px; color: var(--dim); display: none; white-space: normal; }
 #flyhint { top: 14px; }
 #edithint { bottom: 76px; }
 #flyhint b, #edithint b { color: var(--text); font-weight: 600; }

@@ -2,7 +2,7 @@
 import { Camera } from "./camera.js";
 import { Renderer } from "./gl.js";
 import * as overlay from "./overlay.js";
-import { store, on, emit, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe, addWall, addFloor } from "./scene.js";
+import { store, on, emit, setMode, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe, addWall, addFloor } from "./scene.js";
 import { PLACE, FIXED, THINGS, place, ground, snapTo } from "./tools.js";
 import { api } from "./api.js";
 import { attach, sync } from "./scenery.js";
@@ -57,9 +57,10 @@ export class Viewport {
 
   // ---- the free camera: W A S D move, Q and E go down and up, the wheel moves forward and back, dragging the empty picture turns the view, shift is fast
   flyKey(e, down) {
-    if (store.mode !== "3d" || e.metaKey || e.ctrlKey) return false;
+    if ((store.mode !== "3d" && store.mode !== "game") || e.metaKey || e.ctrlKey) return false;
     const k = e.key.toLowerCase();
     if (!"wasdqe".includes(k) || k.length !== 1) return false;
+    if (store.mode === "game") { if (!down) return false; setMode("3d"); }      // moving in the game view lets go of the game's camera: the free camera starts from it
     this.keys = this.keys || new Set();
     if (down) this.keys.add(k); else this.keys.delete(k);
     this.fast = e.shiftKey;
@@ -201,7 +202,7 @@ export class Viewport {
     const rooms = this.visibleRooms();
     const dim = {};
     for (const f of rooms) dim[f] = f === store.room ? 1 : 0.5;
-    if (store.show.models) this.renderer.render(this.camera, rooms, { textured: store.show.textures, dim, hidden: this.hiddenSets() });
+    if (store.show.models) this.renderer.render(this.camera, rooms, { textured: store.show.textures, dim, hidden: this.hiddenSets(), winding: store.winding });
     else this.renderer.render(this.camera, [], {});
     overlay.draw(this.ctx, this.camera, this.dpr, rooms, this.hover);
     this.drawGhost();
@@ -324,6 +325,7 @@ export class Viewport {
     const start = { x, y, button: e.button, shift: e.shiftKey, moved: false };
     const tool = store.tool;
     const pan = e.button === 1 || e.button === 2 || this.space || tool === "pan";
+    if (pan && store.mode === "game" && e.button === 2) setMode("3d");           // right-drag in the game view turns into looking around freely
     if (pan) { this.drag = { ...start, type: this.camera.mode === "orbit" && (e.button === 2 || e.altKey) ? "orbit" : "pan" }; this.ov.style.cursor = "grabbing"; return; }
     if (e.button !== 0) return;
     if (tool === "wall" || tool === "floor") { this.drag = { ...start, type: "wall" }; return; }
