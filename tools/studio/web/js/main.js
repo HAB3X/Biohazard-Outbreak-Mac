@@ -56,7 +56,7 @@ function buildTopbar() {
   place.append(pb, pp); closeOnOutside(place, pp);
   bar.append(place, el("div", { class: "spacer" }));
   const seg = el("div", { class: "seg", id: "viewseg" });
-  for (const [m, label] of [["game", "Game view"], ["plan", "Plan"], ["3d", "Free camera"]]) {
+  for (const [m, label] of [["3d", "Build"], ["game", "Camera views"], ["plan", "Plan"]]) {
     const b = el("button", { class: store.mode === m ? "on" : "", "data-mode": m }, label);
     b.addEventListener("click", () => setMode(m));
     seg.append(b);
@@ -242,9 +242,19 @@ function freeChanged(force) {
   clearTimeout(freeTimer);
   const on = store.mode === "3d" && store.real.free && store.survey.supported;
   viewport.usePhoto(on);
+  const known = on && onGameCamera();
+  if (known) { viewport.setShot(known, false); return; }
   viewport.setShot(on ? viewport.shot : null, true);       // the last picture stays, dimmed, until the game's new one arrives
   if (on) freeTimer = setTimeout(refreshFree, 450);
 }
+// where the free camera stands exactly where one of the room's cameras does, with nothing changed since: the picture already taken of it, with no need for the game
+function onGameCamera() {
+  const r = roomOf(store.room), cam = viewport.camera;
+  if (!r || JSON.stringify(currentEdits()) !== '{"rooms":{}}') return null;
+  const eye = cam.eye(), k = r.cameras.findIndex((c) => c.eye.every((v, i) => Math.abs(v - eye[i]) < 2) && c.target.every((v, i) => Math.abs(v - cam.target[i]) < 2));
+  return k >= 0 && store.survey.have.has(`r${r.id}c${k}`) ? `/api/shot?kind=survey&name=r${r.id}c${k}.jpg` : null;
+}
+
 async function refreshFree(force) {
   const real = store.real, r = roomOf(store.room);
   if (store.mode !== "3d" || !real.free || !r || !store.survey.supported) return;
@@ -292,8 +302,10 @@ async function watchSurvey() {
     if (store.real.freeBtn) store.real.freeBtn.classList.add("on");
     const realBtn = [...document.querySelectorAll("#camnav .btn")].find((b) => b.textContent.includes("Real view"));
     if (realBtn) realBtn.classList.add("on");
+    let first = true;
     for (;;) {
       store.survey.have = new Set(s.have || []);
+      if (first) { first = false; freeChanged(true); }
       if (chip && s.running) { chip.style.display = "inline-flex"; chip.textContent = `Taking the game's pictures${s.here ? "" : " of " + s.where}: ${s.done}/${s.total}${s.current ? " (" + s.current + ")" : ""}`; }
       else if (chip && !s.running) chip.style.display = "none";
       if (store.mode === "game") refreshReal();
@@ -477,7 +489,7 @@ function palette() {
   const commands = () => [
     { label: "Build the patch", hint: "⌘B", run: doBuild }, { label: "Build and play", hint: "⌘↵", run: doPlay },
     { label: "Undo", hint: "⌘Z", run: undo }, { label: "Redo", hint: "⇧⌘Z", run: redo },
-    { label: "Game view", hint: "1", run: () => setMode("game") }, { label: "Plan view", hint: "2", run: () => setMode("plan") }, { label: "3D view", hint: "3", run: () => setMode("3d") },
+    { label: "Build view", hint: "1", run: () => setMode("3d") }, { label: "Camera views", hint: "2", run: () => setMode("game") }, { label: "Plan view", hint: "3", run: () => setMode("plan") },
     { label: "Frame this room", hint: "F", run: () => viewport.frameRoom(store.room) }, { label: "Frame the scenario", run: () => viewport.frameAll() },
     ...store.scene.rooms.map((r) => ({ label: `Go to room ${r.id}${r.variant ? "·" + r.variant : ""} ${r.name || ""}`, run: () => { setRoom(r.file); viewport.frameRoom(r.file); } })),
   ];
@@ -532,12 +544,12 @@ function keys(openPalette) {
     else if (e.key === "Escape") { select([]); setTool("select"); closeLibrary(); }
     else if ((e.key === "b" || e.key === "B") && !e.metaKey && !e.ctrlKey) { e.preventDefault(); toggleLibrary(viewport); }
     else if (e.key === "Delete" || e.key === "Backspace") { const s = store.selection[0]; if (s && store.selection.length === 1) { const o = objectOf(s); if (o && s.c === "enemies" && !o.isNew) { o.modes = 0; select([]); commit("Remove enemy"); } else if (o && s.c === "scenery" && o.isNew) { removeCopy(roomOf(s.file), o); select([]); commit("Delete object"); } else if (o && (o.isNew || s.c === "walls" || s.c === "floors")) { const r = roomOf(s.file); r[s.c].splice(r[s.c].findIndex((x) => x.i === s.i), 1); select([]); commit("Delete"); } else toast("Only things you added, walls and enemies can be deleted", "err"); } }
-    else if (e.key === "1") setMode("game");
-    else if (e.key === "2") setMode("plan");
-    else if (e.key === "3") setMode("3d");
-    else if (e.key === "Tab") { e.preventDefault(); setMode({ game: "plan", plan: "3d", "3d": "game" }[store.mode]); }
+    else if (e.key === "1") setMode("3d");
+    else if (e.key === "2") setMode("game");
+    else if (e.key === "3") setMode("plan");
+    else if (e.key === "Tab") { e.preventDefault(); setMode({ "3d": "game", game: "plan", plan: "3d" }[store.mode]); }
     else if (store.mode === "game" && (e.key === "," || e.key === ".")) viewport.stepCamera(e.key === "." ? 1 : -1);
-    else if (e.key.toLowerCase() === "f") { const s = store.selection[0]; s ? viewport.focus(s) : viewport.frameRoom(store.room); }
+    else if (e.key.toLowerCase() === "f") { const s = store.selection[0]; s ? viewport.focus(s) : viewport.overview(store.room); }
     else if (e.key.toLowerCase() === "g") { store.show.grid = !store.show.grid; viewport.redraw(); }
     else if (e.key === "[") togglePanel("no-side");
     else if (e.key === "]") togglePanel("no-inspector");
@@ -580,14 +592,12 @@ async function boot() {
       chip.style.display = done < total ? "inline-flex" : "none";
       chip.textContent = `Loading rooms ${done}/${total}`;
     };
-    viewport.frameRoom(store.room);
     viewport.applyMode();
     buildCamNav();
     watchSurvey();
     document.getElementById("loading").classList.add("gone");
     await viewport.loadModels(progress);
-    viewport.frameRoom(store.room);
-    viewport.applyMode();
+    viewport.redraw();
   } catch (e) {
     msg.textContent = "Couldn't start: " + e.message;
     console.error(e);

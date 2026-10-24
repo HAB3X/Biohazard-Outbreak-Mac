@@ -228,11 +228,16 @@ export function draw(ctx, camera, dpr, rooms, hover) {
       }
     }
 
-    if (current && r.scenery && (store.tool === "scenery" || store.selection.some((s) => s.c === "scenery"))) {
+    if (current && r.scenery && (store.tool === "scenery" || store.tool === "select" || store.selection.some((s) => s.c === "scenery"))) {
       const EDGES = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
       for (const s of r.scenery) {
         const ref = { c: "scenery", file, i: s.i }, sel = selected(ref), hov = hovered(ref), tool = store.tool === "scenery";
-        if (!tool && !sel) continue;
+        // with the plain Select tool only things that stand (not floor planes, decals or whole walls) answer the pointer, and show only when pointed at
+        if (!tool && !sel) {
+          const ys = s.cs.map((p) => p[1]), xs = s.cs.map((p) => p[0]), zs = s.cs.map((p) => p[2]);
+          if (Math.max(...ys) - Math.min(...ys) < 12 || Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs)) > 700 || s.scale[0] < 0.001) continue;
+          if (!hov) { const q = s.cs.map((p) => P(p)); if (q.some((p) => p[2] < -0.9)) continue; const x0 = Math.min(...q.map((p) => p[0])), x1 = Math.max(...q.map((p) => p[0])), y0 = Math.min(...q.map((p) => p[1])), y1 = Math.max(...q.map((p) => p[1])); hits.push({ ref, order: 5, centre: [(x0 + x1) / 2, (y0 + y1) / 2], test: polyTest([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], 3) }); continue; }
+        }
         const pts = s.cs.map((p) => P(p));
         if (pts.some((p) => p[2] < -0.9)) continue;
         const col = colour("accent"), hid = s.scale[0] < 0.001;

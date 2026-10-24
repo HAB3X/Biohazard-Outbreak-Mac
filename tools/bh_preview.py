@@ -67,6 +67,12 @@ class Preview:
         f = [struct.unpack("<f", struct.pack("<I", w))[0] for w in words]
         return tuple(f[:3]), tuple(f[3:6])
 
+    def keep_alive(self):
+        """The player's health held at the top (the preview game stays running for hours with the room's enemies about; one that kills the player ends in the results screen)"""
+        base = self.info["player"] + self.info["hp"]
+        self.run.send(f"poke {base + 2:x} 270f 2")
+        self.run.send(f"poke {base:x} 270f 2")
+
     def walk(self, hops):
         with self.lock:
             for x, z in hops:
@@ -126,6 +132,7 @@ class Preview:
         with self.lock:
             if not self.alive():
                 raise RuntimeError("the game isn't running")
+            self.keep_alive()
             if camera is not None and self.free_camera and self.room == room and not hops:
                 self._camera(camera)             # the player is in place and the game already shows a view of this kind: only the view moves
                 time.sleep(0.9)

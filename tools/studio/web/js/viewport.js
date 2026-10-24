@@ -32,7 +32,7 @@ export class Viewport {
     on("room", () => this.redraw());
     this.camIndex = {};       // room file -> the number of the camera being looked through in the game view
     on("mode", () => this.applyMode());
-    on("room", () => { if (store.mode === "game") this.useGameCamera(); });
+    on("room", () => { if (store.mode === "game") this.useGameCamera(); else if (store.mode === "3d") this.enterFree(); });
     on("selection", () => { if (store.mode === "game") this.followSelection(); });
     on("tool", () => { this.wallStart = null; if (store.tool === "wall" || store.tool === "floor") store.show.walls = true; this.updateCursor(); this.redraw(); });
   }
@@ -57,7 +57,7 @@ export class Viewport {
 
   // the free camera shaped as the game's picture (so the game's own picture from it can be shown), or as the pane
   usePhoto(on) {
-    this.camera.photo = on ? { fov: 60, aspect: GAME_ASPECT, lens: GAME_LENS } : null;
+    this.camera.photo = on ? { fov: this.photoFov || 60, aspect: GAME_ASPECT, lens: GAME_LENS } : null;
     this.camera.fit();
     this.placeShot();
     this.redraw();
@@ -84,15 +84,20 @@ export class Viewport {
     requestAnimationFrame((t) => this.flyTick(t));
   }
 
+  // the free camera starts where one of the room's cameras stands, looking where it looks (its field of view too, for the game's picture)
+  enterFree() {
+    this.useGameCamera();
+    const g = this.camera.game;
+    this.camera.setMode("orbit");
+    if (g) { this.photoFov = g.fov; this.camera.startFree(g.eye, g.target); } else this.frameRoom(store.room);
+    if (this.camera.photo) this.camera.photo.fov = this.photoFov || 60;
+  }
+
   // ---- the game view: the room as one of its own cameras shows it
   applyMode() {
     if (store.mode === "game") this.useGameCamera();
-    else if (store.mode === "3d") {
-      const g = this.camera.game;         // the free camera starts where the game camera was
-      this.camera.setMode("orbit");
-      if (g) this.camera.startFree(g.eye, g.target);
-      else this.frameRoom(store.room);
-    } else this.camera.setMode("plan");
+    else if (store.mode === "3d") { if (this.camera.mode !== "orbit") this.enterFree(); }
+    else { if (this.camera.mode !== "plan") { this.camera.setMode("plan"); this.overview(store.room); } }
     emit("camera");
     this.placeShot();
     this.redraw();
@@ -292,8 +297,15 @@ export class Viewport {
     this.groundAt = [x, at[1], z];
   }
 
+  // the view that suits the mode: the room's camera for the game view and Build, the whole room from above for the plan
   frameRoom(file, animate) {
     if (store.mode === "game") { if (file === store.room) this.useGameCamera(); return; }
+    if (store.mode === "3d") { if (file === store.room) this.enterFree(); return; }
+    this.overview(file, animate);
+  }
+
+  // the whole room in the pane, from where the view is looking
+  overview(file, animate) {
     const m = this.renderer.models[file], r = roomOf(file);
     let box = m && m.bounds[0] < 1e8 ? m.bounds.slice() : null;
     // the model can hold far backdrops: frame the room's own areas and cameras instead when they are known
@@ -306,7 +318,7 @@ export class Viewport {
         box = [Math.min(...xs) - 400, box ? box[1] : 0, Math.min(...zs) - 400, Math.max(...xs) + 400, box ? box[4] : 300, Math.max(...zs) + 400];
       }
     }
-    if (box) this.camera.pictureLens(box);
+    if (box) this.camera.frame(box);
     this.redraw();
   }
 
@@ -315,7 +327,7 @@ export class Viewport {
     for (const r of store.scene.rooms) r.areas.forEach((a) => a.quad.forEach((p) => { if (Math.abs(p[0]) < 1e7) all.push(p); }));
     if (!all.length) return;
     const xs = all.map((p) => p[0]), zs = all.map((p) => p[1]);
-    this.camera.pictureLens([Math.min(...xs), 0, Math.min(...zs), Math.max(...xs), 300, Math.max(...zs)], 1.1);
+    this.camera.frame([Math.min(...xs), 0, Math.min(...zs), Math.max(...xs), 300, Math.max(...zs)], 1.1);
     this.redraw();
   }
 

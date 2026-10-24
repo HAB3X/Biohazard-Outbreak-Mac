@@ -18,8 +18,8 @@ from pathlib import Path
 import ai_scenario as S
 
 ROOT = Path(__file__).resolve().parent.parent
-KNOWN = {("file1", 1): {"menus": "bar", "room_at": 0x3065AC, "player": 0x476DD0, "start_room": 1, "camera": 0x306338},
-         ("file2", 40): {"menus": "zoo", "room_at": 0x3137BC, "player": 0x47BD30, "start_room": 3, "camera": 0x313548}}
+KNOWN = {("file1", 1): {"menus": "bar", "room_at": 0x3065AC, "player": 0x476DD0, "start_room": 1, "camera": 0x306338, "hp": 0x544},
+         ("file2", 40): {"menus": "zoo", "room_at": 0x3137BC, "player": 0x47BD30, "start_room": 3, "camera": 0x313548, "hp": 0x540}}
 
 
 # File 2's single play menu lists its scenarios in this order (the scenario number and the presses of Right to reach it, measured by where the player started: 20 first, 40 after

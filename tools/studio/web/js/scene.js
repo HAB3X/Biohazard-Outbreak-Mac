@@ -319,7 +319,7 @@ export const store = {
   tool: "select",
   room: null,                 // the room being worked in (its file)
   selection: [],              // [{c: collection, file, i}]
-  mode: "game",               // game (through the room's own cameras), plan or 3d
+  mode: "3d",                 // 3d (build: the free camera), game (through the room's own cameras) or plan
   snap: 10,
   show: { models: true, textures: true, areas: true, triggers: false, cameras: false, lights: false, zones: false, nodes: false, items: true, enemies: true, labels: true, grid: true },
   history: [],                // the edits after each step, the first being "nothing"
