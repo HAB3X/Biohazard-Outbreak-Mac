@@ -2,7 +2,7 @@
 import { store, on, emit, objectOf, roomOf, commit, startRoomId, describe, centre, translate, select, clone, AREA_TAGS } from "./scene.js";
 import { icon } from "./icons.js";
 import { section_ as rulesSection } from "./rules.js";
-import { isDoor, duplicate, removeCopy, setPose } from "./scenery.js";
+import { isDoor, duplicate, removeCopy, setPose, emptyRoom } from "./scenery.js";
 import { el, number, vec3, select as selectBox, chips, dial, colour, field, section, range, hex, unhex, toast } from "./ui.js";
 
 const host = () => document.getElementById("inspector");
@@ -114,11 +114,7 @@ let shownPicture = 0;
 // everything out of a room but its doors: objects hidden, enemies and items taken out, no walls and no ground (what the floors and walls you add then stand on is your own)
 function clearRoom(r) {
   if (r.groundCleared) return;
-  for (const s of r.scenery || []) if (!s.isNew && !isDoor(r, s)) s.scale = [0.0001, 0.0001, 0.0001];
-  for (const e of r.enemies) e.modes = 0;
-  for (const it of r.items) if (!it.isNew) { it.kind = 65535; it.qty = 0; }
-  r.walls = [];
-  r.groundCleared = true;
+  emptyRoom(r);
   commit("Clear the room");
   render();
 }

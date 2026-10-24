@@ -10,6 +10,7 @@ import { parseObj } from "./objimport.js";
 import { PLACE, FIXED, THINGS, WALL, FLOOR } from "./tools.js";
 import { toggle as toggleLibrary, close as closeLibrary } from "./library.js";
 import { startTour } from "./tour.js";
+import { startLevelHere, beginDoorOnSpot, beginEnemyGroup } from "./pieces.js";
 import { render as renderInspector } from "./inspector.js";
 import { render as renderOutline } from "./outliner.js";
 
@@ -137,8 +138,13 @@ function buildToolbar() {
     grid.append(it);
   }
   const lib = menuItem("Library", "Browse the game's tables, shelves, chairs… and place them", () => toggleLibrary(viewport), "cube");
+  const pieces = [
+    menuItem("Start a level here", "Empties this room and lays a floor", () => { const r = roomOf(store.room); if (r) startLevelHere(r); }, "grid"),
+    menuItem("Door that opens on a spot", "Pick a door first, then click the spot", () => beginDoorOnSpot(), "door"),
+    menuItem("Group of enemies", "Four in a ring, then click where", () => beginEnemyGroup(), "enemy"),
+  ];
   const own = menuItem("Your own model", "Bring in a .obj file as scenery", () => importModel(), "cube");
-  const am = pop("up center", grid, el("hr"), lib, own);
+  const am = pop("up center", grid, el("hr"), el("h5", {}, "Ready-made pieces"), ...pieces, el("hr"), lib, own);
   ab.addEventListener("click", (e) => { e.stopPropagation(); am.classList.toggle("on"); });
   add.append(ab, am); closeOnOutside(add, am);
   const libBtn = el("button", { class: "btn", id: "libbtn", title: "Browse the game's objects and place them  (B)", html: icon("cube", 18) + " Library" });
@@ -380,6 +386,8 @@ function updateHint() {
   const a = ADD.find((x) => x.id === store.tool);
   const t = [...PLACE, ...THINGS, WALL, FLOOR].find((x) => x.id === store.tool);
   if (a && t) { b.innerHTML = `<b>${a.label}</b> — ${t.hint} <kbd>Esc</kbd> to stop.`; b.classList.add("on"); }
+  else if (store.tool === "recipe" && store.recipe) { b.innerHTML = `<b>${store.recipe.label}</b> <kbd>Esc</kbd> to stop.`; b.classList.add("on"); }
+  else if (store.tool === "recipe" && store.recipe) { b.innerHTML = `<b>${store.recipe.label}</b> <kbd>Esc</kbd> to stop.`; b.classList.add("on"); }
   else if (store.tool === "library") { const p = store.libraryPick; b.innerHTML = p ? `<b>Placing ${p.name}</b> — click to put it down, again for more, <kbd>R</kbd> turns it. <kbd>Esc</kbd> to stop.` : "Pick an object in the Library, then click in the room."; b.classList.add("on"); }
   else if (store.tool === "scenery") { b.innerHTML = "Click an object to pick it: drag to move it, or turn and resize it in the panel. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }
   else if (store.tool === "pan") { b.innerHTML = "Drag to move the view. <kbd>Esc</kbd> to go back."; b.classList.add("on"); }

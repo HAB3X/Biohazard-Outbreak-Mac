@@ -1,6 +1,6 @@
 // The tools on the rail: what each puts into the scene when you click, and where a click lands on the ground.
 import { addLibrary, setPose } from "./scenery.js";
-import { store, roomOf, addArea, addCamera, addItem, addEnemy, commit, select, AREA_TAGS, clone, emit } from "./scene.js";
+import { store, roomOf, setTool, addArea, addCamera, addItem, addEnemy, commit, select, AREA_TAGS, clone, emit } from "./scene.js";
 
 // A template for an area of each tag: the first one in the room being worked in, else in any room of the scenario (a new area is a copy of a record of the game's own).
 export function templateFor(tag) {
@@ -30,6 +30,7 @@ export const FLOOR = { id: "floor", label: "Floor", hint: "Click one corner, the
 export const THINGS = [
   { id: "item", label: "Item", icon: "item", key: "I", hint: "Click to put an item on the floor. Pick what it is and how many in the panel." },
   { id: "enemy", label: "Enemy", icon: "enemy", key: "N", hint: "Click to put an enemy. It faces the way you set in the panel; pick its health there too." },
+  { id: "recipe", label: "Piece", icon: "cube", key: "", hint: "Click where it goes." },
   { id: "library", label: "Library object", icon: "cube", key: "", hint: "Click to put the object you picked from the Library. Click again for another; pick a different one in the Library." },
   { id: "spawn", label: "Player start", icon: "spawn", key: "S", hint: "Click to move the player's start spot in this room (the partners follow the other start spots)." },
 ];
@@ -56,6 +57,21 @@ export function ground(camera, sx, sy, renderer) {
   return [p[0], y, p[1]];
 }
 
+// a new area of the kind `tag` (a copy of one of the game's own) standing at x, y, z; null when the scenario has none of that kind to copy
+export function placeArea(room, tag, x, y, z, half = 50) {
+  const t = templateFor(tag);
+  if (!t) return null;
+  // a script zone is found by its number with the first field 0 (measured in both games); each new one in the room gets a number of its own
+  const zoneFields = tag === 12 ? { 12: 0, 13: 1 + Math.max(0, ...room.areas.filter((a) => a.tag === 12 && a.fields[0] === 0).map((a) => a.fields[1])) } : undefined;
+  const src = roomOf(t.room).areas.find((a) => a.i === t.i);
+  return addArea(room, t.i, {
+    quad: [[x + half, z - half], [x - half, z - half], [x - half, z + half], [x + half, z + half]],
+    height: [y + src.h[0], y + src.h[1]],
+    template: t.same ? undefined : { room: t.room, i: t.i },
+    fields: zoneFields,
+  });
+}
+
 export function place(tool, at) {
   const room = roomOf(store.room);
   if (!room) return null;
@@ -67,6 +83,13 @@ export function place(tool, at) {
     commit("Move player start");
     select([{ c: "spawns", file: room.file, i: sp.i }]);
     return sp;
+  }
+  if (tool.id === "recipe") {
+    if (!store.recipe) return null;
+    const out = store.recipe.run(room, [x, y, z]);
+    store.recipe = null;
+    setTool("select");
+    return out;
   }
   if (tool.id === "library") {
     if (!store.libraryPick) return null;
@@ -99,18 +122,8 @@ export function place(tool, at) {
     select([{ c: "cameras", file: room.file, i: c.i }]);
     return c;
   }
-  const t = templateFor(tool.tag);
-  if (!t) return null;
-  // a script zone is found by its number with the first field 0 (measured in both games); each new one in the room gets a number of its own
-  const zoneFields = tool.tag === 12 ? { 12: 0, 13: 1 + Math.max(0, ...room.areas.filter((a) => a.tag === 12 && a.fields[0] === 0).map((a) => a.fields[1])) } : undefined;
-  const src = roomOf(t.room).areas.find((a) => a.i === t.i);
-  const half = 50;
-  const a = addArea(room, t.i, {
-    quad: [[x + half, z - half], [x - half, z - half], [x - half, z + half], [x + half, z + half]],
-    height: [y + (src.h[0] - 0), y + (src.h[1] - 0) + 0],
-    template: t.same ? undefined : { room: t.room, i: t.i },
-    fields: zoneFields,
-  });
+  const a = placeArea(room, tool.tag, x, y, z);
+  if (!a) return null;
   commit("Add " + (AREA_TAGS[tool.tag]?.label || "area").toLowerCase());
   select([{ c: "areas", file: room.file, i: a.i }]);
   emit("note", `${AREA_TAGS[tool.tag]?.label || "Area"} added`);

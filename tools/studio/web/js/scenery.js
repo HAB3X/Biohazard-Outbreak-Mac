@@ -196,3 +196,12 @@ export function setPose(s, { rot, scale }) {
   s.rot = nr;
   s.scale = ns;
 }
+
+// everything the room has taken out of it (its objects but not its doors, enemies, items, walls and ground), as the Clear this room button and a new level start from
+export function emptyRoom(r) {
+  for (const s of r.scenery || []) if (!s.isNew && !isDoor(r, s)) s.scale = [0.0001, 0.0001, 0.0001];
+  for (const e of r.enemies) e.modes = 0;
+  for (const it of r.items) if (!it.isNew) { it.kind = 65535; it.qty = 0; }
+  r.walls = [];
+  r.groundCleared = true;
+}
