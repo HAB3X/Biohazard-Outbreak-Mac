@@ -51,7 +51,7 @@ class Studio:
             if key not in self.cache:
                 rooms = maps.build(self.game, self.scenario, self.names, False)
                 self.cache[key] = {"game": self.game, "scenario": self.scenario, "rooms": rooms, "scenarios": scenarios(self.game),
-                                   "ops": {str(k): list(v) for k, v in rdt.OPS.items()}}
+                                   "ops": {str(k): list(v) for k, v in rdt.OPS.items()}, "start_room": start_room(self.game, self.scenario)}
             return self.cache[key]
 
     def model(self, file):
@@ -106,7 +106,7 @@ class Studio:
         out.parent.mkdir(parents=True, exist_ok=True)
         base = [str(self.english_patch())] if english and self.english_patch() else []
         started = time.time()
-        report = studio_build.compose(self.game, scenery_as_models(edits), str(out), base, members={**grown_models(self.game, self.scenario, edits), **repainted(self.game, self.scenario, edits)})
+        report = studio_build.compose(self.game, scenery_as_models(edits), str(out), base, members={**grown_models(self.game, self.scenario, edits), **repainted(self.game, self.scenario, edits), **moved_start(self.game, self.scenario, edits)})
         return {"patch": str(out), "report": report, "seconds": round(time.time() - started, 2), "bytes": out.stat().st_size}
 
     def play(self, patch, hops=None, at=None):
@@ -129,6 +129,57 @@ class Studio:
         if self.process and self.process.poll() is None:
             self.process.terminate()
         self.process = None
+
+
+def start_records(game, scenario):
+    """(the scenario's event file bytes, [word index of the room in each opening `SetCharacterStart slot, room, slot` record]): the first run of op 0x69 records, one a character
+    (measured, file 2 zoo: the rooms in them are where each of the four starts; the start spot is that room's own). ([], None) when the scenario has none"""
+    import struct
+
+    disc = archive.Archive(game)
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            data = disc.open(f"{dat}/r{scenario:03d}.afs/r{scenario:03d}.evb").read()
+            break
+        except FileNotFoundError:
+            continue
+    else:
+        return None, []
+    words = struct.unpack(f"<{len(data) // 4}I", data)
+    found, i = [], 0
+    while i + 3 < min(len(words), 400):
+        if words[i] == 0x2000069 and words[i + 1] == words[i + 3]:
+            found.append(i + 2)
+            i += 4
+        elif found:
+            break
+        else:
+            i += 1
+    return data, found
+
+
+def start_room(game, scenario):
+    data, at = start_records(game, scenario)
+    if not at:
+        return None
+    import struct
+
+    return struct.unpack_from("<I", data, 4 * at[0])[0]
+
+
+def moved_start(game, scenario, edits):
+    """{(pack, member): bytes}: the scenario's event file with its characters starting in the room edits["start_room"] names"""
+    import struct
+
+    if edits.get("start_room") is None:
+        return {}
+    data, at = start_records(game, scenario)
+    if not at:
+        raise ValueError("this scenario's start room isn't known")
+    out = bytearray(data)
+    for w in at:
+        struct.pack_into("<I", out, 4 * w, int(edits["start_room"]))
+    return {(f"r{scenario:03d}.afs", f"r{scenario:03d}.evb"): bytes(out)}
 
 
 def scenery_as_models(edits):

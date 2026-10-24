@@ -271,7 +271,7 @@ async function doPlay(here = false) {
       const info = await api.status();
       const room = roomOf(store.room);
       if (!info.automatable || !room) { toast("Play here isn't set up for this scenario yet", "err", "Only File 1's first scenario and File 2's first scenario start by themselves so far."); return; }
-      hops = hopsTo(info.start_room, room.id);
+      hops = hopsTo(scene.startRoomId() ?? info.start_room, room.id);
       if (!hops) { toast("No way to reach this room", "err", "No chain of doors and exits leads there from the scenario's first room."); return; }
       const sp = room.spawns && room.spawns[0];
       at = sp && hops.length === 0 ? [sp.pos[0], sp.pos[2], sp.facing] : null;

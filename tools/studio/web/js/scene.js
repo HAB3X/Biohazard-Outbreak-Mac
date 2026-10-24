@@ -198,7 +198,10 @@ export function diffs(scene, orig) {
     if (r.floors.length) out.collision = { ...out.collision, ground_boxes: r.floors.map((f) => ({ min: f.min, max: f.max, y: -f.y })) };   // the ground file's heights are the player's, negated (measured)
     if (Object.keys(out).length) edits[r.file] = out;
   });
-  return Object.keys(store.textures).length ? { rooms: edits, textures: store.textures } : { rooms: edits };
+  const out = { rooms: edits };
+  if (Object.keys(store.textures).length) out.textures = store.textures;
+  if (store.startRoom !== null && store.startRoom !== store.startDefault) out.start_room = store.startRoom;
+  return out;
 }
 
 // ---- applying edits to a scene (the pristine one, or what the page loaded)
@@ -305,6 +308,7 @@ export const emit = (event, ...args) => (listeners[event] || []).forEach((fn) =>
 export const store = {
   game: "", scenario: 0, scenarios: [], ops: {},
   scene: null, orig: null,
+  startDefault: null, startRoom: null,   // the room the characters begin in: the scenario's own, and the one you chose (null: not changed)
   textures: {},               // the room's pictures you replaced: the picture's number -> a data: URL of your image
   models: {},                 // room file -> the model's JSON, once loaded
   tool: "select",
@@ -333,8 +337,10 @@ export function loadScene(data, saved) {
   store.at = 0;
   store.selection = [];
   store.room = store.scene.rooms[0] ? store.scene.rooms[0].file : null;
+  store.startDefault = data.start_room ?? null;
+  store.startRoom = saved && saved.edits && saved.edits.start_room !== undefined ? saved.edits.start_room : null;
   store.textures = clone((saved && saved.edits && saved.edits.textures) || {});
-  if (saved && saved.edits && (Object.keys(saved.edits.rooms || {}).length || Object.keys(store.textures).length)) {
+  if (saved && saved.edits && (Object.keys(saved.edits.rooms || {}).length || Object.keys(store.textures).length || store.startRoom !== null)) {
     applyEdits(store.scene, saved.edits);
     store.history = [{ rooms: {} }, clone(saved.edits)];
     store.at = 1;
@@ -359,6 +365,7 @@ export function commit(label) {
 function restore(edits) {
   store.scene = clone(store.orig);
   store.textures = clone(edits.textures || {});
+  store.startRoom = edits.start_room !== undefined ? edits.start_room : null;
   applyEdits(store.scene, edits);
   store.selection = store.selection.filter((s) => objectOf(s));
   store.dirty = true;
@@ -401,3 +408,5 @@ export function addWall(room, a, b, y) {
   room.walls.push(w);
   return w;
 }
+
+export const startRoomId = () => (store.startRoom !== null ? store.startRoom : store.startDefault);

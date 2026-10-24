@@ -1,5 +1,5 @@
 // The side panel: the scenario's rooms, and under them what is in the room you are in. Click a room to go there, a thing to select it.
-import { store, on, emit, select, setRoom, roomOf, describe, refEq, AREA_TAGS } from "./scene.js";
+import { store, on, emit, select, setRoom, roomOf, describe, refEq, AREA_TAGS, startRoomId } from "./scene.js";
 import { el } from "./ui.js";
 
 const host = () => document.getElementById("side");
@@ -48,7 +48,7 @@ function renderRooms() {
   for (const r of store.scene.rooms) {
     const text = `${r.id} ${roomName(r)}`.toLowerCase();
     if (query && !text.includes(query)) continue;
-    const row = el("div", { class: "room" + (r.file === store.room ? " cur" : "") }, el("span", { class: "n" }, String(r.id)), el("span", { class: "t", title: roomName(r) }, roomName(r)));
+    const row = el("div", { class: "room" + (r.file === store.room ? " cur" : "") }, el("span", { class: "n" }, String(r.id)), el("span", { class: "t", title: roomName(r) }, roomName(r)), startRoomId() === r.id ? el("span", { class: "start", title: "The game begins here" }, "start") : null);
     row.addEventListener("click", () => { setRoom(r.file); emit("frame", r.file); });
     box.append(row);
   }
@@ -77,4 +77,4 @@ function renderThings() {
 
 on("selection", () => store.scene && renderThings());
 on("room", () => { if (store.scene) { renderRooms(); renderThings(); } });
-on("changed", () => store.scene && renderThings());
+on("changed", () => { if (store.scene) { renderRooms(); renderThings(); } });

@@ -1,5 +1,5 @@
 // The inspector: forms for what is selected, in words and sliders rather than field numbers.
-import { store, on, emit, objectOf, roomOf, commit, describe, centre, translate, select, clone, AREA_TAGS } from "./scene.js";
+import { store, on, emit, objectOf, roomOf, commit, startRoomId, describe, centre, translate, select, clone, AREA_TAGS } from "./scene.js";
 import { icon } from "./icons.js";
 import { section_ as rulesSection } from "./rules.js";
 import { isDoor, duplicate, removeCopy } from "./scenery.js";
@@ -80,6 +80,11 @@ function roomPanel() {
     el("span", {}, "Items"), el("b", {}, n("items")),
     el("span", {}, "Enemies"), el("b", {}, n("enemies")),
     el("span", {}, "Cameras"), el("b", {}, n("cameras")))));
+  if (store.startDefault !== null) {
+    const here = startRoomId() === r.id;
+    box.append(section("Start", here ? el("div", { class: "note" }, "The game begins in this room.")
+      : el("button", { class: "ghost", onclick: () => { store.startRoom = r.id; commit("Choose the start room"); render(); } }, "Begin the game here")));
+  }
   box.append(rulesSection(r, render));
   if ((r.pictures || []).length) box.append(section("Pictures in this room", pictures(r, shownPicture, (m) => { shownPicture = m; render(); })));
   box.append(el("div", { class: "empty", style: "padding:28px 22px;text-align:left" },
