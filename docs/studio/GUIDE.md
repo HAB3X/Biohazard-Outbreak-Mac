@@ -13,7 +13,7 @@ Start it with `./studio.sh` (File 2, scenario 40 opens first; the scenario menu 
 | Move, turn, stretch, hide or **copy** the room's own objects (more scenery) | **Objects** tool, click one, the copy button in its panel | yes (copies of the zoo sign drew beside the original) |
 | Bring in your own model (.obj) and paint a picture with your own image | **Add > Your own model**, then pick/paint a picture in the panel; the room's pictures are shared by everything that uses them | yes (a textured cube; every picture of a room repainted) |
 | Make a puzzle | click the room's empty space: **Rules**: set a flag, lock a door, set an examine message, show/hide an object, set a counter; each can be always, only if a flag is on/off, while someone is inside one of the room's **script zones** (Add > Script zone, for a flag), or once an **item is taken** (its pickup trigger's flag) | yes in both games (zone -> flag -> counter measured) |
-| Choose where the game begins | click a room > **Begin the game here** | yes (File 2's first scenario) |
+| Choose where the game begins | click a room > **Begin the game here** | yes (File 2's zoo; the other File 2 scenarios use the same records) |
 | Start a level of your own in a room slot | click the room > **Clear this room**: no objects, enemies, items, walls or ground (doors stay); then **Add > Floor**, **Add > Wall**, **Add > Your own model** | yes (a cleared zoo room with a floor laid ran, the player walked on it) |
 | Move, turn, resize with handles | select a thing in Game view or the free camera: the green arrow lifts it, the yellow ring turns an object, the blue diamond resizes it; arrow keys nudge, R turns, `-` `=` resize | lift checked by script only |
 | Look around freely | **Free camera** tab, or press W A S D / right-drag in Game view | yes |
@@ -28,5 +28,5 @@ Studio keeps a copy of the game running behind the scenes and photographs every 
 ## What it can't do yet (measured, not guessed)
 
 - **Pictures are the room's own pictures repainted** (the same size and number of colours), not new ones added; the pictures of a room are mostly atlases.
-- **Start room** only where the scenario's event file has the opening start records (File 2's first scenario; others and File 1 not found yet).
+- **Start room** only where the scenario's event file has the opening start records (File 2's scenarios 15, 20, 21, 22, 23, 26, 27, 29, 30 and 40; File 1's start isn't in them, so File 1 has no start choice).
 - **New room numbers**: a room can be cleared and built in, but a room with a number the scenario does not have is not built (the game stores its room index ahead of the room data).
