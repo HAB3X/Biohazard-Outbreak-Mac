@@ -27,7 +27,8 @@ export function attach(renderer, file) {
     const lo = [0, 1, 2].map((k) => Math.min(...cs.map((p) => p[k]))), hi = [0, 1, 2].map((k) => Math.max(...cs.map((p) => p[k])));
     if (hi[0] - lo[0] > SHELL || hi[2] - lo[2] > SHELL || mesh.hide) continue;
     const lc = [0, 1, 2].map((k) => (mesh.lo[k] + mesh.hi[k]) / 2);
-    list.push({ i: mesh.mesh, bone: mesh.bone, parent: b[0], scale: clone(b[1]), rot: clone(b[2]), off: clone(b[3]), lo: mesh.lo, hi: mesh.hi, lc, wc: apply(w, lc), cs, inv: null });
+    const triangles = mesh.groups.reduce((n, g) => n + g.count / 3, 0), key = [triangles, ...[0, 1, 2].map((k) => Math.round(mesh.hi[k] - mesh.lo[k]))].join(",");
+    list.push({ i: mesh.mesh, key, bone: mesh.bone, parent: b[0], scale: clone(b[1]), rot: clone(b[2]), off: clone(b[3]), lo: mesh.lo, hi: mesh.hi, lc, wc: apply(w, lc), cs, inv: null });
   }
   for (const scene of [store.scene, store.orig]) {
     const r = scene.rooms.find((x) => x.file === file);

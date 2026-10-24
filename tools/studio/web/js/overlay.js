@@ -1,5 +1,6 @@
 // The markers drawn over the models (areas, doors, cameras, items, enemies ...) on a 2D canvas through the same camera, and finding what is under the pointer.
 import { store, describe, centre, refEq, roomOf } from "./scene.js";
+import { nameOf } from "./library.js";
 
 const css = getComputedStyle(document.documentElement);
 const colour = (name) => css.getPropertyValue("--" + name).trim() || "#9aa";
@@ -255,6 +256,18 @@ export function draw(ctx, camera, dpr, rooms, hover) {
           ctx.setLineDash([]); ctx.lineWidth = 1;
         } });
         hits.push({ ref, order: 5, centre: [(x0 + x1) / 2, (y0 + y1) / 2], test: polyTest([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], 3) });
+      }
+    }
+
+    // the names of the room's objects (by their shape: the Library's names), for the one pointed at or picked and, with Names on, every named one in view
+    if (current && r.scenery) {
+      for (const s of r.scenery) {
+        if (!s.cs || s.scale[0] < 0.001) continue;
+        const ref = { c: "scenery", file, i: s.i }, strong = selected(ref) || hovered(ref), name = nameOf(s.key);
+        if (!(strong || (store.show.names && name))) continue;
+        const top = P([s.wc[0], Math.max(...s.cs.map((p) => p[1])) + 20, s.wc[2]]);
+        if (top[2] < -0.9) continue;
+        layers.push({ order: 8, run() { pill(name || `object ${s.i}`, top[0], top[1] - 8, colour("accent"), strong); } });
       }
     }
 

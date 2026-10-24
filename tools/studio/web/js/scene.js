@@ -311,7 +311,7 @@ export const store = {
   game: "", scenario: 0, scenarios: [], ops: {},
   scene: null, orig: null,
   startDefault: null, startRoom: null,   // the room the characters begin in: the scenario's own, and the one you chose (null: not changed)
-  winding: null,       // "ccw" or "cw": draw one-sided (not settled: with none, both sides are drawn)
+  winding: "ccw",      // the faces the game draws (measured against its own pictures of the bar: with "ccw" culled backs, camera 0 sees down the hallway as the game does, not into the shell around it)
   survey: { have: new Set(), supported: false },
   real: { on: false, key: "", room: null, urls: {}, last: null, busy: false },
   textures: {},               // the room's pictures you replaced: the picture's number -> a data: URL of your image
@@ -321,7 +321,7 @@ export const store = {
   selection: [],              // [{c: collection, file, i}]
   mode: "3d",                 // 3d (build: the free camera), game (through the room's own cameras) or plan
   snap: 10,
-  show: { models: true, textures: true, areas: true, triggers: false, cameras: false, lights: false, zones: false, nodes: false, items: true, enemies: true, labels: true, grid: true },
+  show: { models: true, textures: true, areas: true, triggers: false, cameras: false, lights: false, zones: false, nodes: false, items: true, enemies: true, labels: true, names: false, grid: true },
   history: [],                // the edits after each step, the first being "nothing"
   at: 0,
   dirty: false,

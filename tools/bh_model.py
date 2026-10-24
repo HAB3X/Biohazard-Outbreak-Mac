@@ -69,8 +69,13 @@ class Model:
         """([kind 9 records], [kind 10 records])"""
         return _children(self.kids[self._kid(9)]), _children(self.kids[self._kid(10)])
 
+    def texture_ref(self, material):
+        """The kind 10 record (texture reference) a material uses: the last word of its 272 byte kind 9 record (the two lists are not parallel: measured, the
+        number differs from the material's own in 927 of File 1's 973 materials, and read this way the bar's floor gets its wood and its counter its dark wood, as the game shows)"""
+        return _u32(self.materials()[0][material], 268)
+
     def picture_of(self, material):
-        n = _u32(self.materials()[1][material], 12)
+        n = _u32(self.materials()[1][self.texture_ref(material)], 12)
         return self.tid[1 + n]
 
     def pictures(self):
@@ -79,8 +84,8 @@ class Model:
     def material_for(self, picture, like9=None, size=(64, 64)):
         """The number of a material showing `picture` (one that has it, or a new one made from `like9`, a 272 byte kind 9 record, and `size`)"""
         nine, ten = self.materials()
-        for m, rec in enumerate(ten):
-            if self.tid[1 + _u32(rec, 12)] == picture and (like9 is None or bytes(nine[m]) == bytes(like9)):
+        for m, rec in enumerate(nine):
+            if self.picture_of(m) == picture and (like9 is None or bytes(rec[:268]) == bytes(like9[:268])):
                 return m
         if picture not in self.tid[1:1 + self.tid[0]]:
             self.tid.append(picture)
@@ -88,11 +93,13 @@ class Model:
         n = self.tid.index(picture, 1) - 1
         new10 = bytearray(ten[0])
         struct.pack_into("<3I", new10, 12, n, size[0], size[1])
-        nine.append(bytearray(like9 if like9 is not None else nine[0]))
         ten.append(new10)
+        new9 = bytearray(like9 if like9 is not None else nine[0])
+        struct.pack_into("<I", new9, 268, len(ten) - 1)      # the new material names the new texture reference
+        nine.append(new9)
         self.kids[self._kid(9)] = _list(_u32(self.kids[self._kid(9)], 0), nine)
         self.kids[self._kid(10)] = _list(_u32(self.kids[self._kid(10)], 0), ten)
-        return len(ten) - 1
+        return len(nine) - 1
 
     # ---- the skeleton
     def _bones(self):
@@ -149,7 +156,7 @@ class Model:
             if (flags >> 16) & 0xFF == 5:
                 for k in range(count):
                     m = _u32(node, at + 12 + 4 * k)
-                    width, height = struct.unpack_from("<2I", ten[m], 16)
+                    width, height = struct.unpack_from("<2I", ten[source.texture_ref(m)], 16)
                     mapping[m] = self.material_for(source.picture_of(m), nine[m], (width, height))
                     struct.pack_into("<I", node, at + 12 + 4 * k, mapping[m])
             at += size

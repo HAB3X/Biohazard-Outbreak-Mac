@@ -97,6 +97,13 @@ class Models(unittest.TestCase):
         again = bh_model.Model(dst.to_bytes())
         self.assertEqual(len(again.meshes()), before + 1)
 
+    def test_a_material_names_its_texture_by_its_last_word(self):
+        import bh_model
+        bar = bh_model.Model(archive.Archive("file1").open("/NETBIO00.DAT/r001.afs/r0010100.nbd").read())
+        # measured in the game (the bar, File 1): object 19, the floor, is dark wood planks (picture 3); object 43, the counter's top, dark carved wood (picture 4)
+        self.assertEqual(bar.picture_of(39), 3)
+        self.assertEqual(bar.picture_of(10), 4)
+
 
 class Pictures(unittest.TestCase):
     def test_restyle_round_trips_through_the_game_codec(self):

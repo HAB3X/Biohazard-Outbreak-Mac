@@ -228,6 +228,21 @@ export class Viewport {
     return store.mode === "game" || store.mode === "3d" ? [store.room] : store.scene.rooms.map((r) => r.file);
   }
 
+  // Studio's own picture of what the camera sees (the game's frame only, no markers), as a PNG data URL: for setting it side by side with the game's own picture
+  capture() {
+    this.draw();
+    const gl = this.renderer.gl, r = this.camera.rect, k = this.dpr;
+    const x = Math.round(r.x * k), y = Math.round((this.camera.h - r.y - r.h) * k), w = Math.round(r.w * k), h = Math.round(r.h * k);
+    const px = new Uint8Array(w * h * 4);
+    gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d"), image = ctx.createImageData(w, h);
+    for (let row = 0; row < h; row++) image.data.set(px.subarray(row * w * 4, (row + 1) * w * 4), (h - 1 - row) * w * 4);
+    ctx.putImageData(image, 0, 0);
+    return canvas.toDataURL("image/png");
+  }
+
   draw() {
     if (!store.scene) return;
     this.placeShot();

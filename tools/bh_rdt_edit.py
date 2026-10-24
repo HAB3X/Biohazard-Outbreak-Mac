@@ -760,14 +760,16 @@ def model_json(game, scenario, file):
     if node is None:
         return {"error": f"{file}: not on the disc"}
     data = node.read()
+    import bh_model
+    import math
+
     table = nbd.chunks(data)
+    # (a room's file can hold a second AMO and AHI pair: measured against the game's pictures of the bar, its objects (bunting, light beams) aren't drawn there, so only the first is)
     amo = next(c for c in table if c[0] == "AMO")
     ahi = next(c for c in table if c[0] == "AHI")
     bones = [[b[0], list(b[1][:3]), list(b[2][:3]), list(b[3][:3])] for b in nbd.skeleton(data, ahi[1], ahi[2])]
     meshes = []
     for index, mesh in enumerate(nbd.meshes(data, amo[1], amo[2])):
-        import math
-
         textured = [t for t in mesh.textured_triangles() if max(t[:3]) < len(mesh.positions)
                     and max(math.dist(mesh.positions[t[i]], mesh.positions[t[(i + 1) % 3]]) for i in range(3)) < 6000]
         if not mesh.positions or not textured:
@@ -783,22 +785,9 @@ def model_json(game, scenario, file):
                        "p": base64.b64encode(struct.pack(f"<{len(flat)}f", *flat)).decode(),
                        "uv": base64.b64encode(struct.pack(f"<{len(uvs)}f", *uvs)).decode(),
                        "groups": [{"m": material, "i": base64.b64encode(struct.pack(f"<{len(ids)}I", *ids)).decode()} for material, ids in groups.items()]})
-    tid = next((c for c in table if c[0] == "TID"), None)
-    tids = []
-    if tid:
-        # the TID chunk: a count, then the pack's picture numbers. A material's picture is the TID entry its descriptor names (the first word of the model's kind 10 list's children:
-        # measured: it matches the pictures' sizes 35 times in 37, the material's own number only 14) 
-        words = struct.unpack_from(f"<{tid[2] // 4}I", data, tid[1])
-        root, at = amo[1], amo[1] + 12
-        while at < root + amo[2]:
-            flags, count, size = struct.unpack_from("<III", data, at)
-            if flags & 0xFFFF == 10:
-                inner = at + 12
-                for _ in range(count):
-                    tids.append(words[1 + struct.unpack_from("<I", data, inner + 12)[0]])
-                    inner += struct.unpack_from("<I", data, inner + 8)[0]
-                break
-            at += size
+    # each material's picture: its kind 9 record names a texture reference (kind 10), whose number is an entry of the TID chunk (bh_model.Model.picture_of)
+    model = bh_model.Model(data)
+    tids = [model.picture_of(m) for m in range(len(model.materials()[0]))] if model.i_tid is not None else []
     return {"bones": bones, "meshes": meshes, "tids": tids}
 
 

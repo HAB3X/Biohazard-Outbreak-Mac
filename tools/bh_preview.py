@@ -148,6 +148,16 @@ class Preview:
         self.camera_held = camera
         self.run.send(f"pokef {self.MAIL + 4:x} " + " ".join(f"{v:.2f}" for v in values))
 
+    def _wait_room(self, number, seconds=30):
+        """Waits until the game is in room `number` and has had a moment to draw it (a room's loading takes several seconds; a step made during it is lost)"""
+        end = time.time() + seconds
+        while time.time() < end:
+            if self.room_now() == number:
+                time.sleep(2.5)
+                return
+            time.sleep(0.3)
+        raise RuntimeError(f"the game didn't reach room {number}")
+
     def swap(self, patch, graph):
         """Puts `patch` under the running game and has it load the room again (walks out of the room it is in by a door and back), so the edits made since show: only for a patch laid out
         like the one running (no file grown or moved differently): the game goes on reading the disc where it read it before. The room it was in, the camera it was held at stay"""
@@ -161,9 +171,11 @@ class Preview:
             self._camera(None)
             self.run.send(f"patch {patch}")
             time.sleep(0.5)
-            for x, z in way[1] + way[2]:
-                self._poke(x, z)
-                time.sleep(5)
+            for points, arrive in ((way[1], way[0]), (way[2], here)):
+                for x, z in points:
+                    self._poke(x, z)
+                    time.sleep(0.5)
+                self._wait_room(arrive)
             self.patch = patch
             self.room = here
             self.run.send(f"stream {self.frame_file} 4")

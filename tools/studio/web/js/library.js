@@ -16,6 +16,10 @@ const RECENT = "studio-library-recent";
 function recent() { try { return JSON.parse(localStorage.getItem(RECENT) || "[]"); } catch (e) { return []; } }
 function remember(it) { try { localStorage.setItem(RECENT, JSON.stringify([signature(it), ...recent().filter((k) => k !== signature(it))].slice(0, 12))); } catch (e) { /* no storage: nothing remembered */ } }
 
+// the name of a shape of this game, or null (the names are loaded once the Library or the page's boot has asked)
+export const nameOf = (key) => (names && names[`${store.game}:${key}`]) || null;
+export const loadShapeNames = () => loadNames();
+
 // the names given to shapes by looking at them (web/library_names.json, keyed by game and shape); a shape without one shows by its look and size
 async function loadNames() {
   if (names) return;
