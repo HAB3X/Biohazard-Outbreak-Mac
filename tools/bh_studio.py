@@ -43,6 +43,7 @@ class Studio:
         self.names = maps.room_names(str(WIKI)) if WIKI.exists() else {}
         self.cache = {}
         self.process = None
+        self.preview, self.preview_lock = None, threading.Lock()
 
     # ---- what the page asks for
     def scene(self):
@@ -93,6 +94,7 @@ class Studio:
     def switch(self, game, scenario):
         with self.lock:
             self.game, self.scenario = game, scenario
+        self.stop_preview()
 
     # ---- build and play
     def english_patch(self):
@@ -101,8 +103,8 @@ class Studio:
             subprocess.run([sys.executable, str(ROOT / "tools" / "bh_build_patch.py"), self.game, str(path)], check=False)
         return path if path.exists() else None
 
-    def build(self, edits, english=True):
-        out = ROOT / "work" / "studio" / f"{self.game}-play.patch"
+    def build(self, edits, english=True, name=None):
+        out = ROOT / "work" / "studio" / (name or f"{self.game}-play.patch")
         out.parent.mkdir(parents=True, exist_ok=True)
         base = [str(self.english_patch())] if english and self.english_patch() else []
         started = time.time()
@@ -122,8 +124,39 @@ class Studio:
         self.process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
         return {"pid": self.process.pid, "automated": False}
 
+    # ---- the real view: pictures of the game itself
+    def preview_prepare(self, edits):
+        import bh_preview
+
+        if not bh_autoplay.supported(self.game, self.scenario):
+            raise ValueError("the real view needs a scenario whose menus are known (File 1's first, File 2's first)")
+        with self.preview_lock:
+            if self.preview is None or (self.preview.game, self.preview.scenario) != (self.game, self.scenario):
+                if self.preview is not None:
+                    self.preview.stop()
+                self.preview = bh_preview.Preview(self.game, self.scenario)
+        import hashlib
+
+        tag = hashlib.sha1(json.dumps(edits, sort_keys=True).encode()).hexdigest()[:10]
+        built = self.build(edits, name=f"preview-{self.game}-{tag}.patch")
+        start = edits.get("start_room")
+        if start is None:
+            start = start_room(self.game, self.scenario) or bh_autoplay.KNOWN[(self.game, self.scenario)]["start_room"]
+        return {"room": self.preview.prepare(built["patch"], start), "seconds": built["seconds"]}
+
+    def preview_shot(self, room, hops, at, name):
+        if self.preview is None:
+            raise ValueError("prepare the real view first")
+        path = self.preview.shot(room, [tuple(h) for h in hops], tuple(at), name)
+        return {"url": f"/api/shot?name={path.name}", "room": room}
+
     def set_status(self, text):
         self.status = text
+
+    def stop_preview(self):
+        if self.preview is not None:
+            self.preview.stop()
+            self.preview = None
 
     def stop(self):
         if self.process and self.process.poll() is None:
@@ -300,6 +333,13 @@ def make_handler(studio):
                         self.send_header("Content-Disposition", f'attachment; filename="my-{studio.game}-level.patch"')
                         self.end_headers()
                         self.wfile.write(data)
+                elif url.path == "/api/shot":
+                    name = Path(query["name"][0]).name
+                    path = ROOT / "work" / "studio" / "preview" / studio.game / name
+                    if not path.exists():
+                        self.send(404, "{}")
+                    else:
+                        self.send(200, path.read_bytes(), "image/jpeg")
                 elif url.path == "/api/messages":
                     self.send(200, json.dumps(studio.messages()))
                 elif url.path.startswith("/api/"):
@@ -333,6 +373,10 @@ def make_handler(studio):
                     self.send(200, json.dumps(studio.build(body.get("edits", {}), body.get("english", True))))
                 elif path == "/api/play":
                     self.send(200, json.dumps(studio.play(body.get("patch"), body.get("hops"), body.get("at"))))
+                elif path == "/api/preview/prepare":
+                    self.send(200, json.dumps(studio.preview_prepare(body.get("edits", {}))))
+                elif path == "/api/preview/shot":
+                    self.send(200, json.dumps(studio.preview_shot(body["room"], body.get("hops", []), body["at"], body["name"])))
                 elif path == "/api/stop":
                     studio.stop()
                     self.send(200, "{}")

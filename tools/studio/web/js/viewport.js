@@ -37,11 +37,30 @@ export class Viewport {
     on("tool", () => { this.wallStart = null; if (store.tool === "wall" || store.tool === "floor") store.show.walls = true; this.updateCursor(); this.redraw(); });
   }
 
+  // the game's own picture behind the markers (the real view), or none
+  setShot(url, stale) {
+    const img = document.getElementById("shot");
+    this.shot = url || null;
+    if (url && img.getAttribute("src") !== url) img.src = url;
+    img.classList.toggle("stale", !!stale);
+    document.getElementById("gl").classList.toggle("hidden", !!url);
+    this.placeShot();
+  }
+
+  placeShot() {
+    const img = document.getElementById("shot"), r = this.camera.rect;
+    const on = this.shot && store.mode === "game";
+    img.style.display = on ? "block" : "none";
+    document.getElementById("gl").classList.toggle("hidden", !!on);
+    if (on) Object.assign(img.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" });
+  }
+
   // ---- the game view: the room as one of its own cameras shows it
   applyMode() {
     if (store.mode === "game") this.useGameCamera();
     else this.camera.setMode(store.mode === "3d" ? "orbit" : "plan");
     emit("camera");
+    this.placeShot();
     this.redraw();
   }
 
@@ -88,6 +107,12 @@ export class Viewport {
     const c = centre(ref.c, o), s = this.camera.project(c), rc = this.camera.rect;
     const seen = s[2] > -0.9 && s[0] > rc.x && s[0] < rc.x + rc.w && s[1] > rc.y && s[1] < rc.y + rc.h;
     if (!seen) this.useGameCamera(this.cameraFor(r, c));
+  }
+
+  hiddenSets() {
+    const out = {};
+    for (const r of store.scene.rooms) out[r.file] = new Set(r.hidden || []);
+    return out;
   }
 
   // ---- loading the models in the background, the room being worked in first
@@ -145,12 +170,13 @@ export class Viewport {
 
   draw() {
     if (!store.scene) return;
+    this.placeShot();
     sync(this.renderer, store.scene);
     this.syncPictures();
     const rooms = this.visibleRooms();
     const dim = {};
     for (const f of rooms) dim[f] = f === store.room ? 1 : 0.5;
-    if (store.show.models) this.renderer.render(this.camera, rooms, { textured: store.show.textures, dim });
+    if (store.show.models) this.renderer.render(this.camera, rooms, { textured: store.show.textures, dim, hidden: this.hiddenSets() });
     else this.renderer.render(this.camera, [], {});
     overlay.draw(this.ctx, this.camera, this.dpr, rooms, this.hover);
     this.drawGhost();

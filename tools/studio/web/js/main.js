@@ -154,15 +154,59 @@ function buildCamNav() {
     viewport.redraw();
   });
   marks.classList.add("on");
-  nav.append(prev, label, next, el("span", { class: "vsep" }), marks);
+  const real = el("button", { class: "btn", title: "Show the game's own picture of this camera (the game is started behind the scenes; the first picture takes a minute or two)", html: icon("play", 14) + " Real view" });
+  real.addEventListener("click", () => { store.real.on = !store.real.on; real.classList.toggle("on", store.real.on); if (store.real.on) refreshReal(); else viewport.setShot(null); });
+  const refresh = el("button", { class: "btn", style: "display:none", title: "Start the game again with your changes and take the picture again" }, "Update picture");
+  refresh.addEventListener("click", () => refreshReal(true));
+  store.real.chip = { label, refresh };
+  nav.append(prev, label, next, el("span", { class: "vsep" }), marks, real, refresh);
   document.getElementById("view").append(nav);
   const sync = () => {
     const r = store.scene && roomOf(store.room);
     nav.style.display = store.mode === "game" && r && r.cameras.length ? "flex" : "none";
     if (r) label.textContent = `Camera ${(viewport.camIndex[r.file] ?? 0) + 1} of ${r.cameras.length}`;
   };
-  on("camera", sync); on("mode", sync); on("room", sync);
+  on("camera", () => { sync(); if (store.real.on) refreshReal(); });
+  on("mode", () => { sync(); if (store.mode !== "game") viewport.setShot(null); else if (store.real.on) refreshReal(); });
+  on("room", sync);
+  on("changed", () => { if (store.real.on && store.real.key && store.real.key !== hash(JSON.stringify(currentEdits()))) { viewport.setShot(store.real.last || null, true); store.real.chip.refresh.style.display = ""; } });
   sync();
+}
+// ---- the real view: the game's own picture of the room and camera shown, taken in a game started behind the scenes on the current edits
+const hash = (s) => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h); };
+async function refreshReal(force) {
+  const real = store.real, r = roomOf(store.room);
+  if (!real.on || store.mode !== "game" || !r || real.busy) return;
+  const k = viewport.camIndex[r.file], c = r.cameras[k];
+  if (!c) return;
+  const key = hash(JSON.stringify(currentEdits())), slot = `${key}:${r.file}:${k}`;
+  if (!force && real.urls[slot]) { viewport.setShot(real.urls[slot], false); return; }
+  if (real.key && real.key !== key && !force) { viewport.setShot(real.last || null, true); real.chip.refresh.style.display = ""; return; }   // edits changed: the old picture stays, dimmed, until you ask
+  real.busy = true;
+  const { label, refresh } = real.chip;
+  label.classList.add("busy"); refresh.style.display = "none";
+  try {
+    if (real.key !== key) {
+      label.textContent = "Starting the game…";
+      const out = await api.previewPrepare(currentEdits());
+      Object.assign(real, { key, room: out.room, urls: {} });
+    }
+    label.textContent = "Taking the picture…";
+    const hops = hopsTo(real.room, r.id);
+    if (!hops) throw new Error("no chain of doors leads there from where the game is");
+    const b = c.box.slice(0, 4), at = [b.reduce((s, p) => s + p[0], 0) / 4, b.reduce((s, p) => s + p[2], 0) / 4, 0];
+    const out = await api.previewShot(r.id, hops, at, "s" + Date.now() % 1e7);
+    real.room = r.id; real.urls[slot] = out.url; real.last = out.url;
+    if (viewport.camIndex[r.file] === k && store.room === r.file) viewport.setShot(out.url, false);
+  } catch (e) {
+    toast("The real view didn't work", "err", e.message, 7000);
+    real.on = false; viewport.setShot(null);
+    document.querySelectorAll("#camnav .btn").forEach((b) => b.classList.remove("on"));
+  } finally {
+    real.busy = false; label.classList.remove("busy"); emit("camera");
+    const r2 = roomOf(store.room);
+    if (real.on && r2 && (r2.file !== r.file || viewport.camIndex[r2.file] !== k)) refreshReal();
+  }
 }
 const syncRail = () => {
   document.querySelectorAll("#toolbar [data-tool]").forEach((b) => b.classList.toggle("on", b.dataset.tool === store.tool));

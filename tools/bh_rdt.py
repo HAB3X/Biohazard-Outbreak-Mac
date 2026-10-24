@@ -322,6 +322,27 @@ class Room:
                 i += 1
         return out
 
+    def initially_hidden(self):
+        """The model's objects (mesh numbers) the script hides as it starts: the first run of ShowObject / HideObject records in thread 0, each object number taken through the 32 byte table at
+        header word 1 (a byte for each, 0xFF for none; measured: file 1's room 2 shows the stairs' own objects only with the others of its model, wheels and flashes, hidden)"""
+        words = self.script_words()
+        if len(words) < self.SCRIPT_HEADER or words[1] <= 0 or words[1] // 4 + 8 > len(words):
+            return []
+        table = struct.pack("<8i", *words[words[1] // 4:words[1] // 4 + 8])
+        hidden, started = set(), False
+        for ins in self.script_instructions():
+            if ins.at < words[8] // 4:
+                continue
+            op = ins.words[0] & 0xFFFFFF
+            if op in (0xB0, 0xB1):
+                started = True
+                mesh = table[ins.words[1]] if 0 <= ins.words[1] < 32 else 0xFF
+                if mesh != 0xFF:
+                    (hidden.add if op == 0xB1 else hidden.discard)(mesh)
+            elif started:
+                break
+        return sorted(hidden)
+
     def first_instruction(self, thread=0):
         """The word index of a thread's first instruction (thread 0 runs once as the room starts; thread 1 is run again and again, so a test put there is a trigger). A thread's block starts with a data word, which an instruction put before it would break (measured)"""
         script = self.script_words()

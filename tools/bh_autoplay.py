@@ -29,9 +29,9 @@ def supported(game, scenario):
 class AutoPlay(S.Run):
     """A windowed game on the control FIFO (S.Run's methods; its constructor starts a headless one)"""
 
-    def __init__(self, game, patch, headless=False):
+    def __init__(self, game, patch, headless=False, folder=None):
         self.game = game
-        self.folder = ROOT / "work" / "studio" / "play" / game
+        self.folder = folder or ROOT / "work" / "studio" / "play" / game
         (self.folder / "card").mkdir(parents=True, exist_ok=True)
         (self.folder / "card" / "graphics.txt").write_text("version = 2\n") if not (self.folder / "card" / "graphics.txt").exists() else None
         self.fifo, self.log = self.folder / "c", self.folder / "game.log"
@@ -39,7 +39,8 @@ class AutoPlay(S.Run):
         disc = os.environ.get(f"{game.upper()}_DISC") or __import__("json").loads((ROOT / "local.json").read_text())[game]
         cmd = [str(ROOT / "build" / f"biohazard-{game}"), "--disc", disc, "--control", str(self.fifo), "--memcards", str(self.folder / "card"), "--settings", str(self.folder / "card")]
         if headless:
-            cmd += ["--headless", "--run-seconds", "6000"]
+            (self.folder / "shots").mkdir(parents=True, exist_ok=True)
+            cmd += ["--headless", "--run-seconds", "6000", "--snapshots", str(self.folder / "shots")]
         if patch:
             cmd += ["--patch", patch]
         self.process = subprocess.Popen(cmd, stdout=open(self.log, "w"), stderr=subprocess.STDOUT, start_new_session=True)

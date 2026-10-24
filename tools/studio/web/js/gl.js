@@ -26,7 +26,7 @@ function worlds(bones) {
 const hidden = (b) => Math.abs(b[1][0]) < 0.001 || Math.abs(b[1][1]) < 0.001 || Math.abs(b[1][2]) < 0.001;
 
 const VS = `#version 300 es
-uniform mat4 uVP, uModel; in vec3 aPos; in vec2 aUV; in vec3 aCol; out vec3 vW; out vec2 vUV; out vec3 vCol;
+uniform mat4 uVP, uModel; in vec3 aPos; in vec2 aUV; in vec4 aCol; out vec3 vW; out vec2 vUV; out vec4 vCol;
 void main(){ vec4 w = uModel * vec4(aPos, 1.0); vW = w.xyz; vUV = aUV; vCol = aCol; gl_Position = uVP * w; }`;
 const FS_FLAT = `#version 300 es
 precision highp float; uniform vec2 uHeight; uniform float uDim; in vec3 vW; out vec4 o;
@@ -38,10 +38,11 @@ void main(){
   o = vec4(c * uDim, 1.0);
 }`;
 const FS_TEX = `#version 300 es
-precision highp float; uniform sampler2D uTex; uniform float uDim; uniform float uGame; in vec3 vW; in vec2 vUV; in vec3 vCol; out vec4 o;
+precision highp float; uniform sampler2D uTex; uniform float uDim; uniform float uGame; uniform float uBlend; in vec3 vW; in vec2 vUV; in vec4 vCol; out vec4 o;
 void main(){
-  vec4 t = texture(uTex, vUV); if (t.a < 0.35) discard;
-  if (uGame > 0.5) { o = vec4(min(t.rgb * vCol * 1.15, vec3(1.0)) * uDim, 1.0); return; }     // the game's own light: the picture times the colour baked into each vertex
+  vec4 t = texture(uTex, vUV);
+  if (uBlend > 0.5) { if (t.a * vCol.a < 0.04) discard; } else if (t.a < 0.35) discard;
+  if (uGame > 0.5) { o = vec4(min(t.rgb * vCol.rgb * 1.15, vec3(1.0)) * uDim, uBlend > 0.5 ? t.a * vCol.a : 1.0); return; }     // the game's own light: the picture times the colour baked into each vertex
   vec3 n = normalize(cross(dFdx(vW), dFdy(vW)));
   float l = 0.55 + 0.45 * abs(dot(n, normalize(vec3(0.35, 0.85, 0.4))));
   o = vec4(t.rgb * l * uDim, 1.0);
@@ -118,7 +119,7 @@ export class Renderer {
       const pos = b64(m.p, Float32Array), uv = b64(m.uv, Float32Array);
       const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
       const ub = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ub); gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
-      const cb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, cb); gl.bufferData(gl.ARRAY_BUFFER, m.c ? b64(m.c, Float32Array) : new Float32Array(pos.length).fill(0.5), gl.STATIC_DRAW);
+      const cb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, cb); gl.bufferData(gl.ARRAY_BUFFER, m.c ? b64(m.c, Float32Array) : new Float32Array(pos.length / 3 * 4).fill(0.5), gl.STATIC_DRAW);
       const w = world[m.bone], hide = !w || hidden(bones[m.bone]);
       const groups = m.groups.map((g) => {
         const idx = b64(g.i, Uint32Array);
@@ -140,7 +141,10 @@ export class Renderer {
       });
       const lop = [1e9, 1e9, 1e9], hip = [-1e9, -1e9, -1e9];
       for (let i = 0; i < pos.length; i += 3) for (let k = 0; k < 3; k++) { if (pos[i + k] < lop[k]) lop[k] = pos[i + k]; if (pos[i + k] > hip[k]) hip[k] = pos[i + k]; }
-      meshes.push({ vb, ub, cb, groups, bone: m.bone, hide, mesh: m.mesh, lo: lop, hi: hip });
+      const colours = m.c ? b64(m.c, Float32Array) : null;
+      let blend = false;
+      if (colours) for (let k = 3; k < colours.length; k += 4) if (colours[k] < 0.99) { blend = true; break; }
+      meshes.push({ vb, ub, cb, blend, groups, bone: m.bone, hide, mesh: m.mesh, lo: lop, hi: hip });
     });
     this.models[file] = { bones, base: bones.length, extra: [], world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
   }
@@ -165,7 +169,7 @@ export class Renderer {
     if (old && old.key === key) return old.mesh;
     const buf = (type, data) => { const b = gl.createBuffer(); gl.bindBuffer(type, b); gl.bufferData(type, data, gl.STATIC_DRAW); return b; };
     const mesh = {
-      vb: buf(gl.ARRAY_BUFFER, new Float32Array(g.positions.flat())), ub: buf(gl.ARRAY_BUFFER, new Float32Array(g.uvs.flat())), cb: buf(gl.ARRAY_BUFFER, new Float32Array(g.positions.length * 3).fill(0.45)),
+      vb: buf(gl.ARRAY_BUFFER, new Float32Array(g.positions.flat())), ub: buf(gl.ARRAY_BUFFER, new Float32Array(g.uvs.flat())), cb: buf(gl.ARRAY_BUFFER, Float32Array.from({ length: g.positions.length * 4 }, (_, i) => (i % 4 === 3 ? 1 : 0.45))), blend: false,
       groups: [{ material: g.material, ib: buf(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(g.triangles.flat())), count: g.triangles.length * 3 }], mesh: -1,
     };
     this.made.set(g, { key, mesh });
@@ -216,7 +220,7 @@ export class Renderer {
   render(camera, rooms, opts) {
     const gl = this.gl;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.disable(gl.SCISSOR_TEST);
+    gl.disable(gl.SCISSOR_TEST); gl.depthMask(true); gl.disable(gl.BLEND);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.clearColor(0.039, 0.047, 0.063, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -239,13 +243,17 @@ export class Renderer {
       if (!m) continue;
       gl.uniform1f(U("uDim"), (opts.dim && opts.dim[file]) ?? 1);
       if (!textured) gl.uniform2f(U("uHeight"), m.bounds[1] - 50, m.bounds[1] + Math.min(1800, Math.max(300, m.bounds[4] - m.bounds[1])));
-      for (const mesh of [...m.meshes, ...m.extra]) {
-        if (mesh.hide) continue;
+      for (const mesh of [...m.meshes, ...m.extra].sort((a, b) => (a.blend ? 1 : 0) - (b.blend ? 1 : 0))) {
+        if (mesh.hide || mesh.skip) continue;
+        if (camera.mode === "game" && opts.hidden && opts.hidden[file] && opts.hidden[file].has(mesh.mesh)) continue;     // what the room's own script hides as it starts
+        const blend = textured && camera.mode === "game" && mesh.blend;
+        if (blend) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); } else { gl.disable(gl.BLEND); gl.depthMask(true); }
+        if (textured) gl.uniform1f(U("uBlend"), blend ? 1 : 0);
         gl.uniformMatrix4fv(U("uModel"), false, m.world[mesh.bone]);
         gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vb); gl.enableVertexAttribArray(posLoc); gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
         if (textured) {
           gl.bindBuffer(gl.ARRAY_BUFFER, mesh.ub); gl.enableVertexAttribArray(uvLoc); gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0);
-          if (colLoc >= 0) { gl.bindBuffer(gl.ARRAY_BUFFER, mesh.cb); gl.enableVertexAttribArray(colLoc); gl.vertexAttribPointer(colLoc, 3, gl.FLOAT, false, 0, 0); }
+          if (colLoc >= 0) { gl.bindBuffer(gl.ARRAY_BUFFER, mesh.cb); gl.enableVertexAttribArray(colLoc); gl.vertexAttribPointer(colLoc, 4, gl.FLOAT, false, 0, 0); }
         }
         for (const g of mesh.groups) {
           if (textured) {

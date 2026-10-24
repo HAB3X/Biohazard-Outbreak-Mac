@@ -103,7 +103,7 @@ def build(game, scenario, names, variants):
     except FileNotFoundError:
         scenario_enemies = None
     for (number, variant), (member, room) in sorted(rooms.items()):
-        entry = {"id": number, "variant": variant, "file": member, "name": names.get(member.lower(), ""), "capacity": room.capacity(), "cameras": [], "areas": []}
+        entry = {"id": number, "variant": variant, "file": member, "name": names.get(member.lower(), ""), "capacity": room.capacity(), "hidden": room.initially_hidden(), "cameras": [], "areas": []}
         for index, cam in enumerate(room.cameras):
             try:
                 fog = list(room.fog(index))

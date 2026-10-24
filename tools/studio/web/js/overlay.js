@@ -163,6 +163,14 @@ export function draw(ctx, camera, dpr, rooms, hover) {
         const ref = { c: "spawns", file, i: sp.i }, col = colour("spawn"), sel = selected(ref);
         const y = floorY(file, sp.pos[0], sp.pos[2]), p0 = [sp.pos[0], y, sp.pos[2]], p = P(p0);
         if (p[2] < -0.9) continue;
+        if (camera.mode !== "plan") {
+          const fig = figure(layers, p0, col, sel, hovered(ref), base, sp.facing, sp.i === 0 ? "P" : String(sp.i + 1));
+          if (fig) {
+            hits.push({ ref, order: 8, test: rectTest(fig.box), centre: [fig.f[0], (fig.f[1] + fig.h[1]) / 2] });
+            if (sel || hovered(ref)) layers.push({ order: 9, run() { pill(sp.i === 0 ? "the player starts here" : `partner ${sp.i} starts here`, fig.f[0], fig.h[1] - 14, col, sel); } });
+          }
+          continue;
+        }
         const a = sp.facing / 65536 * Math.PI * 2, f = P([sp.pos[0] + Math.sin(a) * 150, y, sp.pos[2] + Math.cos(a) * 150]);
         layers.push({ order: 8, run() {
           ctx.strokeStyle = rgba(col, sel ? 1 : 0.9 * base); ctx.lineWidth = 2.2;
@@ -257,6 +265,14 @@ export function draw(ctx, camera, dpr, rooms, hover) {
         if (n.modes === 0 && !store.selection.some((s) => s.c === "enemies" && s.file === file && s.i === n.i)) continue;
         const ref = { c: "enemies", file, i: n.i }, col = colour("enemy"), p = P(n.pos), sel = selected(ref), hov = hovered(ref);
         if (p[2] < -0.9) continue;
+        if (camera.mode !== "plan") {
+          const fig = figure(layers, [n.pos[0], floorY(file, n.pos[0], n.pos[2]), n.pos[2]], col, sel, hov, base, n.facing, "");
+          if (fig) {
+            hits.push({ ref, order: 7, test: rectTest(fig.box), centre: [fig.f[0], (fig.f[1] + fig.h[1]) / 2] });
+            if (sel || hov) layers.push({ order: 9, run() { pill(`enemy ${n.id} · ${hpOf(n)}`, fig.f[0], fig.h[1] - 14, col, sel); } });
+          }
+          continue;
+        }
         const a = n.facing / 65536 * Math.PI * 2;
         const f = P([n.pos[0] + Math.sin(a) * 120, n.pos[1], n.pos[2] + Math.cos(a) * 120]);
         layers.push({ order: 7, run() {
@@ -287,6 +303,29 @@ export function draw(ctx, camera, dpr, rooms, hover) {
     }
   }
   hits.sort((a, b) => a.order - b.order);
+
+  // a person standing there, in the picture's own perspective, so you can tell where they are and how big (about 190 tall, 50 across); `facing` shows which way they look
+  function figure(layers, feet, col, sel, hov, base, facing, tag) {
+    const f = P(feet), h = P([feet[0], feet[1] + 190, feet[2]]);
+    if (f[2] < -0.9 || h[2] < -0.9) return null;
+    const left = P([feet[0] - 25, feet[1], feet[2]]), right = P([feet[0] + 25, feet[1], feet[2]]);
+    const w = Math.max(6, Math.hypot(right[0] - left[0], right[1] - left[1])), tall = Math.max(14, f[1] - h[1]), cx = (f[0] + h[0]) / 2;
+    const head = Math.max(3.5, w * 0.34), top = h[1], bottom = f[1];
+    const box = [cx - w / 2, top - head, cx + w / 2, bottom];
+    layers.push({ order: 8, run() {
+      ctx.save();
+      const real = store.real && store.real.on;       // over the game's own picture the people are already there: only their outline and footprint
+      ctx.fillStyle = rgba(col, (real ? (sel ? 0.3 : 0.1) : (sel ? 0.9 : hov ? 0.8 : 0.62)) * base); ctx.strokeStyle = sel ? "#fff" : real ? rgba(col, 0.95) : "rgba(255,255,255,.7)"; ctx.lineWidth = sel ? 2.4 : real ? 1.6 : 1.2;
+      ctx.beginPath(); ctx.roundRect(cx - w / 2, top + head * 1.1, w, tall - head * 1.1, Math.min(w / 2, 8)); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, top + head * 0.55, head, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(f[0], bottom, w * 0.7, w * 0.22, 0, 0, 7); ctx.strokeStyle = rgba(col, 0.9); ctx.lineWidth = 1.5; ctx.stroke();      // where the feet are on the floor
+      if (facing !== null) { const a = facing / 65536 * Math.PI * 2, t = P([feet[0] + Math.sin(a) * 110, feet[1], feet[2] + Math.cos(a) * 110]); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(f[0], f[1]); ctx.lineTo(t[0], t[1]); ctx.stroke(); }
+      if (tag) { ctx.fillStyle = "rgba(0,0,0,.65)"; ctx.font = `bold ${Math.max(9, Math.min(15, w * 0.6))}px -apple-system, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(tag, cx, top + tall * 0.45); }
+      ctx.restore();
+    } });
+    return { f, h, box };
+  }
+  function rectTest(b) { return (sx, sy) => (sx >= b[0] - 4 && sx <= b[2] + 4 && sy >= b[1] - 4 && sy <= b[3] + 4 ? 5 : -1); }
 
   function path(pts) { ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); }
   function mid(pts) { return [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length]; }

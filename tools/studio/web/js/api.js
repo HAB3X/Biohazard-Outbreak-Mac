@@ -18,5 +18,7 @@ export const api = {
   play: (patch, hops, at) => send("POST", "/api/play", { patch, hops, at }),
   status: () => call("/api/status"),
   stop: () => send("POST", "/api/stop"),
+  previewPrepare: (edits) => send("POST", "/api/preview/prepare", { edits }),
+  previewShot: (room, hops, at, name) => send("POST", "/api/preview/shot", { room, hops, at, name }),
   switchTo: (game, scenario) => send("POST", "/api/switch", { game, scenario }),
 };
