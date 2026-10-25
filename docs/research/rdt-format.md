@@ -328,3 +328,27 @@ the other way: **a wall stops people on the side its normal points to** (the ope
 **Pictures: which one a material uses (measured, file 2 room 3):** the TID chunk is a count and then the pack's picture numbers, but a material m does not take the m-th: its descriptor in the model's kind 10 list (children of 268 bytes: the first word N, then the picture's width and height) names the TID entry, picture = TID[1 + N]. By sizes this fits 35 of 37 materials (the material's own number fits 14). The in-game picture of a cube made with material 10 is the 256 x 256 atlas that mapping gives (door, car, elephant sign, palm leaf), and painting every picture of the room with a numbered colour repainted the whole room, so replacing a picture (`tm2.restyle` writes a new palette and pixels into the same TIM2, `bh_sld.pack` compresses it, the rebuilt disc lays the member) changes every object that uses it. Studio's viewer used the material's own number until this was found (`bh_rdt_edit.model_json` now returns the right picture per material). Objects of your own (`make_mesh_node`) take a material number and UVs over the picture; the room's pictures are mostly atlases with cut-out parts, so an imported model shows through where the atlas is transparent.
 
 **Putting one room's content in another room's slot (measured, file 2 zoo):** copying room 5's files (`r0400500.rdt`, `.nbd`, `w`/`g` `.bin`, `R0400500.LIG`, `.FOG`) over room 4's names (`bh_room_patch.room_copy_members`) and room 5's `.sgl` block over room 4's (`Sgl.copy_block`; the later blocks' index offsets moved on) and starting the game in room 4 (`start_room`) loaded room 5's geometry and its start spot (10764, 5557) instead of room 4's (10964, 9118). New room *ids* are not built: the archive can take a new member (`Rope.add_member`: table entry, name record, data before the name table; shown on the rope, not played) but the .sgl's index sits before its blocks, so a new id needs the blocks moved on and the game's other per-room tables are unknown. Studio has no button for this yet.
+
+
+## Enemies of other kinds and objects of other levels (measured in the game, 2026-10-25)
+
+**An enemy of a kind its scenario doesn't have.** The game makes an enemy's AI from its kind: a u16 map at GAME.BIN 0x6D7040 (File 1) gives each kind a
+routine in the table at 0x6D7110 (kind 1, the zombie, routine 2; kind 2, the dog, routine 3 at 0x5D4430), and the routine dispatches the enemy's state
+(+8) and sub-state (+9) through its own tables. A record's words are the kind's own settings: a zombie's record given kind 2 ran the dog's routine in the
+zombie's sub-state 24, past the end of its state-5 table, and File 1 jumped into float data (0x43960000). Word 8's low byte is the kind's (its starting
+behaviour); its byte 2 (record +34) is compared with the room the game is in at creation, and words 8 and 18 belong to the record's scenario: the dog's
+own record from scenario 28 wasn't created in the first scenario. A new enemy of another kind is therefore made from a record of that kind (any scenario
+of either game: `bh_enemies.kind_record`) with the destination room's own word 8 above its low byte and word 18 (`_of_kind_here`). Measured: a giant wasp
+(kind 6, of File 1's scenario 41) in File 1's room 3 flew at the party and raised the virus gauge; the same kind in File 2's zoo was made (its enemy table,
+0x403DB0 + 0xDB0 n, held it, moving). Dogs (kind 2) are made and lie in wait, as their own records do at home. Twelve of File 1's 156 enemy models are of
+kinds no scenario of either game has a record of (they only come in events), so there is nothing to make one from.
+
+The bar of File 1's first scenario is no place to test enemies at the start: its own zombies come in a scripted event later, and nothing placed there shows
+until then; room 3 (the toilets) has live enemies.
+
+**Pictures of another level.** A scenario's pack begins with its pictures: `rNNN_h.bin` holds their count, the count of the other members, then the other
+members' names (16 bytes each, in order); the game opens a picture by its number and another member by its name. An object brought from another level
+brings each picture it shows: the builder inserts it after the scenario's last picture (`bh_vdisc` insert_member), raises the count, and the object's
+materials name the new numbers. Measured: scenario 41's library bookshelf and File 2's zoo stone archway in File 1's bar, and a File 1 bar cabinet in
+File 2's zoo, each with its own pictures. (A copy is placed on a bone whose parent is the room's root: in the zoo's room 3 the root is at (12300, 500,
+13000), so a copy's offset is the place less that.)

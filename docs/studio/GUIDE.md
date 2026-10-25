@@ -34,3 +34,11 @@ Studio keeps a copy of the game running behind the scenes and photographs every 
 - **Pictures are the room's own pictures repainted** (the same size and number of colours), not new ones added; the pictures of a room are mostly atlases.
 - **Start room** only where the scenario's event file has the opening start records (File 2's scenarios 15, 20, 21, 22, 23, 26, 27, 29, 30 and 40; File 1's start isn't in them, so File 1 has no start choice).
 - **New room numbers**: a room can be cleared and built in, but a room with a number the scenario does not have is not built (the game stores its room index ahead of the room data).
+
+
+## Bringing things from other levels
+
+- **Library → level picker** (top of the Library): any scenario of either game. Its rooms load (a few seconds each the first time), their objects show as
+  usual, and the one you put down brings its pictures into this scenario when you Play or Build.
+- **Library → Enemies**: every enemy model on the disc. Any kind can be put in any scenario: the new enemy takes its kind's own settings from a scenario
+  that has one. Kinds that wait in their own scenarios (the dogs) wait here too. Kinds marked "events only" never stand in a level, so they can't be made.
