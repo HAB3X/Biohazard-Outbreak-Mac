@@ -59,7 +59,7 @@ export class Viewport {
     requestAnimationFrame((t) => this.flyTick(t));
   }
 
-  // in Build the whole level is drawn (its rooms share one world), and the room you work in is the one you fly into: the room whose floor is nearest below the eye.
+  // in Build the room you work in is the one you fly into: the room whose floor is nearest below the eye (the rooms share one world).
   // The camera stays where it is (a room picked from the list takes you to it instead)
   followEye() {
     if (store.mode !== "3d") return;
@@ -210,7 +210,10 @@ export class Viewport {
   }
 
   visibleRooms() {
-    return store.mode === "game" ? [store.room] : store.scene.rooms.map((r) => r.file);
+    // the game holds one room at a time, and each room's model carries its own copies of the buildings around it and flat pictures for the view out of its windows:
+    // drawn together, neighbouring rooms' copies fight over the same places and the pictures hang in the air. So the 3D views draw the room you are in (flying through
+    // a door takes you into the next one, followEye), and the plan from above shows them all
+    return store.mode === "plan" ? store.scene.rooms.map((r) => r.file) : [store.room];
   }
 
   // Studio's own picture of what the camera sees (the game's frame only, no markers), as a PNG data URL: for setting it side by side with the game's own picture
@@ -234,7 +237,7 @@ export class Viewport {
     this.syncPictures();
     const rooms = this.visibleRooms();
     const dim = {};
-    for (const f of rooms) dim[f] = f === store.room || store.mode === "3d" ? 1 : 0.5;      // in Build the level looks as the game does, every room alike
+    for (const f of rooms) dim[f] = f === store.room ? 1 : 0.5;
     if (store.show.models) this.renderer.render(this.camera, rooms, { textured: store.show.textures, dim, hidden: this.hiddenSets(), winding: store.winding, fog: this.cameraFog() });
     else this.renderer.render(this.camera, [], {});
     overlay.draw(this.ctx, this.camera, this.dpr, rooms, this.hover);

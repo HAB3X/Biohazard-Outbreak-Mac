@@ -163,12 +163,11 @@ export class Renderer {
       const lop = [1e9, 1e9, 1e9], hip = [-1e9, -1e9, -1e9];
       for (let i = 0; i < pos.length; i += 3) for (let k = 0; k < 3; k++) { if (pos[i + k] < lop[k]) lop[k] = pos[i + k]; if (pos[i + k] > hip[k]) hip[k] = pos[i + k]; }
       const colours = m.c ? b64(m.c, Float32Array) : null;
-      let blend = false, additive = false;
-      if (colours) {
-        let lit = 0, n = 0;
-        for (let k = 3; k < colours.length; k += 4) { if (colours[k] < 0.99) blend = true; lit += colours[k - 1] + colours[k - 2] + colours[k - 3]; n++; }
-        additive = blend && n > 0 && lit / (3 * n) > 1.4;       // see-through and bright: a patch of light, which adds to what is behind it
-      }
+      // the file says which meshes the game adds to what is behind them (light, glow, the reflections on glass: bh_nbd.Mesh.additive); the others are drawn over
+      // it, see-through where their vertices' alpha is under full
+      const additive = !!m.additive;
+      let blend = additive;
+      if (colours) for (let k = 3; k < colours.length; k += 4) if (colours[k] < 0.99) blend = true;
       meshes.push({ vb, ub, cb, blend, additive, groups, bone: m.bone, hide, mesh: m.mesh, lo: lop, hi: hip, pos });
     });
     let sum = 0, count = 0;

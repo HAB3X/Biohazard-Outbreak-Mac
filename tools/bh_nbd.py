@@ -31,7 +31,7 @@ def chunks(data):
 
 
 class Mesh:
-    def __init__(self, positions, strips, palette, uvs=None, strip_materials=None, positions_at=0, colours=None):
+    def __init__(self, positions, strips, palette, uvs=None, strip_materials=None, positions_at=0, colours=None, render=None):
         self.colours = colours or []     # (r, g, b, a) of each vertex as floats up to 255 (the room's baked light: 128 leaves the picture as it is)
         self.positions = positions
         self.positions_at = positions_at  # where the positions' floats start in the file
@@ -39,6 +39,14 @@ class Mesh:
         self.palette = palette  # the skeleton's bones the mesh's vertices name (their weights' bone numbers index it)
         self.uvs = uvs or []
         self.strip_materials = strip_materials or [0] * len(strips)  # the model's material of each strip (an index into the .nbd's textures)
+        self.render = render  # the RenderAttribs' 18 words (type 15 array), or None when the mesh has none
+
+    @property
+    def additive(self):
+        """Whether the game adds the mesh to what is behind it (light, glow, reflections on glass) rather than drawing it over: the RenderAttribs' alpha
+        destination word (12) is 1 (3 for the rest). Measured: the bar's GS recording from camera 6 draws the 128 triangles of object 80 (the street's
+        reflection on the window) additively, as with objects 14 and 88"""
+        return self.render is not None and self.render[12] == 1
 
     def textured_triangles(self):
         """[(a, b, c, material)]: the strips as triangles, the winding alternated as a strip's is, each with its strip's material"""
@@ -141,11 +149,12 @@ def meshes(data, offset, size):
             s6, c6, _ = arrays[6][0]
             per_strip = list(struct.unpack_from(f"<{c6}I", data, s6))
         strip_materials = [mesh_materials[per_strip[i]] if i < len(per_strip) and per_strip[i] < len(mesh_materials) else 0 for i in range(len(strips))]
+        render = list(struct.unpack_from("<18I", data, arrays[15][0][0])) if 15 in arrays else None
         colours = []
         if 11 in arrays:
             s11, c11, _ = arrays[11][0]
             colours = [struct.unpack_from("<4f", data, s11 + 16 * i) for i in range(min(c11, len(positions)))]
-        found.append(Mesh(positions, strips, palette, uvs, strip_materials, start, colours))
+        found.append(Mesh(positions, strips, palette, uvs, strip_materials, start, colours, render))
 
     _walk(data, offset + 0, offset + size, visit)
     return found

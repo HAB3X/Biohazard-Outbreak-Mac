@@ -122,6 +122,15 @@ class Models(unittest.TestCase):
         self.assertEqual(built["models"]["r0010100.nbd"]["bones"], {"95": change})
 
 
+    def test_a_mesh_says_when_it_adds_light(self):
+        import bh_rdt_edit
+        meshes = {m["mesh"]: m for m in bh_rdt_edit.model_json("file1", 1, "r0010100.nbd")["meshes"]}
+        # the game's GS recording of the bar from camera 6 draws object 80 (128 triangles, the street's reflection on the window) additively and the
+        # canopy (64) normally: the RenderAttribs' alpha destination word (12) is 1 for the one, 3 for the other
+        self.assertTrue(meshes[80]["additive"])
+        self.assertFalse(meshes[64]["additive"])
+
+
 class Pictures(unittest.TestCase):
     def test_restyle_round_trips_through_the_game_codec(self):
         from PIL import Image

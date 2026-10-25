@@ -781,7 +781,7 @@ def model_json(game, scenario, file):
         for a, b, c, material in textured:
             groups.setdefault(material, []).extend((a, b, c))
         light = [c / 128.0 for v in (mesh.colours if len(mesh.colours) == len(mesh.positions) else [(128.0, 128.0, 128.0, 128.0)] * len(mesh.positions)) for c in (v[0], v[1], v[2], min(v[3], 128.0))]
-        meshes.append({"mesh": index, "bone": carriers[index],
+        meshes.append({"mesh": index, "bone": carriers[index], "additive": mesh.additive,
                        "c": base64.b64encode(struct.pack(f"<{len(light)}f", *light)).decode(),
                        "p": base64.b64encode(struct.pack(f"<{len(flat)}f", *flat)).decode(),
                        "uv": base64.b64encode(struct.pack(f"<{len(uvs)}f", *uvs)).decode(),

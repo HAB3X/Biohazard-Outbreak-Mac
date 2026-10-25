@@ -20,7 +20,7 @@ Start it with `./studio.sh` (File 2, scenario 40 opens first; the scenario menu 
 | Choose where the game begins | click a room > **Begin the game here** | yes (File 2's zoo; the other File 2 scenarios use the same records) |
 | Start a level of your own in a room slot | click the room > **Clear this room**: no objects, enemies, items, walls or ground (doors stay); then **Add > Floor**, **Add > Wall**, **Add > Your own model** | yes (a cleared zoo room with a floor laid ran, the player walked on it) |
 | Move, turn, resize with handles | select a thing in Game view or the free camera: the green arrow lifts it, the yellow ring turns an object, the blue diamond resizes it; arrow keys nudge, R turns, `-` `=` resize | lift checked by script only |
-| Look around freely | **Build** tab, or press W A S D / right-drag in Game view. The whole level is drawn (its rooms share one world) and you fly through it: Q E down and up, Shift fast, the wheel forward and back. The room you are in (the one whose floor is nearest below you) becomes the room you edit | yes (File 1 bar) |
+| Look around freely | **Build** tab, or press W A S D / right-drag in Game view. You fly through the level: Q E down and up, Shift fast, the wheel forward and back. The room you are in (the one whose floor is nearest below you) is drawn and is the room you edit; fly through a door and the next room takes over. (The game holds one room at a time and each room carries its own copies of the buildings around it, so drawing them together made them fight; Plan shows every room) | yes (File 1 bar) |
 | Try it | **Play** (from the start, or from this room); **Save the patch file** keeps the result |  |
 
 Everything is undoable (⌘Z) and saved as you go (`work/studio/`).
