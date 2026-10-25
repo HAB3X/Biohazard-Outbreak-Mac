@@ -180,8 +180,15 @@ def grown(enemies, new, edits=None):
             for g in targets:
                 offset, size = group_list[g]
                 own = [data[offset + RECORD * k:offset + RECORD * (k + 1)] for k in range(size // RECORD)]
-                # the record copied: `like`'s, or (where this file hasn't it: e001.emd lacks some of sgl_e001.emd's) the group's own first, which is of the same room
-                template = _record_like(data, like, sgl) if int(spec.get("like", -1)) >= 0 and _has_record(data, like) else own[0]
+                # the record copied: a record of the enemy's own kind given whole (`record`, hex: an enemy's settings belong to its kind; a zombie's record given
+                # another kind ran that kind with the zombie's AI state and crashed File 1), else `like`'s, or (where this file hasn't it: e001.emd lacks some
+                # of sgl_e001.emd's) the group's own first, which is of the same room
+                if spec.get("record"):
+                    template = bytes.fromhex(spec["record"])
+                elif int(spec.get("like", -1)) >= 0 and _has_record(data, like):
+                    template = _record_like(data, like, sgl)
+                else:
+                    template = own[0]
                 record = bytearray(template)
                 index = size // RECORD + len(extra.get(g, []))
                 record[1] = index
