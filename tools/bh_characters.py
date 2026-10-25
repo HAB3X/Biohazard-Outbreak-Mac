@@ -10,7 +10,7 @@ its own TEX chunk (a four byte size, then the .sld codec's stream of a TIM2 file
 move, so they are drawn at full colour under the room's light.
 
     model_file(game, kind, cls)       -> "E01_09.NBD", or None
-    enemy_models(game)                -> [{"id", "cls", "file"}] of every enemy model on the disc
+    enemy_models(game)                -> [{"id", "cls", "file", "placeable"}] of every enemy model on the disc
     character_json(game, name)        -> {"bones", "meshes", "tids"} as bh_rdt_edit.model_json's; tids are "NAME#n", picture n of the model's own
     picture_png(game, key)            -> PNG bytes of "NAME#n"
 """
@@ -37,14 +37,18 @@ def model_file(game, kind, cls):
 
 
 def enemy_models(game):
-    """[{"id": kind, "cls": class, "file": name}] of every enemy model the game's pack holds (E<kind>_<class>.NBD), by kind and class"""
+    """[{"id": kind, "cls": class, "file": name, "placeable": bool}] of every enemy model the game's pack holds (E<kind>_<class>.NBD), by kind and class.
+    Placeable: some scenario of either game has an enemy of that kind, whose record a new one takes its settings from (bh_enemies.kind_record)"""
     import re
+
+    import bh_enemies
 
     out = []
     for name in sorted(_members(game)):
         m = re.fullmatch(r"E(\d\d)_(\d\d)\.NBD", name)
         if m:
-            out.append({"id": int(m.group(1)), "cls": int(m.group(2)), "file": name})
+            kind = int(m.group(1))
+            out.append({"id": kind, "cls": int(m.group(2)), "file": name, "placeable": bh_enemies.kind_record(game, kind) is not None})
     return out
 
 

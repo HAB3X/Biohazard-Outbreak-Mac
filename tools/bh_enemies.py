@@ -68,6 +68,7 @@ class Enemies:
         if pack is None:
             raise FileNotFoundError(f"{game}: no r{scenario:03d}.afs")
         members = dict(pack.members())
+        self.game, self.scenario = game, scenario
         self.files = {n: node for n, node in members.items() if n.lower() in (f"sgl_e{scenario:03d}.emd", f"e{scenario:03d}.emd")}
         main = self.files.get(f"sgl_e{scenario:03d}.emd")
         if main is None:
@@ -189,6 +190,8 @@ def grown(enemies, new, edits=None):
                     template = _record_like(data, like, sgl)
                 else:
                     template = own[0]
+                if "id" in spec and template[2] != int(spec["id"]) and not spec.get("record"):
+                    template = _of_kind_here(enemies.game, int(spec["id"]), int(spec.get("class", 0)), own[0])
                 record = bytearray(template)
                 index = size // RECORD + len(extra.get(g, []))
                 record[1] = index
@@ -216,6 +219,45 @@ def _records(data):
             for k in range(size // RECORD):
                 out.append((offset + RECORD * k, data[offset + RECORD * k:offset + RECORD * (k + 1)]))
     return out
+
+
+_KIND_RECORDS = {}
+
+
+def kind_record(game, kind, cls=None):
+    """96 bytes: a record of an enemy of `kind` (of class `cls` where one is) from the scenarios of `game`, else of the other game's; None when neither has one"""
+    import bh_rdt
+
+    key = (game, kind, cls)
+    if key not in _KIND_RECORDS:
+        found = None
+        for g in (game, "file2" if game == "file1" else "file1"):
+            records = []
+            for scenario in sorted({int(pack[1:4]) for pack, _, _ in bh_rdt.rooms(g)}):
+                try:
+                    records += [e for e in Enemies(g, scenario).enemies if e.id == kind]
+                except FileNotFoundError:
+                    continue
+            best = [e for e in records if cls is None or e.kind == cls] or records
+            if best:
+                found = struct.pack("<24I", *[w & 0xFFFFFFFF for w in best[0].words])
+                break
+        _KIND_RECORDS[key] = found
+    return _KIND_RECORDS[key]
+
+
+def _of_kind_here(game, kind, cls, room_record):
+    """A new enemy of a kind other than the record it would copy: that kind's own record (its AI block and settings: a zombie's record given another kind ran
+    it in the zombie's AI state and crashed File 1), with the room's word 8 above its low byte and word 18 (a record's whole words 8 and 18 belong to its
+    scenario: kind 2's own record from scenario 28 wasn't created in the first scenario's bar). Measured in File 1's room 3: a kind 6 enemy made so was
+    created, went for the party and raised the virus gauge. Kinds whose records lie in wait (the dogs, kind 2) are created and wait in the same way"""
+    own = kind_record(game, kind, cls)
+    if own is None:
+        raise ValueError(f"no enemy of kind {kind} in either game to take its settings from")
+    record = bytearray(own)
+    record[33:36] = room_record[33:36]
+    record[72:76] = room_record[72:76]
+    return bytes(record)
 
 
 def _has_record(data, enemy):

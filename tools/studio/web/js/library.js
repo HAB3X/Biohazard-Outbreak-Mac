@@ -14,11 +14,11 @@ let catalogue = [], built = "";
 let enemyModels = null;      // every enemy model on the disc ([{id, cls, file}], /api/characters), asked for once
 const ENEMY_NAMES = { 1: "Zombie" };     // the kinds named so far; the rest go by number and picture
 
-// the enemies the Library offers: every model on the disc, placeable when the scenario already has enemies of that kind (it loads only those kinds'
-// code: measured in File 1's bar, a new zombie of a class the scenario never uses was made, and a kind 2 enemy, which it never has, crashed the game)
+// the enemies the Library offers: every model on the disc, placeable when some scenario of either game has an enemy of that kind to take its settings
+// from (the patch builder makes a new one of another kind from that kind's own record: bh_enemies._of_kind_here; measured in File 1, a giant wasp of
+// another scenario put in the first scenario's toilets flew at the party). Kinds that lie in wait in their own scenarios (the dogs) wait here too
 function enemyCards() {
-  const kinds = new Set(store.scene.rooms.flatMap((r) => r.enemies.map((n) => n.id)));
-  return (enemyModels || []).map((e) => ({ enemy: e, name: `${ENEMY_NAMES[e.id] || "Enemy kind " + e.id} · class ${e.cls}`, placeable: kinds.has(e.id) }))
+  return (enemyModels || []).map((e) => ({ enemy: e, name: `${ENEMY_NAMES[e.id] || "Enemy kind " + e.id} · class ${e.cls}`, placeable: e.placeable }))
     .sort((a, b) => (b.placeable - a.placeable) || a.enemy.id - b.enemy.id || a.enemy.cls - b.enemy.cls);
 }
 
@@ -148,13 +148,13 @@ function fillEnemies() {
   count.textContent = `${list.length} enem${list.length === 1 ? "y" : "ies"}`;
   if (!enemyModels) grid.append(el("div", { class: "libempty" }, "Loading the enemies…"));
   for (const it of list) {
-    const card = el("button", { class: "libcard" + (it.placeable ? "" : " off"), title: it.placeable ? `${it.name}\n${it.enemy.file}` : `${it.name}\nThis scenario has no enemies of this kind, so the game hasn't their code loaded: putting one in crashes it` });
+    const card = el("button", { class: "libcard" + (it.placeable ? "" : " off"), title: it.placeable ? `${it.name}\n${it.enemy.file}` : `${it.name}\nNo scenario of either game has an enemy of this kind standing in it (it only comes in events), so there are no settings to make one from` });
     card._item = it;
-    card.append(el("img", { alt: "" }), el("span", {}, it.placeable ? it.name : it.name + " (not in this scenario)"));
+    card.append(el("img", { alt: "" }), el("span", {}, it.placeable ? it.name : it.name + " (events only)"));
     const pick = store.enemyPick;
     if (pick && pick.id === it.enemy.id && pick.cls === it.enemy.cls) card.classList.add("on");
     card.addEventListener("click", () => {
-      if (!it.placeable) { emit("note", "That kind of enemy isn't in this scenario: the game would crash"); return; }
+      if (!it.placeable) { emit("note", "That kind only appears in the game's events: there's nothing to make one from"); return; }
       store.enemyPick = { id: it.enemy.id, cls: it.enemy.cls, name: it.name };
       setTool("enemy");
       panel.classList.remove("on");

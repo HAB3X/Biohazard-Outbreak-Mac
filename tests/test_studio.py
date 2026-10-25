@@ -158,6 +158,25 @@ class Enemies(unittest.TestCase):
         self.assertEqual(found, [0, 1, 2, 3])
 
 
+    def test_a_new_enemy_of_another_kind_takes_that_kinds_own_record(self):
+        import bh_enemies
+        enemies = bh_enemies.Enemies("file1", 1)
+        spec = {"room": 3, "variant": 0, "position": [9560, 0, 13330], "facing": 0, "id": 6, "class": 0, "modes": 15, "hp_tier": 3, "like": 18}
+        out = bh_enemies.grown(enemies, [spec])
+        made = [r for _, r in bh_enemies._records(out["sgl_e001.emd"]) if struct.unpack_from("<3i", r, 16) == (9560, 0, 13330)]
+        self.assertEqual(len(made), 4)
+        room = [r for _, r in bh_enemies._records(out["sgl_e001.emd"]) if r[28] == 3 and r[2] == 59][0]     # room 3's own enemy
+        kind = bh_enemies.kind_record("file1", 6, 0)
+        for r in made:
+            # measured in room 3 (File 1): a kind 6 enemy made this way was created, came after the party and raised the virus gauge; with
+            # a zombie's record it crashed, with its own whole record (word 8 and 18 of its scenario) it wasn't created
+            self.assertEqual(r[2], 6)
+            self.assertEqual(r[32], kind[32])
+            self.assertEqual(r[33:36], room[33:36])
+            self.assertEqual(r[72:76], room[72:76])
+            self.assertEqual(r[40:51] + r[52:68], kind[40:51] + kind[52:68])      # (byte 51 is the hit-point tier the spec sets)
+
+
 class Pictures(unittest.TestCase):
     def test_restyle_round_trips_through_the_game_codec(self):
         from PIL import Image
