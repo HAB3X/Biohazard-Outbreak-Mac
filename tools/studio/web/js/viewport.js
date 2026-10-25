@@ -2,7 +2,7 @@
 import { Camera } from "./camera.js";
 import { Renderer } from "./gl.js";
 import * as overlay from "./overlay.js";
-import { store, on, emit, setMode, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe, addWall, addFloor } from "./scene.js";
+import { store, on, emit, setMode, setRoom, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe, addWall, addFloor } from "./scene.js";
 import { PLACE, FIXED, THINGS, place, ground, snapTo } from "./tools.js";
 import { api } from "./api.js";
 import { attach, sync, setPose, neighbourSnap } from "./scenery.js";
@@ -32,49 +32,9 @@ export class Viewport {
     on("room", () => this.redraw());
     this.camIndex = {};       // room file -> the number of the camera being looked through in the game view
     on("mode", () => this.applyMode());
-    on("room", () => { if (store.mode === "game") this.useGameCamera(); else if (store.mode === "3d") this.enterFree(); });
+    on("room", () => { if (store.mode === "game") this.useGameCamera(); else if (store.mode === "3d" && !this.followingEye) this.enterFree(); });
     on("selection", () => { if (store.mode === "game") this.followSelection(); });
     on("tool", () => { this.wallStart = null; if (store.tool === "wall" || store.tool === "floor") store.show.walls = true; this.updateCursor(); this.redraw(); });
-  }
-
-  // the game's own picture behind the markers (the real view), or none
-  setShot(url, stale) {
-    const img = document.getElementById("shot");
-    this.shot = url || null;
-    if (url && img.getAttribute("src") !== url) img.src = url;
-    img.classList.toggle("stale", !!stale);
-    document.getElementById("gl").classList.toggle("hidden", !!url);
-    this.placeShot();
-  }
-
-  // the running game's own pictures, live, in place of everything else (Build with the game started)
-  setLive(on) {
-    const img = document.getElementById("live");
-    this.live = on;
-    if (on) img.src = "/api/stream?t=" + Date.now(); else img.removeAttribute("src");
-    this.placeShot();
-  }
-
-  placeShot() {
-    const live = document.getElementById("live"), box = this.camera.rect;
-    const liveOn = this.live && store.mode === "3d" && this.camera.pictureLens;
-    live.style.display = liveOn ? "block" : "none";
-    if (liveOn) Object.assign(live.style, { left: box.x + "px", top: box.y + "px", width: box.w + "px", height: box.h + "px" });
-    const img = document.getElementById("shot"), r = this.camera.rect;
-    const on = this.shot && this.camera.pictureLens && !liveOn;
-    img.style.display = on ? "block" : "none";
-    // in Build with the game's pictures on, Studio's own drawing of the models is never shown: it isn't what the game shows
-    const noOwn = liveOn || (store.mode === "3d" && store.real.free && store.survey && store.survey.supported);
-    document.getElementById("gl").classList.toggle("hidden", !!on || noOwn);
-    if (on) Object.assign(img.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" });
-  }
-
-  // the free camera shaped as the game's picture (so the game's own picture from it can be shown), or as the pane
-  usePhoto(on) {
-    this.camera.photo = on ? { fov: this.photoFov || 60, aspect: GAME_ASPECT, lens: GAME_LENS } : null;
-    this.camera.fit();
-    this.placeShot();
-    this.redraw();
   }
 
   // ---- the free camera: W A S D move, Q and E go down and up, the wheel moves forward and back, dragging the empty picture turns the view, shift is fast
@@ -94,17 +54,32 @@ export class Viewport {
     const dt = Math.min(0.05, (now - this.last) / 1000);
     this.last = now;
     if (!this.keys || !this.keys.size || store.mode !== "3d") { this.flying = false; return; }
-    if (this.camera.fly(this.keys, dt, this.fast ? 3000 : 900)) { this.redraw(); emit("camera"); }
+    // a room is about 1000 across and a person 170 tall: under half a room a second to look around in, Shift four times that to cross the level
+    if (this.camera.fly(this.keys, dt, this.fast ? 1800 : 450)) { this.followEye(); this.redraw(); emit("camera"); }
     requestAnimationFrame((t) => this.flyTick(t));
   }
 
-  // the free camera starts where one of the room's cameras stands, looking where it looks (its field of view too, for the game's picture)
+  // in Build the whole level is drawn (its rooms share one world), and the room you work in is the one you fly into: the room whose floor is nearest below the eye.
+  // The camera stays where it is (a room picked from the list takes you to it instead)
+  followEye() {
+    if (store.mode !== "3d") return;
+    const eye = this.camera.eye();
+    let best = null, highest = -Infinity;
+    for (const r of store.scene.rooms) {
+      const h = this.floorAt(r.file, eye[0], eye[2], eye[1]);
+      if (h !== null && h > highest && eye[1] - h < 1500) { highest = h; best = r.file; }
+    }
+    if (!best || best === store.room) return;
+    this.followingEye = true;
+    try { setRoom(best); } finally { this.followingEye = false; }
+  }
+
+  // the free camera starts where one of the room's cameras stands, looking where it looks
   enterFree() {
     this.useGameCamera();
     const g = this.camera.game;
     this.camera.setMode("orbit");
-    if (g) { this.photoFov = g.fov; this.camera.startFree(g.eye, g.target); } else this.frameRoom(store.room);
-    if (this.camera.photo) this.camera.photo.fov = this.photoFov || 60;
+    if (g) this.camera.startFree(g.eye, g.target); else this.frameRoom(store.room);
   }
 
   // ---- the game view: the room as one of its own cameras shows it
@@ -113,7 +88,6 @@ export class Viewport {
     else if (store.mode === "3d") { if (this.camera.mode !== "orbit") this.enterFree(); }
     else { if (this.camera.mode !== "plan") { this.camera.setMode("plan"); this.overview(store.room); } }
     emit("camera");
-    this.placeShot();
     this.redraw();
   }
 
@@ -236,7 +210,7 @@ export class Viewport {
   }
 
   visibleRooms() {
-    return store.mode === "game" || store.mode === "3d" ? [store.room] : store.scene.rooms.map((r) => r.file);
+    return store.mode === "game" ? [store.room] : store.scene.rooms.map((r) => r.file);
   }
 
   // Studio's own picture of what the camera sees (the game's frame only, no markers), as a PNG data URL: for setting it side by side with the game's own picture
@@ -256,12 +230,11 @@ export class Viewport {
 
   draw() {
     if (!store.scene) return;
-    this.placeShot();
     sync(this.renderer, store.scene);
     this.syncPictures();
     const rooms = this.visibleRooms();
     const dim = {};
-    for (const f of rooms) dim[f] = f === store.room ? 1 : 0.5;
+    for (const f of rooms) dim[f] = f === store.room || store.mode === "3d" ? 1 : 0.5;      // in Build the level looks as the game does, every room alike
     if (store.show.models) this.renderer.render(this.camera, rooms, { textured: store.show.textures, dim, hidden: this.hiddenSets(), winding: store.winding, fog: this.cameraFog() });
     else this.renderer.render(this.camera, [], {});
     overlay.draw(this.ctx, this.camera, this.dpr, rooms, this.hover);
@@ -396,6 +369,7 @@ export class Viewport {
       const [x, y] = this.local(e);
       const k = Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0016));
       this.camera.zoom(k, x, y);
+      this.followEye();
       this.redraw();
     }, { passive: false });
     ov.addEventListener("pointerdown", (e) => this.down(e));

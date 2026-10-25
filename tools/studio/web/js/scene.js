@@ -312,8 +312,6 @@ export const store = {
   scene: null, orig: null,
   startDefault: null, startRoom: null,   // the room the characters begin in: the scenario's own, and the one you chose (null: not changed)
   winding: "ccw",      // the faces the game draws (measured against its own pictures of the bar: with "ccw" culled backs, camera 0 sees down the hallway as the game does, not into the shell around it)
-  survey: { have: new Set(), supported: false },
-  real: { on: false, key: "", room: null, urls: {}, last: null, busy: false },
   textures: {},               // the room's pictures you replaced: the picture's number -> a data: URL of your image
   models: {},                 // room file -> the model's JSON, once loaded
   tool: "select",

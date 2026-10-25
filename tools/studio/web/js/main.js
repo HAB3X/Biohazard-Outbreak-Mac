@@ -191,28 +191,15 @@ function buildCamNav() {
     viewport.redraw();
   });
   marks.classList.add("on");
-  const real = el("button", { class: "btn", title: "Show the game's own picture of this camera (the game is started behind the scenes; the first picture takes a minute or two)", html: icon("play", 14) + " Real view" });
-  real.addEventListener("click", () => { store.real.on = !store.real.on; store.real.always = store.real.on; real.classList.toggle("on", store.real.on); if (store.real.on) refreshReal(); else viewport.setShot(null); });
-  const refresh = el("button", { class: "btn", style: "display:none", title: "Start the game again with your changes and take the picture again" }, "Update picture");
-  refresh.addEventListener("click", () => refreshReal(true));
-  store.real.chip = { label, refresh };
-  nav.append(prev, label, next, el("span", { class: "vsep" }), marks, real, refresh);
+  nav.append(prev, label, next, el("span", { class: "vsep" }), marks);
   document.getElementById("view").append(nav);
   const hint = el("div", { class: "float", id: "flyhint" });
   hint.innerHTML = "<b>WASD</b> move · <b>Q E</b> down, up · <b>right-drag</b> look · <b>Shift</b> fast ";
   const back = el("button", { class: "btn", style: "margin-left:6px" }, "Back to the game's camera");
   back.addEventListener("click", () => setMode("game"));
-  const pic = el("button", { class: "btn", style: "margin-left:6px", title: "Show the game's own picture from where the free camera is (taken in the game started behind the scenes, a moment after you stop moving)", html: icon("play", 14) + " Game's picture" });
-  pic.addEventListener("click", () => { store.real.free = !store.real.free; pic.classList.toggle("on", store.real.free); freeChanged(true); });
-  store.real.freeBtn = pic;
   const names = el("button", { class: "btn", style: "margin-left:6px", title: "Write the name of every object you can tell what it is  (N)" }, "Names");
   names.addEventListener("click", () => { store.show.names = !store.show.names; names.classList.toggle("on", store.show.names); viewport.redraw(); });
-  const bright = el("button", { class: "btn on", style: "margin-left:6px", title: "Lift the game's dark pictures a little" }, "Brighten");
-  bright.addEventListener("click", () => { document.getElementById("live").classList.toggle("plain"); bright.classList.toggle("on"); });
-  const upd = el("button", { class: "btn", style: "display:none;margin-left:6px", title: "Start the game again with your changes and take the picture again" }, "Update picture");
-  upd.addEventListener("click", () => refreshFree(true));
-  store.real.freeUpdate = upd;
-  hint.append(back, pic, names, bright, upd);
+  hint.append(back, names);
   hint.style.pointerEvents = "auto";
   const editHint = el("div", { class: "float", id: "edithint" });
   editHint.innerHTML = "<b>Drag</b> to move · arrows slide along one way · ring turns · diamond resizes · <b>Del</b> removes";
@@ -224,199 +211,8 @@ function buildCamNav() {
     editHint.style.display = store.mode !== "plan" && store.selection.length ? "block" : "none";
     if (r) label.textContent = `Camera ${(viewport.camIndex[r.file] ?? 0) + 1} of ${r.cameras.length}`;
   };
-  on("camera", () => { sync(); if (store.real.on) refreshReal(); if (store.mode === "3d") freeChanged(); });
-  on("mode", () => { sync(); if (store.mode !== "game") viewport.setShot(null); if (store.mode === "game" && store.real.on) refreshReal(); freeChanged(); });
-  on("room", sync); on("selection", sync);
-  on("changed", () => { if (store.real.on) refreshReal(); autoRefresh(); });
+  on("camera", sync); on("mode", sync); on("room", sync); on("selection", sync);
   sync();
-}
-// ---- the real view: the game's own picture of the room and camera shown, taken in a game started behind the scenes on the current edits
-const hash = (s) => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h); };
-async function refreshReal(force) {
-  const real = store.real, r = roomOf(store.room);
-  if (!real.on || store.mode !== "game" || !r || real.busy) return;
-  const k = viewport.camIndex[r.file], c = r.cameras[k];
-  if (!c) return;
-  const edits = JSON.stringify(currentEdits()), clean = edits === '{"rooms":{}}';
-  const key = hash(edits), slot = `${key}:${r.file}:${k}`;
-  const { label, refresh } = real.chip;
-  const taken = store.survey.have.has(`r${r.id}c${k}`) ? `/api/shot?kind=survey&name=r${r.id}c${k}.jpg` : null;     // the game's picture taken with nothing changed
-  if (clean && taken) { viewport.setShot(taken, false); refresh.style.display = "none"; return; }
-  if (!force && real.urls[slot]) { viewport.setShot(real.urls[slot], false); return; }
-  if (!force && (taken || real.last)) { viewport.setShot(taken || real.last, true); refresh.style.display = ""; return; }     // changed since: the picture stays, dimmed, until you ask
-  if (!force && !real.always) { viewport.setShot(null); return; }
-  real.busy = true;
-  label.classList.add("busy"); refresh.style.display = "none";
-  try {
-    if (real.key !== key) {
-      label.textContent = "Starting the game…";
-      const out = await api.previewPrepare(currentEdits());
-      Object.assign(real, { key, room: out.room, urls: {} });
-    }
-    label.textContent = "Taking the picture…";
-    const hops = hopsTo(real.room, r.id);
-    if (!hops) throw new Error("no chain of doors leads there from where the game is");
-    const b = c.box.slice(0, 4), at = [b.reduce((s, p) => s + p[0], 0) / 4, b.reduce((s, p) => s + p[2], 0) / 4, 0];
-    const out = await api.previewShot(r.id, hops, at, "s" + Date.now() % 1e7);
-    real.room = r.id; real.urls[slot] = out.url; real.last = out.url;
-    if (viewport.camIndex[r.file] === k && store.room === r.file) viewport.setShot(out.url, false);
-  } catch (e) {
-    toast("The real view didn't work", "err", e.message, 7000);
-    viewport.setShot(null);
-  } finally {
-    real.busy = false; label.classList.remove("busy"); emit("camera");
-  }
-}
-
-// ---- the free camera's game picture: a moment after the camera stops, the game is asked for its own picture from exactly there
-let freeTimer = null, freeSeq = 0, freePose = "";
-const poseOf = () => JSON.stringify([viewport.camera.eye().map(Math.round), viewport.camera.target.map(Math.round), store.room, store.mode]);
-// the view is drawn many times a second (the "camera" event comes with each): only a different pose, mode or room asks for another picture
-function freeChanged(force) {
-  if (viewport.live && store.mode === "3d") { viewport.usePhoto(true); viewport.placeShot(); return; }      // live: the game follows the camera as it moves
-  const pose = poseOf();
-  if (!force && pose === freePose) return;
-  freePose = pose;
-  clearTimeout(freeTimer);
-  const on = store.mode === "3d" && store.real.free && store.survey.supported;
-  viewport.usePhoto(on);
-  const known = on && onGameCamera();
-  if (known) { viewport.setShot(known, false); prewarm(); return; }
-  // the last picture stays, dimmed, until the game's new one arrives; with none yet, the picture of the room's nearest camera (never Studio's own drawing: it is not what the game shows)
-  viewport.setShot(on ? (viewport.shot || nearestPicture()) : null, true);
-  if (on) freeTimer = setTimeout(refreshFree, 450);
-}
-// the picture already taken by the room's camera whose eye is nearest the free camera's, or null
-function nearestPicture() {
-  const r = roomOf(store.room), eye = viewport.camera.eye();
-  if (!r) return null;
-  let best = null, bd = Infinity;
-  r.cameras.forEach((c, k) => {
-    if (!store.survey.have.has(`r${r.id}c${k}`)) return;
-    const d = Math.hypot(c.eye[0] - eye[0], c.eye[1] - eye[1], c.eye[2] - eye[2]);
-    if (d < bd) { bd = d; best = `/api/shot?kind=survey&name=r${r.id}c${k}.jpg`; }
-  });
-  return best;
-}
-
-// the game is started behind the scenes as soon as the page is up, so that by the time the camera moves its pictures take a second or two, not a minute
-let warming = false;
-function prewarm() {
-  if (warming || store.real.key || store.real.busy || !store.real.free || !store.survey.supported) return;
-  warming = true;
-  setTimeout(() => { warming = false; if (!store.real.key && !store.real.busy) refreshFree(true); }, 1500);
-}
-
-// the game's pictures live: the camera of the page is sent to the game as it moves, and the game's pictures come back as a stream
-let pumping = false, lastSent = "";
-function startLive() {
-  const img = document.getElementById("live");
-  img.onerror = () => { if (viewport.live) { viewport.setLive(false); store.real.live = false; store.real.key = ""; freeChanged(true); } };      // the game went away: back to waiting for one
-  img.onload = () => { document.getElementById("shot").style.display = "none"; };
-  lastSent = "";
-  viewport.setLive(true);
-  const tick = () => {
-    if (!viewport.live) { pumping = false; return; }
-    const cam = viewport.camera;
-    if (store.mode === "3d" && cam.photo) {
-      const eye = cam.eye().map(Math.round), target = cam.target.map(Math.round), fov = cam.photo.fov, msg = JSON.stringify([eye, target, fov]);
-      if (msg !== lastSent) { lastSent = msg; api.camera({ eye, target, fov }); }
-    }
-    setTimeout(tick, 35);
-  };
-  if (!pumping) { pumping = true; tick(); }
-}
-
-// a line at the top left for something slow going on
-function showChip(text) {
-  const chip = document.getElementById("loadchip");
-  if (!chip) return;
-  chip.style.display = text ? "inline-flex" : "none";
-  if (text) chip.textContent = text;
-}
-
-// a while after the last change the game's picture is made again with it; until then the changes show as sketches over the old picture
-let autoTimer = null;
-function autoRefresh() {
-  real_fresh(false);
-  clearTimeout(autoTimer);
-  if (store.mode === "3d" && store.real.free && store.survey.supported) autoTimer = setTimeout(() => refreshFree(true), 2500);
-}
-const real_fresh = (v) => { store.real.fresh = v; };
-
-// where the free camera stands exactly where one of the room's cameras does, with nothing changed since: the picture already taken of it, with no need for the game
-function onGameCamera() {
-  const r = roomOf(store.room), cam = viewport.camera;
-  if (!r || JSON.stringify(currentEdits()) !== '{"rooms":{}}') return null;
-  const eye = cam.eye(), k = r.cameras.findIndex((c) => c.eye.every((v, i) => Math.abs(v - eye[i]) < 2) && c.target.every((v, i) => Math.abs(v - cam.target[i]) < 2));
-  return k >= 0 && store.survey.have.has(`r${r.id}c${k}`) ? `/api/shot?kind=survey&name=r${r.id}c${k}.jpg` : null;
-}
-
-async function refreshFree(force) {
-  const real = store.real, r = roomOf(store.room);
-  if (store.mode !== "3d" || !real.free || !r || !store.survey.supported) return;
-  if (real.busy) { freeTimer = setTimeout(refreshFree, 500); return; }
-  const cam = viewport.camera, eye = cam.eye().map(Math.round), target = cam.target.map(Math.round), seq = ++freeSeq;
-  real.busy = true;
-  const { label } = real.chip;
-  label.classList.add("busy");
-  try {
-    const key = hash(JSON.stringify(currentEdits()));
-    if (!real.key || (force && real.key !== key)) {
-      store.real.freeBtn.textContent = "Starting the game…";
-      showChip("Updating the game's picture with your changes…");
-      const out = await api.previewPrepare(currentEdits());
-      Object.assign(real, { key, room: out.room, urls: {} });
-    }
-    if (store.real.live !== false) { startLive(); return; }       // the game is up: its pictures come live from here on
-    store.real.freeBtn.textContent = "Taking the picture…";
-    const hops = hopsTo(real.room, r.id);
-    if (!hops) throw new Error("no chain of doors leads there from where the game is");
-    const sp = r.spawns[0], at = sp ? [sp.pos[0], sp.pos[2], 0] : [eye[0], eye[2], 0];
-    const out = await api.previewShot(r.id, hops, at, "f" + Date.now() % 1e7, { eye, target, fov: cam.photo ? cam.photo.fov : 60 });
-    real.room = r.id;
-    const same = [...cam.eye()].every((v, i) => Math.abs(v - eye[i]) < 2) && cam.target.every((v, i) => Math.abs(v - target[i]) < 2);
-    if (seq === freeSeq && store.mode === "3d" && same) {
-      const stale = real.key !== hash(JSON.stringify(currentEdits()));
-      real.fresh = !stale;
-      viewport.setShot(out.url, stale);
-      store.real.freeUpdate.style.display = stale ? "" : "none";
-    }
-  } catch (e) {
-    toast("The game's picture didn't work", "err", e.message, 7000);
-    store.real.free = false; store.real.freeBtn.classList.remove("on"); viewport.usePhoto(false);
-  } finally {
-    real.busy = false; label.classList.remove("busy");
-    showChip(null);
-    store.real.freeBtn.innerHTML = icon("play", 14) + " Game's picture";
-  }
-}
-
-// the game's pictures of every room are taken in the background the first time, and kept (work/studio/survey)
-async function watchSurvey() {
-  const chip = document.getElementById("loadchip");
-  try {
-    let s = await api.surveyStart();
-    store.survey.supported = !!s.supported;
-    if (!s.supported) return;
-    store.real.on = true;
-    store.real.free = true;
-    if (store.real.freeBtn) store.real.freeBtn.classList.add("on");
-    const realBtn = [...document.querySelectorAll("#camnav .btn")].find((b) => b.textContent.includes("Real view"));
-    if (realBtn) realBtn.classList.add("on");
-    let first = true;
-    for (;;) {
-      store.survey.have = new Set(s.have || []);
-      if (first) { first = false; freeChanged(true); }
-      if (chip && s.running) { chip.style.display = "inline-flex"; chip.textContent = `Taking the game's pictures${s.here ? "" : " of " + s.where}: ${s.done}/${s.total}${s.current ? " (" + s.current + ")" : ""}`; }
-      else if (chip && !s.running) chip.style.display = "none";
-      if (store.mode === "game") refreshReal();
-      if (!s.running) break;
-      await new Promise((r) => setTimeout(r, 6000));
-      s = await api.survey();
-    }
-    if (s.error) toast("The game's pictures stopped", "err", s.error, 8000);
-  } catch (e) { /* not supported: Studio's own drawing stays */ }
 }
 
 const syncRail = () => {
@@ -691,7 +487,7 @@ async function boot() {
     api.messages().then((m) => { store.messages = m; renderInspector(); }).catch(() => {});
     buildTopbar(); buildToolbar(); buildViewMenu();
     viewport = new Viewport();
-    window.studio = { store, viewport, scene, free: { changed: (f) => freeChanged(f), refresh: (f) => refreshFree(f) } };      // for the console
+    window.studio = { store, viewport, scene };      // for the console
     renderOutline(); renderInspector(); updateHint();
     on("tool", () => { syncRail(); updateHint(); });
     store.roomPanel = false;
@@ -716,14 +512,11 @@ async function boot() {
     };
     viewport.applyMode();
     buildCamNav();
-    watchSurvey();
     document.getElementById("loading").classList.add("gone");
     startTour();
     loadShapeNames().then(() => viewport.redraw()).catch((e) => console.error(e));
     await viewport.loadModels(progress);
     viewport.redraw();
-    freeChanged(true);
-    prewarm();               // the saved changes are in the scene only now: the game's picture is asked for with them
   } catch (e) {
     msg.textContent = "Couldn't start: " + e.message;
     console.error(e);

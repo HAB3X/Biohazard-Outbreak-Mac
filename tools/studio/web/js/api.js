@@ -18,10 +18,5 @@ export const api = {
   play: (patch, hops, at) => send("POST", "/api/play", { patch, hops, at }),
   status: () => call("/api/status"),
   stop: () => send("POST", "/api/stop"),
-  previewPrepare: (edits) => send("POST", "/api/preview/prepare", { edits }),
-  camera: (camera) => fetch("/api/camera", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(camera), keepalive: true }).catch(() => {}),
-  previewShot: (room, hops, at, name, camera) => send("POST", "/api/preview/shot", { room, hops, at, name, camera }),
-  survey: () => call("/api/survey"),
-  surveyStart: () => send("POST", "/api/survey/start"),
   switchTo: (game, scenario) => send("POST", "/api/switch", { game, scenario }),
 };

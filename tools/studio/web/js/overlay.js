@@ -271,19 +271,6 @@ export function draw(ctx, camera, dpr, rooms, hover) {
       }
     }
 
-    // what you added that the game's picture doesn't show yet: its own picture standing in its box, until the game's picture is made again
-    if (current && r.scenery && camera.pictureLens && !store.real.fresh) {
-      for (const s of r.scenery) {
-        if (!s.isNew || !s.library || !s.cs) continue;
-        const q = s.cs.map((p) => P(p));
-        if (q.some((p) => p[2] < -0.9)) continue;
-        const img = sketchImage(s.library);
-        if (!img || !img.complete) continue;
-        const x0 = Math.min(...q.map((p) => p[0])), x1 = Math.max(...q.map((p) => p[0])), y0 = Math.min(...q.map((p) => p[1])), y1 = Math.max(...q.map((p) => p[1])), side = Math.max(x1 - x0, y1 - y0);
-        layers.push({ order: 4, run() { ctx.save(); ctx.globalAlpha = 0.9; ctx.drawImage(img, (x0 + x1) / 2 - side / 2, (y0 + y1) / 2 - side / 2, side, side); ctx.restore(); } });
-      }
-    }
-
     if (show.nodes) {
       for (const n of r.nodes) {
         const ref = { c: "nodes", file, i: n.i }, col = colour("node"), p = P(n.pos), sel = selected(ref);
@@ -382,8 +369,7 @@ export function draw(ctx, camera, dpr, rooms, hover) {
     const box = [cx - w / 2, top - head, cx + w / 2, bottom];
     layers.push({ order: 8, run() {
       ctx.save();
-      const real = store.real && store.real.on;       // over the game's own picture the people are already there: only their outline and footprint
-      ctx.fillStyle = rgba(col, (real ? (sel ? 0.3 : 0.1) : (sel ? 0.9 : hov ? 0.8 : 0.62)) * base); ctx.strokeStyle = sel ? "#fff" : real ? rgba(col, 0.95) : "rgba(255,255,255,.7)"; ctx.lineWidth = sel ? 2.4 : real ? 1.6 : 1.2;
+      ctx.fillStyle = rgba(col, (sel ? 0.9 : hov ? 0.8 : 0.62) * base); ctx.strokeStyle = sel ? "#fff" : "rgba(255,255,255,.7)"; ctx.lineWidth = sel ? 2.4 : 1.2;
       ctx.beginPath(); ctx.roundRect(cx - w / 2, top + head * 1.1, w, tall - head * 1.1, Math.min(w / 2, 8)); ctx.fill(); ctx.stroke();
       ctx.beginPath(); ctx.arc(cx, top + head * 0.55, head, 0, 7); ctx.fill(); ctx.stroke();
       ctx.beginPath(); ctx.ellipse(f[0], bottom, w * 0.7, w * 0.22, 0, 0, 7); ctx.strokeStyle = rgba(col, 0.9); ctx.lineWidth = 1.5; ctx.stroke();      // where the feet are on the floor
@@ -421,19 +407,6 @@ const HP_NOTE = {};
 export const itemName = (kind) => ITEMS[kind] || "item " + kind.toString(16);
 export const ITEMS = {};
 
-// the picture of a Library object (drawn once, kept)
-const sketches = new Map();
-function sketchImage(lib) {
-  const key = `${lib.room}:${lib.mesh}`;
-  if (!sketches.has(key)) {
-    const r = store.renderer && store.renderer.thumbnail(lib.room, lib.mesh, 128, true);
-    if (!r) return null;
-    const img = new Image();
-    img.src = r.url;
-    sketches.set(key, img);
-  }
-  return sketches.get(key);
-}
 
 // ---- hit tests: each returns a distance (smaller is nearer) or -1
 function pointTest(p, radius) {

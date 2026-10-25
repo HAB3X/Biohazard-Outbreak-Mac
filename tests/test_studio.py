@@ -136,6 +136,16 @@ class Pictures(unittest.TestCase):
         self.assertEqual(tm2.pictures(new)[0].image().getpixel((3, 3))[0] > 150, True)
 
 
+    def test_a_24_bit_picture_decodes(self):
+        # File 1's r001_d50.sld (texture 383) is a 64 x 64 picture of three bytes a pixel (TIM2 image type 2): the 3D view asked for it and got an error
+        member = dict(archive.Archive("file1").open("/NETBIO00.DAT/r001.afs").members())["r001_d50.sld"]
+        picture = tm2.pictures(bh_sld.unpack(member.read()))[0]
+        self.assertEqual(picture.img_type, 2)
+        image = picture.image()
+        self.assertEqual(image.size, (64, 64))
+        self.assertEqual(image.getpixel((5, 5))[3], 255)
+
+
 class Collision(unittest.TestCase):
     def test_the_ground_file_round_trips_and_a_floor_box_cuts_it(self):
         node = dict(archive.Archive("file2").open("/NETBIO00.DAT/r040.afs").members())["g0400300.bin"]

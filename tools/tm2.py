@@ -46,6 +46,8 @@ class Picture:
             px = [pal[i] if i < len(pal) else (255, 0, 255, 255) for i in idx[:w * h]]
         elif self.img_type == 1:
             px = [_color(raw[i * 2:i * 2 + 2], 1) for i in range(w * h)]
+        elif self.img_type == 2:
+            px = [_color(raw[i * 3:i * 3 + 3], 2) for i in range(w * h)]
         elif self.img_type == 3:
             px = [_color(raw[i * 4:i * 4 + 4], 3) for i in range(w * h)]
         else:

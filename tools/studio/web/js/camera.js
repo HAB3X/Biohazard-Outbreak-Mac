@@ -26,17 +26,15 @@ export class Camera {
     this.dist = 6000;         // orbit: distance from the target
     this.w = 1; this.h = 1;
     this.game = null;         // game view: {eye, target, fov (vertical degrees), aspect}: one of the room's own cameras
-    this.photo = null;        // the free camera shaped as the game's picture ({fov, aspect, lens}), so the game's own picture taken from it fits
     this.rect = { x: 0, y: 0, w: 1, h: 1 };
   }
 
   resize(w, h) { this.w = Math.max(1, w); this.h = Math.max(1, h); this.fit(); }
 
   // in the game view the picture keeps the game's shape and sits in the middle of the pane
-  // the lens the picture is made with: a game camera's, or the free camera's when it is shaped as the game's picture
+  // the lens the picture is made with: a game camera's in the game view, none (the whole pane) otherwise
   get pictureLens() {
-    if (this.mode === "game" && this.game) return this.game;
-    return this.mode === "orbit" ? this.photo : null;
+    return this.mode === "game" && this.game ? this.game : null;
   }
 
   fit() {
