@@ -117,6 +117,17 @@ export class Viewport {
     this.redraw();
   }
 
+  // the fog record of the room's camera the view is through (the game view's own, the free camera's nearest by where it stands), or null
+  cameraFog() {
+    const r = roomOf(store.room);
+    if (!r || !r.cameras.length || this.camera.mode === "plan") return null;
+    const k = this.camera.mode === "game" ? this.camIndex[r.file] : this.cameraFor(r, this.camera.eye());
+    const c = r.cameras[k ?? 0];
+    if (c && c.fog) return c.fog;
+    const any = r.cameras.find((x) => x.fog);          // some cameras have no record of their own (the bar's last four): the room's first one's light
+    return any ? any.fog : null;
+  }
+
   cameraFor(room, p) {
     // the camera whose box holds the point, else the one nearest it
     const inside = (c) => {
@@ -251,7 +262,7 @@ export class Viewport {
     const rooms = this.visibleRooms();
     const dim = {};
     for (const f of rooms) dim[f] = f === store.room ? 1 : 0.5;
-    if (store.show.models) this.renderer.render(this.camera, rooms, { textured: store.show.textures, dim, hidden: this.hiddenSets(), winding: store.winding });
+    if (store.show.models) this.renderer.render(this.camera, rooms, { textured: store.show.textures, dim, hidden: this.hiddenSets(), winding: store.winding, fog: this.cameraFog() });
     else this.renderer.render(this.camera, [], {});
     overlay.draw(this.ctx, this.camera, this.dpr, rooms, this.hover);
     this.drawGhost();

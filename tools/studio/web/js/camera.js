@@ -79,7 +79,7 @@ export class Camera {
   proj() {
     const g = this.pictureLens, m = new Float32Array(16), aspect = g ? g.lens : this.w / this.h;
     if (g) {
-      const t = 1 / Math.tan(g.fov * Math.PI / 360), n = 30, f = 300000;
+      const t = 1 / Math.tan(g.fov * Math.PI / 360), n = 30, f = 50000;      // the game's far plane (its camera block: 50000); its near value (500) isn't a clipping plane: the triangles behind the lens are left out instead (gl.js nearKept)
       m[0] = t / aspect; m[5] = t; m[10] = (f + n) / (n - f); m[11] = -1; m[14] = 2 * f * n / (n - f);
     } else if (this.mode === "plan") {
       const hh = this.scale * this.h / 2, hw = hh * aspect, n = 100, f = 200000;
