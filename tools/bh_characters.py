@@ -10,6 +10,7 @@ its own TEX chunk (a four byte size, then the .sld codec's stream of a TIM2 file
 move, so they are drawn at full colour under the room's light.
 
     model_file(game, kind, cls)       -> "E01_09.NBD", or None
+    enemy_models(game)                -> [{"id", "cls", "file"}] of every enemy model on the disc
     character_json(game, name)        -> {"bones", "meshes", "tids"} as bh_rdt_edit.model_json's; tids are "NAME#n", picture n of the model's own
     picture_png(game, key)            -> PNG bytes of "NAME#n"
 """
@@ -33,6 +34,18 @@ def model_file(game, kind, cls):
     """The model an enemy of `kind` and class `cls` is drawn with, or None when the pack has no E<kind>_<class>.NBD"""
     name = f"E{int(kind):02d}_{int(cls):02d}.NBD"
     return name if name in _members(game) else None
+
+
+def enemy_models(game):
+    """[{"id": kind, "cls": class, "file": name}] of every enemy model the game's pack holds (E<kind>_<class>.NBD), by kind and class"""
+    import re
+
+    out = []
+    for name in sorted(_members(game)):
+        m = re.fullmatch(r"E(\d\d)_(\d\d)\.NBD", name)
+        if m:
+            out.append({"id": int(m.group(1)), "cls": int(m.group(2)), "file": name})
+    return out
 
 
 def _read(game, name):

@@ -344,6 +344,9 @@ def make_handler(studio):
                         self.wfile.write(data)
                 elif url.path == "/api/character":
                     self.send(200, json.dumps(studio.character(int(query["kind"][0]), int(query["cls"][0]))))
+                elif url.path == "/api/characters":
+                    import bh_characters
+                    self.send(200, json.dumps(bh_characters.enemy_models(studio.game)))
                 elif url.path == "/api/character/picture":
                     self.send(200, studio.character_picture(query["key"][0]), "image/png")
                 elif url.path == "/api/messages":

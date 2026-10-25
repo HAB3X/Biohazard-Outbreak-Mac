@@ -108,7 +108,8 @@ export function place(tool, at) {
     return o;
   }
   if (tool.id === "enemy") {
-    const o = addEnemy(room, { position: [x, y, z], variant: 0 });
+    const pick = store.enemyPick;      // the enemy picked in the Library, or the scenario's usual one
+    const o = addEnemy(room, { position: [x, y, z], variant: 0, ...(pick ? { id: pick.id, class: pick.cls } : {}) });
     commit("Add enemy");
     select([{ c: "enemies", file: room.file, i: o.i }]);
     return o;

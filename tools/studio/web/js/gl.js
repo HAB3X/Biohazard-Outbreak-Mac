@@ -212,10 +212,11 @@ export class Renderer {
     return { url: canvas.toDataURL("image/png"), ready: r.ready };
   }
 
-  // the same picture as rows of RGBA bytes, top row first
+  // the same picture as rows of RGBA bytes, top row first; `file` a room's model (k one of its objects) or a character's (k null: the whole character)
   thumbnailPixels(file, k, px, transparent = false) {
-    const gl = this.gl, m = this.models[file], mesh = m && m.meshes.find((x) => x.mesh === k);
-    if (!mesh) return null;
+    const gl = this.gl, m = this.models[file] || this.characters[file];
+    const meshes = !m ? [] : k === null ? m.meshes : m.meshes.filter((x) => x.mesh === k);
+    if (!meshes.length) return null;
     if (this.thumbFbo && this.thumbPx !== px) {
       gl.deleteFramebuffer(this.thumbFbo); gl.deleteTexture(this.thumbTex); gl.deleteRenderbuffer(this.thumbDepth);
       this.thumbFbo = null;
@@ -234,7 +235,7 @@ export class Renderer {
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depth);
     }
-    const lo = mesh.lo, hi = mesh.hi, c = [0, 1, 2].map((i) => (lo[i] + hi[i]) / 2), r = Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2], 20) * 0.75;
+    const lo = [0, 1, 2].map((i) => Math.min(...meshes.map((x) => x.lo[i]))), hi = [0, 1, 2].map((i) => Math.max(...meshes.map((x) => x.hi[i]))), c = [0, 1, 2].map((i) => (lo[i] + hi[i]) / 2), r = Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2], 20) * 0.75;
     const eye = [c[0] + r * 1.7, c[1] + r * 1.25, c[2] + r * 2.1];
     // look at the middle from a corner above
     const f = [c[0] - eye[0], c[1] - eye[1], c[2] - eye[2]], fl = Math.hypot(...f), fz = f.map((v) => -v / fl);
@@ -253,21 +254,23 @@ export class Renderer {
     gl.useProgram(prog.p);
     const id = new Float32Array(16); id[0] = id[5] = id[10] = id[15] = 1;
     gl.uniformMatrix4fv(U("uVP"), false, mul(proj, view)); gl.uniformMatrix4fv(U("uModel"), false, id);
-    gl.uniform1f(U("uDim"), 1); gl.uniform1f(U("uGame"), 1); gl.uniform1f(U("uGain"), 2.4); gl.uniform1f(U("uBlend"), 0);
+    gl.uniform1f(U("uDim"), 1); gl.uniform1f(U("uGame"), 1); gl.uniform1f(U("uGain"), this.characters[file] ? 0.5 : 2.4); gl.uniform1f(U("uBlend"), 0);      // (a room's baked light is dark and lifted; a character's is set full)
     gl.uniform1f(U("uVertex"), 1); gl.uniform3fv(U("uScene"), [1, 1, 1]); gl.uniform3fv(U("uFog"), [0, 1, 0]); gl.uniform3fv(U("uEye"), eye);
     const pos = gl.getAttribLocation(prog.p, "aPos"), uv = gl.getAttribLocation(prog.p, "aUV"), col = gl.getAttribLocation(prog.p, "aCol");
-    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vb); gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 3, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.ub); gl.enableVertexAttribArray(uv); gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.cb); gl.enableVertexAttribArray(col); gl.vertexAttribPointer(col, 4, gl.FLOAT, false, 0, 0);
     let ready = true;
-    for (const grp of mesh.groups) {
-      const tid = m.tids[grp.material];
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, this.texture(tid === undefined ? 0 : tid));
-      if (!this.loaded[tid]) ready = false;
-      gl.uniform1i(U("uTex"), 0);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grp.ib);
-      gl.drawElements(gl.TRIANGLES, grp.count, gl.UNSIGNED_INT, 0);
+    for (const mesh of meshes) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vb); gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, mesh.ub); gl.enableVertexAttribArray(uv); gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, mesh.cb); gl.enableVertexAttribArray(col); gl.vertexAttribPointer(col, 4, gl.FLOAT, false, 0, 0);
+      for (const grp of mesh.groups) {
+        const tid = m.tids[grp.material];
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.texture(tid === undefined ? 0 : tid));
+        if (!this.loaded[tid]) ready = false;
+        gl.uniform1i(U("uTex"), 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grp.ib);
+        gl.drawElements(gl.TRIANGLES, grp.count, gl.UNSIGNED_INT, 0);
+      }
     }
     const pixels = new Uint8Array(px * px * 4);
     gl.readPixels(0, 0, px, px, gl.RGBA, gl.UNSIGNED_BYTE, pixels);

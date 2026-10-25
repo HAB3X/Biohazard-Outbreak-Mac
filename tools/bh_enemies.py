@@ -179,12 +179,20 @@ def grown(enemies, new, edits=None):
             like = enemies.enemies[int(spec.get("like", 0))]
             for g in targets:
                 offset, size = group_list[g]
-                record = bytearray(bytes(data[offset:offset + RECORD]) if int(spec.get("like", -1)) < 0 else _record_like(data, like, sgl))
+                own = [data[offset + RECORD * k:offset + RECORD * (k + 1)] for k in range(size // RECORD)]
+                # the record copied: `like`'s, or (where this file hasn't it: e001.emd lacks some of sgl_e001.emd's) the group's own first, which is of the same room
+                template = _record_like(data, like, sgl) if int(spec.get("like", -1)) >= 0 and _has_record(data, like) else own[0]
+                record = bytearray(template)
                 index = size // RECORD + len(extra.get(g, []))
-                w0 = struct.unpack_from("<i", record, 0)[0]
                 record[1] = index
                 record[73] = 0x0F          # placed for every character (the game picks records by this mask and the mode's)
                 _write_changes(record, 0, spec)
+                # File 1 keeps a copy of a room's group for each difficulty and byte 30 is the copy's number (0 to 3), not a mask of modes: the bar's zombie is
+                # 0, 1, 2 and 3 in its four copies, the game made the bar's enemies of copy 1 (normal), and three new ones written with 15 were never made.
+                # So a record added to such a group (all its records alike there, and not File 2's full mask) takes the group's number
+                levels = {r[30] for r in own}
+                if len(levels) == 1 and next(iter(levels)) != 0x0F:
+                    record[30] = next(iter(levels))
                 w7 = struct.unpack_from("<i", record, 28)[0]
                 struct.pack_into("<i", record, 28, (w7 & ~0xFFFF) | int(spec["room"]) | (int(spec.get("variant", 0)) << 8))
                 extra.setdefault(g, []).append(bytes(record))
@@ -201,6 +209,10 @@ def _records(data):
             for k in range(size // RECORD):
                 out.append((offset + RECORD * k, data[offset + RECORD * k:offset + RECORD * (k + 1)]))
     return out
+
+
+def _has_record(data, enemy):
+    return any(struct.unpack_from("<7i", rec, 0) == tuple(enemy.words[:7]) for _, rec in _records(bytes(data)))
 
 
 def _record_like(data, enemy, sgl):

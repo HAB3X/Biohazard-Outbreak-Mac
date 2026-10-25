@@ -1,15 +1,26 @@
 // The Library: every object of every room's model in the scenario, as a scrolling grid of pictures. Pick one, then click in the room to put copies down.
-import { store, setTool, on } from "./scene.js";
+import { store, setTool, on, emit } from "./scene.js";
 import { el } from "./ui.js";
+import { api } from "./api.js";
 
 const SHELL = 3500;      // wider than this is a room's own floor and walls
-const KINDS = [["all", "All"], ["recent", "Recent"], ["furniture", "Furniture"], ["boxes", "Boxes"], ["bottles", "Bottles"], ["containers", "Containers"], ["decor", "Decor"], ["other", "Other"]];
+const KINDS = [["all", "All"], ["enemies", "Enemies"], ["recent", "Recent"], ["furniture", "Furniture"], ["boxes", "Boxes"], ["bottles", "Bottles"], ["containers", "Containers"], ["decor", "Decor"], ["other", "Other"]];
 // what a name says the object is, for the filter chips
 const KIND_WORDS = [["furniture", /chair|armchair|bench|table|stool|shelf|cabinet|post|rail|staircase|sink|basin|urinal|tap|beer/i], ["boxes", /box|crate|carton|stack|cube|slab|poster/i], ["bottles", /bottle|decanter|vase|jar|glass/i], ["containers", /barrel|bin|bucket|basket|drum|tank|sack|tube|roller/i], ["decor", /statue|figure|picture|lamp|magazine|coat|cloth|helmet|paper|mop|rod|pipe|hook|handle|baluster|corrugated|panel|plank|sheet/i]];
 const kindOf = (name) => (KIND_WORDS.find(([, re]) => re.test(name)) || ["other"])[0];
 let panel = null, grid = null, count = null, viewport = null, names = null, note = null;
 let state = { kind: "all", where: "here", text: "", unnamed: false };
 let catalogue = [], built = "";
+let enemyModels = null;      // every enemy model on the disc ([{id, cls, file}], /api/characters), asked for once
+const ENEMY_NAMES = { 1: "Zombie" };     // the kinds named so far; the rest go by number and picture
+
+// the enemies the Library offers: every model on the disc, placeable when the scenario already has enemies of that kind (it loads only those kinds'
+// code: measured in File 1's bar, a new zombie of a class the scenario never uses was made, and a kind 2 enemy, which it never has, crashed the game)
+function enemyCards() {
+  const kinds = new Set(store.scene.rooms.flatMap((r) => r.enemies.map((n) => n.id)));
+  return (enemyModels || []).map((e) => ({ enemy: e, name: `${ENEMY_NAMES[e.id] || "Enemy kind " + e.id} · class ${e.cls}`, placeable: kinds.has(e.id) }))
+    .sort((a, b) => (b.placeable - a.placeable) || a.enemy.id - b.enemy.id || a.enemy.cls - b.enemy.cls);
+}
 
 // the last objects picked, newest first (kept in this browser only: a convenience, the page works without it)
 const RECENT = "studio-library-recent";
@@ -93,7 +104,9 @@ const stamp = (renderer) => store.room + "|" + Object.keys(renderer.models).leng
 // pictures are drawn one at a time as the cards come into view, and again if the game's pictures were still arriving
 const watcher = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { watcher.unobserve(e.target); paint(e.target, 0); } }), { root: null, rootMargin: "200px" });
 function paint(card, tries) {
-  const it = card._item, r = viewport.renderer.thumbnail(it.room, it.mesh, 128);
+  const it = card._item;
+  if (it.enemy && !viewport.characterFor(it.enemy)) { if (tries < 20) setTimeout(() => paint(card, tries + 1), 300); return; }     // its model is still on its way
+  const r = it.enemy ? viewport.renderer.thumbnail(it.enemy.file, null, 128) : viewport.renderer.thumbnail(it.room, it.mesh, 128);
   if (!r) return;
   card.querySelector("img").src = r.url;
   viewport.redraw();
@@ -109,6 +122,7 @@ function shown() {
 
 function fill() {
   grid.innerHTML = "";
+  if (state.kind === "enemies") return fillEnemies();
   const list = shown();
   count.textContent = `${list.length} object${list.length === 1 ? "" : "s"}`;
   if (!list.length) grid.append(el("div", { class: "libempty" }, state.where === "here" ? "Nothing like that in this room. Try “Whole scenario”." : "Nothing matches."));
@@ -129,7 +143,30 @@ function fill() {
   }
 }
 
+function fillEnemies() {
+  const t = state.text.trim().toLowerCase(), list = enemyCards().filter((it) => !t || it.name.toLowerCase().includes(t));
+  count.textContent = `${list.length} enem${list.length === 1 ? "y" : "ies"}`;
+  if (!enemyModels) grid.append(el("div", { class: "libempty" }, "Loading the enemies…"));
+  for (const it of list) {
+    const card = el("button", { class: "libcard" + (it.placeable ? "" : " off"), title: it.placeable ? `${it.name}\n${it.enemy.file}` : `${it.name}\nThis scenario has no enemies of this kind, so the game hasn't their code loaded: putting one in crashes it` });
+    card._item = it;
+    card.append(el("img", { alt: "" }), el("span", {}, it.placeable ? it.name : it.name + " (not in this scenario)"));
+    const pick = store.enemyPick;
+    if (pick && pick.id === it.enemy.id && pick.cls === it.enemy.cls) card.classList.add("on");
+    card.addEventListener("click", () => {
+      if (!it.placeable) { emit("note", "That kind of enemy isn't in this scenario: the game would crash"); return; }
+      store.enemyPick = { id: it.enemy.id, cls: it.enemy.cls, name: it.name };
+      setTool("enemy");
+      panel.classList.remove("on");
+      document.getElementById("libbtn")?.classList.add("on");
+    });
+    grid.append(card);
+    watcher.observe(card);
+  }
+}
+
 async function open() {
+  if (!enemyModels) api.characters().then((list) => { enemyModels = list; if (panel && state.kind === "enemies") fill(); }).catch((e) => console.error("the enemy models couldn't be listed", e));
   await loadNames();
   if (!panel) {
     const chips = el("div", { class: "libchips" });

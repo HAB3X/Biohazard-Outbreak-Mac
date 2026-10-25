@@ -14,6 +14,7 @@ export const api = {
   saveProject: (body) => send("PUT", "/api/project", body),
   model: (file) => call("/api/model?file=" + encodeURIComponent(file)),
   character: (kind, cls) => call(`/api/character?kind=${kind}&cls=${cls}`),
+  characters: () => call("/api/characters"),
   messages: () => call("/api/messages"),
   build: (edits, english = true) => send("POST", "/api/build", { edits, english }),
   play: (patch, hops, at) => send("POST", "/api/play", { patch, hops, at }),

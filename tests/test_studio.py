@@ -146,6 +146,18 @@ class Characters(unittest.TestCase):
         self.assertEqual(picture.size, (256, 256))
 
 
+class Enemies(unittest.TestCase):
+    def test_a_new_file1_enemy_takes_its_copys_difficulty(self):
+        import bh_enemies
+        enemies = bh_enemies.Enemies("file1", 1)
+        spec = {"room": 1, "variant": 0, "position": [8820, 0, 12620], "facing": 0, "id": 1, "class": 30, "modes": 15, "hp_tier": 3, "like": 18}
+        out = bh_enemies.grown(enemies, [spec])
+        # File 1 keeps a copy of a room's group for each difficulty, byte 30 of each record the copy's number (the bar's zombie: 0, 1, 2, 3 in its four copies;
+        # the game made the bar's enemies of copy 1 and none of three new ones written with 15)
+        found = sorted(r[30] for _, r in bh_enemies._records(out["sgl_e001.emd"]) if struct.unpack_from("<3i", r, 16) == (8820, 0, 12620))
+        self.assertEqual(found, [0, 1, 2, 3])
+
+
 class Pictures(unittest.TestCase):
     def test_restyle_round_trips_through_the_game_codec(self):
         from PIL import Image
