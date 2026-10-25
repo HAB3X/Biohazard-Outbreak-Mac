@@ -23,7 +23,9 @@ export class Viewport {
     this.space = false;
     this.pending = false;
     this.renderer.onTexture = () => this.redraw();
-    overlay.setFloorLookup((file, x, z) => { const h = this.floorAt(file, x, z, 600); return h === null ? 0 : h; });
+    overlay.setFloorLookup((file, x, z, y) => this.standY(file, x, z, y));
+    this.characterFiles = {};     // "kind:class" -> the model file an enemy is drawn with, null when there is none, undefined while it is fetched
+    overlay.setCharacterLookup((n) => this.characterFor(n));
     new ResizeObserver(() => this.resize()).observe(this.view);
     this.bind();
     this.resize();
@@ -188,6 +190,42 @@ export class Viewport {
     }
   }
 
+  // the model an enemy is drawn with (bh_characters: E<kind>_<class>.NBD), fetched the first time it is asked for
+  characterFor(n) {
+    const key = `${n.id}:${n.cls}`;
+    if (!(key in this.characterFiles)) {
+      this.characterFiles[key] = undefined;
+      api.character(n.id, n.cls).then((r) => {
+        if (r.file && !this.renderer.characters[r.file]) this.renderer.addCharacter(r.file, r.model);
+        if (!r.file) console.warn(`enemy kind ${n.id} class ${n.cls}: ${r.reason}`);
+        this.characterFiles[key] = r.file;
+        this.redraw();
+      }).catch((e) => { console.error(`enemy kind ${n.id} class ${n.cls}: its model couldn't be had`, e); this.characterFiles[key] = null; this.redraw(); });
+    }
+    return this.characterFiles[key];
+  }
+
+  // the room's enemies as models standing on the floor, turned their way (in the 3D views; the plan marks them)
+  enemyModels() {
+    const r = roomOf(store.room), out = [];
+    if (!r || store.mode === "plan" || !store.show.enemies) return out;
+    for (const n of r.enemies) {
+      if (n.modes === 0 && !store.selection.some((s) => s.c === "enemies" && s.file === r.file && s.i === n.i)) continue;
+      const file = this.characterFor(n);
+      if (!file) continue;
+      const a = n.facing / 65536 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a), y = this.standY(r.file, n.pos[0], n.pos[2], n.pos[1]);
+      out.push({ file, at: [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, n.pos[0], y, n.pos[2], 1] });      // the model faces +z: turned so it looks along (sin a, cos a), as the overlay's facing line
+    }
+    return out;
+  }
+
+  // where something at (x, z) stands: the floor nearest below its own height `y` (an enemy's record has the height it stands at: 500 upstairs, 1800 on
+  // the roof), or `y` itself where the room has no floor under it; with no height known, the highest floor up to 600 (0 where there is none)
+  standY(file, x, z, y) {
+    const h = this.floorAt(file, x, z, y === undefined ? 600 : y + 30);
+    return h === null ? (y ?? 0) : h;
+  }
+
   floorAt(file, x, z, below) {
     const m = this.renderer.models[file];
     return m ? m.floors.heightAt(x, z, below) : null;
@@ -238,7 +276,7 @@ export class Viewport {
     const rooms = this.visibleRooms();
     const dim = {};
     for (const f of rooms) dim[f] = f === store.room ? 1 : 0.5;
-    if (store.show.models) this.renderer.render(this.camera, rooms, { textured: store.show.textures, dim, hidden: this.hiddenSets(), winding: store.winding, fog: this.cameraFog() });
+    if (store.show.models) this.renderer.render(this.camera, rooms, { textured: store.show.textures, dim, hidden: this.hiddenSets(), winding: store.winding, fog: this.cameraFog(), characters: this.enemyModels() });
     else this.renderer.render(this.camera, [], {});
     overlay.draw(this.ctx, this.camera, this.dpr, rooms, this.hover);
     this.drawGhost();

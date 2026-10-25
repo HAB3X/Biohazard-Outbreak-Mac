@@ -69,6 +69,27 @@ class Studio:
                 self.cache[key] = legacy.texture_png(self.game, self.scenario, index)
             return self.cache[key]
 
+    def character(self, kind, cls):
+        """The model an enemy of `kind` and class `cls` is drawn with ({"file", "model"}), or {"file": None, "reason"} when it has none (bh_characters)"""
+        import bh_characters
+
+        with self.lock:
+            key = ("character", self.game, kind, cls)
+            if key not in self.cache:
+                file = bh_characters.model_file(self.game, kind, cls)
+                self.cache[key] = ({"file": file, "model": bh_characters.character_json(self.game, file)} if file else
+                                   {"file": None, "reason": f"no E{kind:02d}_{cls:02d}.NBD on the disc for this kind and class"})
+            return self.cache[key]
+
+    def character_picture(self, key):
+        import bh_characters
+
+        with self.lock:
+            cache_key = ("character picture", self.game, key)
+            if cache_key not in self.cache:
+                self.cache[cache_key] = bh_characters.picture_png(self.game, key)
+            return self.cache[cache_key]
+
     def messages(self):
         with self.lock:
             key = ("msg", self.game, self.scenario)
@@ -321,6 +342,10 @@ def make_handler(studio):
                         self.send_header("Content-Disposition", f'attachment; filename="my-{studio.game}-level.patch"')
                         self.end_headers()
                         self.wfile.write(data)
+                elif url.path == "/api/character":
+                    self.send(200, json.dumps(studio.character(int(query["kind"][0]), int(query["cls"][0]))))
+                elif url.path == "/api/character/picture":
+                    self.send(200, studio.character_picture(query["key"][0]), "image/png")
                 elif url.path == "/api/messages":
                     self.send(200, json.dumps(studio.messages()))
                 elif url.path.startswith("/api/"):

@@ -74,9 +74,12 @@ class Model:
         number differs from the material's own in 927 of File 1's 973 materials, and read this way the bar's floor gets its wood and its counter its dark wood, as the game shows)"""
         return _u32(self.materials()[0][material], 268)
 
+    def picture_number(self, material):
+        """The number its texture reference gives the material's picture: an entry of the TID chunk for a room (picture_of), a picture of the model's own TEX for a character"""
+        return _u32(self.materials()[1][self.texture_ref(material)], 12)
+
     def picture_of(self, material):
-        n = _u32(self.materials()[1][self.texture_ref(material)], 12)
-        return self.tid[1 + n]
+        return self.tid[1 + self.picture_number(material)]
 
     def pictures(self):
         return self.tid[1:1 + self.tid[0]]

@@ -131,6 +131,21 @@ class Models(unittest.TestCase):
         self.assertFalse(meshes[64]["additive"])
 
 
+class Characters(unittest.TestCase):
+    def test_an_enemy_is_drawn_with_its_own_model(self):
+        import io
+
+        import bh_characters
+        from PIL import Image
+        self.assertEqual(bh_characters.model_file("file1", 1, 9), "E01_09.NBD")
+        self.assertIsNone(bh_characters.model_file("file1", 1, 85))        # no E01_85.NBD: Studio draws a figure for it and says why
+        model = bh_characters.character_json("file1", "E01_09.NBD")
+        self.assertEqual(model["tids"], ["E01_09.NBD#0"])
+        self.assertEqual(len(model["meshes"]), 1)
+        picture = Image.open(io.BytesIO(bh_characters.picture_png("file1", "E01_09.NBD#0")))
+        self.assertEqual(picture.size, (256, 256))
+
+
 class Pictures(unittest.TestCase):
     def test_restyle_round_trips_through_the_game_codec(self):
         from PIL import Image

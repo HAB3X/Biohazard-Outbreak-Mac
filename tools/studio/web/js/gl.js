@@ -125,6 +125,7 @@ export class Renderer {
     this.flat = program(gl, VS, FS_FLAT);
     this.tex = program(gl, VS, FS_TEX);
     this.models = {};     // room file -> {bones, world, meshes, bounds, floors}
+    this.characters = {}; // a character model's file (romdata.afs) -> the same, standing at the origin: drawn where each enemy stands (opts.characters)
     this.textures = {};
     this.loaded = {};
     this.onTexture = () => {};
@@ -132,7 +133,11 @@ export class Renderer {
 
   has(file) { return !!this.models[file]; }
 
-  add(file, json) {
+  add(file, json) { this.models[file] = this.build(json); }
+  addCharacter(file, json) { this.characters[file] = this.build(json); }
+
+  // a model's buffers, bones and floors from its JSON (bh_rdt_edit.model_json, bh_characters.character_json)
+  build(json) {
     const gl = this.gl;
     const bones = json.bones, world = worlds(bones), meshes = [], tris = [];
     const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
@@ -173,7 +178,7 @@ export class Renderer {
     let sum = 0, count = 0;
     json.meshes.forEach((m) => { if (!m.c) return; const c = b64(m.c, Float32Array); for (let i = 0; i < c.length; i += 4) { sum += c[i] + c[i + 1] + c[i + 2]; count += 3; } });
     const gain = count ? Math.max(1, Math.min(3, 0.45 / Math.max(0.05, sum / count))) : 1;     // a dark room is lifted toward what the game's own lights show
-    this.models[file] = { raw: json, gain, bones, base: bones.length, extra: [], world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
+    return { raw: json, gain, bones, base: bones.length, extra: [], world, meshes, tids: json.tids || [], bounds: [...lo, ...hi], floors: new Floors(new Float32Array(tris)) };
   }
 
   // the skeleton with some bones replaced ({bone: [parent, scale, rotation, offset]}): the objects move on screen as they will in the game
@@ -306,7 +311,7 @@ export class Renderer {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
       this.onTexture();
     };
-    img.src = "/api/tex?index=" + index;
+    img.src = typeof index === "string" ? "/api/character/picture?key=" + encodeURIComponent(index) : "/api/tex?index=" + index;      // a character's own picture ("FILE#n") or the scenario's
     return tex;
   }
 
@@ -357,40 +362,56 @@ export class Renderer {
       gl.uniform3fv(U("uEye"), camera.basis().eye); gl.uniform3fv(U("uFog"), look.fog); gl.uniform3fv(U("uScene"), look.scene); gl.uniform1f(U("uVertex"), look.vertex);
     }
     const vpm = camera.viewProj(), nearCut = textured && camera.lit && opts.fog ? BEHIND_LENS : null;
+    const draw = { U, textured, camera, posLoc, uvLoc, colLoc, vpm, nearCut };
     for (const file of rooms) {
       const m = this.models[file];
       if (!m) continue;
       gl.uniform1f(U("uDim"), (opts.dim && opts.dim[file]) ?? 1);
       if (textured) gl.uniform1f(U("uGain"), opts.fog ? 1 : (m.gain || 1));      // (with the game's light known its own scene colour does the work; without it a dark room is lifted)
       if (!textured) gl.uniform2f(U("uHeight"), m.bounds[1] - 50, m.bounds[1] + Math.min(1800, Math.max(300, m.bounds[4] - m.bounds[1])));
-      for (const mesh of [...m.meshes, ...m.extra].sort((a, b) => (a.blend ? 1 : 0) - (b.blend ? 1 : 0))) {
-        if (mesh.hide || mesh.skip) continue;
-        if (camera.lit && opts.hidden && opts.hidden[file] && opts.hidden[file].has(mesh.mesh)) continue;     // what the room's own script hides as it starts
-        const blend = textured && camera.lit && mesh.blend;
-        if (blend) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, mesh.additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); } else { gl.disable(gl.BLEND); gl.depthMask(true); }
-        if (textured) gl.uniform1f(U("uBlend"), blend ? 1 : 0);
-        gl.uniformMatrix4fv(U("uModel"), false, m.world[mesh.bone]);
-        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vb); gl.enableVertexAttribArray(posLoc); gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+      this.drawMeshes(m, [...m.meshes, ...m.extra], (mesh) => m.world[mesh.bone], draw, opts.hidden && opts.hidden[file]);
+    }
+    // the enemies, each its own character model where it stands, turned its way
+    for (const c of opts.characters || []) {
+      const m = this.characters[c.file];
+      if (!m) continue;
+      gl.uniform1f(U("uDim"), 1);
+      if (textured) gl.uniform1f(U("uGain"), 1);
+      this.drawMeshes(m, m.meshes, (mesh) => mul(c.at, m.world[mesh.bone]), { ...draw, nearCut: null }, null);
+    }
+  }
+
+  // a model's meshes drawn (the see-through ones last), each placed by place(mesh); `hidden`: the mesh numbers the room's script hides
+  drawMeshes(m, meshes, place, draw, hidden) {
+    const gl = this.gl, { U, textured, camera, posLoc, uvLoc, colLoc, vpm, nearCut } = draw;
+    for (const mesh of [...meshes].sort((a, b) => (a.blend ? 1 : 0) - (b.blend ? 1 : 0))) {
+      if (mesh.hide || mesh.skip) continue;
+      if (camera.lit && hidden && hidden.has(mesh.mesh)) continue;     // what the room's own script hides as it starts
+      const blend = textured && camera.lit && mesh.blend;
+      if (blend) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, mesh.additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); } else { gl.disable(gl.BLEND); gl.depthMask(true); }
+      if (textured) gl.uniform1f(U("uBlend"), blend ? 1 : 0);
+      const at = place(mesh);
+      gl.uniformMatrix4fv(U("uModel"), false, at);
+      gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vb); gl.enableVertexAttribArray(posLoc); gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+      if (textured) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.ub); gl.enableVertexAttribArray(uvLoc); gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0);
+        if (colLoc >= 0) { gl.bindBuffer(gl.ARRAY_BUFFER, mesh.cb); gl.enableVertexAttribArray(colLoc); gl.vertexAttribPointer(colLoc, 4, gl.FLOAT, false, 0, 0); }
+      }
+      for (const g of mesh.groups) {
         if (textured) {
-          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.ub); gl.enableVertexAttribArray(uvLoc); gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0);
-          if (colLoc >= 0) { gl.bindBuffer(gl.ARRAY_BUFFER, mesh.cb); gl.enableVertexAttribArray(colLoc); gl.vertexAttribPointer(colLoc, 4, gl.FLOAT, false, 0, 0); }
+          const tid = (mesh.tids || m.tids)[g.material];
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, this.texture(tid === undefined ? 0 : tid));
+          gl.uniform1i(U("uTex"), 0);
         }
-        for (const g of mesh.groups) {
-          if (textured) {
-            const tid = (mesh.tids || m.tids)[g.material];
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, this.texture(tid === undefined ? 0 : tid));
-            gl.uniform1i(U("uTex"), 0);
-          }
-          if (nearCut && mesh.pos && g.idx) {
-            const kept = this.nearKept(mesh, g, m.world[mesh.bone], vpm, nearCut);
-            if (!kept.count) continue;
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, kept.ib);
-            gl.drawElements(gl.TRIANGLES, kept.count, gl.UNSIGNED_INT, 0);
-          } else {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.ib);
-            gl.drawElements(gl.TRIANGLES, g.count, gl.UNSIGNED_INT, 0);
-          }
+        if (nearCut && mesh.pos && g.idx) {
+          const kept = this.nearKept(mesh, g, at, vpm, nearCut);
+          if (!kept.count) continue;
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, kept.ib);
+          gl.drawElements(gl.TRIANGLES, kept.count, gl.UNSIGNED_INT, 0);
+        } else {
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.ib);
+          gl.drawElements(gl.TRIANGLES, g.count, gl.UNSIGNED_INT, 0);
         }
       }
     }

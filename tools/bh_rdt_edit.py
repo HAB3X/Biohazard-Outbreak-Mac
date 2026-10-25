@@ -740,12 +740,34 @@ refreshPanel();
 """
 
 
+def mesh_json(index, mesh, bone, light=None):
+    """One mesh of a model (a bh_nbd.Mesh) for the 3D view, on `bone`, or None when it has nothing to draw: positions, uvs and vertex colours (/128: 1 leaves the
+    picture as it is; `light`, an (r, g, b, a) for every vertex, in place of the file's) as base64 floats, its triangles by material as base64 uint32"""
+    import base64
+    import math
+    import struct
+
+    textured = [t for t in mesh.textured_triangles() if max(t[:3]) < len(mesh.positions)
+                and max(math.dist(mesh.positions[t[i]], mesh.positions[t[(i + 1) % 3]]) for i in range(3)) < 6000]
+    if not mesh.positions or not textured:
+        return None
+    flat = [c for p in mesh.positions for c in p]
+    uvs = [c for uv in (mesh.uvs if len(mesh.uvs) == len(mesh.positions) else [(0.0, 0.0)] * len(mesh.positions)) for c in uv]
+    groups = {}
+    for a, b, c, material in textured:
+        groups.setdefault(material, []).extend((a, b, c))
+    colours = [light] * len(mesh.positions) if light else mesh.colours if len(mesh.colours) == len(mesh.positions) else [(128.0, 128.0, 128.0, 128.0)] * len(mesh.positions)
+    values = [c / 128.0 for v in colours for c in (v[0], v[1], v[2], min(v[3], 128.0))]
+    return {"mesh": index, "bone": bone, "additive": mesh.additive,
+            "c": base64.b64encode(struct.pack(f"<{len(values)}f", *values)).decode(),
+            "p": base64.b64encode(struct.pack(f"<{len(flat)}f", *flat)).decode(),
+            "uv": base64.b64encode(struct.pack(f"<{len(uvs)}f", *uvs)).decode(),
+            "groups": [{"m": material, "i": base64.b64encode(struct.pack(f"<{len(ids)}I", *ids)).decode()} for material, ids in groups.items()]}
+
+
 def model_json(game, scenario, file):
     """A room's model for the 3D view as JSON: the skeleton ([parent, scale xyz, rotation xyz, offset xyz]) and each mesh's bone (the one that names it, nbd.mesh_bones),
     positions (little-endian floats) and triangle indices (uint32), both base64"""
-    import base64
-    import struct
-
     import bh_archive as archive
     import bh_nbd as nbd
 
@@ -761,7 +783,6 @@ def model_json(game, scenario, file):
         return {"error": f"{file}: not on the disc"}
     data = node.read()
     import bh_model
-    import math
 
     table = nbd.chunks(data)
     # (a room's file can hold a second AMO and AHI pair: measured against the game's pictures of the bar, its objects (bunting, light beams) aren't drawn there, so only the first is)
@@ -769,23 +790,7 @@ def model_json(game, scenario, file):
     ahi = next(c for c in table if c[0] == "AHI")
     bones = [[b[0], list(b[1][:3]), list(b[2][:3]), list(b[3][:3])] for b in nbd.skeleton(data, ahi[1], ahi[2])]
     carriers = nbd.mesh_bones(data, ahi[1], ahi[2])
-    meshes = []
-    for index, mesh in enumerate(nbd.meshes(data, amo[1], amo[2])):
-        textured = [t for t in mesh.textured_triangles() if max(t[:3]) < len(mesh.positions)
-                    and max(math.dist(mesh.positions[t[i]], mesh.positions[t[(i + 1) % 3]]) for i in range(3)) < 6000]
-        if not mesh.positions or not textured:
-            continue
-        flat = [c for p in mesh.positions for c in p]
-        uvs = [c for uv in (mesh.uvs if len(mesh.uvs) == len(mesh.positions) else [(0.0, 0.0)] * len(mesh.positions)) for c in uv]
-        groups = {}
-        for a, b, c, material in textured:
-            groups.setdefault(material, []).extend((a, b, c))
-        light = [c / 128.0 for v in (mesh.colours if len(mesh.colours) == len(mesh.positions) else [(128.0, 128.0, 128.0, 128.0)] * len(mesh.positions)) for c in (v[0], v[1], v[2], min(v[3], 128.0))]
-        meshes.append({"mesh": index, "bone": carriers[index], "additive": mesh.additive,
-                       "c": base64.b64encode(struct.pack(f"<{len(light)}f", *light)).decode(),
-                       "p": base64.b64encode(struct.pack(f"<{len(flat)}f", *flat)).decode(),
-                       "uv": base64.b64encode(struct.pack(f"<{len(uvs)}f", *uvs)).decode(),
-                       "groups": [{"m": material, "i": base64.b64encode(struct.pack(f"<{len(ids)}I", *ids)).decode()} for material, ids in groups.items()]})
+    meshes = [m for m in (mesh_json(index, mesh, carriers[index]) for index, mesh in enumerate(nbd.meshes(data, amo[1], amo[2]))) if m]
     # each material's picture: its kind 9 record names a texture reference (kind 10), whose number is an entry of the TID chunk (bh_model.Model.picture_of)
     model = bh_model.Model(data)
     tids = [model.picture_of(m) for m in range(len(model.materials()[0]))] if model.i_tid is not None else []

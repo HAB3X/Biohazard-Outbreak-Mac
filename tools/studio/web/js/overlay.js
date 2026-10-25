@@ -15,7 +15,10 @@ let handleList = [];      // the selected thing's handles, on the screen
 export const lastHandles = () => handleList;
 let floorLookup = () => 0;
 export const setFloorLookup = (fn) => { floorLookup = fn; };
-const floorY = (file, x, z) => floorLookup(file, x, z);
+const floorY = (file, x, z, y) => floorLookup(file, x, z, y);      // y: the height the thing's record gives, when it has one
+// the model an enemy is drawn with in the 3D views (viewport.characterFor): a file, null when it has none, undefined while it is fetched
+let characterLookup = () => undefined;
+export function setCharacterLookup(fn) { characterLookup = fn; }
 
 // ---- what a selected thing can be pulled by
 export function handlesOf(ref) {
@@ -301,7 +304,8 @@ export function draw(ctx, camera, dpr, rooms, hover) {
         const ref = { c: "enemies", file, i: n.i }, col = colour("enemy"), p = P(n.pos), sel = selected(ref), hov = hovered(ref);
         if (p[2] < -0.9) continue;
         if (camera.mode !== "plan") {
-          const fig = figure(layers, [n.pos[0], floorY(file, n.pos[0], n.pos[2]), n.pos[2]], col, sel, hov, base, n.facing, "");
+          const model = characterLookup(n);       // with its own model drawn, only its footprint and outline are drawn over it
+          const fig = figure(layers, [n.pos[0], floorY(file, n.pos[0], n.pos[2], n.pos[1]), n.pos[2]], col, sel, hov, base, n.facing, model === null ? "no model" : "", !model);
           if (fig) {
             hits.push({ ref, order: 7, test: rectTest(fig.box), centre: [fig.f[0], (fig.f[1] + fig.h[1]) / 2] });
             if (sel || hov) layers.push({ order: 9, run() { pill(`enemy ${n.id} · ${hpOf(n)}`, fig.f[0], fig.h[1] - 14, col, sel); } });
@@ -360,7 +364,7 @@ export function draw(ctx, camera, dpr, rooms, hover) {
   hits.sort((a, b) => a.order - b.order);
 
   // a person standing there, in the picture's own perspective, so you can tell where they are and how big (about 190 tall, 50 across); `facing` shows which way they look
-  function figure(layers, feet, col, sel, hov, base, facing, tag) {
+  function figure(layers, feet, col, sel, hov, base, facing, tag, solid = true) {
     const f = P(feet), h = P([feet[0], feet[1] + 190, feet[2]]);
     if (f[2] < -0.9 || h[2] < -0.9) return null;
     const left = P([feet[0] - 25, feet[1], feet[2]]), right = P([feet[0] + 25, feet[1], feet[2]]);
@@ -369,9 +373,14 @@ export function draw(ctx, camera, dpr, rooms, hover) {
     const box = [cx - w / 2, top - head, cx + w / 2, bottom];
     layers.push({ order: 8, run() {
       ctx.save();
-      ctx.fillStyle = rgba(col, (sel ? 0.9 : hov ? 0.8 : 0.62) * base); ctx.strokeStyle = sel ? "#fff" : "rgba(255,255,255,.7)"; ctx.lineWidth = sel ? 2.4 : 1.2;
-      ctx.beginPath(); ctx.roundRect(cx - w / 2, top + head * 1.1, w, tall - head * 1.1, Math.min(w / 2, 8)); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.arc(cx, top + head * 0.55, head, 0, 7); ctx.fill(); ctx.stroke();
+      if (solid) {
+        ctx.fillStyle = rgba(col, (sel ? 0.9 : hov ? 0.8 : 0.62) * base); ctx.strokeStyle = sel ? "#fff" : "rgba(255,255,255,.7)"; ctx.lineWidth = sel ? 2.4 : 1.2;
+        ctx.beginPath(); ctx.roundRect(cx - w / 2, top + head * 1.1, w, tall - head * 1.1, Math.min(w / 2, 8)); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, top + head * 0.55, head, 0, 7); ctx.fill(); ctx.stroke();
+      } else if (sel || hov) {
+        ctx.strokeStyle = sel ? "#fff" : rgba(col, 0.9); ctx.lineWidth = sel ? 2 : 1.4; ctx.setLineDash([5, 4]);
+        ctx.strokeRect(box[0] - 3, box[1] - 3, box[2] - box[0] + 6, box[3] - box[1] + 6); ctx.setLineDash([]);
+      }
       ctx.beginPath(); ctx.ellipse(f[0], bottom, w * 0.7, w * 0.22, 0, 0, 7); ctx.strokeStyle = rgba(col, 0.9); ctx.lineWidth = 1.5; ctx.stroke();      // where the feet are on the floor
       if (facing !== null) { const a = facing / 65536 * Math.PI * 2, t = P([feet[0] + Math.sin(a) * 110, feet[1], feet[2] + Math.cos(a) * 110]); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(f[0], f[1]); ctx.lineTo(t[0], t[1]); ctx.stroke(); }
       if (tag) { ctx.fillStyle = "rgba(0,0,0,.65)"; ctx.font = `bold ${Math.max(9, Math.min(15, w * 0.6))}px -apple-system, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(tag, cx, top + tall * 0.45); }
