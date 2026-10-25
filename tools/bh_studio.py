@@ -10,6 +10,7 @@ docs/studio/PLAN.md says what the editor is for and what it can do so far.
 import io
 import json
 import os
+import struct
 import subprocess
 import sys
 import threading
@@ -55,19 +56,42 @@ class Studio:
                                    "ops": {str(k): list(v) for k, v in rdt.OPS.items()}, "start_room": start_room(self.game, self.scenario)}
             return self.cache[key]
 
-    def model(self, file):
+    def model(self, file, game=None, scenario=None):
+        """A room's model as JSON (bh_rdt_edit.model_json), of this scenario or (for the Library) of any scenario of either game: then its pictures are
+        named "game:scenario:number", which the page asks /api/tex for with that scenario"""
+        game, scenario = game or self.game, int(scenario or self.scenario)
         with self.lock:
-            key = ("model", self.game, self.scenario, file)
+            key = ("model", game, scenario, file)
             if key not in self.cache:
-                self.cache[key] = legacy.model_json(self.game, self.scenario, file)
+                model = legacy.model_json(game, scenario, file)
+                if (game, scenario) != (self.game, self.scenario) and "tids" in model:
+                    model = {**model, "tids": [f"{game}:{scenario}:{n}" for n in model["tids"]]}
+                self.cache[key] = model
             return self.cache[key]
 
-    def texture(self, index):
+    def texture(self, index, game=None, scenario=None):
+        game, scenario = game or self.game, int(scenario or self.scenario)
         with self.lock:
-            key = ("tex", self.game, self.scenario, index)
+            key = ("tex", game, scenario, index)
             if key not in self.cache:
-                self.cache[key] = legacy.texture_png(self.game, self.scenario, index)
+                self.cache[key] = legacy.texture_png(game, scenario, index)
             return self.cache[key]
+
+    def levels(self):
+        """Every scenario of both games (the Library brings objects from any of them): [{"game", "scenario", "rooms": [room file of each room's first variant]}]"""
+        with self.lock:
+            if ("levels",) not in self.cache:
+                out = []
+                for game in ("file1", "file2"):
+                    try:
+                        rooms = rdt.rooms(game)
+                    except (FileNotFoundError, KeyError):
+                        continue           # (that game's disc isn't set up here)
+                    for scenario in sorted({int(pack[1:4]) for pack, _, _ in rooms}):
+                        files = sorted(m for pack, m, _ in rooms if int(pack[1:4]) == scenario and m.lower().endswith("00.rdt"))
+                        out.append({"game": game, "scenario": scenario, "rooms": files})
+                self.cache[("levels",)] = out
+            return self.cache[("levels",)]
 
     def character(self, kind, cls):
         """The model an enemy of `kind` and class `cls` is drawn with ({"file", "model"}), or {"file": None, "reason"} when it has none (bh_characters)"""
@@ -128,7 +152,10 @@ class Studio:
         out.parent.mkdir(parents=True, exist_ok=True)
         base = [str(self.english_patch())] if english and self.english_patch() else []
         started = time.time()
-        report = studio_build.compose(self.game, scenery_as_models(self.game, self.scenario, edits), str(out), base, members={**grown_models(self.game, self.scenario, edits), **repainted(self.game, self.scenario, edits), **moved_start(self.game, self.scenario, edits)})
+        models, pictures = grown_models(self.game, self.scenario, edits)
+        report = studio_build.compose(self.game, scenery_as_models(self.game, self.scenario, edits), str(out), base,
+                                      members={**models, **repainted(self.game, self.scenario, edits), **moved_start(self.game, self.scenario, edits)},
+                                      pictures={f"r{self.scenario:03d}.afs": pictures} if pictures else None)
         return {"patch": str(out), "report": report, "seconds": round(time.time() - started, 2), "bytes": out.stat().st_size}
 
     def play(self, patch, hops=None, at=None):
@@ -235,11 +262,16 @@ def scenery_as_models(game, scenario, edits):
 
 
 def grown_models(game, scenario, edits):
-    """{(pack, member): bytes} of the room models that got copies of objects: each copy appended (bh_nbd.clone_object), then every object's changes written in"""
+    """({(pack, member): bytes} of the room models that got copies of objects: each copy appended (bh_nbd.clone_object), then every object's changes
+    written in; [the .sld bytes of the pictures brought from other scenarios, in the order they take the numbers after the scenario's own]).
+    A Library object of another scenario or game (`library` with "game" and "scenario") brings its pictures: each is laid as a new picture after the
+    scenario's last (bh_studio_build.compose: the pack's member and the _h.bin's count) and the object's materials name it"""
+    import bh_model
     import bh_nbd
 
-    out = {}
+    out, new_pictures, brought = {}, [], {}
     disc = archive.Archive(game)
+    own_count = None
     for file, spec in edits.get("rooms", {}).items():
         if not spec.get("new_objects"):
             continue
@@ -247,14 +279,25 @@ def grown_models(game, scenario, edits):
         data = _room_model(disc, scenario, name)
         sources = {}
         for made in spec["new_objects"]:
-            if made.get("library"):          # an object of another room of the scenario, with the pictures it needs
-                import bh_model
-
-                src = made["library"]["room"].replace(".rdt", ".nbd")
-                if src not in sources:
-                    sources[src] = bh_model.Model(_room_model(disc, scenario, src))
+            if made.get("library"):          # an object of another room, of this scenario or another's (of either game), with the pictures it needs
+                lib = made["library"]
+                where = (lib.get("game", game), int(lib.get("scenario", scenario)))
+                src = lib["room"].replace(".rdt", ".nbd")
+                if (where, src) not in sources:
+                    sources[(where, src)] = bh_model.Model(_room_model(archive.Archive(where[0]), where[1], src))
+                source, mesh = sources[(where, src)], int(lib["mesh"])
+                pictures = None
+                if where != (game, scenario):
+                    if own_count is None:
+                        own_count = picture_count(disc, scenario)
+                    pictures = {}
+                    for picture in source.mesh_pictures(mesh):
+                        if (where, picture) not in brought:
+                            brought[(where, picture)] = own_count + len(new_pictures)
+                            new_pictures.append(_pack_member(archive.Archive(where[0]), where[1], picture))
+                        pictures[picture] = brought[(where, picture)]
                 model = bh_model.Model(data)
-                model.import_object(sources[src], int(made["library"]["mesh"]))
+                model.import_object(source, mesh, pictures=pictures)
                 data = model.to_bytes()
             else:
                 data, _ = bh_nbd.clone_object(data, made["like"], None, made.get("geometry"))
@@ -265,7 +308,28 @@ def grown_models(game, scenario, edits):
         for number, change in spec.get("scenery", {}).items():
             bh_nbd.set_bone(data, records[carriers[int(number)]], **change)
         out[(f"r{scenario:03d}.afs", name)] = bytes(data)
-    return out
+    return out, new_pictures
+
+
+def picture_count(disc, scenario):
+    """How many pictures the scenario's pack begins with (the first word of its r<NNN>_h.bin, which then names the pack's other members in order)"""
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            head = dict(disc.open(dat).members())[f"r{scenario:03d}_h.bin"].read()
+            return struct.unpack_from("<I", head, 0)[0]
+        except (FileNotFoundError, KeyError):
+            continue
+    raise FileNotFoundError(f"r{scenario:03d}_h.bin: not on the disc")
+
+
+def _pack_member(disc, scenario, index):
+    """The bytes of member number `index` of the scenario's pack (a picture's .sld for the numbers below picture_count)"""
+    for dat in ("/NETBIO00.DAT", "/NETBIO01.DAT"):
+        try:
+            return disc.open(f"{dat}/r{scenario:03d}.afs").members()[index][1].read()
+        except FileNotFoundError:
+            continue
+    raise FileNotFoundError(f"r{scenario:03d}.afs: not on the disc")
 
 
 def repainted(game, scenario, edits):
@@ -323,9 +387,11 @@ def make_handler(studio):
                 elif url.path == "/api/project":
                     self.send(200, json.dumps(studio.project()))
                 elif url.path == "/api/model":
-                    self.send(200, json.dumps(studio.model(query["file"][0])))
+                    self.send(200, json.dumps(studio.model(query["file"][0], query.get("game", [None])[0], query.get("scenario", [None])[0])))
+                elif url.path == "/api/levels":
+                    self.send(200, json.dumps(studio.levels()))
                 elif url.path == "/api/tex":
-                    png = studio.texture(int(query["index"][0]))
+                    png = studio.texture(int(query["index"][0]), query.get("game", [None])[0], query.get("scenario", [None])[0])
                     self.send(200 if png else 404, png or b"", "image/png")
                 elif url.path == "/api/status":
                     running = bool(studio.process and studio.process.poll() is None)

@@ -1,6 +1,6 @@
 // The viewport: draws the models and the markers, and turns the pointer into navigation, selection, moving and placing.
 import { Camera } from "./camera.js";
-import { Renderer } from "./gl.js";
+import { Renderer, modelKey } from "./gl.js";
 import * as overlay from "./overlay.js";
 import { store, on, emit, setMode, setRoom, objectOf, roomOf, select, commit, clone, translate, centre, refEq, describe, addWall, addFloor } from "./scene.js";
 import { PLACE, FIXED, THINGS, place, ground, snapTo } from "./tools.js";
@@ -178,8 +178,22 @@ export class Viewport {
       progress && progress(++done, rooms.length);
       this.redraw();
     }
+    // the models of other levels your saved Library objects come from
+    for (const file of later) {
+      for (const n of store.history[store.at].rooms[file].new_objects || []) if (n.library && n.library.game) await this.loadLevelModel(n.library);
+    }
     for (const file of later) attach(this.renderer, file);
     this.redraw();
+  }
+
+  // a room model of another level (a Library source: {room, game, scenario}), kept among the renderer's models under modelKey; fetched once
+  async loadLevelModel(lib) {
+    const key = modelKey(lib);
+    if (this.renderer.models[key]) return true;
+    const json = await api.model(lib.room.replace(".rdt", ".nbd"), lib.game, lib.scenario);
+    if (json.error) { console.warn(`${key}: ${json.error}`); return false; }
+    this.renderer.add(key, json);
+    return true;
   }
 
   // the pictures you replaced are painted onto the models as they change (and put back when undone)
@@ -335,7 +349,7 @@ export class Viewport {
 
   // the Library object about to be put down: its box turned as it will be (R turns it), with its picture standing in it, where the click would put it
   drawLibraryGhost() {
-    const pick = store.libraryPick, src = this.renderer.models[pick.room], mesh = src && src.meshes.find((x) => x.mesh === pick.mesh);
+    const pick = store.libraryPick, src = this.renderer.models[modelKey(pick)], mesh = src && src.meshes.find((x) => x.mesh === pick.mesh);
     const at = ground(this.camera, this.cursor[0], this.cursor[1], this.renderer);
     if (!mesh || !at) return;
     let x = snapTo(at[0]), z = snapTo(at[2]);
@@ -348,9 +362,9 @@ export class Viewport {
     };
     const p = [0, 1, 2, 3, 4, 5, 6, 7].map(corner), ctx = this.ctx;
     if (p.some((q) => q[2] < -1)) return;
-    if (!this.ghostImg || this.ghostImg.key !== `${pick.room}:${pick.mesh}`) {
-      const r = this.renderer.thumbnail(pick.room, pick.mesh, 128, true);
-      if (r) { const img = new Image(); img.src = r.url; this.ghostImg = { key: `${pick.room}:${pick.mesh}`, img }; }
+    if (!this.ghostImg || this.ghostImg.key !== `${modelKey(pick)}:${pick.mesh}`) {
+      const r = this.renderer.thumbnail(modelKey(pick), pick.mesh, 128, true);
+      if (r) { const img = new Image(); img.src = r.url; this.ghostImg = { key: `${modelKey(pick)}:${pick.mesh}`, img }; }
     }
     ctx.save();
     ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2;

@@ -23,6 +23,8 @@ function worlds(bones) {
   bones.forEach((_, i) => get(i));
   return out;
 }
+// where a Library object's model is kept among the renderer's models: a room of this scenario by its file, one of another level by "game:scenario:file"
+export const modelKey = (lib) => (lib.game ? `${lib.game}:${lib.scenario}:${lib.room}` : lib.room);
 const hidden = (b) => Math.abs(b[1][0]) < 0.001 || Math.abs(b[1][1]) < 0.001 || Math.abs(b[1][2]) < 0.001;
 
 const VS = `#version 300 es
@@ -195,7 +197,7 @@ export class Renderer {
 
   // an object of another room's model (its buffers and that model's pictures)
   libraryMesh(lib) {
-    const src = this.models[lib.room];
+    const src = this.models[modelKey(lib)];
     const mesh = src && src.meshes.find((x) => x.mesh === lib.mesh);
     return mesh ? { ...mesh, tids: src.tids, hide: false } : {};
   }
@@ -314,7 +316,9 @@ export class Renderer {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
       this.onTexture();
     };
-    img.src = typeof index === "string" ? "/api/character/picture?key=" + encodeURIComponent(index) : "/api/tex?index=" + index;      // a character's own picture ("FILE#n") or the scenario's
+    // a picture of this scenario (a number), of another level's room model ("game:scenario:number"), or a character's own ("FILE#n")
+    const level = typeof index === "string" && /^(file\d):(\d+):(\d+)$/.exec(index);
+    img.src = level ? `/api/tex?game=${level[1]}&scenario=${level[2]}&index=${level[3]}` : typeof index === "string" ? "/api/character/picture?key=" + encodeURIComponent(index) : "/api/tex?index=" + index;
     return tex;
   }
 

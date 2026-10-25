@@ -97,6 +97,26 @@ class Models(unittest.TestCase):
         again = bh_model.Model(dst.to_bytes())
         self.assertEqual(len(again.meshes()), before + 1)
 
+    def test_an_object_of_another_scenario_brings_its_pictures(self):
+        import bh_model
+        import bh_studio
+        edits = {"rooms": {"r0010100.rdt": {"new_objects": [{"library": {"room": "r0418000.rdt", "mesh": 10, "game": "file1", "scenario": 41}}]}}}
+        models, pictures = bh_studio.grown_models("file1", 1, edits)
+        source = bh_model.Model(bh_studio._room_model(archive.Archive("file1"), 41, "r0418000.nbd"))
+        wanted = list(dict.fromkeys(source.mesh_pictures(10)))
+        self.assertEqual(len(pictures), len(wanted))
+        self.assertEqual(pictures[0], bh_studio._pack_member(archive.Archive("file1"), 41, wanted[0]))
+        bar = bh_model.Model(models[("r001.afs", "r0010100.nbd")])
+        own = bh_studio.picture_count(archive.Archive("file1"), 1)
+        self.assertEqual(sorted(set(bar.mesh_pictures(len(bar.meshes()) - 1))), list(range(own, own + len(wanted))))
+
+    def test_the_model_says_how_many_objects_and_bones_it_has(self):
+        import bh_rdt_edit
+        model = bh_rdt_edit.model_json("file1", 1, "r0010100.nbd")
+        # a copy put in the bar is object 96 on bone 99 (the builder appends both): the page numbered it bone - 2 = 97, which no object is
+        self.assertEqual(model["objects"], 96)
+        self.assertEqual(len(model["bones"]), 99)
+
     def test_a_material_names_its_texture_by_its_last_word(self):
         import bh_model
         bar = bh_model.Model(archive.Archive("file1").open("/NETBIO00.DAT/r001.afs/r0010100.nbd").read())

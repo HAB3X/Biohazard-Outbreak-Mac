@@ -215,28 +215,38 @@ class Rope:
         return self.size
 
     def add_member(self, name, data):
-        """A new member `name` of `data` (bytes or a Rope) at the end of the data, before the name table: the count, the table's entry, the name table's place and size, and a name
-        record (a copy of the last one's, renamed) are written. The table has room for a few more entries before the first member (checked)"""
+        """A new member `name` of `data` (bytes or a Rope) after the last one (insert_member at the end)"""
+        return self.insert_member(self.afs()[0], name, data)
+
+    def insert_member(self, index, name, data):
+        """A new member `name` of `data` (bytes or a Rope) as member number `index`: its data goes where member `index`'s began (or after the last), the
+        members after it move on by its sectors, and the count, the table (one entry more: it has room for a few before the first member, checked), the name
+        table's place and size and a name record (a copy of a neighbour's, renamed and sized) are written. Returns the archive's new size"""
         count, entries, name_at, name_size, names = self.afs()
         if any(n.lower() == name.lower() for n in names):
             raise ValueError(f"{name} is already a member")
+        if not 0 <= index <= count:
+            raise IndexError(f"member {index}: the archive has {count}")
         first = min(e[0] for e in entries)
         if 8 + 8 * (count + 1) + 8 > first:
             raise ValueError("the archive's table has no room for another member")
         data = Rope(self.disc, [Piece(0, len(data), bytes(data))]) if isinstance(data, (bytes, bytearray)) else Rope(self.disc, list(data.pieces))
         size = data.size
         data.pad()
+        at = entries[index][0] if index < count else name_at
         old_names = self.read(name_at, 48 * count)
-        record = bytearray(old_names[48 * (count - 1):48 * count])
+        record = bytearray(old_names[48 * min(index, count - 1):48 * min(index, count - 1) + 48])
         record[:32] = name.encode("latin-1").ljust(32, b"\0")
         struct.pack_into("<I", record, 44, size)
-        new_names = old_names + bytes(record)
+        new_names = old_names[:48 * index] + bytes(record) + old_names[48 * index:]
         names_rope = Rope(self.disc, [Piece(0, len(new_names), new_names)])
         names_rope.pad()
-        before = self.slice(0, name_at)
-        self.pieces = before.pieces + data.pieces + names_rope.pieces
+        before, middle = self.slice(0, at), self.slice(at, name_at - at)
+        self.pieces = before.pieces + data.pieces + middle.pieces + names_rope.pieces
         self._merge()
-        entries.append([name_at, size])
+        for e in entries[index:]:
+            e[0] += data.size
+        entries.insert(index, [at, size])
         header = bytearray(self.read(0, 8 + 8 * (count + 1) + 8))
         struct.pack_into("<I", header, 4, count + 1)
         for j, (o, s) in enumerate(entries):

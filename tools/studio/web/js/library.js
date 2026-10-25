@@ -2,6 +2,7 @@
 import { store, setTool, on, emit } from "./scene.js";
 import { el } from "./ui.js";
 import { api } from "./api.js";
+import { modelKey } from "./gl.js";
 
 const SHELL = 3500;      // wider than this is a room's own floor and walls
 const KINDS = [["all", "All"], ["enemies", "Enemies"], ["recent", "Recent"], ["furniture", "Furniture"], ["boxes", "Boxes"], ["bottles", "Bottles"], ["containers", "Containers"], ["decor", "Decor"], ["other", "Other"]];
@@ -9,7 +10,8 @@ const KINDS = [["all", "All"], ["enemies", "Enemies"], ["recent", "Recent"], ["f
 const KIND_WORDS = [["furniture", /chair|armchair|bench|table|stool|shelf|cabinet|post|rail|staircase|sink|basin|urinal|tap|beer/i], ["boxes", /box|crate|carton|stack|cube|slab|poster/i], ["bottles", /bottle|decanter|vase|jar|glass/i], ["containers", /barrel|bin|bucket|basket|drum|tank|sack|tube|roller/i], ["decor", /statue|figure|picture|lamp|magazine|coat|cloth|helmet|paper|mop|rod|pipe|hook|handle|baluster|corrugated|panel|plank|sheet/i]];
 const kindOf = (name) => (KIND_WORDS.find(([, re]) => re.test(name)) || ["other"])[0];
 let panel = null, grid = null, count = null, viewport = null, names = null, note = null;
-let state = { kind: "all", where: "here", text: "", unnamed: false };
+let state = { kind: "all", where: "here", text: "", unnamed: false, level: "" };     // level: "" for this scenario, else "game:scenario" (another level's objects)
+let levels = null;      // every scenario of both games (/api/levels), asked for once
 let catalogue = [], built = "";
 let enemyModels = null;      // every enemy model on the disc ([{id, cls, file}], /api/characters), asked for once
 const ENEMY_NAMES = { 1: "Zombie" };     // the kinds named so far; the rest go by number and picture
@@ -49,10 +51,11 @@ function sizeOf(lo, hi) {
 }
 
 // the objects of every loaded model; ones alike in shape and size (the same chair in two rooms) show once, counted
-function build(renderer) {
+// `sources` [{room, game, scenario}] the room models to take them from (this scenario's by default, with no game named)
+function build(renderer, sources = [store.room, ...store.scene.rooms.map((r) => r.file).filter((f) => f !== store.room)].map((room) => ({ room }))) {
   const seen = new Map(), out = [];
-  const order = [store.room, ...store.scene.rooms.map((r) => r.file).filter((f) => f !== store.room)];
-  for (const file of order) {
+  for (const source of sources) {
+    const file = modelKey(source), game = source.game || store.game;
     const m = renderer.models[file];
     if (!m) continue;
     for (const mesh of m.meshes) {
@@ -67,8 +70,8 @@ function build(renderer) {
       const key = [tris, ...[0, 1, 2].map((k) => Math.round(hi[k] - lo[k]))].join(",");
       const hit = seen.get(key);
       if (hit) { hit.rooms.add(file); continue; }
-      const it = { room: file, mesh: mesh.mesh, prop, size: sizeOf(lo, hi), dims: [0, 1, 2].map((k) => Math.round(hi[k] - lo[k])), tris, rooms: new Set([file]) };
-      it.name = names[`${store.game}:${key}`] || null;
+      const it = { key: file, room: source.room, game: source.game, scenario: source.scenario, mesh: mesh.mesh, prop, size: sizeOf(lo, hi), dims: [0, 1, 2].map((k) => Math.round(hi[k] - lo[k])), tris, rooms: new Set([source.room]) };
+      it.name = names[`${game}:${key}`] || null;
       it.kind = kindOf(it.name || "");
       seen.set(key, it); out.push(it);
     }
@@ -99,14 +102,14 @@ function inOnePiece(raw) {
 export async function allObjects(vp) { await loadNames(); viewport = vp; if (stamp(vp.renderer) !== built) { catalogue = build(vp.renderer); built = stamp(vp.renderer); } return catalogue; }
 export const signature = (it) => [it.tris, ...it.dims].join(",");
 
-const stamp = (renderer) => store.room + "|" + Object.keys(renderer.models).length;
+const stamp = (renderer) => state.level + "|" + store.room + "|" + Object.keys(renderer.models).length;
 
 // pictures are drawn one at a time as the cards come into view, and again if the game's pictures were still arriving
 const watcher = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { watcher.unobserve(e.target); paint(e.target, 0); } }), { root: null, rootMargin: "200px" });
 function paint(card, tries) {
   const it = card._item;
   if (it.enemy && !viewport.characterFor(it.enemy)) { if (tries < 20) setTimeout(() => paint(card, tries + 1), 300); return; }     // its model is still on its way
-  const r = it.enemy ? viewport.renderer.thumbnail(it.enemy.file, null, 128) : viewport.renderer.thumbnail(it.room, it.mesh, 128);
+  const r = it.enemy ? viewport.renderer.thumbnail(it.enemy.file, null, 128) : viewport.renderer.thumbnail(it.key, it.mesh, 128);
   if (!r) return;
   card.querySelector("img").src = r.url;
   viewport.redraw();
@@ -117,7 +120,7 @@ const label = (it) => it.name || `Unnamed ${it.size === "tall" ? "tall" : it.siz
 
 function shown() {
   const t = state.text.trim().toLowerCase();
-  return catalogue.filter((it) => (it.name || (state.unnamed && it.prop)) && (state.kind !== "recent" || recent().includes(signature(it))) && (state.kind === "all" || state.kind === "recent" || it.kind === state.kind) && (state.where === "all" || it.rooms.has(store.room)) && (!t || (it.name || "").toLowerCase().includes(t)));
+  return catalogue.filter((it) => (it.name || (state.unnamed && it.prop)) && (state.kind !== "recent" || recent().includes(signature(it))) && (state.kind === "all" || state.kind === "recent" || it.kind === state.kind) && (state.level || state.where === "all" || it.rooms.has(store.room)) && (!t || (it.name || "").toLowerCase().includes(t)));
 }
 
 function fill() {
@@ -130,10 +133,10 @@ function fill() {
     const card = el("button", { class: "libcard", title: `${label(it)}\n${it.dims.join(" × ")} · ${it.tris} triangles${it.rooms.size > 1 ? ` · in ${it.rooms.size} rooms` : ""}` });
     card._item = it;
     card.append(el("img", { alt: "" }), el("span", {}, label(it)));
-    if (store.libraryPick && store.libraryPick.room === it.room && store.libraryPick.mesh === it.mesh) card.classList.add("on");
+    if (store.libraryPick && modelKey(store.libraryPick) === it.key && store.libraryPick.mesh === it.mesh) card.classList.add("on");
     card.addEventListener("click", () => {
       remember(it);
-      store.libraryPick = { room: it.room, mesh: it.mesh, name: label(it) };
+      store.libraryPick = { room: it.room, mesh: it.mesh, name: label(it), ...(it.game ? { game: it.game, scenario: it.scenario } : {}) };
       setTool("library");
       panel.classList.remove("on");       // out of the way so the room can be clicked; the Library button brings it back
       document.getElementById("libbtn")?.classList.add("on");
@@ -177,22 +180,51 @@ async function open() {
     const rare = el("button", { class: "chip", title: "Also list shapes nobody has named yet (rough pieces of rooms)" }, "Unnamed shapes");
     rare.addEventListener("click", () => { state.unnamed = !state.unnamed; rare.classList.toggle("on", state.unnamed); fill(); });
     where.append(rare);
+    const level = el("select", { class: "libsearch", title: "Whose objects: this scenario's, or any level's of either game (their pictures come along when you put one down)" });
+    level.append(el("option", { value: "" }, "This scenario's objects"));
+    api.levels().then((list) => {
+      levels = list;
+      for (const l of list) if (!(l.game === store.game && l.scenario === store.scenario)) level.append(el("option", { value: `${l.game}:${l.scenario}` }, `${l.game === "file1" ? "File 1" : "File 2"} · scenario ${l.scenario} (${l.rooms.length} rooms)`));
+    }).catch((e) => console.error("the levels couldn't be listed", e));
+    level.addEventListener("change", () => useLevel(level.value));
     const search = el("input", { class: "libsearch", placeholder: "Search…  (bottle, box, chair)" });
     search.addEventListener("input", () => { state.text = search.value; fill(); });
     const head = el("div", { class: "libhead" }, el("b", {}, "Library"), count = el("span", { class: "libcount" }), (() => { const x = el("button", { class: "libclose", title: "Close  (B)" }, "×"); x.addEventListener("click", close); return x; })());
     grid = el("div", { class: "libgrid" });
     note = el("div", { class: "libnote" });
-    panel = el("div", { class: "float", id: "library" }, head, search, where, chips, note, grid);
+    panel = el("div", { class: "float", id: "library" }, head, level, search, where, chips, note, grid);
     document.getElementById("view").append(panel);
   }
   const key = stamp(viewport.renderer);
-  if (key !== built) { catalogue = build(viewport.renderer); built = key; }
+  if (key !== built) { catalogue = build(viewport.renderer, ...(state.level ? [levelSources()] : [])); built = key; }
   // a game whose shapes nobody has named yet: they all show, each by its picture
   const unnamedGame = !catalogue.some((it) => it.name);
   if (unnamedGame) state.unnamed = true;
   note.textContent = unnamedGame ? "These shapes aren't named yet: go by the pictures." : "";
   panel.classList.add("on");
   document.getElementById("libbtn")?.classList.add("on");
+  fill();
+}
+
+// the rooms of the level picked (another scenario's, of either game) as Library sources
+function levelSources() {
+  const [game, scenario] = state.level.split(":"), l = (levels || []).find((x) => x.game === game && x.scenario === +scenario);
+  return l ? l.rooms.map((room) => ({ room, game, scenario: +scenario })) : [];
+}
+
+// another level's objects: its rooms' models are fetched (once each; the room you are in keeps its own), then listed as this scenario's are
+async function useLevel(value) {
+  state.level = value;
+  if (value) {
+    const sources = levelSources();
+    for (let k = 0; k < sources.length; k++) {
+      note.textContent = `Loading the level's rooms… ${k + 1} of ${sources.length}`;
+      await viewport.loadLevelModel(sources[k]);
+    }
+    note.textContent = "Objects of another level: their pictures are brought into this scenario when you put one down.";
+  } else note.textContent = "";
+  catalogue = build(viewport.renderer, ...(value ? [levelSources()] : [])); built = stamp(viewport.renderer);
+  if (!catalogue.some((it) => it.name)) state.unnamed = true;      // a level nobody has named shapes in yet: they all show, each by its picture
   fill();
 }
 

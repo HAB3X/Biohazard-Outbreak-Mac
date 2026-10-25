@@ -148,8 +148,20 @@ class Model:
         struct.pack_into("<I", body, 8, len(body))
         return number
 
-    def import_object(self, source, mesh, offset=None, absolute=False):
-        """Object `mesh` of another model (`source`, a Model) copied in with the pictures it uses (each found or added here): the new object's number"""
+    def mesh_pictures(self, mesh):
+        """The pictures (TID numbers) object `mesh`'s materials show"""
+        node = self.meshes()[mesh]
+        out, at = [], 12
+        while at + 12 <= len(node):
+            flags, count, size = struct.unpack_from("<III", node, at)
+            if (flags >> 16) & 0xFF == 5:
+                out += [self.picture_of(_u32(node, at + 12 + 4 * k)) for k in range(count)]
+            at += size
+        return out
+
+    def import_object(self, source, mesh, offset=None, absolute=False, pictures=None):
+        """Object `mesh` of another model (`source`, a Model) copied in with the pictures it uses (each found or added here): the new object's number.
+        `pictures` {the source's picture: this scenario's}: for a model of another scenario, whose pictures were brought into this one (the same numbers otherwise)"""
         node = bytearray(source.meshes()[mesh])
         nine, ten = source.materials()
         # the mesh's own material list (its kind 5 array): the numbers are materials of the source model
@@ -160,7 +172,8 @@ class Model:
                 for k in range(count):
                     m = _u32(node, at + 12 + 4 * k)
                     width, height = struct.unpack_from("<2I", ten[source.texture_ref(m)], 16)
-                    mapping[m] = self.material_for(source.picture_of(m), nine[m], (width, height))
+                    picture = source.picture_of(m)
+                    mapping[m] = self.material_for(pictures[picture] if pictures is not None else picture, nine[m], (width, height))
                     struct.pack_into("<I", node, at + 12 + 4 * k, mapping[m])
             at += size
         return self.add_object(node, offset, identity=True, absolute=absolute)

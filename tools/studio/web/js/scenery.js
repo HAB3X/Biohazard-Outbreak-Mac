@@ -1,4 +1,5 @@
 // Scenery: the objects (meshes) of a room's model. Each stands on a bone of the skeleton; moving, turning, sizing or hiding one changes that bone only, so the file's size never changes.
+import { modelKey } from "./gl.js";
 import { store, clone } from "./scene.js";
 import { boundsOf } from "./objimport.js";
 
@@ -32,7 +33,7 @@ export function attach(renderer, file) {
   }
   for (const scene of [store.scene, store.orig]) {
     const r = scene.rooms.find((x) => x.file === file);
-    if (r) { r.scenery = clone(list); r.objectBase = m.bones.length; r.pictures = m.tids; }     // a copy's number is the first beyond the model's own objects (one per bone after the first two)
+    if (r) { r.scenery = clone(list); r.objectBase = m.raw.objects; r.boneBase = m.bones.length; r.pictures = m.tids; }     // a copy is the next object after the model's own, on the next bone after its own
   }
   const saved = store.history[store.at].rooms[file];
   const r = store.scene.rooms.find((x) => x.file === file);
@@ -57,13 +58,15 @@ export function applyEdits(room, spec) {
 }
 
 const copies = (room) => (room.scenery || []).filter((x) => x.isNew);
-const nextNumber = (room) => (room.objectBase || 0) - 2 + copies(room).length;     // objects are numbered from 0, each on the bone two after it
+const nextNumber = (room) => room.objectBase + copies(room).length;
+// the bone a copy stands on: the builder appends the k-th copy as object objectBase + k on bone boneBase + k (an object's bone is otherwise the one that names it)
+const boneOf = (room, i) => room.boneBase + (i - room.objectBase);
 
 // a copy of an object: it stands beside it, on a bone of its own, and is written into the room's model (the file grows)
 export function duplicate(room, s, o = {}) {
   const c = clone(s);
   c.i = o.i ?? nextNumber(room);
-  c.bone = c.i + 2;
+  c.bone = boneOf(room, c.i);
   c.isNew = true;
   c.like = s.isNew ? s.like : s.i;
   if (!o.silent) c.off = [c.off[0] + 150, c.off[1], c.off[2] + 150];
@@ -73,7 +76,7 @@ export function duplicate(room, s, o = {}) {
 
 export function removeCopy(room, s) {
   room.scenery = room.scenery.filter((x) => x !== s);
-  copies(room).forEach((c, k) => { c.i = (room.objectBase || 0) - 2 + k; c.bone = c.i + 2; });   // the numbers stay in a row
+  copies(room).forEach((c, k) => { c.i = room.objectBase + k; c.bone = boneOf(room, c.i); });   // the numbers stay in a row
 }
 
 // an object made from geometry: standing plain (no scale or turn) where its bone puts it
@@ -97,7 +100,8 @@ export const newObjects = (room) => copies(room).map((c) => (c.library ? { like:
 
 // an object of another room's model (`lib` is {room, mesh}), standing plain on a bone of its own; the file grows by it
 function standIn(room, lib) {
-  const src = store.renderer && store.renderer.models[lib.room];
+  lib = { room: lib.room, mesh: lib.mesh, ...(lib.game ? { game: lib.game, scenario: lib.scenario } : {}) };      // (what the edits keep: not the Library's name for it)
+  const src = store.renderer && store.renderer.models[modelKey(lib)];
   const mesh = src && src.meshes.find((x) => x.mesh === lib.mesh), here = store.renderer && store.renderer.models[room.file];
   const like = room.scenery.find((x) => !x.isNew);
   if (!mesh || !here || !like) throw new Error(`The Library object ${lib.mesh} of ${lib.room} can't be set up in ${room.file}: its model isn't loaded`);

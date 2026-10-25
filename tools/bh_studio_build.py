@@ -10,6 +10,7 @@ pad's prompts keeps its variant). Pass the base patches in the order the game ge
 moved files, since the game no longer reads the old place.
 """
 import json
+import struct
 import sys
 
 import bh_archive as archive
@@ -31,13 +32,16 @@ def container_of_pack(arc, pack):
     raise FileNotFoundError(pack)
 
 
-def compose(game, edits, out_path, base_patches=(), members=None):
-    """Builds OUT_PATH; returns the report lines. `members` {(pack, name): bytes} are laid as they are besides the edits (a member of any size)"""
+def compose(game, edits, out_path, base_patches=(), members=None, pictures=None):
+    """Builds OUT_PATH; returns the report lines. `members` {(pack, name): bytes} are laid as they are besides the edits (a member of any size);
+    `pictures` {pack: [.sld bytes]} are new pictures for a scenario's pack, laid after its own (the pack's first members are its pictures, numbered in
+    order, and its _h.bin's first word counts them; the rest are found by their names, listed in the _h.bin after the counts, so they can move on)"""
     replacements = dict(members or {})
+    pictures = {pack: list(new) for pack, new in (pictures or {}).items() if new}
     patches, report = roompatch.build(game, edits, replacements)
     disc = vdisc.VDisc(game)
     ropes = {}
-    for pack, _ in replacements:
+    for pack in [p for p, _ in replacements] + list(pictures):
         path = container_of_pack(disc.arc, pack)
         if path not in ropes:
             ropes[path] = disc.open(path)
@@ -78,6 +82,20 @@ def compose(game, edits, out_path, base_patches=(), members=None):
             inner.add_member(member, data)
         rope.set_member(pack, inner)
         by_pack.setdefault((pack, path), []).append(member)
+    for pack, new in pictures.items():
+        path = container_of_pack(disc.arc, pack)
+        rope = ropes[path]
+        head_name = pack[:-4] + "_h.bin"
+        head_rope = rope.member(head_name)
+        head = bytearray(head_rope.read(0, head_rope.size))
+        count = struct.unpack_from("<I", head, 0)[0]
+        inner = rope.member(pack)
+        for k, data in enumerate(new):
+            inner.insert_member(count + k, f"{pack[:-4]}_n{k:03d}.sld", data)
+        struct.pack_into("<I", head, 0, count + len(new))
+        rope.set_member(pack, inner)
+        rope.set_member(head_name, bytes(head))
+        report.append(f"{pack}: {len(new)} pictures brought in (numbers {count} to {count + len(new) - 1})")
     for (pack, path), members in by_pack.items():
         shown = ", ".join(members[:3]) + (f" and {len(members) - 3} more" if len(members) > 3 else "")
         report.append(f"{pack}: {len(members)} files rebuilt ({shown})")

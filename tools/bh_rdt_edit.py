@@ -790,11 +790,12 @@ def model_json(game, scenario, file):
     ahi = next(c for c in table if c[0] == "AHI")
     bones = [[b[0], list(b[1][:3]), list(b[2][:3]), list(b[3][:3])] for b in nbd.skeleton(data, ahi[1], ahi[2])]
     carriers = nbd.mesh_bones(data, ahi[1], ahi[2])
-    meshes = [m for m in (mesh_json(index, mesh, carriers[index]) for index, mesh in enumerate(nbd.meshes(data, amo[1], amo[2]))) if m]
+    every = nbd.meshes(data, amo[1], amo[2])
+    meshes = [m for m in (mesh_json(index, mesh, carriers[index]) for index, mesh in enumerate(every)) if m]
     # each material's picture: its kind 9 record names a texture reference (kind 10), whose number is an entry of the TID chunk (bh_model.Model.picture_of)
     model = bh_model.Model(data)
     tids = [model.picture_of(m) for m in range(len(model.materials()[0]))] if model.i_tid is not None else []
-    return {"bones": bones, "meshes": meshes, "tids": tids}
+    return {"bones": bones, "meshes": meshes, "tids": tids, "objects": len(every)}      # (objects: every mesh, the ones with nothing to draw too: a copy is numbered after them)
 
 
 def messages_json(game, scenario):
