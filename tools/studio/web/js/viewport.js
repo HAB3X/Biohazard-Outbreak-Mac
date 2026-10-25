@@ -66,6 +66,9 @@ export class Viewport {
   followEye() {
     if (store.mode !== "3d") return;
     const eye = this.camera.eye();
+    // where rooms overlap (the bar and the street around it) the room you are in stays yours while it has floor under you, so the view doesn't flip between them
+    const own = this.floorAt(store.room, eye[0], eye[2], eye[1]);
+    if (own !== null && eye[1] - own < 1500) return;
     let best = null, highest = -Infinity;
     for (const r of store.scene.rooms) {
       const h = this.floorAt(r.file, eye[0], eye[2], eye[1]);

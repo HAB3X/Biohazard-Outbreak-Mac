@@ -361,7 +361,9 @@ export class Renderer {
       const look = lightOf(opts.fog);
       gl.uniform3fv(U("uEye"), camera.basis().eye); gl.uniform3fv(U("uFog"), look.fog); gl.uniform3fv(U("uScene"), look.scene); gl.uniform1f(U("uVertex"), look.vertex);
     }
-    const vpm = camera.viewProj(), nearCut = textured && camera.lit && opts.fog ? BEHIND_LENS : null;
+    // through one of the game's own cameras its rule is kept (a triangle with a corner behind the lens isn't drawn); flying freely, walls and floors pass
+    // behind you all the time and would blink out whole, so there the triangles are clipped at the lens as usual
+    const vpm = camera.viewProj(), nearCut = textured && camera.mode === "game" && opts.fog ? BEHIND_LENS : null;
     const draw = { U, textured, camera, posLoc, uvLoc, colLoc, vpm, nearCut };
     for (const file of rooms) {
       const m = this.models[file];
