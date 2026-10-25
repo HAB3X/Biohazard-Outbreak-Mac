@@ -741,7 +741,7 @@ refreshPanel();
 
 
 def model_json(game, scenario, file):
-    """A room's model for the 3D view as JSON: the skeleton ([parent, scale xyz, rotation xyz, offset xyz]) and each mesh's bone (i + 2),
+    """A room's model for the 3D view as JSON: the skeleton ([parent, scale xyz, rotation xyz, offset xyz]) and each mesh's bone (the one that names it, nbd.mesh_bones),
     positions (little-endian floats) and triangle indices (uint32), both base64"""
     import base64
     import struct
@@ -768,6 +768,7 @@ def model_json(game, scenario, file):
     amo = next(c for c in table if c[0] == "AMO")
     ahi = next(c for c in table if c[0] == "AHI")
     bones = [[b[0], list(b[1][:3]), list(b[2][:3]), list(b[3][:3])] for b in nbd.skeleton(data, ahi[1], ahi[2])]
+    carriers = nbd.mesh_bones(data, ahi[1], ahi[2])
     meshes = []
     for index, mesh in enumerate(nbd.meshes(data, amo[1], amo[2])):
         textured = [t for t in mesh.textured_triangles() if max(t[:3]) < len(mesh.positions)
@@ -780,7 +781,7 @@ def model_json(game, scenario, file):
         for a, b, c, material in textured:
             groups.setdefault(material, []).extend((a, b, c))
         light = [c / 128.0 for v in (mesh.colours if len(mesh.colours) == len(mesh.positions) else [(128.0, 128.0, 128.0, 128.0)] * len(mesh.positions)) for c in (v[0], v[1], v[2], min(v[3], 128.0))]
-        meshes.append({"mesh": index, "bone": index + 2,
+        meshes.append({"mesh": index, "bone": carriers[index],
                        "c": base64.b64encode(struct.pack(f"<{len(light)}f", *light)).decode(),
                        "p": base64.b64encode(struct.pack(f"<{len(flat)}f", *flat)).decode(),
                        "uv": base64.b64encode(struct.pack(f"<{len(uvs)}f", *uvs)).decode(),

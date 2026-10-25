@@ -172,6 +172,17 @@ def bone_records(data, offset, size):
     return out
 
 
+def mesh_bones(data, offset, size):
+    """{mesh number: the bone that carries it} of the AHI chunk: a mesh node (flags 0x40000002) names its mesh in the word at +64 of its record. It isn't bone i + 2
+    in general: in File 1's room models 1562 meshes stand elsewhere, and the game draws each where its own node puts it (its GS recording of the bar from camera 6
+    holds exactly the 396 triangles of the bottle shelves, objects 54-58, 78 and 79, ahead of the camera, where these bones put them)"""
+    out = {}
+    for bone, record in enumerate(bone_records(data, offset, size)):
+        if struct.unpack_from("<I", data, record - 12)[0] & 0xF == 2:
+            out[struct.unpack_from("<i", data, record + 64)[0]] = bone
+    return out
+
+
 def set_bone(data, record, scale=None, rotation=None, offset=None):
     """The bone record at file offset `record` overwritten in a bytearray `data`: scale (x, y, z), rotation (x, y, z radians),
     offset from its parent (x, y, z); the 4th number of each is left (1)"""
@@ -237,7 +248,7 @@ def world(bones):
 
 def room_triangles(data):
     """The triangles of a room .nbd's stage in world coordinates [((x, y, z) x3)]: the first AMO's meshes each placed by a bone
-    of the first AHI, mesh i by bone i + 2 (the root and one more come first). Checked on File 2's r0400300: 99.3% of the
+    of the first AHI, each by the bone that names it (mesh_bones). Checked on File 2's r0400300: 99.3% of the
     vertices land in the room's floor region from its camera boxes (rooms.md's rooms share one world with the room file)."""
     table = chunks(data)
     amo = next((c for c in table if c[0] == "AMO"), None)
@@ -246,15 +257,12 @@ def room_triangles(data):
         return []
     parts = meshes(data, amo[1], amo[2])
     place = world(skeleton(data, ahi[1], ahi[2]))
+    carriers = mesh_bones(data, ahi[1], ahi[2])
     out = []
     for index, mesh in enumerate(parts):
-        bone = index + 2
         if not mesh.positions:
             continue
-        try:
-            points = [place(bone, p) for p in mesh.positions]
-        except IndexError:
-            continue
+        points = [place(carriers[index], p) for p in mesh.positions]
         for a, b, c in mesh.triangles():
             if a < len(points) and b < len(points) and c < len(points):
                 out.append((points[a], points[b], points[c]))
@@ -395,7 +403,7 @@ def clone_object(data, number, offset=None, geometry=None):
         copy = make_mesh_node(copy, geometry["positions"], geometry["uvs"], geometry["triangles"], geometry["material"], geometry.get("colour"))
     end_of_list = holder + hsize
     records = bone_records(bytes(data), ahi[1], ahi[2])
-    bone_at = records[number + 2] - 12
+    bone_at = records[mesh_bones(bytes(data), ahi[1], ahi[2])[number]] - 12
     bone = bytearray(data[bone_at:bone_at + 12 + 256])
     new_index = len(records)
     struct.pack_into("<i", bone, 12, new_index)

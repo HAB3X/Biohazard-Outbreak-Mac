@@ -104,6 +104,23 @@ class Models(unittest.TestCase):
         self.assertEqual(bar.picture_of(39), 3)
         self.assertEqual(bar.picture_of(10), 4)
 
+    def test_an_object_stands_on_the_bone_that_names_it(self):
+        data = archive.Archive("file1").open("/NETBIO00.DAT/r001.afs/r0010100.nbd").read()
+        ahi = next(c for c in bh_nbd.chunks(data) if c[0] == "AHI")
+        carriers = bh_nbd.mesh_bones(data, ahi[1], ahi[2])
+        # the bar's bottle shelves (objects 54-58): the game's own GS recording from camera 6 draws all 396 of their triangles ahead of the camera, where these bones put them
+        # (bone i + 2 put them behind it)
+        self.assertEqual(carriers[57], 95)
+        self.assertEqual(carriers[63], 52)
+        self.assertEqual(sorted(carriers), list(range(96)))
+        self.assertEqual(len(set(carriers.values())), 96)
+
+    def test_a_moved_object_changes_the_bone_that_carries_it(self):
+        import bh_studio
+        change = {"offset": [1.0, 2.0, 3.0]}
+        built = bh_studio.scenery_as_models("file1", 1, {"rooms": {"r0010100.rdt": {"scenery": {"57": change}}}})
+        self.assertEqual(built["models"]["r0010100.nbd"]["bones"], {"95": change})
+
 
 class Pictures(unittest.TestCase):
     def test_restyle_round_trips_through_the_game_codec(self):
