@@ -197,6 +197,15 @@ class Enemies(unittest.TestCase):
             self.assertEqual(r[40:51] + r[52:68], kind[40:51] + kind[52:68])      # (byte 51 is the hit-point tier the spec sets)
 
 
+    def test_only_kinds_the_game_has_ai_for_are_placeable(self):
+        import bh_enemies
+        import bh_archive as arc
+        game = arc.Archive("file1").open("/PROG/GAME.BIN").read()
+        routine = struct.unpack_from("<70h", game, 0x6D7040 - 0x540000)
+        # File 1's kind-to-AI map gives a routine to exactly the kinds its scenarios have; the rest get 0, a stand-in
+        self.assertEqual(sorted(bh_enemies.kinds_of("file1")), sorted(k for k in range(70) if routine[k]))
+
+
 class Pictures(unittest.TestCase):
     def test_restyle_round_trips_through_the_game_codec(self):
         from PIL import Image

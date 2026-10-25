@@ -222,6 +222,23 @@ def _records(data):
 
 
 _KIND_RECORDS = {}
+_KINDS = {}
+
+
+def kinds_of(game):
+    """The enemy kinds some scenario of `game` has: the kinds its executable has AI for. File 1's map of kind to AI routine (GAME.BIN 0x6D7040) gives
+    exactly these 29 kinds a routine and every other kind 0 (a stand-in), so an enemy of another kind can't run there, whatever model the disc holds"""
+    import bh_rdt
+
+    if game not in _KINDS:
+        kinds = set()
+        for scenario in sorted({int(pack[1:4]) for pack, _, _ in bh_rdt.rooms(game)}):
+            try:
+                kinds |= {e.id for e in Enemies(game, scenario).enemies}
+            except FileNotFoundError:
+                continue
+        _KINDS[game] = kinds
+    return _KINDS[game]
 
 
 def kind_record(game, kind, cls=None):

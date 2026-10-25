@@ -38,7 +38,8 @@ def model_file(game, kind, cls):
 
 def enemy_models(game):
     """[{"id": kind, "cls": class, "file": name, "placeable": bool}] of every enemy model the game's pack holds (E<kind>_<class>.NBD), by kind and class.
-    Placeable: some scenario of either game has an enemy of that kind, whose record a new one takes its settings from (bh_enemies.kind_record)"""
+    Placeable: some scenario of this game has an enemy of that kind (the game has AI for it: bh_enemies.kinds_of), whose record a new one takes its
+    settings from (bh_enemies.kind_record)"""
     import re
 
     import bh_enemies
@@ -48,7 +49,7 @@ def enemy_models(game):
         m = re.fullmatch(r"E(\d\d)_(\d\d)\.NBD", name)
         if m:
             kind = int(m.group(1))
-            out.append({"id": kind, "cls": int(m.group(2)), "file": name, "placeable": bh_enemies.kind_record(game, kind) is not None})
+            out.append({"id": kind, "cls": int(m.group(2)), "file": name, "placeable": kind in bh_enemies.kinds_of(game)})
     return out
 
 
