@@ -124,6 +124,10 @@ class ISOReader:
         return self._f.read(size)
 
 
+import bh_sh2 as sh2
+import bh_hg as hg
+
+
 # -----------------------------------------------------------------------------
 # Audio Decoders (CRI ADX & Sony PS2 SPU2 ADPCM -> 16-bit PCM WAV)
 # -----------------------------------------------------------------------------
@@ -789,6 +793,20 @@ def get_model_json(game_key, item_id):
                 return re4.bin_to_model_json(asset["bin_bytes"], asset_id=item_id)
         except Exception:
             pass
+    elif game_key == "silent_hill":
+        try:
+            res = sh2.get_model_json(item_id)
+            if res:
+                return res
+        except Exception:
+            pass
+    elif game_key == "haunting_ground":
+        try:
+            res = hg.get_model_json(item_id)
+            if res:
+                return res
+        except Exception:
+            pass
 
     item = get_item(game_key, item_id) or {"id": item_id, "name": item_id, "category": "scenery"}
     vtx, tris = build_stylized_mesh(item)
@@ -826,6 +844,20 @@ def get_texture_png(game_key, item_id):
                 return re4.tpl_to_png(asset["tpl_bytes"])
         except Exception:
             pass
+    elif game_key == "silent_hill":
+        try:
+            res = sh2.get_texture_png(item_id)
+            if res:
+                return res
+        except Exception:
+            pass
+    elif game_key == "haunting_ground":
+        try:
+            res = hg.get_texture_png(item_id)
+            if res:
+                return res
+        except Exception:
+            pass
 
     item = get_item(game_key, item_id) or {"id": item_id}
     img = make_stylized_texture(item)
@@ -841,6 +873,20 @@ def get_nbd_mesh_node(game_key, item_id, material=0, template=None):
             asset = re4.get_asset(item_id)
             if asset.get("bin_bytes"):
                 return re4.bin_to_nbd_mesh_node(asset["bin_bytes"], material=material, template=template)
+        except Exception:
+            pass
+    elif game_key == "silent_hill":
+        try:
+            res = sh2.get_nbd_mesh_node(item_id, material=material, template=template)
+            if res:
+                return res
+        except Exception:
+            pass
+    elif game_key == "haunting_ground":
+        try:
+            res = hg.get_nbd_mesh_node(item_id, material=material, template=template)
+            if res:
+                return res
         except Exception:
             pass
 
@@ -864,6 +910,20 @@ def get_sld_texture(game_key, item_id):
             asset = re4.get_asset(item_id)
             if asset.get("tpl_bytes"):
                 return re4.tpl_to_sld(asset["tpl_bytes"])
+        except Exception:
+            pass
+    elif game_key == "silent_hill":
+        try:
+            res = sh2.get_sld_texture(item_id)
+            if res:
+                return res
+        except Exception:
+            pass
+    elif game_key == "haunting_ground":
+        try:
+            res = hg.get_sld_texture(item_id)
+            if res:
+                return res
         except Exception:
             pass
 
