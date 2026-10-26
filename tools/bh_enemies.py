@@ -176,6 +176,10 @@ def grown(enemies, new, edits=None):
                 if size and struct.unpack_from("<i", data, offset + 28)[0] & 0xFF == int(spec["room"]):   # a group is a room's (its records may be of different variants)
                     targets.append(g)
             if not targets:
+                # a room with no enemies has no group to add to (making a group isn't done); the sgl_ file is the one the game reads, so there it is an error,
+                # not a new enemy silently left out of the build
+                if sgl:
+                    raise SystemExit(f"room {spec['room']} has no enemies in {name}, so a new one can't be added there yet")
                 continue
             like = enemies.enemies[int(spec.get("like", 0))]
             for g in targets:
