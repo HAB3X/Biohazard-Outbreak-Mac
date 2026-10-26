@@ -27,6 +27,9 @@ namespace
 std::ifstream g_file;
 std::mutex g_discLock;
 u32 g_sectorSize = 2048;
+// The image's sectors: one past them reads as zeroes under the patches (a file moved there); one inside that can't be read is
+// an error, not zeroes
+u64 g_imageSectors = 0;
 u32 g_dataOffset = 0;
 u32 g_rootLsn = 0;
 u32 g_rootSize = 0;
@@ -146,6 +149,8 @@ bool DiscOpen(const std::string& path)
         g_sectorSize = 2352;
         g_dataOffset = head[15] == 2 ? 24 : 16;
     }
+    g_file.seekg(0, std::ios::end);
+    g_imageSectors = static_cast<u64>(g_file.tellg()) / g_sectorSize;
     u8 pvd[2048];
     if (!ReadRaw(16, 1, pvd) || std::memcmp(pvd + 1, "CD001", 5) != 0)
     {
@@ -301,8 +306,9 @@ bool DiscFind(const std::string& path, u32& lsn, u32& size)
 
 namespace
 {
-// `count` bytes of the image itself (no patches) from byte `offset`, the part past its end as zeroes
-void ReadImageBytes(u64 offset, u64 count, u8* out)
+// `count` bytes of the image itself (no patches) from byte `offset`, the part past its end as zeroes; false when a sector
+// inside it can't be read
+bool ReadImageBytes(u64 offset, u64 count, u8* out)
 {
     std::vector<u8> sector(2048);
     while (count > 0)
@@ -310,9 +316,14 @@ void ReadImageBytes(u64 offset, u64 count, u8* out)
         const u32 lsn = static_cast<u32>(offset / 2048);
         const u32 inside = static_cast<u32>(offset % 2048);
         const u32 take = static_cast<u32>(std::min<u64>(count, 2048 - inside));
-        if (!ReadRaw(lsn, 1, sector.data()))
+        if (lsn >= g_imageSectors)
         {
             std::memset(out, 0, take);
+        }
+        else if (!ReadRaw(lsn, 1, sector.data()))
+        {
+            Log("disc: sector %u of the image can't be read", lsn);
+            return false;
         }
         else
         {
@@ -322,6 +333,7 @@ void ReadImageBytes(u64 offset, u64 count, u8* out)
         offset += take;
         count -= take;
     }
+    return true;
 }
 
 // the sectors with the copied ranges and then the patches laid over them (the caller holds the lock)
@@ -329,13 +341,13 @@ bool ReadPatched(u32 lsn, u32 count, u8* out)
 {
     for (u32 i = 0; i < count; i++)
     {
-        if (!ReadRaw(lsn + i, 1, out + i * 2048))
+        if (lsn + i >= g_imageSectors && !g_patches.empty())
         {
-            if (g_patches.empty())
-            {
-                return false;
-            }
             std::memset(out + i * 2048, 0, 2048); // past the image's end: a patch may have put something there
+        }
+        else if (!ReadRaw(lsn + i, 1, out + i * 2048))
+        {
+            return false;
         }
     }
     const u64 start = static_cast<u64>(lsn) * 2048, end = start + static_cast<u64>(count) * 2048;
@@ -354,7 +366,10 @@ bool ReadPatched(u32 lsn, u32 count, u8* out)
         {
             if (p.copy)
             {
-                ReadImageBytes(p.source + (from - p.offset), to - from, out + (from - start));
+                if (!ReadImageBytes(p.source + (from - p.offset), to - from, out + (from - start)))
+                {
+                    return false;
+                }
             }
             else
             {
