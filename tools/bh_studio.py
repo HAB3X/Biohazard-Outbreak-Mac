@@ -101,9 +101,22 @@ class Studio:
         with self.lock:
             key = ("character", self.game, kind, cls)
             if key not in self.cache:
-                file = bh_characters.model_file(self.game, kind, cls)
-                self.cache[key] = ({"file": file, "model": bh_characters.character_json(self.game, file)} if file else
-                                   {"file": None, "reason": f"no E{kind:02d}_{cls:02d}.NBD on the disc for this kind and class"})
+                if kind >= 100:
+                    aid = None
+                    for k, v in bh_re4.RE4_ENEMIES.items():
+                        if v.get("kind_id") == kind:
+                            aid = k
+                            break
+                    if aid:
+                        asset = bh_re4.get_asset(aid)
+                        model = bh_re4.bin_to_model_json(asset["bin_bytes"], aid)
+                        self.cache[key] = {"file": f"RE4_{aid}.NBD", "model": model}
+                    else:
+                        self.cache[key] = {"file": None, "reason": f"unknown RE4 enemy kind {kind}"}
+                else:
+                    file = bh_characters.model_file(self.game, kind, cls)
+                    self.cache[key] = ({"file": file, "model": bh_characters.character_json(self.game, file)} if file else
+                                       {"file": None, "reason": f"no E{kind:02d}_{cls:02d}.NBD on the disc for this kind and class"})
             return self.cache[key]
 
     def character_picture(self, key):
@@ -112,7 +125,13 @@ class Studio:
         with self.lock:
             cache_key = ("character picture", self.game, key)
             if cache_key not in self.cache:
-                self.cache[cache_key] = bh_characters.picture_png(self.game, key)
+                if key.startswith("re4:"):
+                    parts = key.split(":")
+                    aid = parts[1] if len(parts) > 1 else "cap01"
+                    asset = bh_re4.get_asset(aid)
+                    self.cache[cache_key] = bh_re4.tpl_to_png(asset["tpl_bytes"])
+                else:
+                    self.cache[cache_key] = bh_characters.picture_png(self.game, key)
             return self.cache[cache_key]
 
     def messages(self):
