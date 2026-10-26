@@ -6,7 +6,7 @@
 The items' places are in the scenario's item0NN.dat (r040.afs: item040.dat): after a 24 byte head and tables, 9 word records from the head's third word + 8 (2944 in File 2's first scenario; the
 count is the tbl's) with the item's number from 1: [room number byte, 0, item number halfword, x, y, z (floats), 3 words (0, a flag word, a
 second flag word kept as they are), x2, 1.0 or 2.0, z2]. What each one is, is in the scenario's item0NNxx.tbl files (item04000.tbl ... item04019.tbl: one for
-each of the game's variants; the first sixteen have all 173 records, the last four the first 57): an 8 byte head (a count 4 and 0xAD) then 12 byte records, the
+each of the game's variants; all twenty have the 173 records): an 8 byte head (a count 4 and 0xAD) then 12 byte records, the
 item's number: a halfword (0x1C, 0x12C a herb, 0x190 a handgun ...), a quantity byte, a byte 0x64 and, in the long records (the 2084 byte tables: item04000 to 04015), two words
 0xFFFF (what is inside it, as they are). The last four tables (item04016 to 04019, 700 bytes) have the same 173 records in 4 bytes: just the first four bytes. The head's second word is the
 record count (173) and the stride is the table's size over it. Which table the game reads: item04016 in File 2's zoo (single play, the first character: measured by writing a different marker
