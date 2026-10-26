@@ -159,6 +159,9 @@ class Studio:
         tmp.replace(path)
 
     def switch(self, game, scenario):
+        # the game names the project file (project_path), so only the two games' names are taken
+        if game not in ("file1", "file2") or scenario not in scenarios(game):
+            raise ValueError(f"no scenario {scenario} of {game}")
         with self.lock:
             self.game, self.scenario = game, scenario
 
@@ -420,7 +423,21 @@ def make_handler(studio):
         def body(self):
             return json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
 
+        def refused(self, changes=False):
+            """True (and a 403 sent) for a request the page didn't make. Any web page open in the browser can send to 127.0.0.1: a form or a text/plain
+            POST goes without the browser asking first, so a POST or PUT must say it is JSON (which makes the browser ask, and this server never agrees);
+            and a page whose own name was pointed at 127.0.0.1 (DNS rebinding) arrives with that name as its Host, so only this server's own names are taken"""
+            port = self.server.server_address[1]
+            host_ok = self.headers.get("Host", "") in (f"127.0.0.1:{port}", f"localhost:{port}")
+            json_ok = not changes or self.headers.get("Content-Type", "").split(";")[0].strip() == "application/json"
+            if host_ok and json_ok:
+                return False
+            self.send(403, json.dumps({"error": "not from the Studio's own page"}))
+            return True
+
         def do_GET(self):
+            if self.refused():
+                return
             url = urlparse(self.path)
             query = parse_qs(url.query)
             try:
@@ -525,6 +542,8 @@ def make_handler(studio):
                 self.send(500, json.dumps({"error": str(error)}))
 
         def do_PUT(self):
+            if self.refused(changes=True):
+                return
             try:
                 if urlparse(self.path).path == "/api/project":
                     studio.save_project(self.body())
@@ -535,6 +554,8 @@ def make_handler(studio):
                 self.send(500, json.dumps({"error": str(error)}))
 
         def do_POST(self):
+            if self.refused(changes=True):
+                return
             path = urlparse(self.path).path
             try:
                 body = self.body()
