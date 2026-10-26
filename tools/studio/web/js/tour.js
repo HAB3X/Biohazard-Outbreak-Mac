@@ -3,7 +3,7 @@ import { el } from "./ui.js";
 
 const KEY = "studio-tour-done";
 const STEPS = [
-  ["Look around", "<b>W A S D</b> fly, <b>Q E</b> go down and up, <b>right-drag</b> to look. What you see is the game's own picture; it follows you a moment after you stop."],
+  ["Look around", "<b>W A S D</b> fly, <b>Q E</b> go down and up, <b>right-drag</b> to look. What you see is Studio's own drawing of the level, lit as the game lights it."],
   ["Pick things up", "<b>Click</b> anything to select it, then <b>drag</b> it. Arrows slide it along one way, the ring turns it, the diamond resizes it. <b>Del</b> removes, <b>Ctrl+D</b> copies, <b>Ctrl+Z</b> undoes."],
   ["Put things down", "<b>Library</b> (bottom) has the game's own props: search, click one, click in the room, <b>R</b> turns it. <b>Add</b> has doors, enemies, items, walls and more."],
   ["Rooms and rules", "<b>Rooms</b> (top) lists every room. <b>This room</b> has its rules, puzzles and a way to start a level from nothing."],
