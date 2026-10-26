@@ -364,14 +364,25 @@ class Transplant:
                     todo.append(g)
             todo += [((s + 4 * i) & 0xF0000000) | ((x & 0x3FFFFFF) << 2) for i, x in enumerate(w) if x >> 26 == 2 and not (s <= (((s + 4 * i) & 0xF0000000) | ((x & 0x3FFFFFF) << 2)) < e)]
             for _, _, address in self._formed(f):
-                if self.function_at(address) == address:
-                    todo.append(address)
+                fa = self.function_at(address)
+                if fa is not None:
+                    todo.append(fa)
                 else:
+                    null_streak = 0
                     for k in range(256):                      # a table of code addresses there (a state machine's handlers)
                         v = self.word(address + 4 * k)
-                        if v is None or self.function_at(v) != v:
+                        if v is None:
                             break
-                        todo.append(v)
+                        if v == 0:
+                            null_streak += 1
+                            if null_streak > 3:
+                                break
+                            continue
+                        null_streak = 0
+                        gv = self.function_at(v)
+                        if gv is None or not (MEMORY[0] <= v < MEMORY[1]):
+                            break
+                        todo.append(gv)
         return own
 
     # ---- the record's fields
@@ -505,9 +516,9 @@ class _Builder:
     def __init__(self, t, own, base, expand):
         # (in the source's order: a function that falls through into the next, or branches into it, keeps it beside it)
         self.t, self.own, self.base, self.expand = t, sorted(own), base, expand
-        self.order_of = {f: self._emission(f) for f in own}
+        self.order_of = {f: self._emission(f) for f in self.own}
         self.start, at = {}, base
-        for f in own:
+        for f in self.own:
             self.start[f] = at
             at += 4 * len(self.order_of[f][0])
         self.code_end = at
@@ -649,7 +660,7 @@ class _Builder:
                 v = struct.unpack_from("<I", data, j)[0]
                 # (a word whose low half is 0 is taken for a number: submain's 0x150000 and 0x1F0000 began functions of the executable that
                 # nothing of the kinds' calls)
-                if MEMORY[0] <= v < MEMORY[1] and v & 0xFFFF and (t.function_at(v) == v or v in t.label_set or t.function_at(v) in self):
+                if MEMORY[0] <= v < MEMORY[1] and v & 0xFFFF and (t.function_at(v) == v or v in t.label_set or t.function_at(v) in self or t.function_at(v) in t.pairs):
                     r = self.resolve(v, f"pointer in data {a + j:#x}")
                     if r is not None:
                         pointers.append((a, j, r))
