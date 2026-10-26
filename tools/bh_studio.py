@@ -454,7 +454,8 @@ def make_handler(studio):
                     self.send(200, json.dumps(bh_ps2_games.GAMES))
                 elif url.path == "/api/games/catalog":
                     gkey = query.get("game", ["all"])[0]
-                    self.send(200, json.dumps(bh_ps2_games.get_catalog(gkey)))
+                    cat = query.get("category", [None])[0]
+                    self.send(200, json.dumps(bh_ps2_games.get_catalog(gkey, category=cat)))
                 elif url.path == "/api/games/model":
                     gkey = query.get("game", ["re4"])[0]
                     aid = query.get("id", [None])[0]
@@ -468,6 +469,11 @@ def make_handler(studio):
                     aid = query.get("id", [None])[0]
                     png = bh_ps2_games.get_texture_png(gkey, aid) if aid else b""
                     self.send(200 if png else 404, png or b"", "image/png")
+                elif url.path == "/api/games/sound":
+                    gkey = query.get("game", ["re4"])[0]
+                    aid = query.get("id", [None])[0]
+                    wav = bh_ps2_games.get_sound_wav(gkey, aid) if aid else b""
+                    self.send(200 if wav else 404, wav or b"", "audio/wav")
                 elif url.path == "/api/re4/catalog":
                     self.send(200, json.dumps(bh_ps2_games.get_catalog("re4")))
                 elif url.path == "/api/re4/model":

@@ -209,9 +209,32 @@ function fillGuest(game, cat) {
     return;
   }
   for (const it of list) {
+    if (it.category === "sounds") {
+      const card = el("button", {
+        class: "libcard libaudio-card",
+        title: `${it.name} (${it.id})\n${it.game_name || game} · Audio / Sound Effect\nClick to audition SFX in browser`,
+      });
+      card._item = { ...it, isGuest: true, game, key: `${game}:${it.id}`, mesh: 0 };
+      const icon = el("div", { class: "libaudio-icon" }, "🔊");
+      const nameSpan = el("span", {}, it.name);
+      const tag = el("span", { class: "libaudio-play-tag" }, "▶ Play SFX");
+      card.append(icon, nameSpan, tag);
+
+      card.addEventListener("click", () => {
+        try {
+          const snd = new Audio(api.gameSoundUrl(game, it.id));
+          snd.play().catch((e) => console.log("Audio play error", e));
+        } catch (e) {}
+        emit("note", `Playing: ${it.name}`);
+      });
+
+      grid.append(card);
+      continue;
+    }
+
     const card = el("button", {
       class: "libcard",
-      title: `${it.name} (${it.id})\n${it.game_name || game} · ${it.category}\nClick to place`,
+      title: `${it.name} (${it.id})\n${it.game_name || game} · ${it.category}\nClick to place in room`,
     });
     card._item = { ...it, isGuest: true, game, key: `${game}:${it.id}`, mesh: 0 };
     const img = el("img", {
@@ -277,39 +300,66 @@ async function open() {
     level.append(
       // Resident Evil 4
       el("option", { value: "guest:re4:scenery" }, "Resident Evil 4 · Scenery & Props"),
-      el("option", { value: "guest:re4:weapons" }, "Resident Evil 4 · Weapons & Items"),
+      el("option", { value: "guest:re4:weapons" }, "Resident Evil 4 · Weapons"),
+      el("option", { value: "guest:re4:items" }, "Resident Evil 4 · Items & Ammo"),
       el("option", { value: "guest:re4:enemies" }, "Resident Evil 4 · Enemies & Bosses"),
       el("option", { value: "guest:re4:characters" }, "Resident Evil 4 · Characters"),
+      el("option", { value: "guest:re4:ui" }, "Resident Evil 4 · UI Elements"),
+      el("option", { value: "guest:re4:sounds" }, "Resident Evil 4 · Audio & SFX"),
+
       // Haunting Ground
       el("option", { value: "guest:haunting_ground:scenery" }, "Haunting Ground · Castle Scenery"),
-      el("option", { value: "guest:haunting_ground:weapons" }, "Haunting Ground · Items & Alchemy"),
+      el("option", { value: "guest:haunting_ground:weapons" }, "Haunting Ground · Weapons & Defense"),
+      el("option", { value: "guest:haunting_ground:items" }, "Haunting Ground · Items & Alchemy"),
       el("option", { value: "guest:haunting_ground:enemies" }, "Haunting Ground · Debilitas & Stalkers"),
       el("option", { value: "guest:haunting_ground:characters" }, "Haunting Ground · Fiona & Hewie"),
+      el("option", { value: "guest:haunting_ground:ui" }, "Haunting Ground · UI & Gauges"),
+      el("option", { value: "guest:haunting_ground:sounds" }, "Haunting Ground · Audio & SFX"),
+
       // Clock Tower 3
       el("option", { value: "guest:clock_tower_3:scenery" }, "Clock Tower 3 · London Scenery & Props"),
       el("option", { value: "guest:clock_tower_3:weapons" }, "Clock Tower 3 · Alyssa's Bow & Arrows"),
+      el("option", { value: "guest:clock_tower_3:items" }, "Clock Tower 3 · Items & Keys"),
       el("option", { value: "guest:clock_tower_3:enemies" }, "Clock Tower 3 · Sledgehammer & Stalkers"),
       el("option", { value: "guest:clock_tower_3:characters" }, "Clock Tower 3 · Alyssa Barrow"),
+      el("option", { value: "guest:clock_tower_3:ui" }, "Clock Tower 3 · UI & Seals"),
+      el("option", { value: "guest:clock_tower_3:sounds" }, "Clock Tower 3 · Audio & SFX"),
+
       // Silent Hill
       el("option", { value: "guest:silent_hill:scenery" }, "Silent Hill · Props & Scenery"),
       el("option", { value: "guest:silent_hill:weapons" }, "Silent Hill · Great Knife & Weapons"),
+      el("option", { value: "guest:silent_hill:items" }, "Silent Hill · Items & Supplies"),
       el("option", { value: "guest:silent_hill:enemies" }, "Silent Hill · Pyramid Head & Nurses"),
       el("option", { value: "guest:silent_hill:characters" }, "Silent Hill · James & Maria"),
+      el("option", { value: "guest:silent_hill:ui" }, "Silent Hill · UI & Maps"),
+      el("option", { value: "guest:silent_hill:sounds" }, "Silent Hill · Audio & SFX"),
+
       // Fatal Frame
       el("option", { value: "guest:fatal_frame:scenery" }, "Fatal Frame · Shrine & Village Props"),
       el("option", { value: "guest:fatal_frame:weapons" }, "Fatal Frame · Camera Obscura & Film"),
+      el("option", { value: "guest:fatal_frame:items" }, "Fatal Frame · Items & Charms"),
       el("option", { value: "guest:fatal_frame:enemies" }, "Fatal Frame · Sae Kurosawa & Ghosts"),
       el("option", { value: "guest:fatal_frame:characters" }, "Fatal Frame · Mio & Mayu"),
+      el("option", { value: "guest:fatal_frame:ui" }, "Fatal Frame · UI & Viewfinders"),
+      el("option", { value: "guest:fatal_frame:sounds" }, "Fatal Frame · Audio & SFX"),
+
       // Kuon
       el("option", { value: "guest:kuon:scenery" }, "Kuon · Fujiwara Manor Props"),
       el("option", { value: "guest:kuon:weapons" }, "Kuon · Talismans & Tanto Blades"),
+      el("option", { value: "guest:kuon:items" }, "Kuon · Items & Scrolls"),
       el("option", { value: "guest:kuon:enemies" }, "Kuon · Gaki & Blood Corpse"),
       el("option", { value: "guest:kuon:characters" }, "Kuon · Utsuki & Sakuya"),
+      el("option", { value: "guest:kuon:ui" }, "Kuon · UI & Mandalas"),
+      el("option", { value: "guest:kuon:sounds" }, "Kuon · Audio & SFX"),
+
       // Forbidden Siren
       el("option", { value: "guest:forbidden_siren:scenery" }, "Forbidden Siren · Hanuda Village Props"),
       el("option", { value: "guest:forbidden_siren:weapons" }, "Forbidden Siren · Weapons & Sniper Rifle"),
+      el("option", { value: "guest:forbidden_siren:items" }, "Forbidden Siren · Items & Keys"),
       el("option", { value: "guest:forbidden_siren:enemies" }, "Forbidden Siren · Shibito & Yamibito"),
       el("option", { value: "guest:forbidden_siren:characters" }, "Forbidden Siren · Kyoya & Miyako"),
+      el("option", { value: "guest:forbidden_siren:ui" }, "Forbidden Siren · UI & Sightjack"),
+      el("option", { value: "guest:forbidden_siren:sounds" }, "Forbidden Siren · Audio & SFX"),
     );
     api.levels().then((list) => {
       levels = list;
