@@ -191,6 +191,8 @@ if grep -q '^[^#]' "$SETTINGS/characters.txt" 2>/dev/null; then
         osascript -e 'display alert "The character mods could not be put in" message "'"$(tail -n 2 "$SETTINGS/characters-patch.log")"'"' >/dev/null
     fi
 fi
+# The rooms edited with tools/bh_rdt_edit.py, as tools/app_launcher.sh lays them
+[ -f "$SETTINGS/rooms.patch" ] && set -- --patch "$SETTINGS/rooms.patch" "$@"
 exec "$DIR/{g['exe']}" --disc "$DISC" --patch "$DIR/../Resources/english.patch" "$@"
 """)
     resources = app / "Contents/Resources"
