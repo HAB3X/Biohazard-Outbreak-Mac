@@ -14,8 +14,6 @@ let state = { kind: "all", where: "here", text: "", unnamed: false, level: "" };
 let levels = null;      // every scenario of both games (/api/levels), asked for once
 let catalogue = [], built = "";
 let enemyModels = null;      // every enemy model on the disc ([{id, cls, file}], /api/characters), asked for once
-let guestCatalogs = {};     // Cached catalogs by game
-let guestCatalog = null;       // Currently selected guest catalog
 const ENEMY_NAMES = { 1: "Zombie" };     // the kinds named so far; the rest go by number and picture
 
 // the enemies the Library offers: every model on the disc, placeable when some scenario of this game has that kind (the game has AI only for those:
@@ -29,7 +27,7 @@ function enemyCards() {
 // the last objects picked, newest first (kept in this browser only: a convenience, the page works without it)
 const RECENT = "studio-library-recent";
 function recent() { try { return JSON.parse(localStorage.getItem(RECENT) || "[]"); } catch (e) { return []; } }
-function remember(it) { if (!it || !it.tris) return; try { localStorage.setItem(RECENT, JSON.stringify([signature(it), ...recent().filter((k) => k !== signature(it))].slice(0, 12))); } catch (e) { /* no storage: nothing remembered */ } }
+function remember(it) { try { localStorage.setItem(RECENT, JSON.stringify([signature(it), ...recent().filter((k) => k !== signature(it))].slice(0, 12))); } catch (e) { /* no storage: nothing remembered */ } }
 
 // the name of a shape of this game, or null (the names are loaded once the Library or the page's boot has asked)
 export const nameOf = (key) => (names && names[`${store.game}:${key}`]) || null;
@@ -110,29 +108,6 @@ const stamp = (renderer) => state.level + "|" + store.room + "|" + Object.keys(r
 const watcher = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { watcher.unobserve(e.target); paint(e.target, 0); } }), { root: null, rootMargin: "200px" });
 function paint(card, tries) {
   const it = card._item;
-  if (it && (it.isGuest || it.isRe4)) {
-    const game = it.game || "re4";
-    const key = `${game}:${it.id}`;
-    if (!viewport.renderer.models[key]) {
-      api.gameModel(game, it.id).then((mjson) => {
-        if (mjson && !mjson.error) {
-          viewport.renderer.add(key, mjson);
-          const r = viewport.renderer.thumbnail(key, 0, 128);
-          if (r && r.url) {
-            card.querySelector("img").src = r.url;
-            viewport.redraw();
-          }
-        }
-      }).catch(() => {});
-      return;
-    }
-    const r = viewport.renderer.thumbnail(key, 0, 128);
-    if (r && r.url) {
-      card.querySelector("img").src = r.url;
-      viewport.redraw();
-    }
-    return;
-  }
   if (it.enemy && !viewport.characterFor(it.enemy)) { if (tries < 20) setTimeout(() => paint(card, tries + 1), 300); return; }     // its model is still on its way
   const r = it.enemy ? viewport.renderer.thumbnail(it.enemy.file, null, 128) : viewport.renderer.thumbnail(it.key, it.mesh, 128);
   if (!r) return;
@@ -150,12 +125,6 @@ function shown() {
 
 function fill() {
   grid.innerHTML = "";
-  if (state.level && (state.level.startsWith("guest:") || state.level.startsWith("re4:"))) {
-    const parts = state.level.split(":");
-    const game = parts.length === 3 ? parts[1] : parts[0];
-    const cat = parts.length === 3 ? parts[2] : parts[1];
-    return fillGuest(game, cat);
-  }
   if (state.kind === "enemies") return fillEnemies();
   const list = shown();
   count.textContent = `${list.length} object${list.length === 1 ? "" : "s"}`;
@@ -199,90 +168,6 @@ function fillEnemies() {
   }
 }
 
-function fillGuest(game, cat) {
-  const t = state.text.trim().toLowerCase();
-  const rawCatalog = guestCatalogs[game] || [];
-  const list = rawCatalog.filter((it) => (cat === "all" || it.category === cat) && (!t || (it.name || "").toLowerCase().includes(t) || it.id.toLowerCase().includes(t)));
-  count.textContent = `${list.length} item${list.length === 1 ? "" : "s"}`;
-  if (!list.length) {
-    grid.append(el("div", { class: "libempty" }, `No matching assets found for ${game} · ${cat}.`));
-    return;
-  }
-  for (const it of list) {
-    if (it.category === "sounds") {
-      const card = el("button", {
-        class: "libcard libaudio-card",
-        title: `${it.name} (${it.id})\n${it.game_name || game} · Audio / Sound Effect\nClick to audition SFX in browser`,
-      });
-      card._item = { ...it, isGuest: true, game, key: `${game}:${it.id}`, mesh: 0 };
-      const icon = el("div", { class: "libaudio-icon" }, "🔊");
-      const nameSpan = el("span", {}, it.name);
-      const tag = el("span", { class: "libaudio-play-tag" }, "▶ Play SFX");
-      card.append(icon, nameSpan, tag);
-
-      card.addEventListener("click", () => {
-        try {
-          const snd = new Audio(api.gameSoundUrl(game, it.id));
-          snd.play().catch((e) => console.log("Audio play error", e));
-        } catch (e) {}
-        emit("note", `Playing: ${it.name}`);
-      });
-
-      grid.append(card);
-      continue;
-    }
-
-    const card = el("button", {
-      class: "libcard",
-      title: `${it.name} (${it.id})\n${it.game_name || game} · ${it.category}\nClick to place in room`,
-    });
-    card._item = { ...it, isGuest: true, game, key: `${game}:${it.id}`, mesh: 0 };
-    const img = el("img", {
-      alt: it.name,
-      src: `/api/games/tex?game=${encodeURIComponent(game)}&id=${encodeURIComponent(it.id)}`,
-      loading: "lazy",
-    });
-    img.onerror = () => { img.style.opacity = "0.3"; };
-    card.append(img, el("span", {}, it.name));
-
-    if (it.category === "enemies" && it.kind_id) {
-      if (store.enemyPick && store.enemyPick.game === game && store.enemyPick.id === it.kind_id) card.classList.add("on");
-    } else {
-      if (store.libraryPick && store.libraryPick.game === game && store.libraryPick.id === it.id) card.classList.add("on");
-    }
-
-    card.addEventListener("click", async () => {
-      remember(it);
-      if (viewport && viewport.renderer) {
-        const key = `${game}:${it.id}`;
-        if (!viewport.renderer.models[key]) {
-          try {
-            const mjson = await api.gameModel(game, it.id);
-            if (mjson && !mjson.error) {
-              viewport.renderer.add(key, mjson);
-            }
-          } catch (e) {
-            console.warn(`Failed to load ${game} model for placement`, e);
-          }
-        }
-      }
-
-      if (it.category === "enemies" && it.kind_id) {
-        store.enemyPick = { game, id: it.kind_id, name: it.name };
-        setTool("enemy");
-      } else {
-        store.libraryPick = { game, id: it.id, name: it.name, mesh: 0 };
-        setTool("library");
-      }
-      panel.classList.remove("on");
-      document.getElementById("libbtn")?.classList.add("on");
-    });
-
-    grid.append(card);
-    watcher.observe(card);
-  }
-}
-
 async function open() {
   if (!enemyModels) api.characters().then((list) => { enemyModels = list; if (panel && state.kind === "enemies") fill(); }).catch((e) => console.error("the enemy models couldn't be listed", e));
   await loadNames();
@@ -295,72 +180,8 @@ async function open() {
     const rare = el("button", { class: "chip", title: "Also list shapes nobody has named yet (rough pieces of rooms)" }, "Unnamed shapes");
     rare.addEventListener("click", () => { state.unnamed = !state.unnamed; rare.classList.toggle("on", state.unnamed); fill(); });
     where.append(rare);
-    const level = el("select", { class: "libsearch", title: "Whose objects: this scenario's, another Outbreak level, or guest PS2 horror games" });
+    const level = el("select", { class: "libsearch", title: "Whose objects: this scenario's, or any level's of either game (their pictures come along when you put one down)" });
     level.append(el("option", { value: "" }, "This scenario's objects"));
-    level.append(
-      // Resident Evil 4
-      el("option", { value: "guest:re4:scenery" }, "Resident Evil 4 · Scenery & Props"),
-      el("option", { value: "guest:re4:weapons" }, "Resident Evil 4 · Weapons"),
-      el("option", { value: "guest:re4:items" }, "Resident Evil 4 · Items & Ammo"),
-      el("option", { value: "guest:re4:enemies" }, "Resident Evil 4 · Enemies & Bosses"),
-      el("option", { value: "guest:re4:characters" }, "Resident Evil 4 · Characters"),
-      el("option", { value: "guest:re4:ui" }, "Resident Evil 4 · UI Elements"),
-      el("option", { value: "guest:re4:sounds" }, "Resident Evil 4 · Audio & SFX"),
-
-      // Haunting Ground
-      el("option", { value: "guest:haunting_ground:scenery" }, "Haunting Ground · Castle Scenery"),
-      el("option", { value: "guest:haunting_ground:weapons" }, "Haunting Ground · Weapons & Defense"),
-      el("option", { value: "guest:haunting_ground:items" }, "Haunting Ground · Items & Alchemy"),
-      el("option", { value: "guest:haunting_ground:enemies" }, "Haunting Ground · Debilitas & Stalkers"),
-      el("option", { value: "guest:haunting_ground:characters" }, "Haunting Ground · Fiona & Hewie"),
-      el("option", { value: "guest:haunting_ground:ui" }, "Haunting Ground · UI & Gauges"),
-      el("option", { value: "guest:haunting_ground:sounds" }, "Haunting Ground · Audio & SFX"),
-
-      // Clock Tower 3
-      el("option", { value: "guest:clock_tower_3:scenery" }, "Clock Tower 3 · London Scenery & Props"),
-      el("option", { value: "guest:clock_tower_3:weapons" }, "Clock Tower 3 · Alyssa's Bow & Arrows"),
-      el("option", { value: "guest:clock_tower_3:items" }, "Clock Tower 3 · Items & Keys"),
-      el("option", { value: "guest:clock_tower_3:enemies" }, "Clock Tower 3 · Sledgehammer & Stalkers"),
-      el("option", { value: "guest:clock_tower_3:characters" }, "Clock Tower 3 · Alyssa Barrow"),
-      el("option", { value: "guest:clock_tower_3:ui" }, "Clock Tower 3 · UI & Seals"),
-      el("option", { value: "guest:clock_tower_3:sounds" }, "Clock Tower 3 · Audio & SFX"),
-
-      // Silent Hill
-      el("option", { value: "guest:silent_hill:scenery" }, "Silent Hill · Props & Scenery"),
-      el("option", { value: "guest:silent_hill:weapons" }, "Silent Hill · Great Knife & Weapons"),
-      el("option", { value: "guest:silent_hill:items" }, "Silent Hill · Items & Supplies"),
-      el("option", { value: "guest:silent_hill:enemies" }, "Silent Hill · Pyramid Head & Nurses"),
-      el("option", { value: "guest:silent_hill:characters" }, "Silent Hill · James & Maria"),
-      el("option", { value: "guest:silent_hill:ui" }, "Silent Hill · UI & Maps"),
-      el("option", { value: "guest:silent_hill:sounds" }, "Silent Hill · Audio & SFX"),
-
-      // Fatal Frame
-      el("option", { value: "guest:fatal_frame:scenery" }, "Fatal Frame · Shrine & Village Props"),
-      el("option", { value: "guest:fatal_frame:weapons" }, "Fatal Frame · Camera Obscura & Film"),
-      el("option", { value: "guest:fatal_frame:items" }, "Fatal Frame · Items & Charms"),
-      el("option", { value: "guest:fatal_frame:enemies" }, "Fatal Frame · Sae Kurosawa & Ghosts"),
-      el("option", { value: "guest:fatal_frame:characters" }, "Fatal Frame · Mio & Mayu"),
-      el("option", { value: "guest:fatal_frame:ui" }, "Fatal Frame · UI & Viewfinders"),
-      el("option", { value: "guest:fatal_frame:sounds" }, "Fatal Frame · Audio & SFX"),
-
-      // Kuon
-      el("option", { value: "guest:kuon:scenery" }, "Kuon · Fujiwara Manor Props"),
-      el("option", { value: "guest:kuon:weapons" }, "Kuon · Talismans & Tanto Blades"),
-      el("option", { value: "guest:kuon:items" }, "Kuon · Items & Scrolls"),
-      el("option", { value: "guest:kuon:enemies" }, "Kuon · Gaki & Blood Corpse"),
-      el("option", { value: "guest:kuon:characters" }, "Kuon · Utsuki & Sakuya"),
-      el("option", { value: "guest:kuon:ui" }, "Kuon · UI & Mandalas"),
-      el("option", { value: "guest:kuon:sounds" }, "Kuon · Audio & SFX"),
-
-      // Forbidden Siren
-      el("option", { value: "guest:forbidden_siren:scenery" }, "Forbidden Siren · Hanuda Village Props"),
-      el("option", { value: "guest:forbidden_siren:weapons" }, "Forbidden Siren · Weapons & Sniper Rifle"),
-      el("option", { value: "guest:forbidden_siren:items" }, "Forbidden Siren · Items & Keys"),
-      el("option", { value: "guest:forbidden_siren:enemies" }, "Forbidden Siren · Shibito & Yamibito"),
-      el("option", { value: "guest:forbidden_siren:characters" }, "Forbidden Siren · Kyoya & Miyako"),
-      el("option", { value: "guest:forbidden_siren:ui" }, "Forbidden Siren · UI & Sightjack"),
-      el("option", { value: "guest:forbidden_siren:sounds" }, "Forbidden Siren · Audio & SFX"),
-    );
     api.levels().then((list) => {
       levels = list;
       for (const l of list) if (!(l.game === store.game && l.scenario === store.scenario)) level.append(el("option", { value: `${l.game}:${l.scenario}` }, `${l.game === "file1" ? "File 1" : "File 2"} · scenario ${l.scenario} (${l.rooms.length} rooms)`));
@@ -375,7 +196,7 @@ async function open() {
     document.getElementById("view").append(panel);
   }
   const key = stamp(viewport.renderer);
-  if (key !== built && (!state.level || (!state.level.startsWith("guest:") && !state.level.startsWith("re4:")))) { catalogue = build(viewport.renderer, ...(state.level ? [levelSources()] : [])); built = key; }
+  if (key !== built) { catalogue = build(viewport.renderer, ...(state.level ? [levelSources()] : [])); built = key; }
   // a game whose shapes nobody has named yet: they all show, each by its picture
   const unnamedGame = !catalogue.some((it) => it.name);
   if (unnamedGame) state.unnamed = true;
@@ -394,24 +215,6 @@ function levelSources() {
 // another level's objects: its rooms' models are fetched (once each; the room you are in keeps its own), then listed as this scenario's are
 async function useLevel(value) {
   state.level = value;
-  if (value && (value.startsWith("guest:") || value.startsWith("re4:"))) {
-    const parts = value.split(":");
-    const game = parts.length === 3 ? parts[1] : parts[0];
-    const cat = parts.length === 3 ? parts[2] : parts[1];
-    note.textContent = `Loading ${game} catalog…`;
-    if (!guestCatalogs[game]) {
-      try {
-        guestCatalogs[game] = await api.gamesCatalog(game);
-      } catch (e) {
-        console.error(`the ${game} catalog couldn't be loaded`, e);
-        note.textContent = `Failed to load ${game} catalog: ` + e.message;
-        return;
-      }
-    }
-    note.textContent = `${game} assets: textures and 3D geometry imported into Outbreak on placement.`;
-    fill();
-    return;
-  }
   if (value) {
     const sources = levelSources();
     for (let k = 0; k < sources.length; k++) {

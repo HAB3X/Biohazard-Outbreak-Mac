@@ -7,7 +7,6 @@
 // should anything clear it), since its code reads its own data there and the runtime finds its functions by their words in
 // memory. Without File 2's disc at build time no kind is carried and the stand-in is the game's.
 #include "transplant.h"
-#include "re4/re4_ai.h"
 
 #include <cstdint>
 #include <cstring>
@@ -47,15 +46,6 @@ void EnsureLoaded()
 
 void StandIn(Ps2Cpu* c, Ps2Function original)
 {
-    if (c != nullptr && c->r[4].uw[0] != 0)
-    {
-        const uint8_t kind = rd8(c->r[4].uw[0] + EnemyKind);
-        if (Re4::IsRe4Enemy(kind))
-        {
-            Re4::TickEnemy(c);
-            return;
-        }
-    }
 #if TRANSPLANT
     if (uint32_t routine = RoutineOf(rd8(c->r[4].uw[0] + EnemyKind)))
     {

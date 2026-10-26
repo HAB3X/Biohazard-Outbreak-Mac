@@ -22,11 +22,4 @@ export const api = {
   status: () => call("/api/status"),
   stop: () => send("POST", "/api/stop"),
   switchTo: (game, scenario) => send("POST", "/api/switch", { game, scenario }),
-  re4Catalog: () => call("/api/re4/catalog"),
-  re4Model: (id) => call("/api/re4/model?id=" + encodeURIComponent(id)),
-  gamesList: () => call("/api/games/list"),
-  gamesCatalog: (game, category) => call(`/api/games/catalog?game=${encodeURIComponent(game || "all")}${category ? `&category=${encodeURIComponent(category)}` : ""}`),
-  gameModel: (game, id) => call(`/api/games/model?game=${encodeURIComponent(game)}&id=${encodeURIComponent(id)}`),
-  gameSoundUrl: (game, id) => `/api/games/sound?game=${encodeURIComponent(game)}&id=${encodeURIComponent(id)}`,
-  gameTexUrl: (game, id) => `/api/games/tex?game=${encodeURIComponent(game)}&id=${encodeURIComponent(id)}`,
 };

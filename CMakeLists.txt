@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.20)
 project(biohazard_outbreak_mac VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
-include_directories(src)
 
 # The runtime: its folder in this repository, or a checkout of its own next to it
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/ps2-native-runtime/CMakeLists.txt)
@@ -19,9 +18,6 @@ set(PARTNER_AI_SOURCES src/partner_ai.cpp src/partner_ai_brain.cpp src/partner_a
 set(MODS_SOURCES src/mods.cpp src/mod_settings.cpp src/game_pad.cpp src/cheats.cpp src/first_person.cpp src/modern_camera.cpp src/modern_camera_config.cpp src/modern_camera_game.cpp
                  src/modern_camera_rig.cpp)
 
-# The Resident Evil 4 AI routines (src/re4/re4_ai.h)
-set(RE4_SOURCES src/re4/re4_ai.cpp)
-
 # The partners' AI decisions' tests (no disc needed): ctest, or build/partner_ai_brain_test
 enable_testing()
 add_executable(partner_ai_brain_test tests/partner_ai_brain_test.cpp src/partner_ai_brain.cpp)
@@ -31,10 +27,6 @@ add_test(NAME partner_ai_brain COMMAND partner_ai_brain_test)
 add_executable(modern_camera_rig_test tests/modern_camera_rig_test.cpp src/modern_camera_rig.cpp)
 target_include_directories(modern_camera_rig_test PRIVATE src)
 add_test(NAME modern_camera_rig COMMAND modern_camera_rig_test)
-# The RE4 enemy AI tests (no disc needed)
-add_executable(re4_ai_test tests/re4_ai_test.cpp src/re4/re4_ai.cpp)
-target_include_directories(re4_ai_test PRIVATE src ${PS2_RUNTIME_DIR}/runtime/include)
-add_test(NAME re4_ai COMMAND re4_ai_test)
 
 # The keyboard and mouse: the keys' modes and the pointer over the games' menus (src/controls.h, src/pointer.h, src/menus.h)
 set(CONTROL_SOURCES src/controls.cpp src/pointer.cpp src/text_map.cpp src/menus.cpp src/menus_title.cpp src/menus_save.cpp src/menus_net.cpp src/menus_lobby.cpp src/menus_play.cpp src/menus_select.cpp src/menus_collection.cpp src/menus_keyboard.cpp)
@@ -67,7 +59,7 @@ if(FILE1_DISC)
     ps2_recompile(file1_code CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/config/file1.toml DISC ${FILE1_DISC} EXECUTABLE SLPM_654.28
                   FILES 64 ${FILE1_GENERATED})
     add_executable(biohazard-file1 src/file1.cpp ${CONTROL_SOURCES} src/tsnd.cpp src/network.cpp src/loadhigh.cpp src/usbsrch.cpp
-                   src/avewrap.cpp src/lobbytrace.cpp src/typing.cpp ${PARTNER_AI_SOURCES} ${MODS_SOURCES} ${RE4_SOURCES} src/widescreen.cpp src/intro.cpp
+                   src/avewrap.cpp src/lobbytrace.cpp src/typing.cpp ${PARTNER_AI_SOURCES} ${MODS_SOURCES} src/widescreen.cpp src/intro.cpp
                    src/transplant.cpp ${FILE1_TRANSPLANT})
     if(FILE1_TRANSPLANT)
         target_compile_definitions(biohazard-file1 PRIVATE TRANSPLANT=1)
@@ -79,6 +71,6 @@ if(FILE2_DISC)
     ps2_recompile(file2_code CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/config/file2.toml DISC ${FILE2_DISC} EXECUTABLE SLPM_656.92
                   FILES 64)
     add_executable(biohazard-file2 src/file2.cpp ${CONTROL_SOURCES} src/tsnd.cpp src/network.cpp src/loadhigh.cpp src/usbsrch.cpp src/avewrap.cpp src/lobbytrace.cpp src/typing.cpp
-                   ${PARTNER_AI_SOURCES} ${MODS_SOURCES} ${RE4_SOURCES} src/widescreen.cpp src/intro.cpp)
+                   ${PARTNER_AI_SOURCES} ${MODS_SOURCES} src/widescreen.cpp src/intro.cpp)
     target_link_libraries(biohazard-file2 PRIVATE file2_code ps2runtime)
 endif()

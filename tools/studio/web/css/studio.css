@@ -224,9 +224,6 @@ button.ghost:hover { color: var(--text); background: var(--raised); }
 .libcard.on { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
 .libcard.off { opacity: .45; }
 .libcard img { width: 100%; aspect-ratio: 1; border-radius: 5px; background: #1a1c24; object-fit: cover; }
-.libaudio-card { cursor: pointer; }
-.libaudio-icon { width: 100%; aspect-ratio: 1; border-radius: 5px; background: #151821; display: flex; align-items: center; justify-content: center; font-size: 26px; border: 1px solid var(--line); }
-.libaudio-play-tag { font-size: 10px; color: var(--accent); padding: 2px 4px; background: rgba(255, 255, 255, 0.06); border-radius: 4px; font-weight: 600; margin-top: 2px; }
 .libempty { grid-column: 1 / -1; color: var(--faint); padding: 18px 6px; text-align: center; }
 
 /* ---- the tour */

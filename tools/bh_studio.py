@@ -26,8 +26,6 @@ import bh_rdt_edit as legacy
 import bh_rdt_map as maps
 import bh_autoplay
 import bh_studio_build as studio_build
-import bh_re4
-import bh_ps2_games
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB = Path(__file__).resolve().parent / "studio" / "web"
@@ -102,23 +100,9 @@ class Studio:
         with self.lock:
             key = ("character", self.game, kind, cls)
             if key not in self.cache:
-                if kind >= 100:
-                    found_item = None
-                    for it in bh_ps2_games.get_catalog("all"):
-                        if it.get("kind_id") == kind:
-                            found_item = it
-                            break
-                    if found_item:
-                        gkey = found_item.get("game", "re4")
-                        aid = found_item["id"]
-                        model = bh_ps2_games.get_model_json(gkey, aid)
-                        self.cache[key] = {"file": f"{gkey.upper()}_{aid}.NBD", "model": model}
-                    else:
-                        self.cache[key] = {"file": None, "reason": f"unknown guest enemy kind {kind}"}
-                else:
-                    file = bh_characters.model_file(self.game, kind, cls)
-                    self.cache[key] = ({"file": file, "model": bh_characters.character_json(self.game, file)} if file else
-                                       {"file": None, "reason": f"no E{kind:02d}_{cls:02d}.NBD on the disc for this kind and class"})
+                file = bh_characters.model_file(self.game, kind, cls)
+                self.cache[key] = ({"file": file, "model": bh_characters.character_json(self.game, file)} if file else
+                                   {"file": None, "reason": f"no E{kind:02d}_{cls:02d}.NBD on the disc for this kind and class"})
             return self.cache[key]
 
     def character_picture(self, key):
@@ -127,13 +111,7 @@ class Studio:
         with self.lock:
             cache_key = ("character picture", self.game, key)
             if cache_key not in self.cache:
-                if ":" in key:
-                    parts = key.split(":")
-                    gkey = parts[0]
-                    aid = parts[1] if len(parts) > 1 else ""
-                    self.cache[cache_key] = bh_ps2_games.get_texture_png(gkey, aid)
-                else:
-                    self.cache[cache_key] = bh_characters.picture_png(self.game, key)
+                self.cache[cache_key] = bh_characters.picture_png(self.game, key)
             return self.cache[cache_key]
 
     def messages(self):
@@ -306,44 +284,24 @@ def grown_models(game, scenario, edits):
         for made in spec["new_objects"]:
             if made.get("library"):          # an object of another room, of this scenario or another's (of either game), with the pictures it needs
                 lib = made["library"]
-                gkey = lib.get("game")
-                if gkey in bh_ps2_games.ALL_CATALOGS or gkey == "re4":
-                    aid = lib["id"]
-                    model = bh_model.Model(data)
-                    mat = 0
-                    sld_bytes = bh_ps2_games.get_sld_texture(gkey, aid)
-                    if sld_bytes:
-                        if own_count is None:
-                            own_count = picture_count(disc, scenario)
-                        pic_key = (gkey, aid)
-                        if pic_key not in brought:
-                            brought[pic_key] = own_count + len(new_pictures)
-                            new_pictures.append(sld_bytes)
-                        mat = model.material_for(brought[pic_key])
-                    template = model.meshes()[0] if model.meshes() else None
-                    mesh_node = bh_ps2_games.get_nbd_mesh_node(gkey, aid, material=mat, template=template)
-                    if mesh_node is not None:
-                        model.add_object(mesh_node)
-                        data = model.to_bytes()
-                else:
-                    where = (lib.get("game", game), int(lib.get("scenario", scenario)))
-                    src = lib["room"].replace(".rdt", ".nbd")
-                    if (where, src) not in sources:
-                        sources[(where, src)] = bh_model.Model(_room_model(archive.Archive(where[0]), where[1], src))
-                    source, mesh = sources[(where, src)], int(lib["mesh"])
-                    pictures = None
-                    if where != (game, scenario):
-                        if own_count is None:
-                            own_count = picture_count(disc, scenario)
-                        pictures = {}
-                        for picture in source.mesh_pictures(mesh):
-                            if (where, picture) not in brought:
-                                brought[(where, picture)] = own_count + len(new_pictures)
-                                new_pictures.append(_pack_member(archive.Archive(where[0]), where[1], picture))
-                            pictures[picture] = brought[(where, picture)]
-                    model = bh_model.Model(data)
-                    model.import_object(source, mesh, pictures=pictures)
-                    data = model.to_bytes()
+                where = (lib.get("game", game), int(lib.get("scenario", scenario)))
+                src = lib["room"].replace(".rdt", ".nbd")
+                if (where, src) not in sources:
+                    sources[(where, src)] = bh_model.Model(_room_model(archive.Archive(where[0]), where[1], src))
+                source, mesh = sources[(where, src)], int(lib["mesh"])
+                pictures = None
+                if where != (game, scenario):
+                    if own_count is None:
+                        own_count = picture_count(disc, scenario)
+                    pictures = {}
+                    for picture in source.mesh_pictures(mesh):
+                        if (where, picture) not in brought:
+                            brought[(where, picture)] = own_count + len(new_pictures)
+                            new_pictures.append(_pack_member(archive.Archive(where[0]), where[1], picture))
+                        pictures[picture] = brought[(where, picture)]
+                model = bh_model.Model(data)
+                model.import_object(source, mesh, pictures=pictures)
+                data = model.to_bytes()
             else:
                 data, _ = bh_nbd.clone_object(data, made["like"], None, made.get("geometry"))
         data = bytearray(data)
@@ -446,63 +404,11 @@ def make_handler(studio):
                 elif url.path == "/api/project":
                     self.send(200, json.dumps(studio.project()))
                 elif url.path == "/api/model":
-                    req_game = query.get("game", [None])[0]
-                    if req_game in bh_ps2_games.ALL_CATALOGS or req_game == "re4":
-                        aid = query.get("file", [""])[0] or query.get("id", [""])[0]
-                        m = bh_ps2_games.get_model_json(req_game, aid)
-                        if not m:
-                            self.send(404, json.dumps({"error": f"Model not found: {aid}"}))
-                        else:
-                            self.send(200, json.dumps(m))
-                    else:
-                        self.send(200, json.dumps(studio.model(query["file"][0], query.get("game", [None])[0], query.get("scenario", [None])[0])))
+                    self.send(200, json.dumps(studio.model(query["file"][0], query.get("game", [None])[0], query.get("scenario", [None])[0])))
                 elif url.path == "/api/levels":
                     self.send(200, json.dumps(studio.levels()))
                 elif url.path == "/api/tex":
-                    req_game = query.get("game", [None])[0]
-                    if req_game in bh_ps2_games.ALL_CATALOGS or req_game == "re4":
-                        aid = query.get("id", [None])[0] or query.get("index", [None])[0]
-                        png = bh_ps2_games.get_texture_png(req_game, aid) if aid else b""
-                        self.send(200 if png else 404, png or b"", "image/png")
-                    else:
-                        png = studio.texture(int(query["index"][0]), query.get("game", [None])[0], query.get("scenario", [None])[0])
-                        self.send(200 if png else 404, png or b"", "image/png")
-                elif url.path == "/api/games/list":
-                    self.send(200, json.dumps(bh_ps2_games.GAMES))
-                elif url.path == "/api/games/catalog":
-                    gkey = query.get("game", ["all"])[0]
-                    cat = query.get("category", [None])[0]
-                    self.send(200, json.dumps(bh_ps2_games.get_catalog(gkey, category=cat)))
-                elif url.path == "/api/games/model":
-                    gkey = query.get("game", ["re4"])[0]
-                    aid = query.get("id", [None])[0]
-                    m = bh_ps2_games.get_model_json(gkey, aid) if aid else None
-                    if not m:
-                        self.send(404, json.dumps({"error": f"Model not found: {aid}"}))
-                    else:
-                        self.send(200, json.dumps(m))
-                elif url.path == "/api/games/tex":
-                    gkey = query.get("game", ["re4"])[0]
-                    aid = query.get("id", [None])[0]
-                    png = bh_ps2_games.get_texture_png(gkey, aid) if aid else b""
-                    self.send(200 if png else 404, png or b"", "image/png")
-                elif url.path == "/api/games/sound":
-                    gkey = query.get("game", ["re4"])[0]
-                    aid = query.get("id", [None])[0]
-                    wav = bh_ps2_games.get_sound_wav(gkey, aid) if aid else b""
-                    self.send(200 if wav else 404, wav or b"", "audio/wav")
-                elif url.path == "/api/re4/catalog":
-                    self.send(200, json.dumps(bh_ps2_games.get_catalog("re4")))
-                elif url.path == "/api/re4/model":
-                    aid = query.get("id", [None])[0]
-                    m = bh_ps2_games.get_model_json("re4", aid) if aid else None
-                    if not m:
-                        self.send(404, json.dumps({"error": f"Model not found: {aid}"}))
-                    else:
-                        self.send(200, json.dumps(m))
-                elif url.path == "/api/re4/tex":
-                    aid = query.get("id", [None])[0]
-                    png = bh_ps2_games.get_texture_png("re4", aid) if aid else b""
+                    png = studio.texture(int(query["index"][0]), query.get("game", [None])[0], query.get("scenario", [None])[0])
                     self.send(200 if png else 404, png or b"", "image/png")
                 elif url.path == "/api/status":
                     running = bool(studio.process and studio.process.poll() is None)

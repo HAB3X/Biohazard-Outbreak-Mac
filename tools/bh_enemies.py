@@ -272,14 +272,6 @@ def _of_kind_here(game, kind, cls, room_record):
     it in the zombie's AI state and crashed File 1), with the room's word 8 above its low byte and word 18 (a record's whole words 8 and 18 belong to its
     scenario: kind 2's own record from scenario 28 wasn't created in the first scenario's bar). Measured in File 1's room 3: a kind 6 enemy made so was
     created, went for the party and raised the virus gauge. Kinds whose records lie in wait (the dogs, kind 2) are created and wait in the same way"""
-    if kind >= 100:
-        base = kind_record(game, 1, 0) or room_record
-        rec = bytearray(base)
-        rec[2] = kind
-        rec[3] = cls if cls is not None else 0
-        rec[33:36] = room_record[33:36]
-        rec[72:76] = room_record[72:76]
-        return bytes(rec)
     own = kind_record(game, kind, cls)
     if own is None:
         raise ValueError(f"no enemy of kind {kind} in either game to take its settings from")

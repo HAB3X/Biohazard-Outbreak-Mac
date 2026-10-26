@@ -8,7 +8,6 @@
 #include "network.h"
 #include "partner_ai.h"
 #include "pointer.h"
-#include "re4/re4_ai.h"
 #include "text_map.h"
 #include "transplant.h"
 #include "ps2/runtime.h"
