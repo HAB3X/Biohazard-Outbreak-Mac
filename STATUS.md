@@ -97,9 +97,10 @@ docs/network.md (the runtime's docs/network.md has the design).
 - Not verified: the lobby after login (SELECT CAPCOM ID, SELECT SERVER, area menu, room list, RULE, a room, hints): built from
   the code (src/menus_lobby.cpp, cursor-engine overrides in config/file*.toml's netwk); needs a logged-in run with
   `BH_POINTER_LOG=1` (logs each menu's targets). A room's screen is File 2 only.
-- Left open: File 2's collection tabs (wrong tab byte for File 2), File 2's collection questions and DATA CONVERT, the map's
-  scroll/zoom, the results screen, File 1's software keyboard (not run), windowed/fullscreen mapping checked by code only
-  (presenter and mouse share PictureRect), File 1's difficulty takes one key move only (on main too: not the mouse's).
+- Left open: File 2's collection questions and DATA CONVERT, the results screen, File 1's software keyboard (not run),
+  windowed/fullscreen mapping checked by code only (presenter and mouse share PictureRect). Since done (2026-10-23): File 2's
+  collection tabs, the map's wheel zoom and drag, and the difficulty's choice byte (the title state's 0xE in both games; File 1's
+  difficulty has two rows, Easy and Normal, so one key move is all there is).
 - Not started: the control features modelled on RaccoonRecomp's port (remappable mouse buttons and wheel, SDL3 gamepads with
   per-pad glyphs, Xbox button symbols option, Hold To Toggle, mouse acceleration/sensitivity, Compensate Game Deadzone,
   Cross in Game Menus check, a controller button for the PC settings, docs/CREDITS.md line). Already present: right mouse
