@@ -18,14 +18,14 @@ EDITS.json (the room editor writes it):
         "new_cameras": [{"like": 0, "eye": [x, y, z], "target": [x, y, z], "fov": [h, v], "box": [[x, y, z] x8]}],
         "new_areas": [{"like": 0, "quad": [[x, z] x4], "height": [low, high], "fields": {"13": 3}}]}}}
     "models": {"r0400300.nbd": {"bones": {"50": {"scale": [x, y, z], "rotation": [x, y, z], "offset": [x, y, z]}}, "vertices": {"12": {"0": [x, y, z]}}}}}
-        (a room model's skeleton: a bone is a number of the room's objects, the object (mesh) i standing on bone i + 2; its scale, its
+        (a room model's skeleton: a bone's number, each object (mesh) standing on the bone that names it, bh_nbd.mesh_bones; its scale, its
         rotation in radians and its offset from its parent bone; scale of 0.0001 hides an object; vertices: the mesh's number, the
         vertex's number, its new position in the mesh's own coordinates)
         (a camera's fog record: numbers 0 to 23; new_areas add areas at the end, each a copy of area `like` with those changes,
         numbered from the room's area count on, in order: the room file grows by 180 bytes each, inside the sector it ends in)
 A room is named by its file; cameras and areas by their numbers in the room (tools/bh_rdt.py lists them); every key is optional.
-Only the changed bytes go into the patch, at the room's place on the disc. A room file can't change size (the archive's members
-can't grow), and these edits only overwrite numbers in place, so none does. An unknown room, camera or area is an error.
+Only the changed bytes go into the patch, at the room's place on the disc, and a room may grow only inside its last sector; through
+tools/bh_studio_build.py (build's `replacements`) rooms and other members may take any size. An unknown room, camera or area is an error.
 """
 import json
 import re
