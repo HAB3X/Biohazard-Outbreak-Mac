@@ -22,4 +22,6 @@ export const api = {
   status: () => call("/api/status"),
   stop: () => send("POST", "/api/stop"),
   switchTo: (game, scenario) => send("POST", "/api/switch", { game, scenario }),
+  re4Catalog: () => call("/api/re4/catalog"),
+  re4Model: (id) => call("/api/re4/model?id=" + encodeURIComponent(id)),
 };

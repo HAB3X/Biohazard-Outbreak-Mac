@@ -26,6 +26,7 @@ import bh_rdt_edit as legacy
 import bh_rdt_map as maps
 import bh_autoplay
 import bh_studio_build as studio_build
+import bh_re4
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB = Path(__file__).resolve().parent / "studio" / "web"
@@ -281,24 +282,43 @@ def grown_models(game, scenario, edits):
         for made in spec["new_objects"]:
             if made.get("library"):          # an object of another room, of this scenario or another's (of either game), with the pictures it needs
                 lib = made["library"]
-                where = (lib.get("game", game), int(lib.get("scenario", scenario)))
-                src = lib["room"].replace(".rdt", ".nbd")
-                if (where, src) not in sources:
-                    sources[(where, src)] = bh_model.Model(_room_model(archive.Archive(where[0]), where[1], src))
-                source, mesh = sources[(where, src)], int(lib["mesh"])
-                pictures = None
-                if where != (game, scenario):
-                    if own_count is None:
-                        own_count = picture_count(disc, scenario)
-                    pictures = {}
-                    for picture in source.mesh_pictures(mesh):
-                        if (where, picture) not in brought:
-                            brought[(where, picture)] = own_count + len(new_pictures)
-                            new_pictures.append(_pack_member(archive.Archive(where[0]), where[1], picture))
-                        pictures[picture] = brought[(where, picture)]
-                model = bh_model.Model(data)
-                model.import_object(source, mesh, pictures=pictures)
-                data = model.to_bytes()
+                if lib.get("game") == "re4":
+                    aid = lib["id"]
+                    asset = bh_re4.get_asset(aid)
+                    model = bh_model.Model(data)
+                    mat = 0
+                    if asset.get("tpl_bytes"):
+                        if own_count is None:
+                            own_count = picture_count(disc, scenario)
+                        pic_key = ("re4", aid)
+                        if pic_key not in brought:
+                            brought[pic_key] = own_count + len(new_pictures)
+                            new_pictures.append(bh_re4.tpl_to_sld(asset["tpl_bytes"]))
+                        mat = model.material_for(brought[pic_key])
+                    template = model.meshes()[0] if model.meshes() else None
+                    mesh_node = bh_re4.bin_to_nbd_mesh_node(asset["bin_bytes"], material=mat, template=template)
+                    if mesh_node is not None:
+                        model.add_object(mesh_node)
+                        data = model.to_bytes()
+                else:
+                    where = (lib.get("game", game), int(lib.get("scenario", scenario)))
+                    src = lib["room"].replace(".rdt", ".nbd")
+                    if (where, src) not in sources:
+                        sources[(where, src)] = bh_model.Model(_room_model(archive.Archive(where[0]), where[1], src))
+                    source, mesh = sources[(where, src)], int(lib["mesh"])
+                    pictures = None
+                    if where != (game, scenario):
+                        if own_count is None:
+                            own_count = picture_count(disc, scenario)
+                        pictures = {}
+                        for picture in source.mesh_pictures(mesh):
+                            if (where, picture) not in brought:
+                                brought[(where, picture)] = own_count + len(new_pictures)
+                                new_pictures.append(_pack_member(archive.Archive(where[0]), where[1], picture))
+                            pictures[picture] = brought[(where, picture)]
+                    model = bh_model.Model(data)
+                    model.import_object(source, mesh, pictures=pictures)
+                    data = model.to_bytes()
             else:
                 data, _ = bh_nbd.clone_object(data, made["like"], None, made.get("geometry"))
         data = bytearray(data)
@@ -387,11 +407,39 @@ def make_handler(studio):
                 elif url.path == "/api/project":
                     self.send(200, json.dumps(studio.project()))
                 elif url.path == "/api/model":
-                    self.send(200, json.dumps(studio.model(query["file"][0], query.get("game", [None])[0], query.get("scenario", [None])[0])))
+                    if query.get("game", [None])[0] == "re4":
+                        aid = query.get("file", [""])[0] or query.get("id", [""])[0]
+                        asset = bh_re4.get_asset(aid) if aid else None
+                        if not asset or not asset.get("bin_bytes"):
+                            self.send(404, json.dumps({"error": f"Model not found: {aid}"}))
+                        else:
+                            self.send(200, json.dumps(bh_re4.bin_to_model_json(asset["bin_bytes"], aid)))
+                    else:
+                        self.send(200, json.dumps(studio.model(query["file"][0], query.get("game", [None])[0], query.get("scenario", [None])[0])))
                 elif url.path == "/api/levels":
                     self.send(200, json.dumps(studio.levels()))
                 elif url.path == "/api/tex":
-                    png = studio.texture(int(query["index"][0]), query.get("game", [None])[0], query.get("scenario", [None])[0])
+                    if query.get("game", [None])[0] == "re4":
+                        aid = query.get("id", [None])[0] or query.get("index", [None])[0]
+                        asset = bh_re4.get_asset(aid) if aid else None
+                        png = bh_re4.tpl_to_png(asset["tpl_bytes"]) if asset and asset.get("tpl_bytes") else b""
+                        self.send(200 if png else 404, png or b"", "image/png")
+                    else:
+                        png = studio.texture(int(query["index"][0]), query.get("game", [None])[0], query.get("scenario", [None])[0])
+                        self.send(200 if png else 404, png or b"", "image/png")
+                elif url.path == "/api/re4/catalog":
+                    self.send(200, json.dumps(bh_re4.catalog()))
+                elif url.path == "/api/re4/model":
+                    aid = query.get("id", [None])[0]
+                    asset = bh_re4.get_asset(aid) if aid else None
+                    if not asset or not asset.get("bin_bytes"):
+                        self.send(404, json.dumps({"error": f"Model not found: {aid}"}))
+                    else:
+                        self.send(200, json.dumps(bh_re4.bin_to_model_json(asset["bin_bytes"], aid)))
+                elif url.path == "/api/re4/tex":
+                    aid = query.get("id", [None])[0]
+                    asset = bh_re4.get_asset(aid) if aid else None
+                    png = bh_re4.tpl_to_png(asset["tpl_bytes"]) if asset and asset.get("tpl_bytes") else b""
                     self.send(200 if png else 404, png or b"", "image/png")
                 elif url.path == "/api/status":
                     running = bool(studio.process and studio.process.poll() is None)

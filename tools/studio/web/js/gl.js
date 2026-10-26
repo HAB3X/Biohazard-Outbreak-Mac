@@ -24,7 +24,7 @@ function worlds(bones) {
   return out;
 }
 // where a Library object's model is kept among the renderer's models: a room of this scenario by its file, one of another level by "game:scenario:file"
-export const modelKey = (lib) => (lib.game ? `${lib.game}:${lib.scenario}:${lib.room}` : lib.room);
+export const modelKey = (lib) => (lib.game === "re4" ? `re4:${lib.id || lib.room}` : lib.game ? `${lib.game}:${lib.scenario}:${lib.room}` : lib.room);
 const hidden = (b) => Math.abs(b[1][0]) < 0.001 || Math.abs(b[1][1]) < 0.001 || Math.abs(b[1][2]) < 0.001;
 
 const VS = `#version 300 es
@@ -316,9 +316,10 @@ export class Renderer {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
       this.onTexture();
     };
-    // a picture of this scenario (a number), of another level's room model ("game:scenario:number"), or a character's own ("FILE#n")
+    // a picture of this scenario (a number), of another level's room model ("game:scenario:number"), an RE4 model ("re4:id:n"), or a character's own ("FILE#n")
     const level = typeof index === "string" && /^(file\d):(\d+):(\d+)$/.exec(index);
-    img.src = level ? `/api/tex?game=${level[1]}&scenario=${level[2]}&index=${level[3]}` : typeof index === "string" ? "/api/character/picture?key=" + encodeURIComponent(index) : "/api/tex?index=" + index;
+    const re4 = typeof index === "string" && /^re4:([^:]+)/.exec(index);
+    img.src = re4 ? `/api/re4/tex?id=${encodeURIComponent(re4[1])}` : level ? `/api/tex?game=${level[1]}&scenario=${level[2]}&index=${level[3]}` : typeof index === "string" ? "/api/character/picture?key=" + encodeURIComponent(index) : "/api/tex?index=" + index;
     return tex;
   }
 

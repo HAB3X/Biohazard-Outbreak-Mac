@@ -186,11 +186,11 @@ export class Viewport {
     this.redraw();
   }
 
-  // a room model of another level (a Library source: {room, game, scenario}), kept among the renderer's models under modelKey; fetched once
+  // a room model of another level (a Library source: {room, game, scenario}) or RE4 asset, kept among the renderer's models under modelKey; fetched once
   async loadLevelModel(lib) {
     const key = modelKey(lib);
     if (this.renderer.models[key]) return true;
-    const json = await api.model(lib.room.replace(".rdt", ".nbd"), lib.game, lib.scenario);
+    const json = lib.game === "re4" ? await api.re4Model(lib.id || lib.room) : await api.model(lib.room.replace(".rdt", ".nbd"), lib.game, lib.scenario);
     if (json.error) { console.warn(`${key}: ${json.error}`); return false; }
     this.renderer.add(key, json);
     return true;

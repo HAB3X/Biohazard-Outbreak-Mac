@@ -100,7 +100,7 @@ export const newObjects = (room) => copies(room).map((c) => (c.library ? { like:
 
 // an object of another room's model (`lib` is {room, mesh}), standing plain on a bone of its own; the file grows by it
 function standIn(room, lib) {
-  lib = { room: lib.room, mesh: lib.mesh, ...(lib.game ? { game: lib.game, scenario: lib.scenario } : {}) };      // (what the edits keep: not the Library's name for it)
+  lib = { room: lib.room || lib.id, mesh: lib.mesh ?? 0, ...(lib.game ? { game: lib.game, scenario: lib.scenario, id: lib.id } : {}) };      // (what the edits keep: not the Library's name for it)
   const src = store.renderer && store.renderer.models[modelKey(lib)];
   const mesh = src && src.meshes.find((x) => x.mesh === lib.mesh), here = store.renderer && store.renderer.models[room.file];
   const like = room.scenery.find((x) => !x.isNew);

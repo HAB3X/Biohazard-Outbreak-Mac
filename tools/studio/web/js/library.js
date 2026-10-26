@@ -14,6 +14,7 @@ let state = { kind: "all", where: "here", text: "", unnamed: false, level: "" };
 let levels = null;      // every scenario of both games (/api/levels), asked for once
 let catalogue = [], built = "";
 let enemyModels = null;      // every enemy model on the disc ([{id, cls, file}], /api/characters), asked for once
+let re4Catalog = null;       // Resident Evil 4 catalog (/api/re4/catalog)
 const ENEMY_NAMES = { 1: "Zombie" };     // the kinds named so far; the rest go by number and picture
 
 // the enemies the Library offers: every model on the disc, placeable when some scenario of this game has that kind (the game has AI only for those:
@@ -27,7 +28,7 @@ function enemyCards() {
 // the last objects picked, newest first (kept in this browser only: a convenience, the page works without it)
 const RECENT = "studio-library-recent";
 function recent() { try { return JSON.parse(localStorage.getItem(RECENT) || "[]"); } catch (e) { return []; } }
-function remember(it) { try { localStorage.setItem(RECENT, JSON.stringify([signature(it), ...recent().filter((k) => k !== signature(it))].slice(0, 12))); } catch (e) { /* no storage: nothing remembered */ } }
+function remember(it) { if (!it || !it.tris) return; try { localStorage.setItem(RECENT, JSON.stringify([signature(it), ...recent().filter((k) => k !== signature(it))].slice(0, 12))); } catch (e) { /* no storage: nothing remembered */ } }
 
 // the name of a shape of this game, or null (the names are loaded once the Library or the page's boot has asked)
 export const nameOf = (key) => (names && names[`${store.game}:${key}`]) || null;
@@ -108,6 +109,28 @@ const stamp = (renderer) => state.level + "|" + store.room + "|" + Object.keys(r
 const watcher = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { watcher.unobserve(e.target); paint(e.target, 0); } }), { root: null, rootMargin: "200px" });
 function paint(card, tries) {
   const it = card._item;
+  if (it && it.isRe4) {
+    const key = `re4:${it.id}`;
+    if (!viewport.renderer.models[key]) {
+      api.re4Model(it.id).then((mjson) => {
+        if (mjson && !mjson.error) {
+          viewport.renderer.add(key, mjson);
+          const r = viewport.renderer.thumbnail(key, 0, 128);
+          if (r && r.url) {
+            card.querySelector("img").src = r.url;
+            viewport.redraw();
+          }
+        }
+      }).catch(() => {});
+      return;
+    }
+    const r = viewport.renderer.thumbnail(key, 0, 128);
+    if (r && r.url) {
+      card.querySelector("img").src = r.url;
+      viewport.redraw();
+    }
+    return;
+  }
   if (it.enemy && !viewport.characterFor(it.enemy)) { if (tries < 20) setTimeout(() => paint(card, tries + 1), 300); return; }     // its model is still on its way
   const r = it.enemy ? viewport.renderer.thumbnail(it.enemy.file, null, 128) : viewport.renderer.thumbnail(it.key, it.mesh, 128);
   if (!r) return;
@@ -125,6 +148,7 @@ function shown() {
 
 function fill() {
   grid.innerHTML = "";
+  if (state.level && state.level.startsWith("re4:")) return fillRe4(state.level.slice(4));
   if (state.kind === "enemies") return fillEnemies();
   const list = shown();
   count.textContent = `${list.length} object${list.length === 1 ? "" : "s"}`;
@@ -168,6 +192,66 @@ function fillEnemies() {
   }
 }
 
+function fillRe4(cat) {
+  const t = state.text.trim().toLowerCase();
+  const list = (re4Catalog || []).filter((it) => it.category === cat && (!t || (it.name || "").toLowerCase().includes(t) || it.id.toLowerCase().includes(t)));
+  count.textContent = `${list.length} item${list.length === 1 ? "" : "s"}`;
+  if (!list.length) {
+    grid.append(el("div", { class: "libempty" }, "No matching RE4 assets found."));
+    return;
+  }
+  for (const it of list) {
+    const card = el("button", {
+      class: "libcard",
+      title: `${it.name} (${it.id})\nResident Evil 4 · ${cat}\nClick to place`,
+    });
+    card._item = { ...it, isRe4: true, key: `re4:${it.id}`, mesh: 0 };
+    const img = el("img", {
+      alt: it.name,
+      src: `/api/re4/tex?id=${encodeURIComponent(it.id)}`,
+      loading: "lazy",
+    });
+    img.onerror = () => { img.style.opacity = "0.3"; };
+    card.append(img, el("span", {}, it.name));
+
+    if (it.category === "enemies" && it.kind_id) {
+      if (store.enemyPick && store.enemyPick.game === "re4" && store.enemyPick.id === it.kind_id) card.classList.add("on");
+    } else {
+      if (store.libraryPick && store.libraryPick.game === "re4" && store.libraryPick.id === it.id) card.classList.add("on");
+    }
+
+    card.addEventListener("click", async () => {
+      remember(it);
+      if (viewport && viewport.renderer) {
+        const key = `re4:${it.id}`;
+        if (!viewport.renderer.models[key]) {
+          try {
+            const mjson = await api.re4Model(it.id);
+            if (mjson && !mjson.error) {
+              viewport.renderer.add(key, mjson);
+            }
+          } catch (e) {
+            console.warn("Failed to load RE4 model for placement", e);
+          }
+        }
+      }
+
+      if (it.category === "enemies" && it.kind_id) {
+        store.enemyPick = { game: "re4", id: it.kind_id, name: it.name };
+        setTool("enemy");
+      } else {
+        store.libraryPick = { game: "re4", id: it.id, name: it.name, mesh: 0 };
+        setTool("library");
+      }
+      panel.classList.remove("on");
+      document.getElementById("libbtn")?.classList.add("on");
+    });
+
+    grid.append(card);
+    watcher.observe(card);
+  }
+}
+
 async function open() {
   if (!enemyModels) api.characters().then((list) => { enemyModels = list; if (panel && state.kind === "enemies") fill(); }).catch((e) => console.error("the enemy models couldn't be listed", e));
   await loadNames();
@@ -182,6 +266,12 @@ async function open() {
     where.append(rare);
     const level = el("select", { class: "libsearch", title: "Whose objects: this scenario's, or any level's of either game (their pictures come along when you put one down)" });
     level.append(el("option", { value: "" }, "This scenario's objects"));
+    level.append(
+      el("option", { value: "re4:scenery" }, "Resident Evil 4 · Scenery & Props"),
+      el("option", { value: "re4:weapons" }, "Resident Evil 4 · Weapons & Items"),
+      el("option", { value: "re4:enemies" }, "Resident Evil 4 · Enemies & Bosses"),
+      el("option", { value: "re4:characters" }, "Resident Evil 4 · Characters"),
+    );
     api.levels().then((list) => {
       levels = list;
       for (const l of list) if (!(l.game === store.game && l.scenario === store.scenario)) level.append(el("option", { value: `${l.game}:${l.scenario}` }, `${l.game === "file1" ? "File 1" : "File 2"} · scenario ${l.scenario} (${l.rooms.length} rooms)`));
@@ -196,7 +286,7 @@ async function open() {
     document.getElementById("view").append(panel);
   }
   const key = stamp(viewport.renderer);
-  if (key !== built) { catalogue = build(viewport.renderer, ...(state.level ? [levelSources()] : [])); built = key; }
+  if (key !== built && (!state.level || !state.level.startsWith("re4:"))) { catalogue = build(viewport.renderer, ...(state.level ? [levelSources()] : [])); built = key; }
   // a game whose shapes nobody has named yet: they all show, each by its picture
   const unnamedGame = !catalogue.some((it) => it.name);
   if (unnamedGame) state.unnamed = true;
@@ -215,6 +305,22 @@ function levelSources() {
 // another level's objects: its rooms' models are fetched (once each; the room you are in keeps its own), then listed as this scenario's are
 async function useLevel(value) {
   state.level = value;
+  if (value && value.startsWith("re4:")) {
+    const cat = value.slice(4);
+    note.textContent = "Loading Resident Evil 4 catalog…";
+    if (!re4Catalog) {
+      try {
+        re4Catalog = await api.re4Catalog();
+      } catch (e) {
+        console.error("the RE4 catalog couldn't be loaded", e);
+        note.textContent = "Failed to load RE4 catalog: " + e.message;
+        return;
+      }
+    }
+    note.textContent = "Resident Evil 4 assets: textures and 3D geometry imported into Outbreak on placement.";
+    fill();
+    return;
+  }
   if (value) {
     const sources = levelSources();
     for (let k = 0; k < sources.length; k++) {
