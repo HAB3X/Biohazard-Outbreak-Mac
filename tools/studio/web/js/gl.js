@@ -23,8 +23,8 @@ function worlds(bones) {
   bones.forEach((_, i) => get(i));
   return out;
 }
-// where a Library object's model is kept among the renderer's models: a room of this scenario by its file, one of another level by "game:scenario:file"
-export const modelKey = (lib) => (lib.game === "re4" ? `re4:${lib.id || lib.room}` : lib.game ? `${lib.game}:${lib.scenario}:${lib.room}` : lib.room);
+// where a Library object's model is kept among the renderer's models: a room of this scenario by its file, one of another level by "game:scenario:file", or a guest game asset by "game:id"
+export const modelKey = (lib) => (lib.game && lib.game !== "file1" && lib.game !== "file2" ? `${lib.game}:${lib.id || lib.room}` : lib.game ? `${lib.game}:${lib.scenario}:${lib.room}` : lib.room);
 const hidden = (b) => Math.abs(b[1][0]) < 0.001 || Math.abs(b[1][1]) < 0.001 || Math.abs(b[1][2]) < 0.001;
 
 const VS = `#version 300 es

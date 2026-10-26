@@ -414,6 +414,144 @@ void TestGarradorBlindHearing()
     CHECK(garradorSoundFound);
 }
 
+void TestDebilitasChargeAndSlam()
+{
+    SetupMockMemory();
+    SetupEnemy(EnemyRecord, KindDebilitas, 1000.0f, 0.0f, 850.0f, 0, 3000);
+
+    Ps2Cpu c{};
+    c.r[4].uw[0] = EnemyRecord;
+
+    int16_t initialPlayerHp = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+
+    // Run ticks until Debilitas performs slam
+    for (int i = 0; i < 25; i++)
+    {
+        TickEnemy(&c);
+    }
+
+    Re4EnemyState* state = GetEnemyState(EnemyRecord);
+    CHECK(state != nullptr);
+
+    int16_t damagedPlayerHp = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+    CHECK(damagedPlayerHp < initialPlayerHp);
+}
+
+void TestSledgehammerMarchAndSmash()
+{
+    SetupMockMemory();
+    SetupEnemy(EnemyRecord, KindSledgehammer, 1000.0f, 0.0f, 850.0f, 0, 4000);
+
+    Ps2Cpu c{};
+    c.r[4].uw[0] = EnemyRecord;
+
+    int16_t hpBefore = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+
+    for (int i = 0; i < 30; i++)
+    {
+        TickEnemy(&c);
+    }
+
+    int16_t hpAfter = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+    CHECK(hpAfter <= hpBefore - 900);
+}
+
+void TestCorroderAcidSpray()
+{
+    SetupMockMemory();
+    SetupEnemy(EnemyRecord, KindCorroder, 1000.0f, 0.0f, 800.0f, 0, 2500);
+
+    Ps2Cpu c{};
+    c.r[4].uw[0] = EnemyRecord;
+
+    int16_t hpBefore = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+
+    for (int i = 0; i < 20; i++)
+    {
+        TickEnemy(&c);
+    }
+
+    int16_t hpAfter = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+    CHECK(hpAfter < hpBefore);
+}
+
+void TestPyramidHeadExecution()
+{
+    SetupMockMemory();
+    SetupEnemy(EnemyRecord, KindPyramidHead, 1000.0f, 0.0f, 850.0f, 0, 5000);
+
+    Ps2Cpu c{};
+    c.r[4].uw[0] = EnemyRecord;
+
+    for (int i = 0; i < 35; i++)
+    {
+        TickEnemy(&c);
+    }
+
+    int16_t hpAfter = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+    CHECK(hpAfter <= 500);
+}
+
+void TestSaeTeleportAndChoke()
+{
+    SetupMockMemory();
+    SetupEnemy(EnemyRecord, KindSae, 1000.0f, 0.0f, 100.0f, 0, 2000);
+
+    Ps2Cpu c{};
+    c.r[4].uw[0] = EnemyRecord;
+
+    TickEnemy(&c);
+    Re4EnemyState* state = GetEnemyState(EnemyRecord);
+    CHECK(state != nullptr);
+    CHECK(state->state == AiState::SaeTeleport);
+
+    for (int i = 0; i < 20; i++)
+    {
+        TickEnemy(&c);
+    }
+
+    float ez = *reinterpret_cast<float*>(g_mockMemory + EnemyRecord + 0x40);
+    CHECK(std::abs(ez - 880.0f) < 50.0f);
+}
+
+void TestGakiSkitterAndLeap()
+{
+    SetupMockMemory();
+    SetupEnemy(EnemyRecord, KindGaki, 1000.0f, 0.0f, 850.0f, 0, 1000);
+
+    Ps2Cpu c{};
+    c.r[4].uw[0] = EnemyRecord;
+
+    int16_t hpBefore = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+
+    for (int i = 0; i < 20; i++)
+    {
+        TickEnemy(&c);
+    }
+
+    int16_t hpAfter = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+    CHECK(hpAfter < hpBefore);
+}
+
+void TestShibitoSniper()
+{
+    SetupMockMemory();
+    SetupEnemy(EnemyRecord, KindShibito, 1000.0f, 0.0f, 200.0f, 0, 1200);
+
+    Ps2Cpu c{};
+    c.r[4].uw[0] = EnemyRecord;
+
+    int16_t hpBefore = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+
+    for (int i = 0; i < 45; i++)
+    {
+        TickEnemy(&c);
+    }
+
+    int16_t hpAfter = *reinterpret_cast<int16_t*>(g_mockMemory + PlayerRecord + 0x544);
+    CHECK(hpAfter <= hpBefore - 750);
+}
+
 } // namespace
 
 int main()
@@ -428,6 +566,13 @@ int main()
     TestChainsawManInstakill();
     TestElGiganteBoss();
     TestGarradorBlindHearing();
+    TestDebilitasChargeAndSlam();
+    TestSledgehammerMarchAndSmash();
+    TestCorroderAcidSpray();
+    TestPyramidHeadExecution();
+    TestSaeTeleportAndChoke();
+    TestGakiSkitterAndLeap();
+    TestShibitoSniper();
 
     if (g_failures == 0)
     {

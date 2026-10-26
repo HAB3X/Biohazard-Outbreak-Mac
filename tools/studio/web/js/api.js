@@ -24,4 +24,7 @@ export const api = {
   switchTo: (game, scenario) => send("POST", "/api/switch", { game, scenario }),
   re4Catalog: () => call("/api/re4/catalog"),
   re4Model: (id) => call("/api/re4/model?id=" + encodeURIComponent(id)),
+  gamesList: () => call("/api/games/list"),
+  gamesCatalog: (game) => call("/api/games/catalog?game=" + encodeURIComponent(game || "all")),
+  gameModel: (game, id) => call(`/api/games/model?game=${encodeURIComponent(game)}&id=${encodeURIComponent(id)}`),
 };

@@ -358,6 +358,42 @@ void InitEnemy(Re4EnemyState& enemy, uint32_t at, uint8_t kind, const GameLayout
             enemy.weapon = WepClaws;
             enemy.state = AiState::GarradorListen;
             break;
+        case KindDebilitas:
+            enemy.weapon = WepClub;
+            enemy.state = AiState::Approach;
+            break;
+        case KindHewie:
+            enemy.weapon = WepUnarmed;
+            enemy.state = AiState::Idle;
+            break;
+        case KindSledgehammer:
+            enemy.weapon = WepSledgehammer;
+            enemy.state = AiState::SledgehammerMarch;
+            break;
+        case KindCorroder:
+            enemy.weapon = WepAcidSprayer;
+            enemy.state = AiState::Approach;
+            break;
+        case KindPyramidHead:
+            enemy.weapon = WepGreatKnife;
+            enemy.state = AiState::PyramidHeadMarch;
+            break;
+        case KindNurse:
+            enemy.weapon = WepRustyPipe;
+            enemy.state = AiState::NurseLurch;
+            break;
+        case KindSae:
+            enemy.weapon = WepGhostCurse;
+            enemy.state = AiState::SaeFloat;
+            break;
+        case KindGaki:
+            enemy.weapon = WepClaws;
+            enemy.state = AiState::GakiSkitter;
+            break;
+        case KindShibito:
+            enemy.weapon = WepRifle;
+            enemy.state = AiState::ShibitoAim;
+            break;
         case KindZealot:
             enemy.weapon = ((at % 2) == 0) ? WepScythe : WepAxe;
             enemy.state = AiState::Idle;
@@ -822,6 +858,503 @@ void TickGarrador(Re4EnemyState& enemy, uint32_t at, Vec3& pos, uint16_t& facing
     }
 }
 
+// --- Debilitas Logic (Haunting Ground / Demento) ---
+void TickDebilitas(Re4EnemyState& enemy, uint32_t at, Vec3& pos, uint16_t& facing, int16_t room,
+                   uint8_t& motion, const GameLayout& layout)
+{
+    if (enemy.targetRecord == 0)
+    {
+        motion = MotionIdle;
+        return;
+    }
+
+    const Vec3 targetPos = ReadVec3(enemy.targetRecord + OffsetPosition);
+    const float dist = pos.DistanceXZ(targetPos);
+
+    if (enemy.state == AiState::Approach)
+    {
+        motion = MotionWalk;
+        facing = TurnTowards(facing, pos, targetPos, 0x0300);
+        pos = AdvancePosition(pos, facing, 2.0f);
+
+        if (dist <= 600.0f && enemy.attackCooldown == 0)
+        {
+            enemy.state = AiState::DebilitasCharge;
+            enemy.stateTimer = 0;
+            EmitSound(SndDebilitasRoar, pos, at);
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::DebilitasCharge)
+    {
+        motion = MotionRun;
+        facing = TurnTowards(facing, pos, targetPos, 0x0500);
+        pos = AdvancePosition(pos, facing, 4.5f);
+
+        if (dist <= 180.0f)
+        {
+            enemy.state = AiState::DebilitasSlam;
+            enemy.stateTimer = 0;
+        }
+        else if (enemy.stateTimer >= 90)
+        {
+            enemy.state = AiState::Approach;
+            enemy.attackCooldown = 40;
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::DebilitasSlam)
+    {
+        motion = MotionAttackHeavy;
+        if (enemy.stateTimer == 18)
+        {
+            EmitSound(SndDebilitasSlam, pos, at);
+            if (CheckAttackHit(pos, facing, targetPos, 220.0f, 1.4f))
+            {
+                DealDamage(enemy.targetRecord, 600);
+            }
+        }
+        if (enemy.stateTimer >= 45)
+        {
+            enemy.state = AiState::Approach;
+            enemy.attackCooldown = 50;
+        }
+        return;
+    }
+}
+
+// --- Hewie Logic (Haunting Ground Dog Companion) ---
+void TickHewie(Re4EnemyState& enemy, uint32_t at, Vec3& pos, uint16_t& facing, int16_t room,
+               uint8_t& motion, const GameLayout& layout)
+{
+    if (enemy.targetRecord == 0)
+    {
+        motion = MotionIdle;
+        return;
+    }
+
+    const Vec3 targetPos = ReadVec3(enemy.targetRecord + OffsetPosition);
+    const float dist = pos.DistanceXZ(targetPos);
+
+    if (enemy.state == AiState::Idle || enemy.state == AiState::Approach)
+    {
+        facing = TurnTowards(facing, pos, targetPos, 0x0400);
+        if (dist > 300.0f)
+        {
+            motion = MotionRun;
+            pos = AdvancePosition(pos, facing, 4.0f);
+        }
+        else if (dist > 150.0f)
+        {
+            motion = MotionWalk;
+            pos = AdvancePosition(pos, facing, 2.0f);
+        }
+        else
+        {
+            motion = MotionIdle;
+            if (enemy.stateTimer % 90 == 0)
+            {
+                EmitSound(SndHewieBark, pos, at);
+            }
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::HewiePounce)
+    {
+        motion = MotionAttackHeavy;
+        if (enemy.stateTimer < 10)
+        {
+            pos = AdvancePosition(pos, facing, 6.0f);
+        }
+        if (enemy.stateTimer == 12)
+        {
+            if (CheckAttackHit(pos, facing, targetPos, 160.0f, 1.2f))
+            {
+                DealDamage(enemy.targetRecord, 250);
+            }
+        }
+        if (enemy.stateTimer >= 35)
+        {
+            enemy.state = AiState::Idle;
+            enemy.attackCooldown = 40;
+        }
+        return;
+    }
+}
+
+// --- Sledgehammer Logic (Clock Tower 3) ---
+void TickSledgehammer(Re4EnemyState& enemy, uint32_t at, Vec3& pos, uint16_t& facing, int16_t room,
+                      uint8_t& motion, const GameLayout& layout)
+{
+    if (enemy.targetRecord == 0)
+    {
+        motion = MotionIdle;
+        return;
+    }
+
+    const Vec3 targetPos = ReadVec3(enemy.targetRecord + OffsetPosition);
+    const float dist = pos.DistanceXZ(targetPos);
+
+    if (enemy.state == AiState::SledgehammerMarch || enemy.state == AiState::Approach)
+    {
+        motion = MotionWalk;
+        facing = TurnTowards(facing, pos, targetPos, 0x0250);
+        pos = AdvancePosition(pos, facing, 1.8f);
+
+        if (dist <= 190.0f && enemy.attackCooldown == 0)
+        {
+            enemy.state = AiState::SledgehammerSmash;
+            enemy.stateTimer = 0;
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::SledgehammerSmash)
+    {
+        motion = MotionAttackHeavy;
+        if (enemy.stateTimer == 22) // Hammer overhead drop impact
+        {
+            EmitSound(SndSledgehammerSmash, pos, at);
+            if (CheckAttackHit(pos, facing, targetPos, 220.0f, 1.6f))
+            {
+                DealDamage(enemy.targetRecord, 900);
+            }
+        }
+        if (enemy.stateTimer >= 55)
+        {
+            enemy.state = AiState::SledgehammerMarch;
+            enemy.attackCooldown = 50;
+        }
+        return;
+    }
+}
+
+// --- Corroder Logic (Clock Tower 3) ---
+void TickCorroder(Re4EnemyState& enemy, uint32_t at, Vec3& pos, uint16_t& facing, int16_t room,
+                  uint8_t& motion, const GameLayout& layout)
+{
+    if (enemy.targetRecord == 0)
+    {
+        motion = MotionIdle;
+        return;
+    }
+
+    const Vec3 targetPos = ReadVec3(enemy.targetRecord + OffsetPosition);
+    const float dist = pos.DistanceXZ(targetPos);
+
+    if (enemy.state == AiState::Approach)
+    {
+        motion = MotionRun;
+        facing = TurnTowards(facing, pos, targetPos, 0x0500);
+        pos = AdvancePosition(pos, facing, 4.2f);
+
+        if (dist <= 300.0f && enemy.attackCooldown == 0)
+        {
+            enemy.state = AiState::CorroderAcidSpray;
+            enemy.stateTimer = 0;
+            EmitSound(SndAcidSpray, pos, at);
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::CorroderAcidSpray)
+    {
+        motion = MotionAttackWeapon;
+        facing = TurnTowards(facing, pos, targetPos, 0x0150);
+
+        if (enemy.stateTimer >= 10 && enemy.stateTimer <= 35 && (enemy.stateTimer % 5 == 0))
+        {
+            if (CheckAttackHit(pos, facing, targetPos, 350.0f, 1.2f))
+            {
+                DealDamage(enemy.targetRecord, 120);
+            }
+        }
+
+        if (enemy.stateTimer >= 50)
+        {
+            enemy.state = AiState::Approach;
+            enemy.attackCooldown = 60;
+        }
+        return;
+    }
+}
+
+// --- Pyramid Head Logic (Silent Hill 2) ---
+void TickPyramidHead(Re4EnemyState& enemy, uint32_t at, Vec3& pos, uint16_t& facing, int16_t room,
+                     uint8_t& motion, const GameLayout& layout)
+{
+    if (enemy.targetRecord == 0)
+    {
+        motion = MotionIdle;
+        return;
+    }
+
+    const Vec3 targetPos = ReadVec3(enemy.targetRecord + OffsetPosition);
+    const float dist = pos.DistanceXZ(targetPos);
+
+    if (enemy.state == AiState::PyramidHeadMarch || enemy.state == AiState::Approach)
+    {
+        motion = MotionWalk;
+        facing = TurnTowards(facing, pos, targetPos, 0x0180);
+        pos = AdvancePosition(pos, facing, 1.2f); // Slow unstoppable advance
+
+        if (enemy.stateTimer % 40 == 0)
+        {
+            EmitSound(SndPyramidKnifeDrag, pos, at);
+        }
+
+        if (dist <= 220.0f && enemy.attackCooldown == 0)
+        {
+            enemy.state = AiState::PyramidHeadExecution;
+            enemy.stateTimer = 0;
+            EmitSound(SndPyramidExecution, pos, at);
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::PyramidHeadExecution)
+    {
+        motion = MotionAttackHeavy;
+        if (enemy.stateTimer == 28) // Great Knife execution swing
+        {
+            if (CheckAttackHit(pos, facing, targetPos, 260.0f, 2.2f))
+            {
+                DealDamage(enemy.targetRecord, 1500, /*lethal=*/true);
+            }
+        }
+        if (enemy.stateTimer >= 65)
+        {
+            enemy.state = AiState::PyramidHeadMarch;
+            enemy.attackCooldown = 70;
+        }
+        return;
+    }
+}
+
+// --- Bubble Head Nurse Logic (Silent Hill 2) ---
+void TickNurse(Re4EnemyState& enemy, uint32_t at, Vec3& pos, uint16_t& facing, int16_t room,
+               uint8_t& motion, const GameLayout& layout)
+{
+    if (enemy.targetRecord == 0)
+    {
+        motion = MotionIdle;
+        return;
+    }
+
+    const Vec3 targetPos = ReadVec3(enemy.targetRecord + OffsetPosition);
+    const float dist = pos.DistanceXZ(targetPos);
+
+    if (enemy.state == AiState::NurseLurch || enemy.state == AiState::Approach)
+    {
+        motion = MotionWalk;
+        // Jerky erratic twitching angle
+        const uint16_t twitch = static_cast<uint16_t>((std::sin(enemy.stateTimer * 0.4f) * 2000.0f));
+        facing = TurnTowards(facing + twitch, pos, targetPos, 0x0400);
+        pos = AdvancePosition(pos, facing, (enemy.stateTimer % 20 < 10) ? 3.0f : 0.8f);
+
+        if (dist <= 150.0f && enemy.attackCooldown == 0)
+        {
+            enemy.state = AiState::NurseFlurry;
+            enemy.stateTimer = 0;
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::NurseFlurry)
+    {
+        motion = MotionAttackMelee;
+        if (enemy.stateTimer == 12 || enemy.stateTimer == 22)
+        {
+            if (CheckAttackHit(pos, facing, targetPos, 160.0f, 1.4f))
+            {
+                DealDamage(enemy.targetRecord, 250);
+            }
+        }
+        if (enemy.stateTimer >= 36)
+        {
+            enemy.state = AiState::NurseLurch;
+            enemy.attackCooldown = 35;
+        }
+        return;
+    }
+}
+
+// --- Sae Kurosawa Logic (Fatal Frame II) ---
+void TickSae(Re4EnemyState& enemy, uint32_t at, Vec3& pos, uint16_t& facing, int16_t room,
+             uint8_t& motion, const GameLayout& layout)
+{
+    if (enemy.targetRecord == 0)
+    {
+        motion = MotionIdle;
+        return;
+    }
+
+    const Vec3 targetPos = ReadVec3(enemy.targetRecord + OffsetPosition);
+    const float dist = pos.DistanceXZ(targetPos);
+
+    if (enemy.state == AiState::SaeFloat || enemy.state == AiState::Approach)
+    {
+        motion = MotionWalk;
+        facing = TurnTowards(facing, pos, targetPos, 0x0300);
+        pos = AdvancePosition(pos, facing, 2.2f);
+
+        if (dist > 500.0f && enemy.specialCooldown == 0)
+        {
+            enemy.state = AiState::SaeTeleport;
+            enemy.stateTimer = 0;
+            return;
+        }
+
+        if (dist <= 160.0f && enemy.attackCooldown == 0)
+        {
+            enemy.state = AiState::SaeChoke;
+            enemy.stateTimer = 0;
+            EmitSound(SndGhostLaugh, pos, at);
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::SaeTeleport)
+    {
+        motion = MotionIdle;
+        if (enemy.stateTimer == 15) // Reappear behind player
+        {
+            const uint16_t targetFacing = rd16(enemy.targetRecord + OffsetFacing);
+            pos = AdvancePosition(targetPos, static_cast<uint16_t>(targetFacing + 0x8000), 120.0f);
+            facing = targetFacing;
+            EmitSound(SndGhostLaugh, pos, at);
+        }
+        if (enemy.stateTimer >= 30)
+        {
+            enemy.state = AiState::SaeFloat;
+            enemy.specialCooldown = 120;
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::SaeChoke)
+    {
+        motion = MotionAttackMelee;
+        if (enemy.stateTimer >= 10 && (enemy.stateTimer % 6 == 0))
+        {
+            DealDamage(enemy.targetRecord, 100);
+        }
+        if (enemy.stateTimer >= 40)
+        {
+            enemy.state = AiState::SaeFloat;
+            enemy.attackCooldown = 50;
+        }
+        return;
+    }
+}
+
+// --- Twin Gaki Logic (Kuon) ---
+void TickGaki(Re4EnemyState& enemy, uint32_t at, Vec3& pos, uint16_t& facing, int16_t room,
+              uint8_t& motion, const GameLayout& layout)
+{
+    if (enemy.targetRecord == 0)
+    {
+        motion = MotionIdle;
+        return;
+    }
+
+    const Vec3 targetPos = ReadVec3(enemy.targetRecord + OffsetPosition);
+    const float dist = pos.DistanceXZ(targetPos);
+
+    if (enemy.state == AiState::GakiSkitter || enemy.state == AiState::Approach)
+    {
+        motion = MotionRun;
+        facing = TurnTowards(facing, pos, targetPos, 0x0600);
+        pos = AdvancePosition(pos, facing, 4.8f); // Fast skittering crawl
+
+        if (dist <= 240.0f && enemy.attackCooldown == 0)
+        {
+            enemy.state = AiState::GakiLeap;
+            enemy.stateTimer = 0;
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::GakiLeap)
+    {
+        motion = MotionAttackHeavy;
+        if (enemy.stateTimer < 12)
+        {
+            pos = AdvancePosition(pos, facing, 6.0f);
+        }
+        if (enemy.stateTimer == 14)
+        {
+            if (CheckAttackHit(pos, facing, targetPos, 180.0f, 1.4f))
+            {
+                DealDamage(enemy.targetRecord, 380);
+            }
+        }
+        if (enemy.stateTimer >= 32)
+        {
+            enemy.state = AiState::GakiSkitter;
+            enemy.attackCooldown = 40;
+        }
+        return;
+    }
+}
+
+// --- Shibito Sniper Logic (Forbidden Siren) ---
+void TickShibito(Re4EnemyState& enemy, uint32_t at, Vec3& pos, uint16_t& facing, int16_t room,
+                 uint8_t& motion, const GameLayout& layout)
+{
+    if (enemy.targetRecord == 0)
+    {
+        motion = MotionIdle;
+        return;
+    }
+
+    const Vec3 targetPos = ReadVec3(enemy.targetRecord + OffsetPosition);
+    const float dist = pos.DistanceXZ(targetPos);
+
+    if (enemy.state == AiState::ShibitoAim || enemy.state == AiState::Idle)
+    {
+        motion = MotionAttackWeapon;
+        facing = TurnTowards(facing, pos, targetPos, 0x0300);
+
+        if (enemy.stateTimer == 1)
+        {
+            EmitSound(SndShibitoCry, pos, at);
+        }
+
+        // Aiming delay before firing
+        if (enemy.stateTimer >= 35 && enemy.attackCooldown == 0)
+        {
+            enemy.state = AiState::ShibitoFire;
+            enemy.stateTimer = 0;
+        }
+        return;
+    }
+
+    if (enemy.state == AiState::ShibitoFire)
+    {
+        motion = MotionAttackHeavy;
+        if (enemy.stateTimer == 5)
+        {
+            EmitSound(SndRifleFire, pos, at);
+            // Long range raycast hit
+            if (dist <= 2500.0f && std::abs(ComputeAngleDiff(facing, pos, targetPos)) <= 0.35f)
+            {
+                DealDamage(enemy.targetRecord, 750);
+            }
+        }
+
+        if (enemy.stateTimer >= 25)
+        {
+            enemy.state = AiState::ShibitoAim;
+            enemy.attackCooldown = 60;
+        }
+        return;
+    }
+}
+
 } // namespace
 
 // -----------------------------------------------------------------------------
@@ -961,6 +1494,33 @@ void TickEnemy(Ps2Cpu* c)
             break;
         case KindGarrador:
             TickGarrador(enemy, at, pos, facing, room, motion, layout);
+            break;
+        case KindDebilitas:
+            TickDebilitas(enemy, at, pos, facing, room, motion, layout);
+            break;
+        case KindHewie:
+            TickHewie(enemy, at, pos, facing, room, motion, layout);
+            break;
+        case KindSledgehammer:
+            TickSledgehammer(enemy, at, pos, facing, room, motion, layout);
+            break;
+        case KindCorroder:
+            TickCorroder(enemy, at, pos, facing, room, motion, layout);
+            break;
+        case KindPyramidHead:
+            TickPyramidHead(enemy, at, pos, facing, room, motion, layout);
+            break;
+        case KindNurse:
+            TickNurse(enemy, at, pos, facing, room, motion, layout);
+            break;
+        case KindSae:
+            TickSae(enemy, at, pos, facing, room, motion, layout);
+            break;
+        case KindGaki:
+            TickGaki(enemy, at, pos, facing, room, motion, layout);
+            break;
+        case KindShibito:
+            TickShibito(enemy, at, pos, facing, room, motion, layout);
             break;
     }
 

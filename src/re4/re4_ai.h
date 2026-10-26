@@ -11,7 +11,7 @@
 namespace Re4
 {
 
-// Enemy kinds mapped to RE4 archetypes (kinds >= 100)
+// Enemy kinds mapped to RE4 archetypes and guest horror stalkers/bosses (kinds >= 100)
 enum EnemyKind : uint8_t
 {
     KindGanado = 100,       // Villager (em10)
@@ -19,9 +19,30 @@ enum EnemyKind : uint8_t
     KindChainsaw = 104,     // Dr. Salvador / Chainsaw Man (em10 type 4 / em14)
     KindGigante = 120,      // El Gigante boss (em20 / em2b)
     KindGarrador = 122,     // Garrador (em22 / em1c)
+
+    // Haunting Ground (Demento)
+    KindDebilitas = 140,    // Debilitas groundkeeper boss
+    KindHewie = 145,        // Hewie dog companion / pursuer
+
+    // Clock Tower 3
+    KindSledgehammer = 150, // Sledgehammer Robert Morris
+    KindCorroder = 151,     // Corroder John Haigh acid stalker
+
+    // Silent Hill Series
+    KindPyramidHead = 160,  // Red Pyramid Thing / Pyramid Head
+    KindNurse = 161,        // Bubble Head Nurse
+
+    // Fatal Frame Series
+    KindSae = 170,          // Sae Kurosawa Crimson Sacrifice ghost
+
+    // Kuon
+    KindGaki = 180,         // Twin Gaki demon
+
+    // Forbidden Siren
+    KindShibito = 190,      // Hanuda Shibito Sniper / Stalker
 };
 
-// Weapons matching RE4 Wep_type
+// Weapons matching RE4 & guest horror weapons
 enum WeaponType : uint8_t
 {
     WepUnarmed = 0,
@@ -32,9 +53,16 @@ enum WeaponType : uint8_t
     WepBoulder = 6,
     WepTorch = 7,
     WepScythe = 8,
+    WepClub = 9,
+    WepSledgehammer = 10,
+    WepAcidSprayer = 11,
+    WepGreatKnife = 12,
+    WepRustyPipe = 13,
+    WepGhostCurse = 14,
+    WepRifle = 15,
 };
 
-// AI states mirroring the RE4 state machine routines (em10_R1_*, em2b_R1_*)
+// AI states mirroring the RE4 and guest horror state machines
 enum class AiState : uint8_t
 {
     Idle,
@@ -54,6 +82,27 @@ enum class AiState : uint8_t
     GarradorListen,
     GarradorCharge,
     GarradorClawSlash,
+
+    // Guest stalker / boss states
+    DebilitasCharge,
+    DebilitasSlam,
+    HewieBark,
+    HewiePounce,
+    SledgehammerMarch,
+    SledgehammerSmash,
+    CorroderAcidSpray,
+    PyramidHeadMarch,
+    PyramidHeadExecution,
+    NurseLurch,
+    NurseFlurry,
+    SaeFloat,
+    SaeTeleport,
+    SaeChoke,
+    GakiSkitter,
+    GakiLeap,
+    ShibitoAim,
+    ShibitoFire,
+
     Stagger,
     HeavyStagger,
     Death,
@@ -150,7 +199,7 @@ bool CheckAttackHit(const Vec3& enemyPos, uint16_t enemyFacing, const Vec3& targ
 // Deal damage to character in Outbreak memory layout
 void DealDamage(uint32_t targetRecord, int damage, bool lethal = false);
 
-// Sound event IDs mirroring RE4 SndCall
+// Sound event IDs mirroring RE4 & guest horror games SndCall
 constexpr int SndAxeSwing = 0x3D;
 constexpr int SndChainsawRev = 0x4C;
 constexpr int SndChainsawSwing = 0x50;
@@ -158,6 +207,16 @@ constexpr int SndChainsawDecap = 0x54;
 constexpr int SndGiganteRoar = 0x0A;
 constexpr int SndGiganteSlam = 0x8D;
 constexpr int SndGarradorRoar = 0xB3;
+constexpr int SndDebilitasRoar = 0xC0;
+constexpr int SndDebilitasSlam = 0xC1;
+constexpr int SndHewieBark = 0xC2;
+constexpr int SndSledgehammerSmash = 0xD0;
+constexpr int SndAcidSpray = 0xD1;
+constexpr int SndPyramidKnifeDrag = 0xE0;
+constexpr int SndPyramidExecution = 0xE1;
+constexpr int SndGhostLaugh = 0xF0;
+constexpr int SndShibitoCry = 0xF5;
+constexpr int SndRifleFire = 0xF6;
 
 // Set custom sound callback for telemetry / audio hooks
 typedef void (*SoundCallback)(int soundId, const Vec3& pos, uint32_t enemyAddr);
