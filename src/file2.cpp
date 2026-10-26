@@ -8,6 +8,7 @@
 #include "network.h"
 #include "partner_ai.h"
 #include "pointer.h"
+#include "re4/re4_ai.h"
 #include "text_map.h"
 #include "ps2/runtime.h"
 #include "tsnd.h"
@@ -84,6 +85,9 @@ MOD_OVERRIDE(cheat_death_check, Cheats::DeathCheck, game_00634350)
 MOD_OVERRIDE(cheat_movement, Cheats::Movement, game_006318e0)
 MOD_OVERRIDE(cheat_timers, Cheats::Timers, game_0066bc20)
 MOD_OVERRIDE(cheat_collision, Cheats::Collision, game_00637630)
+
+// RE4 Enemies (src/re4/re4_ai.h)
+extern "C" void re4_enemy_tick(Ps2Cpu* c) { Re4::TickEnemy(c); }
 
 // The executable's text functions: where each string is drawn is kept for the pointer (src/text_map.h)
 extern "C" void f_001b5090(Ps2Cpu* c);
