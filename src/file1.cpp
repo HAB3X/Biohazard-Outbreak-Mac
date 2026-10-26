@@ -9,6 +9,7 @@
 #include "partner_ai.h"
 #include "pointer.h"
 #include "text_map.h"
+#include "transplant.h"
 #include "ps2/runtime.h"
 #include "tsnd.h"
 #include "typing.h"
@@ -98,6 +99,8 @@ MOD_OVERRIDE(cheat_death_check, Cheats::DeathCheck, game_0062ee10)
 MOD_OVERRIDE(cheat_movement, Cheats::Movement, game_0062ca30)
 MOD_OVERRIDE(cheat_timers, Cheats::Timers, game_0065a8c0)
 MOD_OVERRIDE(cheat_collision, Cheats::Collision, game_00631ca0)
+// File 2's enemies (src/transplant.cpp): the enemies' stand-in routine, as recompiled
+MOD_OVERRIDE(game_enemy_stand_in, Transplant::StandIn, game_00601ed0)
 MOD_OVERRIDE(cheat_available, Cheats::Available, demo_00554ec0)
 MOD_OVERRIDE(cheat_scenario_select_a, Cheats::ScenarioSelect, demo_00542640)
 MOD_OVERRIDE(cheat_scenario_select_b, Cheats::ScenarioSelect, demo_0054dc10)

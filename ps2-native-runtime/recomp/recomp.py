@@ -8,7 +8,9 @@ or the game replaces with host code (the generated body is kept as f_XXXXXXXX fo
 that includes the runtime's ps2/recomp.h: funcs.h (every function's prototype), table.c (address to function, for indirect
 calls) and code_NNN.c. Nothing of the executable's data is written: the runtime loads the executable from the disc at start.
 
-Code overlays (the config's [[overlays]]: files the game loads at a fixed address and runs, read from the disc image) are
+Code overlays (the config's [[overlays]]: files the game loads at a fixed address and runs, read from the disc image, or `generated`: code a
+game's own tools made, read from --generated DIR as NAME.bin with NAME.json giving its "text" range and "extra" function starts; one whose
+files aren't there is left out) are
 recompiled beside the executable, each function named <overlay>_XXXXXXXX. Several overlays share addresses, so a call into
 one goes through ps2_call, which runs the overlay whose code is in memory there (the runtime's cpu.cpp): table.c lists each
 overlay function with its first words, and each overlay with words that tell it from the others over the same addresses.
@@ -54,9 +56,10 @@ def load_config(path):
             sys.exit(f"overlay name {o['name']!r}: it names C functions, so it must be an identifier")
         overlays.append({
             "name": o["name"],
-            "file": o["file"],
+            "file": o.get("file"),
+            "generated": o.get("generated"),
             "base": parse_int(o["base"]),
-            "text": tuple(parse_int(x) for x in o["text"]),
+            "text": tuple(parse_int(x) for x in o["text"]) if "text" in o else None,
             "extra_functions": [parse_int(x) for x in o.get("extra", [])],
             "not_functions": [parse_int(x) for x in o.get("not", [])],
             "overrides": {parse_int(k): v for k, v in o.get("overrides", {}).items()},
@@ -120,6 +123,7 @@ def main():
     ap.add_argument("outdir")
     ap.add_argument("--files", type=int, default=48)
     ap.add_argument("--disc", help="the disc image the config's overlays are read from")
+    ap.add_argument("--generated", help="the folder the config's generated overlays are read from")
     args = ap.parse_args()
 
     config = load_config(args.config)
@@ -145,8 +149,20 @@ def main():
     if config["overlays"] and not args.disc:
         sys.exit("the config has overlays: give the disc image they're read from (--disc)")
     disc = Disc(args.disc) if config["overlays"] else None
-    for o in config["overlays"]:
-        loaded = disc.read_file(o["file"])
+    for o in list(config["overlays"]):
+        if o["generated"]:
+            bin_path = os.path.join(args.generated or "", o["generated"] + ".bin")
+            if not args.generated or not os.path.exists(bin_path):
+                print(f"overlay {o['name']}: no {bin_path}, left out")
+                config["overlays"].remove(o)
+                continue
+            import json
+            meta = json.load(open(os.path.join(args.generated, o["generated"] + ".json")))
+            o["text"] = tuple(meta["text"])
+            o["extra_functions"] = list(meta.get("extra", []))
+            loaded = open(bin_path, "rb").read()
+        else:
+            loaded = disc.read_file(o["file"])
         blocks = []
         if o["decrypt"]:
             # The code as it runs: the overlay's own routines decrypt its blocks (the words loaded stay the disc's)
@@ -165,7 +181,7 @@ def main():
             onames[a] = name
         overlays.append({"config": o, "code": code, "loaded": loaded_code, "blocks": blocks, "program": op,
                          "functions": ofuncs, "names": onames})
-        print(f"overlay {o['name']} ({o['file']} at {o['base']:#x}): {len(ofuncs)} functions, "
+        print(f"overlay {o['name']} ({o['file'] or o['generated']} at {o['base']:#x}): {len(ofuncs)} functions, "
               f"{len(op.jump_tables)} jump tables")
 
     os.makedirs(args.outdir, exist_ok=True)
@@ -233,7 +249,7 @@ def overlay_tables(overlays):
         o = ov["config"]
         checks = check_words(k, codes, plains)
         pairs = ", ".join(f"{{0x{a:08x}u, 0x{w:08x}u}}" for a, w in checks)
-        out.append(f'    {{"{o["file"]}", 0x{o["base"]:08x}u, 0x{o["base"] + len(ov["code"].image):08x}u, '
+        out.append(f'    {{"{o["file"] or o["generated"]}", 0x{o["base"]:08x}u, 0x{o["base"] + len(ov["code"].image):08x}u, '
                    f"{len(checks)}u, {{{pairs}}}}},")
     if not overlays:
         out.append('    {"", 0, 0, 0, {{0, 0}}},')

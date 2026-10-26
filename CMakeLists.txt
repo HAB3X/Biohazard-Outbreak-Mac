@@ -38,11 +38,32 @@ if(NOT FILE1_DISC AND NOT FILE2_DISC)
     message(FATAL_ERROR "Set FILE1_DISC and/or FILE2_DISC to your disc images: cmake -DFILE2_DISC=/path/to/game.iso ...")
 endif()
 
+# File 2's enemies in File 1 (src/transplant.h): with both discs, File 2's AI for the kinds File 1 has none of, carried into File 1's
+# memory (tools/bh_transplant.py) and recompiled with File 1 as its generated overlay "transplant"
+set(TRANSPLANT_KINDS 11 14 34 42 46 48 54 62)
+if(FILE1_DISC AND FILE2_DISC)
+    set(transplant ${CMAKE_CURRENT_BINARY_DIR}/transplant)
+    file(GLOB transplant_tools ${CMAKE_CURRENT_SOURCE_DIR}/tools/*.py)
+    add_custom_command(
+        OUTPUT ${transplant}/transplant.bin ${transplant}/transplant.json ${transplant}/transplant_blob.c
+        COMMAND ${CMAKE_COMMAND} -E env FILE1_DISC=${FILE1_DISC} FILE2_DISC=${FILE2_DISC} PS2_RUNTIME_DIR=${PS2_RUNTIME_DIR}
+                ${PS2_PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/tools/bh_transplant.py build file2 file1 ${transplant} ${TRANSPLANT_KINDS}
+        DEPENDS ${transplant_tools} ${CMAKE_CURRENT_SOURCE_DIR}/config/file1.toml ${CMAKE_CURRENT_SOURCE_DIR}/config/file2.toml
+        COMMENT "Carrying File 2's enemy AI into File 1"
+        VERBATIM)
+    set(FILE1_GENERATED GENERATED ${transplant} GENERATED_DEPENDS ${transplant}/transplant.bin ${transplant}/transplant.json)
+    set(FILE1_TRANSPLANT ${transplant}/transplant_blob.c)
+endif()
+
 if(FILE1_DISC)
     ps2_recompile(file1_code CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/config/file1.toml DISC ${FILE1_DISC} EXECUTABLE SLPM_654.28
-                  FILES 64)
+                  FILES 64 ${FILE1_GENERATED})
     add_executable(biohazard-file1 src/file1.cpp ${CONTROL_SOURCES} src/tsnd.cpp src/network.cpp src/loadhigh.cpp src/usbsrch.cpp
-                   src/avewrap.cpp src/lobbytrace.cpp src/typing.cpp ${PARTNER_AI_SOURCES} ${MODS_SOURCES} src/widescreen.cpp src/intro.cpp)
+                   src/avewrap.cpp src/lobbytrace.cpp src/typing.cpp ${PARTNER_AI_SOURCES} ${MODS_SOURCES} src/widescreen.cpp src/intro.cpp
+                   src/transplant.cpp ${FILE1_TRANSPLANT})
+    if(FILE1_TRANSPLANT)
+        target_compile_definitions(biohazard-file1 PRIVATE TRANSPLANT=1)
+    endif()
     target_link_libraries(biohazard-file1 PRIVATE file1_code ps2runtime)
 endif()
 

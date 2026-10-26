@@ -117,12 +117,13 @@ add_executable(ps2_avetcp_test EXCLUDE_FROM_ALL runtime/tests/avetcp/main.cpp ru
 target_link_libraries(ps2_avetcp_test PRIVATE ps2runtime)
 target_compile_options(ps2_avetcp_test PRIVATE -O2 -g -Wall)
 
-# ps2_recompile(TARGET CONFIG file.toml DISC image EXECUTABLE name [FILES n])
+# ps2_recompile(TARGET CONFIG file.toml DISC image EXECUTABLE name [FILES n] [GENERATED folder GENERATED_DEPENDS files...])
 #
 # Copies the executable out of your disc image at build time, recompiles it (and the code overlays its config names, read
-# from the disc) to C in the build folder, and makes a library of it. Nothing of the game's goes in a source folder.
+# from the disc, or the config's generated overlays, read from GENERATED: made at build time from GENERATED_DEPENDS) to C in
+# the build folder, and makes a library of it. Nothing of the game's goes in a source folder.
 function(ps2_recompile target)
-    cmake_parse_arguments(ARG "" "CONFIG;DISC;EXECUTABLE;FILES" "" ${ARGN})
+    cmake_parse_arguments(ARG "" "CONFIG;DISC;EXECUTABLE;FILES;GENERATED" "GENERATED_DEPENDS" ${ARGN})
     if(NOT ARG_FILES)
         set(ARG_FILES 48)
     endif()
@@ -151,11 +152,15 @@ function(ps2_recompile target)
         DEPENDS ${PS2_RUNTIME_ROOT}/tools/disc.py
         COMMENT "Reading ${ARG_EXECUTABLE} from the disc"
         VERBATIM)
+    set(generated)
+    if(ARG_GENERATED)
+        set(generated --generated ${ARG_GENERATED})
+    endif()
     add_custom_command(
         OUTPUT ${sources} ${out}/funcs.h
         COMMAND ${PS2_PYTHON} ${PS2_RUNTIME_ROOT}/recomp/recomp.py ${ARG_CONFIG} ${elf} ${out} --files ${ARG_FILES}
-                --disc ${ARG_DISC}
-        DEPENDS ${elf} ${ARG_CONFIG} ${recomp_py} ${PS2_RUNTIME_ROOT}/tools/disc.py
+                --disc ${ARG_DISC} ${generated}
+        DEPENDS ${elf} ${ARG_CONFIG} ${recomp_py} ${PS2_RUNTIME_ROOT}/tools/disc.py ${ARG_GENERATED_DEPENDS}
         COMMENT "Recompiling ${ARG_EXECUTABLE}"
         VERBATIM)
     add_library(${target} STATIC ${sources})

@@ -74,8 +74,9 @@ text = ["0x540040", "0x6d4d00"]
 # The Modern camera holds the game's camera (src/modern_camera.cpp): the cut dispatcher's fixed, rail and spline handlers, the
 # follow handler (doors), and the gun's elevation (free aim). The cheats (src/cheats.cpp): a round used, an item used, the virus
 # gauge over time and from a bite, the damage to an enemy and to a character, the death check, the movement routine, the event
-# timers, a character's collision
-overrides = { "0x6307e0" = "game_walk_step", "0x58ec70" = "game_camera_fixed_cut", "0x58ed80" = "game_camera_rail_cut", "0x58f230" = "game_camera_spline_cut", "0x5a9080" = "game_camera_follow", "0x556800" = "game_gun_elevation", "0x581a00" = "cheat_ammo", "0x581b30" = "cheat_item_use", "0x6359d0" = "cheat_gauge_over_time", "0x62e6a0" = "cheat_gauge_bite", "0x60f0c0" = "cheat_enemy_damage", "0x62f130" = "cheat_player_damage", "0x62ee10" = "cheat_death_check", "0x62ca30" = "cheat_movement", "0x65a8c0" = "cheat_timers", "0x631ca0" = "cheat_collision" }
+# timers, a character's collision. The enemies' stand-in routine (the one a kind without AI is given) runs the kinds carried
+# from File 2 (src/transplant.cpp)
+overrides = { "0x601ed0" = "game_enemy_stand_in", "0x6307e0" = "game_walk_step", "0x58ec70" = "game_camera_fixed_cut", "0x58ed80" = "game_camera_rail_cut", "0x58f230" = "game_camera_spline_cut", "0x5a9080" = "game_camera_follow", "0x556800" = "game_gun_elevation", "0x581a00" = "cheat_ammo", "0x581b30" = "cheat_item_use", "0x6359d0" = "cheat_gauge_over_time", "0x62e6a0" = "cheat_gauge_bite", "0x60f0c0" = "cheat_enemy_damage", "0x62f130" = "cheat_player_damage", "0x62ee10" = "cheat_death_check", "0x62ca30" = "cheat_movement", "0x65a8c0" = "cheat_timers", "0x631ca0" = "cheat_collision" }
 extra = [
     "0x540450", "0x542290", "0x5426d0", "0x5426e0", "0x5429e0", "0x542d20", "0x5430a0", "0x5431d0",
     "0x544770", "0x544960", "0x547a70", "0x547aa0", "0x547de0", "0x547f50", "0x548110", "0x548270",
@@ -224,3 +225,10 @@ name = "netaq"
 file = "PROG/NETAQ.BIN"
 base = "0x820000"
 text = ["0x820040", "0x824580"]
+
+# File 2's AI for kinds of enemy File 1 has none of (tools/bh_transplant.py, src/transplant.cpp): made at build time when both
+# discs are set, and loaded into memory no game data holds by the enemies' stand-in routine
+[[overlays]]
+name = "transplant"
+generated = "transplant"
+base = "0x1d80000"
