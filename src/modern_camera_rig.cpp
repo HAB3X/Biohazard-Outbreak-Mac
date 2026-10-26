@@ -24,7 +24,7 @@ constexpr float BoomMinKeep = 0.15f;
 // The look-angle boom's anchors: how far the rig moves at the pitch where it is fullest (the pitch is the eye's elevation over
 // her, so a positive one looks down on her)
 constexpr float LookDownAt = 50.0f, LookDownRaise = 60.0f, LookDownBack = 45.0f;
-constexpr float LookUpAt = 30.0f, LookUpLower = 25.0f;
+constexpr float LookUpAt = 30.0f, LookUpLower = 12.0f; // (25 put the eye on the floor behind her: docs/mods.md)
 // The sideways lag can't leave her further than this, however fast she goes
 constexpr float MaxLateralLag = 150.0f;
 

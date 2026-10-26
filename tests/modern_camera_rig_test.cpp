@@ -157,7 +157,7 @@ void LookingDownRaisesAndBacksTheBoomAndLookingUpLowersIt()
     // Fullest at its anchors and no further past them
     Rig down = LookAngleBoom(rig, 50, 1), farDown = LookAngleBoom(rig, 70, 1);
     CHECK(Near(down.height, 190) && Near(down.distance, 345) && Near(farDown.height, 190));
-    CHECK(Near(LookAngleBoom(rig, -30, 1).height, 105) && Near(LookAngleBoom(rig, -30, 1).distance, 300));
+    CHECK(Near(LookAngleBoom(rig, -30, 1).height, 118) && Near(LookAngleBoom(rig, -30, 1).distance, 300));
     // Half strength moves it half as far, and halfway to an anchor is a smoothstep's half
     CHECK(Near(LookAngleBoom(rig, 50, 0.5f).height, 160));
     CHECK(Near(LookAngleBoom(rig, 25, 1).height, 130 + 60 * 0.5f));
