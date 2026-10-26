@@ -97,8 +97,8 @@ def main():
     spans = {}
     with tempfile.TemporaryDirectory() as tmp:
         for ov in cfg.get("overlays", []):
-            if ov.get("encrypted"):
-                continue
+            if ov.get("encrypted") or ov.get("generated"):
+                continue  # (a generated overlay isn't on the disc: its starts come with it, in its own .json)
             path = Path(tmp) / ov["file"].replace("/", "_")
             subprocess.run([sys.executable, str(RUNTIME / "tools" / "disc.py"), "get", disc, ov["file"], str(path)],
                            check=True, capture_output=True)

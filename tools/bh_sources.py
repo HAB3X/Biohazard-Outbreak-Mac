@@ -48,6 +48,8 @@ def string_pools(arc, game):
     ranges.append((pos, first + size))
     images = {"elf": (elf, first - file_offset, ranges)}
     for ov in run["overlays"]:
+        if ov.get("generated"):
+            continue  # made at build time from another disc's code (File 1's "transplant"): not on this disc, no text of its own
         node = arc.open("/" + ov["file"])
         base, (tlo, thi) = int(ov["base"], 16), [int(x, 16) for x in ov["text"]]
         images[ov["file"]] = (node.read(), base, [(base, tlo), (thi, base + node.size)])
