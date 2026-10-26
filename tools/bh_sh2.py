@@ -139,8 +139,10 @@ def read_sh2_model_bytes(model_path):
     return reader.read_bytes(chr_mgf_off + off, sz)
 
 
-def parse_sh2_model(data):
-    """Unpacks all VU1 geometry and textures from raw Silent Hill 2 .mdl file bytes."""
+def parse_sh2_model(data, item_id=None):
+    """Unpacks all VU1 geometry and textures from raw Silent Hill 2 .mdl file bytes,
+    applying per-batch skeletal rest matrices and genuine index strip unwrapping so
+    articulated parts assemble into the authentic full character silhouette."""
     if not data or len(data) < 0x80:
         return None
 
@@ -178,54 +180,102 @@ def parse_sh2_model(data):
                     img.putdata([palette[b] for b in raw_pixels])
                     textures.append(img)
 
+    # Bone rest matrices at hdr[2]
+    bone_mats = []
+    init_mat_off = base + hdr[2]
+    n_skel = hdr[3]
+    if n_skel > 0 and 0 < init_mat_off < len(data) - n_skel * 64:
+        for b in range(n_skel):
+            m = struct.unpack_from("<16f", data, init_mat_off + b * 64)
+            bone_mats.append(m)
+
+    def xform(x, y, z, m):
+        return (
+            x * m[0] + y * m[4] + z * m[8] + m[12],
+            x * m[1] + y * m[5] + z * m[9] + m[13],
+            x * m[2] + y * m[6] + z * m[10] + m[14]
+        )
+
     # Geometry unpacking across all VU1 parts
     p_off = vu1_parts_off
-    meshes = []
+    scale_raw = 1.0 / 16.0
+    raw_meshes = []
+    all_sh2_y = []
+
     for pi in range(n_vu1_parts):
         if p_off + 20 > len(data):
             break
         sz, typ, pkt_off, pkt_qwc, xtop = struct.unpack_from("<5I", data, p_off)
         if sz == 0:
             break
+
+        n_b = struct.unpack_from("<I", data, p_off + 0x1c)[0] if p_off + 0x20 <= len(data) else 0
+        b_off = struct.unpack_from("<I", data, p_off + 0x20)[0] if p_off + 0x24 <= len(data) else 0
+        bones = struct.unpack(f"<{n_b}H", data[p_off + b_off : p_off + b_off + n_b * 2]) if n_b > 0 and b_off > 0 and p_off + b_off + n_b * 2 <= len(data) else (0,)
+
         if pkt_qwc > 0 and pkt_off > 0 and p_off + pkt_off + pkt_qwc * 16 <= len(data):
             pkt = data[p_off + pkt_off : p_off + pkt_off + pkt_qwc * 16]
+
+            # Read per-batch descriptor table at pkt offset 4
+            batch_map = {}
+            if len(pkt) > 16:
+                n_batches = struct.unpack_from("<I", pkt, 8)[0]
+                mat_addrs = []
+                batches = []
+                for bi in range(n_batches):
+                    desc = 4 + (bi + 1) * 36
+                    if desc + 24 <= len(pkt):
+                        q1 = struct.unpack_from("<4I", pkt, desc + 4)
+                        q2 = struct.unpack_from("<4I", pkt, desc + 20)
+                        v_count, v_addr = q1[0], q1[2]
+                        mat_addr = q2[0]
+                        mat_addrs.append(mat_addr)
+                        batches.append((v_addr, v_count, mat_addr))
+
+                base_mat = min(mat_addrs) if mat_addrs else 0
+                for v_addr, v_count, mat_addr in batches:
+                    lb = (mat_addr - base_mat) // 4
+                    wb = bones[lb] if lb < len(bones) else bones[0]
+                    batch_map[v_addr] = (v_count, wb)
+
             idx = 0
-            v3_streams = []
-            v2_streams = []
-            flag_stream = []
+            pos_part = []
+            uv_part = []
+            idx_list = []
 
             while idx < len(pkt) - 4:
                 w = struct.unpack_from("<I", pkt, idx)[0]
                 cmd = (w >> 24) & 0xFF
                 num = (w >> 16) & 0xFF
+                imm = w & 0xFFFF
                 if 0x60 <= cmd <= 0x7F:
                     fmt = cmd & 0x0F
-                    if fmt == 9 and num > 0:  # V3-16
-                        arr = []
+                    if fmt == 9 and (not batch_map or imm in batch_map):  # V3-16 vertex coordinates
+                        wb = batch_map[imm][1] if imm in batch_map else bones[0]
+                        m = bone_mats[wb] if bone_mats and wb < len(bone_mats) else (bone_mats[0] if bone_mats else None)
                         for vi in range(num):
                             x, y, z = struct.unpack_from("<3h", pkt, idx + 4 + vi * 6)
-                            arr.append((x / 4096.0, y / 4096.0, z / 4096.0))
-                        v3_streams.append(arr)
+                            if m:
+                                wx, wy, wz = xform(x * scale_raw, y * scale_raw, z * scale_raw, m)
+                                pos_part.append((wx, wy, wz))
+                                all_sh2_y.append(wy)
+                            else:
+                                pos_part.append((x / 4096.0, y / 4096.0, z / 4096.0))
                         sz_bytes = num * 6
                         if sz_bytes % 4 != 0:
                             sz_bytes += 4 - (sz_bytes % 4)
                         idx += 4 + sz_bytes
                         continue
-                    elif fmt == 5 and num > 0:  # V2-16
-                        arr = []
+                    elif fmt == 5 and num > 0:  # V2-16 UVs
                         for vi in range(num):
                             u, v = struct.unpack_from("<2h", pkt, idx + 4 + vi * 4)
-                            arr.append((u / 4096.0, v / 4096.0))
-                        v2_streams.append(arr)
+                            uv_part.append((u / 4096.0, v / 4096.0))
                         idx += 4 + num * 4
                         continue
-                    elif (cmd == 0x6D or fmt == 13) and num > 0:  # V4-16 flags
-                        for fi in range(num * 4):
-                            if idx + 4 + fi * 2 + 2 <= len(pkt):
-                                flg = struct.unpack_from("<H", pkt, idx + 4 + fi * 2)[0]
-                                flag_stream.append(flg)
-                        sz_bytes = num * 8
-                        idx += 4 + sz_bytes
+                    elif fmt == 13 and num > 0:  # V4-16 strip indices
+                        shorts = struct.unpack(f"<{num * 4}H", pkt[idx + 4 : idx + 4 + num * 8])
+                        idx_list.extend(shorts)
+                        idx += 4 + num * 8
                         continue
                     else:
                         elem_sz = {0: 4, 1: 2, 2: 1, 4: 8, 5: 4, 6: 2, 8: 12, 9: 6, 12: 16, 13: 8, 14: 4}.get(fmt, 4)
@@ -236,48 +286,85 @@ def parse_sh2_model(data):
                         continue
                 idx += 4
 
-            pos_part = []
-            for k in range(0, len(v3_streams), 2):
-                pos_part.extend(v3_streams[k])
-
-            uv_part = []
-            for s in v2_streams:
-                uv_part.extend(s)
-                if len(uv_part) >= len(pos_part):
-                    break
-
-            n_v = len(pos_part)
-            if n_v > 0:
-                if len(uv_part) < n_v:
-                    uv_part.extend([(0.0, 0.0)] * (n_v - len(uv_part)))
+            real_nv = len(pos_part)
+            if real_nv > 0:
+                if len(uv_part) < real_nv:
+                    uv_part.extend([(0.0, 0.0)] * (real_nv - len(uv_part)))
                 else:
-                    uv_part = uv_part[:n_v]
+                    uv_part = uv_part[:real_nv]
 
                 tris = []
-                if flag_stream and len(flag_stream) >= n_v:
+                if idx_list:
+                    raws = [s & 0x7FFF for s in idx_list]
+                    div4 = [r // 4 for r in raws]
+                    base_idx = min(div4) if div4 else 0
                     strip = []
-                    for vi in range(n_v):
-                        adc = (flag_stream[vi] & 0x8000) != 0
+                    wind = 0
+                    for i, s in enumerate(idx_list):
+                        adc = (s & 0x8000) != 0
+                        v_idx = (s & 0x7FFF) // 4 - base_idx
+                        if v_idx < 0 or v_idx >= real_nv:
+                            strip = []
+                            wind = 0
+                            continue
                         if adc:
-                            strip = [vi]
+                            if i > 0 and not (idx_list[i - 1] & 0x8000 != 0):
+                                strip = [v_idx]
+                            else:
+                                strip.append(v_idx)
+                            wind = 0
                         else:
-                            strip.append(vi)
+                            strip.append(v_idx)
+                            wind += 1
                             if len(strip) >= 3:
-                                s_len = len(strip)
-                                a, b, c = strip[s_len - 3], strip[s_len - 2], strip[s_len - 1]
+                                a, b, c = strip[-3], strip[-2], strip[-1]
                                 if a != b and b != c and a != c:
-                                    tris.append((a, b, c) if (s_len % 2) == 1 else (b, a, c))
+                                    tris.append((a, b, c) if wind % 2 == 1 else (b, a, c))
                 else:
-                    for vi in range(n_v - 2):
+                    for vi in range(real_nv - 2):
                         tris.append((vi, vi + 1, vi + 2) if vi % 2 == 0 else (vi + 1, vi, vi + 2))
 
-                meshes.append({
+                raw_meshes.append({
                     "part": pi,
-                    "pos": pos_part,
+                    "w_pts": pos_part,
                     "uv": uv_part,
                     "tris": tris,
                 })
         p_off += sz
+
+    meshes = []
+    if bone_mats and all_sh2_y:
+        y_max = max(all_sh2_y)
+        y_min = min(all_sh2_y)
+        h_raw = max(1.0, y_max - y_min)
+
+        target_h = 180.0
+        if item_id:
+            low_id = item_id.lower()
+            if "pyramid" in low_id or "red" in low_id:
+                target_h = 210.0
+            elif any(k in low_id for k in ["nurse", "maria", "angela", "mary"]):
+                target_h = 168.0
+            elif "laura" in low_id:
+                target_h = 130.0
+
+        scale_out = target_h / h_raw
+        for rm in raw_meshes:
+            out_pos = [(p[0] * scale_out, (y_max - p[1]) * scale_out, p[2] * scale_out) for p in rm["w_pts"]]
+            meshes.append({
+                "part": rm["part"],
+                "pos": out_pos,
+                "uv": rm["uv"],
+                "tris": rm["tris"],
+            })
+    else:
+        for rm in raw_meshes:
+            meshes.append({
+                "part": rm["part"],
+                "pos": rm["w_pts"],
+                "uv": rm["uv"],
+                "tris": rm["tris"],
+            })
 
     return {
         "n_parts": n_vu1_parts,
@@ -299,7 +386,7 @@ def get_asset(item_id):
     if not raw_bytes:
         return None
 
-    parsed = parse_sh2_model(raw_bytes)
+    parsed = parse_sh2_model(raw_bytes, item_id=item_id)
     if not parsed:
         return None
 
@@ -372,8 +459,7 @@ def get_nbd_mesh_node(item_id, material=0, template=None):
         uv = m["uv"]
         tris = m["tris"]
         for p in pos:
-            # Scale from meters to cm / Outbreak units (x100)
-            all_pos.append((p[0] * 100.0, p[1] * 100.0, p[2] * 100.0))
+            all_pos.append((p[0], p[1], p[2]))
         all_uv.extend(uv)
         for t in tris:
             all_tris.append((v_offset + t[0], v_offset + t[1], v_offset + t[2]))
